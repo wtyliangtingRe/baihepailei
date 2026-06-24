@@ -1,4 +1,5 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
+import { lexicalEditor as makeEditor } from '@payloadcms/richtext-lexical'
 import { buildConfig } from 'payload'
 
 import { Creators } from './src/collections/Creators'
@@ -17,5 +18,6 @@ export default buildConfig({
       connectionString: String(process.env['DATABASE_URL'] || ''),
     },
   }),
+  editor: makeEditor(),
   secret: String(process.env['PAYLOAD_SECRET'] || ''),
 })
