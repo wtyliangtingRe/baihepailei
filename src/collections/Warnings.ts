@@ -6,7 +6,7 @@ export const Warnings: CollectionConfig = {
   slug: 'warnings',
   admin: {
     defaultColumns: ['name', 'severity', 'category', 'updatedAt'],
-    group: 'Content',
+    group: '内容',
     useAsTitle: 'name',
   },
   access: {
