@@ -4,7 +4,7 @@ services:
     container_name: baihepailei-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "15432:5432"
     environment:
       POSTGRES_USER: baihe
       POSTGRES_PASSWORD: CHANGE_ME_DEV_PASSWORD
