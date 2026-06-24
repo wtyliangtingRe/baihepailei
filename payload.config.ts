@@ -1,3 +1,4 @@
+import { postgresAdapter } from '@payloadcms/db-postgres'
 import { buildConfig } from 'payload'
 
 import { Creators } from './src/collections/Creators'
@@ -11,5 +12,10 @@ export default buildConfig({
     user: Users.slug,
   },
   collections: [Users, Media, Creators, Terms, Rules],
-  secret: process.env['PAYLOAD_SECRET'] || '',
+  db: postgresAdapter({
+    pool: {
+      connectionString: String(process.env['DATABASE_URL'] || ''),
+    },
+  }),
+  secret: String(process.env['PAYLOAD_SECRET'] || ''),
 })
