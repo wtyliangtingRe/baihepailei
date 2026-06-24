@@ -1,0 +1,33 @@
+{
+  "name": "baihepailei",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "payload": "payload",
+    "generate:importmap": "payload generate:importmap",
+    "generate:types": "payload generate:types",
+    "dev:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev.ps1"
+  },
+  "dependencies": {
+    "@payloadcms/db-postgres": "latest",
+    "@payloadcms/next": "latest",
+    "@payloadcms/richtext-lexical": "latest",
+    "graphql": "latest",
+    "next": "^16.2.6",
+    "payload": "latest",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "sharp": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "typescript": "latest"
+  }
+}
