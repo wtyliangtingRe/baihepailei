@@ -11,7 +11,8 @@
     "payload": "payload",
     "generate:importmap": "payload generate:importmap",
     "generate:types": "payload generate:types",
-    "dev:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev.ps1"
+    "dev:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev.ps1",
+    "import:clean-seed": "node scripts/import/direct-seed-clean-data.mjs"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "latest",
