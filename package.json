@@ -28,11 +28,5 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "typescript": "latest"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "sharp"
-    ]
   }
 }
