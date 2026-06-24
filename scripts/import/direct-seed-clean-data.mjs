@@ -34,7 +34,7 @@ Examples:
 
   $env:PAYLOAD_SEED_EMAIL="you@example.com"
   $env:PAYLOAD_SEED_PASSWORD="your-password"
-  pnpm import:clean-seed -- --file "D:\\0GitHubtest\\Baihepailei\\_clean_real_data\\payload_seed_direct_v2_clean.json" --url "http://localhost:3000"
+  pnpm import:clean-seed -- --file "D:\\0GitHubtest\\Baihepailei\\_clean_real_data\\payload_seed_direct_v2_clean.json" --url "http://localhost:3000" --update-existing
 `)
 }
 
@@ -116,11 +116,113 @@ async function updateDoc(baseUrl, token, collection, id, doc) {
   })
 }
 
+function richTextToPlainText(value) {
+  if (!value) return ''
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) return value.map(richTextToPlainText).filter(Boolean).join('\n')
+  if (typeof value === 'object') {
+    if (typeof value.text === 'string') return value.text
+    return Object.values(value).map(richTextToPlainText).filter(Boolean).join('\n')
+  }
+  return ''
+}
+
+function normalizeValue(value) {
+  return String(value || '')
+    .replaceAll('=', ' ')
+    .replaceAll('*', ' ')
+    .replaceAll('[', ' ')
+    .replaceAll(']', ' ')
+    .replaceAll('{', ' ')
+    .replaceAll('}', ' ')
+    .replaceAll('(', ' ')
+    .replaceAll(')', ' ')
+    .replaceAll('\r', ' ')
+    .replaceAll('\n', ' ')
+    .split(' ')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(' ')
+}
+
+function findHeadingValue(text, labels) {
+  const lines = String(text || '').split('\n')
+  for (const line of lines) {
+    const trimmed = line.trim()
+    for (const label of labels) {
+      const markerA = `${label}：`
+      const markerB = `${label}:`
+      const marker = trimmed.includes(markerA) ? markerA : trimmed.includes(markerB) ? markerB : ''
+      if (!marker) continue
+      const value = trimmed.slice(trimmed.indexOf(marker) + marker.length)
+      return normalizeValue(value)
+    }
+  }
+  return ''
+}
+
+function splitAliasText(value) {
+  let text = String(value || '')
+  for (const separator of ['、', ',', '，', ';', '；', '/', '／']) {
+    text = text.split(separator).join('|')
+  }
+  return text
+    .split('|')
+    .map(normalizeValue)
+    .filter(Boolean)
+}
+
+function arrayRowsToValues(rows) {
+  if (!Array.isArray(rows)) return []
+  return rows
+    .map((row) => (typeof row === 'string' ? row : row?.value))
+    .map(normalizeValue)
+    .filter(Boolean)
+}
+
+function valuesToArrayRows(values) {
+  const seen = new Set()
+  const output = []
+  for (const raw of values) {
+    const value = normalizeValue(raw)
+    if (!value) continue
+    const key = value.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    output.push({ value })
+  }
+  return output
+}
+
+function buildSearchText(parts) {
+  const seen = new Set()
+  const lines = []
+  for (const raw of parts.flat(Infinity)) {
+    const value = normalizeValue(raw)
+    if (!value) continue
+    const key = value.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    lines.push(value)
+  }
+  return lines.join('\n')
+}
+
+function inferRankFromLegacyPage(legacyXWikiPage) {
+  const fullName = String(legacyXWikiPage || '')
+  if (fullName.includes('AA级')) return 'AA'
+  for (const rank of ['S', 'A', 'B', 'C', 'D', 'E', 'F']) {
+    if (fullName.includes(`${rank}级`)) return rank
+  }
+  if (fullName.includes('垃圾级')) return 'trash'
+  return 'unknown'
+}
+
 function cleanDoc(collection, input) {
   const doc = { ...input }
 
-  // Keep this first import simple and direct. Relationship resolution and media uploads
-  // will be handled later after all base documents exist.
+  // Keep this import focused on base documents. Relationship resolution and media uploads
+  // will be handled after all base documents exist.
   delete doc.creators
   delete doc.tags
   delete doc.warnings
@@ -132,46 +234,110 @@ function cleanDoc(collection, input) {
   delete doc.profileImage
 
   if (collection === 'rules') {
+    const bodyText = richTextToPlainText(doc.body)
+    const searchText = doc.searchText || buildSearchText([
+      doc.title,
+      doc.category,
+      doc.legacyXWikiPage,
+      bodyText,
+    ])
+
     return {
       title: doc.title,
       slug: doc.slug,
       category: doc.category || 'principle',
+      isLiteVisible: doc.isLiteVisible ?? true,
+      isFullVisible: doc.isFullVisible ?? true,
       body: doc.body,
+      searchText,
       legacyXWikiPage: doc.legacyXWikiPage,
       status: doc.status || 'draft',
     }
   }
 
   if (collection === 'terms') {
+    const definitionText = richTextToPlainText(doc.definition)
+    const searchText = doc.searchText || buildSearchText([
+      doc.name,
+      doc.slug,
+      doc.legacyXWikiPage,
+      definitionText,
+    ])
+
     return {
       name: doc.name,
       slug: doc.slug,
+      isLiteVisible: doc.isLiteVisible ?? true,
+      isFullVisible: doc.isFullVisible ?? true,
       definition: doc.definition,
+      searchText,
       legacyXWikiPage: doc.legacyXWikiPage,
       status: doc.status || 'draft',
     }
   }
 
   if (collection === 'creators') {
+    const notesText = richTextToPlainText(doc.notes)
+    const existingAliases = arrayRowsToValues(doc.aliases)
+    const aliasesFromNotes = splitAliasText(findHeadingValue(notesText, ['别名', '其他名称']))
+    const aliases = valuesToArrayRows([...existingAliases, ...aliasesFromNotes])
+    const rank = doc.rank && doc.rank !== 'unknown' ? doc.rank : inferRankFromLegacyPage(doc.legacyXWikiPage)
+    const searchText = doc.searchText || buildSearchText([
+      doc.name,
+      aliases.map((item) => item.value),
+      rank,
+      doc.slug,
+      doc.legacyXWikiPage,
+      notesText,
+    ])
+
     return {
       name: doc.name,
       slug: doc.slug,
-      rank: doc.rank || 'unknown',
+      rank,
+      aliases,
+      isLiteVisible: doc.isLiteVisible ?? true,
+      isFullVisible: doc.isFullVisible ?? true,
       notes: doc.notes,
+      searchText,
       legacyXWikiPage: doc.legacyXWikiPage,
       status: doc.status || 'draft',
     }
   }
 
   if (collection === 'works') {
+    const summaryText = richTextToPlainText(doc.summary)
+    const analysisText = richTextToPlainText(doc.analysis)
+    const originalTitle = doc.originalTitle || findHeadingValue(summaryText, ['原名'])
+    const existingAliases = arrayRowsToValues(doc.aliases)
+    const aliasesFromSummary = splitAliasText(findHeadingValue(summaryText, ['其他名称', '别名']))
+    const aliases = valuesToArrayRows([...existingAliases, ...aliasesFromSummary])
+    const rank = doc.rank && doc.rank !== 'unknown' ? doc.rank : inferRankFromLegacyPage(doc.legacyXWikiPage)
+    const creatorHint = findHeadingValue(summaryText, ['作者', '开发商', '发行商', '出版社', '其他创作者'])
+    const searchText = doc.searchText || buildSearchText([
+      doc.title,
+      originalTitle,
+      aliases.map((item) => item.value),
+      creatorHint,
+      rank,
+      doc.slug,
+      doc.legacyXWikiPage,
+      summaryText,
+      analysisText,
+    ])
+
     return {
       title: doc.title,
       slug: doc.slug,
-      rank: doc.rank || 'unknown',
-      originalTitle: doc.originalTitle,
-      aliases: doc.aliases,
+      rank,
+      originalTitle,
+      aliases,
+      isLiteVisible: doc.isLiteVisible ?? true,
+      isFullVisible: doc.isFullVisible ?? true,
+      hasEvidence: doc.hasEvidence ?? false,
       summary: doc.summary,
       analysis: doc.analysis,
+      searchText,
       sourceLinks: doc.sourceLinks,
       legacyXWikiPage: doc.legacyXWikiPage,
       status: doc.status || 'draft',
