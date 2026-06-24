@@ -11,7 +11,9 @@
     "payload": "payload",
     "generate:importmap": "payload generate:importmap",
     "generate:types": "payload generate:types",
-    "dev:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev.ps1"
+    "dev:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev.ps1",
+    "import:xwiki:stage": "node scripts/import/xwiki-clean-to-seed.mjs",
+    "import:xwiki:seed": "node scripts/import/seed-payload.mjs"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "latest",
