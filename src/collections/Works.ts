@@ -130,6 +130,50 @@ export const Works: CollectionConfig = {
       ],
     },
     {
+      name: 'searchText',
+      type: 'textarea',
+      label: '搜索补充文本',
+      index: true,
+      admin: {
+        description: '用于搜索索引的补充文本。可放日文名、英文名、别名、作者名、关键词、旧站残留关键字等。',
+      },
+    },
+    {
+      name: 'isLiteVisible',
+      type: 'checkbox',
+      label: '进入 Lite 文字版',
+      defaultValue: true,
+      admin: {
+        description: '关闭后不进入低成本文字主站。',
+      },
+    },
+    {
+      name: 'isFullVisible',
+      type: 'checkbox',
+      label: '进入 Full 完整版',
+      defaultValue: true,
+      admin: {
+        description: '关闭后不进入完整归档/离线包。',
+      },
+    },
+    {
+      name: 'hasEvidence',
+      type: 'checkbox',
+      label: '有证据材料',
+      defaultValue: false,
+      admin: {
+        description: '用于提示 Full 版是否存在截图、附件或来源材料。',
+      },
+    },
+    {
+      name: 'evidenceNote',
+      type: 'textarea',
+      label: '证据备注',
+      admin: {
+        description: '先记录证据材料说明；后续可迁移到独立 evidence collection。',
+      },
+    },
+    {
       name: 'legacyXWikiPage',
       type: 'text',
       label: '旧 XWiki 页面',
