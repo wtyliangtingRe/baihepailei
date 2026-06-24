@@ -8,6 +8,15 @@
 *.7z
 *.rar
 
+# Local private working/archive directories
+old_data/
+_old_data/
+_repo/
+_audit_out/
+_audit_out_full_content/
+_clean_export/
+_clean_attachments/
+
 # XWiki / database backups
 baihepailei_data_backup/
 mysql-data*/
@@ -25,6 +34,14 @@ baihepailei_audit_out/
 exported_pages*/
 *.sqlite
 *.db
+
+# Local app runtime data
+postgres-data/
+media/
+.tmp/
+.cache/
+.next/
+node_modules/
 
 # Secrets
 .env
