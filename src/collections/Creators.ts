@@ -9,7 +9,7 @@ export const Creators: CollectionConfig = {
     plural: '创作者',
   },
   admin: {
-    defaultColumns: ['name', 'rank', 'isLiteVisible', 'isFullVisible', 'status', 'updatedAt'],
+    defaultColumns: ['name', 'rank', 'status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'name',
   },
@@ -55,18 +55,6 @@ export const Creators: CollectionConfig = {
       ],
     },
     {
-      name: 'isLiteVisible',
-      type: 'checkbox',
-      label: 'Lite 文字版可见',
-      defaultValue: true,
-    },
-    {
-      name: 'isFullVisible',
-      type: 'checkbox',
-      label: 'Full 完整版可见',
-      defaultValue: true,
-    },
-    {
       name: 'profileImage',
       type: 'upload',
       label: '头像/图片',
@@ -80,11 +68,23 @@ export const Creators: CollectionConfig = {
     {
       name: 'searchText',
       type: 'textarea',
-      label: '搜索文本',
+      label: '搜索补充文本',
+      index: true,
       admin: {
-        description: '用于生成搜索索引。可包含名称、别名、旧页面名、正文关键词等。',
-        rows: 6,
+        description: '用于搜索索引的补充文本。可放别名、社团名、旧名、作品关键词等。',
       },
+    },
+    {
+      name: 'isLiteVisible',
+      type: 'checkbox',
+      label: '进入 Lite 文字版',
+      defaultValue: true,
+    },
+    {
+      name: 'isFullVisible',
+      type: 'checkbox',
+      label: '进入 Full 完整版',
+      defaultValue: true,
     },
     {
       name: 'legacyXWikiPage',
