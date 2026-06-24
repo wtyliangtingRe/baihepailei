@@ -5,8 +5,8 @@ import { publishedOrSignedIn, trustedAndUp } from '@/access/roles'
 export const Rules: CollectionConfig = {
   slug: 'rules',
   admin: {
-    defaultColumns: ['title', 'status', 'updatedAt'],
-    group: 'Content',
+    defaultColumns: ['title', 'category', 'status', 'updatedAt'],
+    group: '内容',
     useAsTitle: 'title',
   },
   access: {
@@ -31,8 +31,31 @@ export const Rules: CollectionConfig = {
       unique: true,
     },
     {
+      name: 'category',
+      type: 'select',
+      defaultValue: 'principle',
+      required: true,
+      options: ['principle', 'ranking', 'editorial', 'migration'],
+    },
+    {
       name: 'body',
       type: 'richText',
+    },
+    {
+      name: 'relatedWarnings',
+      type: 'relationship',
+      relationTo: 'warnings',
+      hasMany: true,
+    },
+    {
+      name: 'relatedTags',
+      type: 'relationship',
+      relationTo: 'tags',
+      hasMany: true,
+    },
+    {
+      name: 'legacyXWikiPage',
+      type: 'text',
     },
     {
       name: 'status',

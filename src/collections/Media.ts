@@ -5,7 +5,7 @@ import { anyone, trustedAndUp } from '@/access/roles'
 export const Media: CollectionConfig = {
   slug: 'media',
   admin: {
-    group: 'Content',
+    group: '内容',
   },
   access: {
     create: trustedAndUp,
