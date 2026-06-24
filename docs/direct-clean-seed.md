@@ -80,15 +80,37 @@ By default, existing documents are skipped. To overwrite matching slugs, add:
 --update-existing
 ```
 
+## Backfill after schema changes
+
+After adding search and Lite/Full fields, run the importer with `--update-existing` to backfill the existing local documents:
+
+```powershell
+pnpm import:clean-seed -- `
+  --file "D:\0GitHubtest\Baihepailei\_clean_real_data\payload_seed_direct_v2_clean.json" `
+  --url "http://localhost:3000" `
+  --update-existing
+```
+
+This fills or refreshes:
+
+- `searchText`
+- `isLiteVisible`
+- `isFullVisible`
+- `hasEvidence`
+- `originalTitle`
+- `aliases`
+
+The importer tries to extract `originalTitle` and `aliases` from simple XWiki heading lines such as `原名：...` and `其他名称：...`.
+
 ## Current scope
 
-This direct seed only creates base documents.
+This direct seed only creates or updates base documents.
 
 It intentionally does not handle:
 
 - media attachment upload;
 - work-to-creator relationship resolution;
 - term/warning/tag relationship resolution;
-- XWiki syntax conversion beyond preserving raw text in rich text fields.
+- full XWiki syntax conversion beyond preserving raw text in rich text fields.
 
 Those can be handled after the content is visible and reviewable in Payload.

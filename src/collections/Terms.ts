@@ -9,7 +9,7 @@ export const Terms: CollectionConfig = {
     plural: '名词解释',
   },
   admin: {
-    defaultColumns: ['name', 'status', 'updatedAt'],
+    defaultColumns: ['name', 'isLiteVisible', 'isFullVisible', 'status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'name',
   },
@@ -37,9 +37,30 @@ export const Terms: CollectionConfig = {
       unique: true,
     },
     {
+      name: 'isLiteVisible',
+      type: 'checkbox',
+      label: 'Lite 文字版可见',
+      defaultValue: true,
+    },
+    {
+      name: 'isFullVisible',
+      type: 'checkbox',
+      label: 'Full 完整版可见',
+      defaultValue: true,
+    },
+    {
       name: 'definition',
       type: 'richText',
       label: '定义',
+    },
+    {
+      name: 'searchText',
+      type: 'textarea',
+      label: '搜索文本',
+      admin: {
+        description: '用于生成搜索索引。可包含名称、旧页面名、定义关键词等。',
+        rows: 6,
+      },
     },
     {
       name: 'examples',

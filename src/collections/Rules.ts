@@ -5,7 +5,7 @@ import { publishedOrSignedIn, trustedAndUp } from '@/access/roles'
 export const Rules: CollectionConfig = {
   slug: 'rules',
   admin: {
-    defaultColumns: ['title', 'category', 'status', 'updatedAt'],
+    defaultColumns: ['title', 'category', 'isLiteVisible', 'isFullVisible', 'status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'title',
   },
@@ -38,8 +38,29 @@ export const Rules: CollectionConfig = {
       options: ['principle', 'ranking', 'editorial', 'migration'],
     },
     {
+      name: 'isLiteVisible',
+      type: 'checkbox',
+      label: 'Lite 文字版可见',
+      defaultValue: true,
+    },
+    {
+      name: 'isFullVisible',
+      type: 'checkbox',
+      label: 'Full 完整版可见',
+      defaultValue: true,
+    },
+    {
       name: 'body',
       type: 'richText',
+    },
+    {
+      name: 'searchText',
+      type: 'textarea',
+      label: '搜索文本',
+      admin: {
+        description: '用于生成搜索索引。可包含标题、分类、旧页面名、规则正文关键词等。',
+        rows: 6,
+      },
     },
     {
       name: 'relatedWarnings',
