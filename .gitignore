@@ -1,0 +1,51 @@
+# Raw backups - NEVER commit
+*.sql
+*.sql.gz
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+*.rar
+
+# XWiki / database backups
+baihepailei_data_backup/
+mysql-data*/
+xwiki-data*/
+old-home-opt-root*/
+letsencrypt*/
+nginx-config*/
+docker-containers-config*/
+docker-core-metadata-no-overlay*/
+
+# Audit outputs may contain private content
+exports/
+audit_out/
+baihepailei_audit_out/
+exported_pages*/
+*.sqlite
+*.db
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+id_rsa*
+id_ed25519*
+known_hosts
+authorized_keys
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
