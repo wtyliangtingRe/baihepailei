@@ -6,7 +6,7 @@ export const Rules: CollectionConfig = {
   slug: 'rules',
   admin: {
     defaultColumns: ['title', 'category', 'status', 'updatedAt'],
-    group: 'Content',
+    group: '内容',
     useAsTitle: 'title',
   },
   access: {
