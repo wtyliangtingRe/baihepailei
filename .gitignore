@@ -35,6 +35,12 @@ exported_pages*/
 *.sqlite
 *.db
 
+# Local import outputs may contain private content
+data/staging/*
+data/seeds/*
+!data/staging/.gitkeep
+!data/seeds/.gitkeep
+
 # Local app runtime data
 postgres-data/
 media/
