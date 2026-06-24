@@ -9,6 +9,7 @@
     "build": "next build",
     "start": "next start",
     "payload": "payload",
+    "generate:importmap": "payload generate:importmap",
     "generate:types": "payload generate:types",
     "dev:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev.ps1"
   },
