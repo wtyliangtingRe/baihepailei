@@ -9,7 +9,7 @@ export const Works: CollectionConfig = {
     plural: '作品',
   },
   admin: {
-    defaultColumns: ['title', 'rank', 'status', 'updatedAt'],
+    defaultColumns: ['title', 'rank', 'isLiteVisible', 'isFullVisible', 'status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'title',
   },
@@ -62,6 +62,9 @@ export const Works: CollectionConfig = {
       name: 'originalTitle',
       type: 'text',
       label: '原名',
+      admin: {
+        description: '作品原始标题，例如日文、英文、韩文原名。',
+      },
     },
     {
       name: 'aliases',
@@ -74,6 +77,33 @@ export const Works: CollectionConfig = {
           label: '别名',
         },
       ],
+    },
+    {
+      name: 'isLiteVisible',
+      type: 'checkbox',
+      label: 'Lite 文字版可见',
+      defaultValue: true,
+      admin: {
+        description: '控制是否进入低成本文字主站。',
+      },
+    },
+    {
+      name: 'isFullVisible',
+      type: 'checkbox',
+      label: 'Full 完整版可见',
+      defaultValue: true,
+      admin: {
+        description: '控制是否进入完整离线/镜像版。',
+      },
+    },
+    {
+      name: 'hasEvidence',
+      type: 'checkbox',
+      label: '有证据材料',
+      defaultValue: false,
+      admin: {
+        description: '标记是否存在截图、附件、来源记录等证据材料。',
+      },
     },
     {
       name: 'creators',
@@ -111,6 +141,15 @@ export const Works: CollectionConfig = {
       name: 'analysis',
       type: 'richText',
       label: '分析',
+    },
+    {
+      name: 'searchText',
+      type: 'textarea',
+      label: '搜索文本',
+      admin: {
+        description: '用于生成搜索索引。可包含中文名、原名、别名、创作者、分级、正文关键词等。',
+        rows: 6,
+      },
     },
     {
       name: 'sourceLinks',
