@@ -63,6 +63,27 @@ export const Terms: CollectionConfig = {
       hasMany: true,
     },
     {
+      name: 'searchText',
+      type: 'textarea',
+      label: '搜索补充文本',
+      index: true,
+      admin: {
+        description: '用于搜索索引的补充文本。可放别名、英文缩写、旧站关键词等。',
+      },
+    },
+    {
+      name: 'isLiteVisible',
+      type: 'checkbox',
+      label: '进入 Lite 文字版',
+      defaultValue: true,
+    },
+    {
+      name: 'isFullVisible',
+      type: 'checkbox',
+      label: '进入 Full 完整版',
+      defaultValue: true,
+    },
+    {
       name: 'legacyXWikiPage',
       type: 'text',
       label: '旧 XWiki 页面',
