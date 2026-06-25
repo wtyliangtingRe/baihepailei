@@ -11,6 +11,19 @@ type CollectionIndexConfig = {
   description: string
 }
 
+const organizationTypeLabels: Record<string, string> = {
+  publisher: '出版社',
+  production_company: '制作公司',
+  animation_studio: '动画公司',
+  game_company: '游戏公司',
+  distributor: '发行商',
+  circle: '社团',
+  brand: '品牌',
+  platform: '平台',
+  committee: '制作委员会',
+  other: '其他机构',
+}
+
 function compactValues(values: string[] | undefined, limit = 3) {
   if (!Array.isArray(values)) return ''
   return values.filter(Boolean).slice(0, limit).join(' / ')
@@ -22,6 +35,11 @@ function displayRank(rank?: string) {
   return `${rank}级`
 }
 
+function organizationTypeLabel(value?: string) {
+  if (!value) return ''
+  return organizationTypeLabels[value] || value
+}
+
 function primaryMeta(item: SearchItem) {
   if (item.collection === 'works') {
     return displayRank(item.rank) || item.slug
@@ -29,6 +47,10 @@ function primaryMeta(item: SearchItem) {
 
   if (item.collection === 'creators') {
     return displayRank(item.rank) || item.slug
+  }
+
+  if (item.collection === 'organizations') {
+    return organizationTypeLabel(item.organizationType) || item.slug
   }
 
   if (item.collection === 'terms') {
@@ -46,6 +68,7 @@ function primaryMeta(item: SearchItem) {
 function secondaryMeta(item: SearchItem) {
   if (item.collection === 'works') return item.originalTitle || compactValues(item.creators)
   if (item.collection === 'creators') return compactValues(item.aliases)
+  if (item.collection === 'organizations') return compactValues(item.aliases)
   if (item.collection === 'terms') return compactValues(item.relatedWarnings)
   if (item.collection === 'rules') return compactValues(item.relatedWarnings)
   return ''
