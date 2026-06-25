@@ -43,6 +43,8 @@ type SearchResult = SearchItem & {
   score: number
 }
 
+const searchSuggestions = ['作品中文名或日文名', '作者 / 社团 / 制作组', 'S级、B级、D级等分级', '旧站关键词或别名']
+
 function indexModeLabel(mode: string) {
   if (mode === 'include-drafts') return '含草稿'
   if (mode === 'published') return '仅已发布'
@@ -141,7 +143,7 @@ export default function SearchClient() {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="例如：樱trick、タチ、MtF、B级、奈叶"
+          placeholder="例如：樱trick、タチ、分级、作者名"
         />
       </label>
 
@@ -169,7 +171,12 @@ export default function SearchClient() {
         {results.length === 0 ? (
           <div className="empty-state small">
             <h2>没有搜到</h2>
-            <p>可以试试作品简称、日文名、作者名、分级或旧站关键词。</p>
+            <p>可以换一个角度搜索，尤其是旧站内容可能存在简称、日文名或不同译名。</p>
+            <ul className="search-suggestions">
+              {searchSuggestions.map((suggestion) => (
+                <li key={suggestion}>{suggestion}</li>
+              ))}
+            </ul>
           </div>
         ) : (
           results.map((item) => (
