@@ -17,11 +17,14 @@ function valuesOf(value: string | string[] | boolean | undefined) {
   return value ? [value] : []
 }
 
-function FieldList({ fields }: { fields: Array<[string, string | string[] | boolean | undefined]> }) {
-  const visibleFields = fields
+function visibleFieldsOf(fields: Array<[string, string | string[] | boolean | undefined]>) {
+  return fields
     .map(([label, value]) => [label, valuesOf(value)] as const)
     .filter(([, values]) => values.length > 0)
+}
 
+function FieldList({ fields }: { fields: Array<[string, string | string[] | boolean | undefined]> }) {
+  const visibleFields = visibleFieldsOf(fields)
   if (visibleFields.length === 0) return null
 
   return (
@@ -33,6 +36,31 @@ function FieldList({ fields }: { fields: Array<[string, string | string[] | bool
         </div>
       ))}
     </dl>
+  )
+}
+
+function BasicInfo({ item }: { item: DetailItem }) {
+  const fields: Array<[string, string | string[] | boolean | undefined]> = [
+    ['原名', item.originalTitle],
+    ['别名', item.aliases],
+    ['创作者', item.creators],
+    ['标签', item.tags],
+    ['注意点', item.warnings],
+    ['相关名词', item.relatedTerms],
+    ['相关注意点', item.relatedWarnings],
+    ['相关标签', item.relatedTags],
+    ['相关作品', item.examples],
+    ['证据备注', item.evidenceNote],
+    ['状态', item.status],
+  ]
+
+  if (visibleFieldsOf(fields).length === 0) return null
+
+  return (
+    <section className="detail-card">
+      <h2>基础信息</h2>
+      <FieldList fields={fields} />
+    </section>
   )
 }
 
@@ -62,7 +90,7 @@ function RichTextSections({ item }: { item: DetailItem }) {
     return (
       <section className="detail-card">
         <h2>正文</h2>
-        <p className="muted">暂无正文详情。可以先重新生成 detail-index.json，或继续查看 Lite 搜索文本预览。</p>
+        <p className="muted">暂无正文详情。请重新生成 detail-index.json 后再查看。</p>
       </section>
     )
   }
@@ -101,25 +129,7 @@ export default function DetailIndexDetail({ item }: { item: DetailItem }) {
         </div>
       </section>
 
-      <section className="detail-card">
-        <h2>基础信息</h2>
-        <FieldList
-          fields={[
-            ['原名', item.originalTitle],
-            ['别名', item.aliases],
-            ['创作者', item.creators],
-            ['标签', item.tags],
-            ['注意点', item.warnings],
-            ['相关名词', item.relatedTerms],
-            ['相关注意点', item.relatedWarnings],
-            ['相关标签', item.relatedTags],
-            ['相关作品', item.examples],
-            ['证据备注', item.evidenceNote],
-            ['状态', item.status],
-          ]}
-        />
-      </section>
-
+      <BasicInfo item={item} />
       <RichTextSections item={item} />
       <SourceLinks item={item} />
     </main>
