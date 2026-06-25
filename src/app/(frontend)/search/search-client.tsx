@@ -44,6 +44,7 @@ type SearchResult = SearchItem & {
 }
 
 const searchSuggestions = ['作品中文名或日文名', '作者 / 社团 / 制作组', 'S级、B级、D级等分级', '旧站关键词或别名']
+const validCollections = new Set(['all', 'works', 'creators', 'terms', 'rules'])
 
 function indexModeLabel(mode: string) {
   if (mode === 'include-drafts') return '含草稿'
@@ -79,6 +80,15 @@ export default function SearchClient() {
   const [activeCollection, setActiveCollection] = useState('all')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const initialQuery = params.get('q')?.trim() || ''
+    const initialCollection = params.get('collection') || 'all'
+
+    if (initialQuery) setQuery(initialQuery)
+    if (validCollections.has(initialCollection)) setActiveCollection(initialCollection)
+  }, [])
 
   useEffect(() => {
     let isMounted = true
