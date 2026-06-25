@@ -7,10 +7,21 @@ function read(path) {
 }
 
 const styles = read('src/app/(frontend)/styles.css')
+const homePage = read('src/app/(frontend)/page.tsx')
 const worksPage = read('src/app/(frontend)/works/page.tsx')
 const detailIndexDetail = read('src/app/(frontend)/_components/DetailIndexDetail.tsx')
 const searchIndexDetail = read('src/app/(frontend)/_components/SearchIndexDetail.tsx')
 const searchClient = read('src/app/(frontend)/search/search-client.tsx')
+
+test('homepage shows search index counts when available', () => {
+  assert.match(homePage, /import \{ readSearchIndex \} from '\.\/_lib\/search-index'/)
+  assert.match(homePage, /const index = readSearchIndex\(\)/)
+  assert.match(homePage, /当前收录 \$\{index\.total\} 条/)
+  assert.match(homePage, /生成索引后显示条目数/)
+  assert.match(homePage, /countLabel\(index\?\.counts\?\.\[section\.kind\]\)/)
+  assert.match(styles, /\.home-stats\s*\{/)
+  assert.match(styles, /\.home-section-card-header\s*\{/)
+})
 
 test('works page includes a rank explanation section', () => {
   assert.match(worksPage, /aria-label="排雷分级说明"/)
