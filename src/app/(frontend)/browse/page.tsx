@@ -21,6 +21,14 @@ const sections = [
     actionLabel: '浏览创作者',
   },
   {
+    kind: 'organizations',
+    href: '/organizations',
+    eyebrow: '机构',
+    title: '机构',
+    description: '查看出版社、制作公司、平台、品牌、制作委员会等机构资料。',
+    actionLabel: '浏览机构',
+  },
+  {
     kind: 'terms',
     href: '/terms',
     eyebrow: '名词解释',
