@@ -10,9 +10,13 @@ const worksPage = read('src/app/(frontend)/works/page.tsx')
 const styles = read('src/app/(frontend)/styles.css')
 
 test('works page maps legacy AA rank to S for frontend labels and anchors', () => {
-  assert.match(worksPage, /if \(rank === 'AA'\) return 'S级'/)
-  assert.match(worksPage, /if \(rank === 'AA'\) return 'rank-s'/)
-  assert.doesNotMatch(worksPage, /return `\$\{rank\}级`[\s\S]*if \(rank === 'AA'\)/)
+  const rankLabelBody = worksPage.match(/function rankLabel[\s\S]*?\n}/)?.[0] || ''
+  const rankAnchorBody = worksPage.match(/function rankAnchor[\s\S]*?\n}/)?.[0] || ''
+
+  assert.match(rankLabelBody, /if \(rank === 'AA'\) return 'S级'/)
+  assert.match(rankLabelBody, /return `\$\{rank\}级`/)
+  assert.ok(rankLabelBody.indexOf("if (rank === 'AA') return 'S级'") < rankLabelBody.indexOf('return `${rank}级`'))
+  assert.match(rankAnchorBody, /if \(rank === 'AA'\) return 'rank-s'/)
 })
 
 test('works page keeps rank order, grouped sections, and rank jump navigation', () => {
@@ -22,7 +26,7 @@ test('works page keeps rank order, grouped sections, and rank jump navigation', 
   assert.match(worksPage, /id=\{rankAnchor\(group\.rank\)\}/)
 })
 
-test('works rank groups include return links to the rank navigation', () => {
+test('works rank groups include return links after the group heading', () => {
   assert.match(worksPage, /className="rank-group-actions"/)
   assert.match(worksPage, /href="#works-rank-nav"/)
   assert.match(worksPage, /返回分级导航/)
