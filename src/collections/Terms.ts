@@ -77,8 +77,10 @@ export const Terms: CollectionConfig = {
     {
       name: 'searchText',
       type: 'textarea',
-      label: 'Search text',
-      index: true,
+      label: '搜索补充文本',
+      admin: {
+        description: '用于导出前台搜索索引的补充文本，不在数据库中建立 btree 索引。',
+      },
     },
     {
       name: 'legacyXWikiPage',

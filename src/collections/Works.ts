@@ -163,9 +163,8 @@ export const Works: CollectionConfig = {
       name: 'searchText',
       type: 'textarea',
       label: '搜索补充文本',
-      index: true,
       admin: {
-        description: '用于搜索索引的补充文本。可放日文名、英文名、别名、作者名、关键词、旧站残留关键字等。',
+        description: '用于导出前台搜索索引的补充文本，不在数据库中建立 btree 索引。可放日文名、英文名、别名、作者名、关键词、旧站残留关键字等。',
       },
     },
     {
