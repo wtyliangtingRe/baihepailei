@@ -314,13 +314,31 @@ h1 {
   font-size: clamp(26px, 4vw, 42px);
 }
 
-.rank-group-heading span {
+.rank-group-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.rank-group-actions span,
+.rank-group-actions a {
   padding: 6px 11px;
   border: 1px solid #333;
   border-radius: 999px;
   color: #aaa;
   background: #141414;
   white-space: nowrap;
+}
+
+.rank-group-actions a {
+  color: #ffb5d7;
+  text-decoration: none;
+}
+
+.rank-group-actions a:hover {
+  border-color: #ffb5d7;
 }
 
 .search-panel {
@@ -627,6 +645,10 @@ h1 {
   .rank-group-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .rank-group-actions {
+    justify-content: flex-start;
   }
 
   .detail-fields div {
