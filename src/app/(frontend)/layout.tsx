@@ -21,7 +21,7 @@ const navItems = [
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-CN">
+    <html data-scroll-behavior="smooth" lang="zh-CN">
       <body>
         <div className="site-shell">
           <header className="site-header">
