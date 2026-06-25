@@ -9,6 +9,7 @@ function read(path) {
 const layout = read('src/app/(frontend)/layout.tsx')
 const homePage = read('src/app/(frontend)/page.tsx')
 const browsePage = read('src/app/(frontend)/browse/page.tsx')
+const legacyBrowsePage = read('src/app/(frontend)/browse/[kind]/page.tsx')
 const searchPage = read('src/app/(frontend)/search/page.tsx')
 const worksPage = read('src/app/(frontend)/works/page.tsx')
 const creatorsPage = read('src/app/(frontend)/creators/page.tsx')
@@ -74,6 +75,20 @@ test('browse cards use Chinese labels and actions instead of route text', () => 
   assert.doesNotMatch(browsePage, /eyebrow: 'Terms'/)
   assert.doesNotMatch(browsePage, /eyebrow: 'Rules'/)
   assert.doesNotMatch(browsePage, />\s*\{section\.href\}\s*</)
+})
+
+test('legacy browse collection routes redirect to canonical short routes', () => {
+  assert.match(legacyBrowsePage, /import \{ notFound, redirect \} from 'next\/navigation'/)
+  assert.match(legacyBrowsePage, /works: '\/works'/)
+  assert.match(legacyBrowsePage, /creators: '\/creators'/)
+  assert.match(legacyBrowsePage, /terms: '\/terms'/)
+  assert.match(legacyBrowsePage, /rules: '\/rules'/)
+  assert.match(legacyBrowsePage, /redirect\(path\)/)
+
+  assert.doesNotMatch(legacyBrowsePage, />\s*Search\s*</)
+  assert.doesNotMatch(legacyBrowsePage, />\s*Works\s*</)
+  assert.doesNotMatch(legacyBrowsePage, /entries/)
+  assert.doesNotMatch(legacyBrowsePage, />\s*\{item\.url\}\s*</)
 })
 
 test('collection page eyebrows use Chinese labels', () => {
