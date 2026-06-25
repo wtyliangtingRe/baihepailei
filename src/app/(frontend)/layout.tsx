@@ -3,6 +3,7 @@ import Link from 'next/link'
 import React from 'react'
 
 import './styles.css'
+import './covers.css'
 
 export const metadata: Metadata = {
   title: 'Baihepailei',
