@@ -29,7 +29,7 @@ export default function BrowsePage() {
               <p>{index.counts[kind] || 0} entries</p>
             </div>
             <h2>{label}</h2>
-            <Link className="result-link" href={`/browse/${kind}`}>/browse/{kind}</Link>
+            <Link className="result-link" href={`/${kind}`}>/{kind}</Link>
           </article>
         ))}
       </section>
