@@ -26,7 +26,7 @@ test('works page keeps rank order, grouped sections, and rank jump navigation', 
   assert.match(worksPage, /id=\{rankAnchor\(group\.rank\)\}/)
 })
 
-test('works rank groups include return links after the group heading', () => {
+test('works rank groups include return links to the rank navigation', () => {
   assert.match(worksPage, /className="rank-group-actions"/)
   assert.match(worksPage, /href="#works-rank-nav"/)
   assert.match(worksPage, /返回分级导航/)
