@@ -8,6 +8,14 @@ export type DetailSourceLink = {
   url?: string
 }
 
+export type DetailCoverImage = {
+  url?: string
+  alt?: string
+  filename?: string
+  width?: number
+  height?: number
+}
+
 export type DetailRichTextSection = {
   key: string
   label: string
@@ -34,6 +42,7 @@ export type DetailItem = {
   relatedTags?: string[]
   examples?: string[]
   legacyXWikiPage?: string
+  cover?: DetailCoverImage
   hasEvidence?: boolean
   evidenceNote?: string
   sourceLinks?: DetailSourceLink[]
