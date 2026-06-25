@@ -5,7 +5,7 @@ const sections = [
     href: '/works',
     eyebrow: '作品',
     title: '作品',
-    description: '浏览 Lite 索引里的作品条目，后续会逐步升级为完整正文详情页。',
+    description: '浏览轻量索引里的作品条目，后续会逐步升级为完整正文详情页。',
   },
   {
     href: '/creators',
@@ -32,7 +32,7 @@ export default function HomePage() {
     <main className="home">
       <div className="home-stack">
         <section className="hero">
-          <p className="eyebrow">Baihepailei Lite</p>
+          <p className="eyebrow">百合排雷 · 轻量版</p>
           <h1>百合作品排雷资料库</h1>
           <p>
             这里会重做为结构化资料站：作品、创作者、名词解释和排雷规则都在 Payload 后台维护，前台优先提供轻量文字浏览与快速搜索。
@@ -45,7 +45,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="home-section-grid" aria-label="Lite 资料分类">
+        <section className="home-section-grid" aria-label="轻量资料分类">
           {sections.map((section) => (
             <Link className="home-section-card" href={section.href} key={section.href}>
               <p>{section.eyebrow}</p>
