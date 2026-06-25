@@ -11,6 +11,12 @@ function collectionLabel(collection: string) {
   return collection
 }
 
+function displayRank(rank?: string) {
+  if (!rank || rank === 'unknown') return ''
+  if (rank === 'AA') return 'S级'
+  return `${rank}级`
+}
+
 function valuesOf(value: string | string[] | boolean | undefined) {
   if (Array.isArray(value)) return value.filter(Boolean)
   if (typeof value === 'boolean') return value ? ['是'] : []
@@ -108,6 +114,8 @@ function RichTextSections({ item }: { item: DetailItem }) {
 }
 
 export default function DetailIndexDetail({ item }: { item: DetailItem }) {
+  const rank = displayRank(item.rank)
+
   return (
     <main className="page detail-page">
       <section className="detail-hero">
@@ -122,7 +130,7 @@ export default function DetailIndexDetail({ item }: { item: DetailItem }) {
         <p className="eyebrow">{collectionLabel(item.collection)}</p>
         <h1>{item.title}</h1>
         <div className="detail-chips">
-          {item.rank && item.rank !== 'unknown' ? <span>{item.rank}级</span> : null}
+          {rank ? <span>{rank}</span> : null}
           {item.category ? <span>{item.category}</span> : null}
           {item.hasEvidence ? <span>有证据材料</span> : null}
         </div>
