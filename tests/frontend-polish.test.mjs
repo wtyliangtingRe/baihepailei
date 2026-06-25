@@ -10,6 +10,10 @@ const layout = read('src/app/(frontend)/layout.tsx')
 const homePage = read('src/app/(frontend)/page.tsx')
 const browsePage = read('src/app/(frontend)/browse/page.tsx')
 const searchPage = read('src/app/(frontend)/search/page.tsx')
+const worksPage = read('src/app/(frontend)/works/page.tsx')
+const creatorsPage = read('src/app/(frontend)/creators/page.tsx')
+const termsPage = read('src/app/(frontend)/terms/page.tsx')
+const rulesPage = read('src/app/(frontend)/rules/page.tsx')
 const detailIndexDetail = read('src/app/(frontend)/_components/DetailIndexDetail.tsx')
 const searchIndexDetail = read('src/app/(frontend)/_components/SearchIndexDetail.tsx')
 const searchClient = read('src/app/(frontend)/search/search-client.tsx')
@@ -56,6 +60,18 @@ test('browse cards use Chinese labels and actions instead of route text', () => 
   assert.doesNotMatch(browsePage, /eyebrow: 'Terms'/)
   assert.doesNotMatch(browsePage, /eyebrow: 'Rules'/)
   assert.doesNotMatch(browsePage, />\s*\{section\.href\}\s*</)
+})
+
+test('collection page eyebrows use Chinese labels', () => {
+  assert.match(worksPage, />\s*作品\s*</)
+  assert.match(creatorsPage, /eyebrow="创作者"/)
+  assert.match(termsPage, /eyebrow="名词解释"/)
+  assert.match(rulesPage, /eyebrow="排雷规则"/)
+
+  assert.doesNotMatch(worksPage, />\s*works\s*</)
+  assert.doesNotMatch(creatorsPage, /eyebrow="creators"/)
+  assert.doesNotMatch(termsPage, /eyebrow="terms"/)
+  assert.doesNotMatch(rulesPage, /eyebrow="rules"/)
 })
 
 test('search page and result links use user-facing Chinese labels', () => {
