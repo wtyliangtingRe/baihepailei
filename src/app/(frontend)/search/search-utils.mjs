@@ -2,6 +2,7 @@ export const collectionLabels = {
   works: '作品',
   creators: '创作者',
   organizations: '机构',
+  evidence: '证据材料',
   terms: '名词解释',
   rules: '规则',
 }
@@ -51,12 +52,16 @@ export function scoreItem(item, query) {
   const legacy = normalizeText(item.legacyXWikiPage)
   const category = normalizeText(item.category)
   const organizationType = normalizeText(item.organizationType)
+  const evidenceType = normalizeText(item.evidenceType)
   const typeLabel = normalizeText(item.typeLabel)
   const searchText = normalizeText(item.searchText)
 
   const aliases = normalizedValues(item.aliases)
   const creators = normalizedValues(item.creators)
   const organizations = normalizedValues(item.organizations)
+  const relatedWorks = normalizedValues(item.relatedWorks)
+  const relatedCreators = normalizedValues(item.relatedCreators)
+  const relatedOrganizations = normalizedValues(item.relatedOrganizations)
   const tags = normalizedValues(item.tags)
   const warnings = normalizedValues(item.warnings)
   const relatedTerms = normalizedValues(item.relatedTerms)
@@ -74,6 +79,9 @@ export function scoreItem(item, query) {
     score += addExactOrPartialScore(aliases, term, 110, 55)
     score += addExactOrPartialScore(creators, term, 80, 40)
     score += addExactOrPartialScore(organizations, term, 70, 35)
+    score += addExactOrPartialScore(relatedWorks, term, 70, 35)
+    score += addExactOrPartialScore(relatedCreators, term, 70, 35)
+    score += addExactOrPartialScore(relatedOrganizations, term, 70, 35)
     score += addExactOrPartialScore(tags, term, 60, 30)
     score += addExactOrPartialScore(warnings, term, 60, 30)
     score += addExactOrPartialScore(relatedTerms, term, 55, 28)
@@ -81,6 +89,7 @@ export function scoreItem(item, query) {
 
     if (category.includes(term)) score += 24
     if (organizationType.includes(term)) score += 24
+    if (evidenceType.includes(term)) score += 24
     if (typeLabel.includes(term)) score += 20
     if (slug.includes(term)) score += 18
     if (legacy.includes(term)) score += 12
@@ -119,6 +128,7 @@ export function resultMeta(item) {
   const rank = displayRank(item.rank)
   if (rank) parts.push(rank)
   if (item.organizationType) parts.push(item.organizationType)
+  if (item.evidenceType) parts.push(item.evidenceType)
   if (item.category) parts.push(item.category)
   return parts.filter(Boolean).join(' · ')
 }
@@ -129,6 +139,9 @@ export function resultSummary(item) {
     ...(item.aliases || []),
     ...(item.creators || []),
     ...(item.organizations || []),
+    ...(item.relatedWorks || []),
+    ...(item.relatedCreators || []),
+    ...(item.relatedOrganizations || []),
     ...(item.tags || []),
     ...(item.warnings || []),
     ...(item.relatedTerms || []),
