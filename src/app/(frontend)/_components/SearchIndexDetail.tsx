@@ -2,9 +2,23 @@ import Link from 'next/link'
 
 import type { SearchItem } from '../_lib/search-index'
 
+const organizationTypeLabels: Record<string, string> = {
+  publisher: '出版社',
+  production_company: '制作公司',
+  animation_studio: '动画公司',
+  game_company: '游戏公司',
+  distributor: '发行商',
+  circle: '社团',
+  brand: '品牌',
+  platform: '平台',
+  committee: '制作委员会',
+  other: '其他机构',
+}
+
 function collectionLabel(collection: string) {
   if (collection === 'works') return '作品'
   if (collection === 'creators') return '创作者'
+  if (collection === 'organizations') return '机构'
   if (collection === 'terms') return '名词解释'
   if (collection === 'rules') return '排雷规则'
   return collection
@@ -18,6 +32,11 @@ function displayRank(rank?: string) {
   if (!rank || rank === 'unknown') return ''
   if (rank === 'AA') return 'S级'
   return `${rank}级`
+}
+
+function organizationTypeLabel(value?: string) {
+  if (!value) return ''
+  return organizationTypeLabels[value] || value
 }
 
 function compactLines(text: string) {
@@ -55,6 +74,7 @@ function FieldList({ fields }: { fields: Array<[string, string | string[] | unde
 
 function BasicInfo({ item }: { item: SearchItem }) {
   const fields: Array<[string, string | string[] | undefined]> = [
+    ['机构类型', organizationTypeLabel(item.organizationType)],
     ['原名', item.originalTitle],
     ['别名', item.aliases],
     ['创作者', item.creators],
@@ -76,6 +96,7 @@ function BasicInfo({ item }: { item: SearchItem }) {
 
 export default function SearchIndexDetail({ item }: { item: SearchItem }) {
   const rank = displayRank(item.rank)
+  const organizationType = organizationTypeLabel(item.organizationType)
   const searchLines = compactLines(item.searchText)
 
   return (
@@ -93,6 +114,7 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
         <h1>{item.title}</h1>
         <div className="detail-chips">
           {rank ? <span>{rank}</span> : null}
+          {organizationType ? <span>{organizationType}</span> : null}
           {item.category ? <span>{item.category}</span> : null}
         </div>
       </section>
