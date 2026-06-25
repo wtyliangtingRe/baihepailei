@@ -39,28 +39,19 @@ export const Terms: CollectionConfig = {
     {
       name: 'isLiteVisible',
       type: 'checkbox',
-      label: 'Lite 文字版可见',
+      label: '进入 Lite 文字版',
       defaultValue: true,
     },
     {
       name: 'isFullVisible',
       type: 'checkbox',
-      label: 'Full 完整版可见',
+      label: '进入 Full 完整版',
       defaultValue: true,
     },
     {
       name: 'definition',
       type: 'richText',
       label: '定义',
-    },
-    {
-      name: 'searchText',
-      type: 'textarea',
-      label: '搜索文本',
-      admin: {
-        description: '用于生成搜索索引。可包含名称、旧页面名、定义关键词等。',
-        rows: 6,
-      },
     },
     {
       name: 'examples',
@@ -86,23 +77,8 @@ export const Terms: CollectionConfig = {
     {
       name: 'searchText',
       type: 'textarea',
-      label: '搜索补充文本',
+      label: 'Search text',
       index: true,
-      admin: {
-        description: '用于搜索索引的补充文本。可放别名、英文缩写、旧站关键词等。',
-      },
-    },
-    {
-      name: 'isLiteVisible',
-      type: 'checkbox',
-      label: '进入 Lite 文字版',
-      defaultValue: true,
-    },
-    {
-      name: 'isFullVisible',
-      type: 'checkbox',
-      label: '进入 Full 完整版',
-      defaultValue: true,
     },
     {
       name: 'legacyXWikiPage',
