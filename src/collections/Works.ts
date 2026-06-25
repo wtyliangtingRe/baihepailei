@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, CollectionSlug } from 'payload'
 
 import { publishedOrSignedIn, trustedAndUp } from '@/access/roles'
 
@@ -124,7 +124,7 @@ export const Works: CollectionConfig = {
           name: 'organization',
           type: 'relationship',
           label: '机构',
-          relationTo: 'organizations',
+          relationTo: 'organizations' as CollectionSlug,
           required: true,
         },
         {
