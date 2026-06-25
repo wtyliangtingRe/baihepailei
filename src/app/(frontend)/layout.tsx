@@ -5,8 +5,8 @@ import React from 'react'
 import './styles.css'
 
 export const metadata: Metadata = {
-  title: '百合作品排雷',
-  description: '百合作品、创作者、术语和排雷规则资料库。',
+  title: 'Baihepailei',
+  description: 'A structured reference database.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -16,11 +16,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="site-shell">
           <header className="site-header">
             <Link className="site-title" href="/">
-              百合作品排雷
+              Baihepailei
             </Link>
-            <nav className="site-nav" aria-label="主导航">
-              <Link href="/search">搜索</Link>
-              <Link href="/admin">后台</Link>
+            <nav className="site-nav" aria-label="Main navigation">
+              <Link href="/works">Works</Link>
+              <Link href="/search">Search</Link>
+              <Link href="/admin">Admin</Link>
             </nav>
           </header>
           {children}
