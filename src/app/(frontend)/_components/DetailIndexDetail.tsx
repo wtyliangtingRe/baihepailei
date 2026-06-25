@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 import type { DetailCoverImage, DetailItem } from '../_lib/detail-index'
+import ContentCallout, { type ContentCalloutItem } from './ContentCallout'
 import RichTextRenderer from './RichTextRenderer'
 
 type ExtendedDetailItem = DetailItem & {
@@ -13,6 +14,7 @@ type ExtendedDetailItem = DetailItem & {
   relatedWorks?: string[]
   relatedCreators?: string[]
   relatedOrganizations?: string[]
+  callouts?: ContentCalloutItem[]
 }
 
 const organizationTypeLabels: Record<string, string> = {
@@ -181,6 +183,19 @@ function EvidenceImage({ image, title }: { image?: DetailCoverImage; title: stri
   )
 }
 
+function DetailCallouts({ item }: { item: DetailItem }) {
+  const callouts = ((item as ExtendedDetailItem).callouts || []).filter(Boolean)
+  if (callouts.length === 0) return null
+
+  return (
+    <section className="detail-callouts" aria-label="图文提示块">
+      {callouts.map((callout, index) => (
+        <ContentCallout callout={callout} key={callout.id || `${callout.title || 'callout'}-${index}`} />
+      ))}
+    </section>
+  )
+}
+
 function RelatedEvidence({ evidence }: { evidence: DetailItem[] }) {
   if (evidence.length === 0) return null
 
@@ -290,6 +305,7 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
       </section>
 
       <BasicInfo item={item} />
+      <DetailCallouts item={item} />
       <RelatedEvidence evidence={relatedEvidence} />
       <RelatedWorks works={relatedWorks} />
       <RichTextSections item={item} />
