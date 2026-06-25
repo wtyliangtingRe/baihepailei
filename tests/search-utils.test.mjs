@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  displayRank,
   filterAndRankItems,
   getCollectionLabel,
   resultMeta,
@@ -59,6 +60,12 @@ test('getCollectionLabel returns labels and falls back to raw collection names',
   assert.equal(getCollectionLabel('unknown'), 'unknown')
 })
 
+test('displayRank maps legacy AA rank to S for frontend display', () => {
+  assert.equal(displayRank('AA'), 'S级')
+  assert.equal(displayRank('B'), 'B级')
+  assert.equal(displayRank('unknown'), '')
+})
+
 test('scoreItem gives title and alias matches a stronger score than body-only matches', () => {
   const titleScore = scoreItem(work, '樱trick')
   const bodyScore = scoreItem(work, '校园')
@@ -99,6 +106,7 @@ test('resultMeta and resultSummary produce compact display strings without legac
   const summary = resultSummary(work)
 
   assert.equal(resultMeta(work), '作品 · B级')
+  assert.equal(resultMeta({ ...work, rank: 'AA' }), '作品 · S级')
   assert.match(summary, /桜Trick/)
   assert.match(summary, /タチ/)
   assert.doesNotMatch(summary, /Main\.作品/)
