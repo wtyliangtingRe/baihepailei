@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "kind": "demo-fixture",
+    "description": "Safe fake content for local development. All slugs start with demo- and should not be mixed with real migrated XWiki data."
+  },
+  "creators": [
+    {
+      "name": "Demo 作者 A",
+      "slug": "demo-creator-a",
+      "rank": "A",
+      "aliases": [{ "value": "测试作者 A" }],
+      "searchText": "demo fake creator author writer 测试作者A",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "name": "Demo 画师 B",
+      "slug": "demo-creator-b",
+      "rank": "B",
+      "aliases": [{ "value": "测试画师 B" }],
+      "searchText": "demo fake creator illustrator 测试画师B",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "name": "Demo 剧本 C",
+      "slug": "demo-creator-c",
+      "rank": "unknown",
+      "aliases": [{ "value": "测试剧本 C" }],
+      "searchText": "demo fake creator scenario writer 测试剧本C",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    }
+  ],
+  "organizations": [
+    {
+      "name": "Demo 百合出版社",
+      "slug": "demo-org-publisher",
+      "type": "publisher",
+      "aliases": [{ "value": "测试出版社" }],
+      "sourceLinks": [{ "label": "Demo 官网", "url": "https://example.invalid/demo-publisher" }],
+      "searchText": "demo fake organization publisher 测试出版社",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "name": "Demo 动画工房",
+      "slug": "demo-org-studio",
+      "type": "animation_studio",
+      "aliases": [{ "value": "测试动画公司" }],
+      "sourceLinks": [{ "label": "Demo 官网", "url": "https://example.invalid/demo-studio" }],
+      "searchText": "demo fake organization animation studio 测试动画公司",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "name": "Demo 青空平台",
+      "slug": "demo-org-platform",
+      "type": "platform",
+      "aliases": [{ "value": "测试平台" }],
+      "sourceLinks": [{ "label": "Demo 页面", "url": "https://example.invalid/demo-platform" }],
+      "searchText": "demo fake organization platform 测试平台",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    }
+  ],
+  "works": [
+    {
+      "title": "Demo 百合花园的约定",
+      "slug": "demo-work-garden-promise",
+      "rank": "A",
+      "originalTitle": "Demo Garden Promise",
+      "aliases": [{ "value": "测试花园约定" }],
+      "creators": ["demo-creator-a", "demo-creator-b"],
+      "organizations": [
+        { "organization": "demo-org-publisher", "role": "publisher", "note": "Demo 出版方" },
+        { "organization": "demo-org-platform", "role": "platform", "note": "Demo 连载平台" }
+      ],
+      "hasEvidence": true,
+      "sourceLinks": [{ "label": "Demo 作品页", "url": "https://example.invalid/demo-work-garden-promise" }],
+      "searchText": "demo fake work garden promise 作者A 画师B 出版社 平台",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "title": "Demo 星灯动画计划",
+      "slug": "demo-work-star-lamp-anime",
+      "rank": "B",
+      "originalTitle": "Demo Star Lamp Anime",
+      "aliases": [{ "value": "测试星灯动画" }],
+      "creators": ["demo-creator-c"],
+      "organizations": [
+        { "organization": "demo-org-studio", "role": "animation_studio", "note": "Demo 动画制作" },
+        { "organization": "demo-org-platform", "role": "platform", "note": "Demo 播放平台" }
+      ],
+      "hasEvidence": true,
+      "sourceLinks": [{ "label": "Demo 动画页", "url": "https://example.invalid/demo-work-star-lamp-anime" }],
+      "searchText": "demo fake work anime studio platform 星灯动画",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "title": "Demo 雨后社团短篇集",
+      "slug": "demo-work-after-rain-circle",
+      "rank": "C",
+      "originalTitle": "Demo After Rain Circle Stories",
+      "aliases": [{ "value": "测试雨后短篇" }],
+      "creators": ["demo-creator-a"],
+      "organizations": [
+        { "organization": "demo-org-publisher", "role": "publisher", "note": "Demo 单行本发行" }
+      ],
+      "hasEvidence": false,
+      "sourceLinks": [{ "label": "Demo 介绍页", "url": "https://example.invalid/demo-work-after-rain-circle" }],
+      "searchText": "demo fake work short stories publisher 雨后短篇",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    }
+  ],
+  "evidence": [
+    {
+      "title": "Demo 花园约定证据 A",
+      "slug": "demo-evidence-garden-a",
+      "evidenceType": "official_page",
+      "relatedWorks": ["demo-work-garden-promise"],
+      "relatedCreators": ["demo-creator-a"],
+      "relatedOrganizations": ["demo-org-publisher"],
+      "description": "这是用于开发测试的假证据条目，不对应真实作品或真实截图。",
+      "sourceLinks": [{ "label": "Demo 来源", "url": "https://example.invalid/demo-evidence-garden-a" }],
+      "capturedAt": "2026-01-01T00:00:00.000Z",
+      "isPublic": true,
+      "searchText": "demo fake evidence official page 花园约定",
+      "status": "confirmed"
+    },
+    {
+      "title": "Demo 星灯动画证据 B",
+      "slug": "demo-evidence-star-lamp-b",
+      "evidenceType": "platform_page",
+      "relatedWorks": ["demo-work-star-lamp-anime"],
+      "relatedCreators": ["demo-creator-c"],
+      "relatedOrganizations": ["demo-org-studio", "demo-org-platform"],
+      "description": "这是用于开发测试的假平台页面证据，不对应真实平台内容。",
+      "sourceLinks": [{ "label": "Demo 平台页", "url": "https://example.invalid/demo-evidence-star-lamp-b" }],
+      "capturedAt": "2026-01-02T00:00:00.000Z",
+      "isPublic": true,
+      "searchText": "demo fake evidence platform page 星灯动画",
+      "status": "confirmed"
+    }
+  ]
+}
