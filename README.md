@@ -100,22 +100,25 @@ public/detail-index.json
 
 ## 前台测试
 
-前台相关测试可以用汇总命令一次跑完：
+完整前台测试可以用独立 runner 一次跑完：
 
 ```powershell
 cd "D:\0GitHubtest\Baihepailei\_repo"
 
-pnpm test:frontend
+node scripts/test-frontend.mjs
 pnpm build
 ```
 
-`pnpm test:frontend` 当前包含：
+runner 当前包含：
 
 ```text
-pnpm test:frontend-polish
-pnpm test:works-rank
-pnpm test:search
+tests/frontend-polish.test.mjs
+tests/frontend-expanded-polish.test.mjs
+tests/works-rank-page.test.mjs
+tests/search-utils.test.mjs
 ```
+
+`pnpm test:frontend` 仍可运行已有前台测试；如果新增了前台测试文件，优先以 `node scripts/test-frontend.mjs` 为准。
 
 ## 运行 XWiki 备份审计
 
