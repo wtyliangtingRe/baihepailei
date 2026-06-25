@@ -1,7 +1,15 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-export type SearchCollection = 'works' | 'creators' | 'terms' | 'rules'
+export type SearchCollection = 'works' | 'creators' | 'organizations' | 'evidence' | 'terms' | 'rules'
+
+export type SearchCoverImage = {
+  url?: string
+  alt?: string
+  filename?: string
+  width?: number
+  height?: number
+}
 
 export type SearchItem = {
   id: string
@@ -11,14 +19,22 @@ export type SearchItem = {
   slug: string
   url: string
   rank?: string
+  category?: string
+  organizationType?: string
+  evidenceType?: string
   originalTitle?: string
   aliases?: string[]
   creators?: string[]
+  organizations?: string[]
+  relatedWorks?: string[]
+  relatedCreators?: string[]
+  relatedOrganizations?: string[]
   tags?: string[]
   warnings?: string[]
   relatedTerms?: string[]
   relatedWarnings?: string[]
-  category?: string
+  cover?: SearchCoverImage
+  image?: SearchCoverImage
   legacyXWikiPage?: string
   searchText: string
 }

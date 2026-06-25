@@ -18,6 +18,20 @@ const sections = [
     description: '查看从旧 XWiki 清理出来的创作者相关资料。',
   },
   {
+    kind: 'organizations',
+    href: '/organizations',
+    eyebrow: '机构',
+    title: '机构',
+    description: '查看出版社、制作公司、平台、品牌、制作委员会等机构资料。',
+  },
+  {
+    kind: 'evidence',
+    href: '/evidence',
+    eyebrow: '证据材料',
+    title: '证据材料',
+    description: '查看截图、页面和旧站记录等支撑材料。',
+  },
+  {
     kind: 'terms',
     href: '/terms',
     eyebrow: '名词解释',
@@ -48,17 +62,19 @@ export default function HomePage() {
           <p className="eyebrow">百合排雷 · 轻量版</p>
           <h1>百合作品排雷资料库</h1>
           <p>
-            这里会重做为结构化资料站：作品、创作者、名词解释和排雷规则都在 Payload 后台维护，前台优先提供轻量文字浏览与快速搜索。
+            这里会重做为结构化资料站：作品、创作者、机构、证据材料、名词解释和排雷规则都在 Payload 后台维护，前台优先提供轻量文字浏览与快速搜索。
           </p>
           <form action="/search" className="search-box" role="search">
             <span>快速搜索</span>
-            <input id="home-search-input" name="q" placeholder="输入作品名、作者、分级或旧站关键词" type="search" />
+            <input id="home-search-input" name="q" placeholder="输入作品名、作者、机构、证据、分级或旧站关键词" type="search" />
             <label className="home-search-scope" htmlFor="home-search-collection">
               <span>搜索范围</span>
               <select defaultValue="all" id="home-search-collection" name="collection">
                 <option value="all">全部资料</option>
                 <option value="works">只搜作品</option>
                 <option value="creators">只搜创作者</option>
+                <option value="organizations">只搜机构</option>
+                <option value="evidence">只搜证据材料</option>
                 <option value="terms">只搜名词解释</option>
                 <option value="rules">只搜排雷规则</option>
               </select>

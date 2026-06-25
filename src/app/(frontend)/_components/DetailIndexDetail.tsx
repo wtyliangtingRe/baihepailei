@@ -1,11 +1,56 @@
 import Link from 'next/link'
 
-import type { DetailItem } from '../_lib/detail-index'
+import { readDetailIndex, type DetailCoverImage, type DetailItem } from '../_lib/detail-index'
+import ContentCallout, { type ContentCalloutItem } from './ContentCallout'
 import RichTextRenderer from './RichTextRenderer'
+
+type ExtendedDetailItem = DetailItem & {
+  organizationType?: string
+  organizations?: string[]
+  evidenceType?: string
+  image?: DetailCoverImage
+  description?: string
+  capturedAt?: string
+  relatedWorks?: string[]
+  relatedCreators?: string[]
+  relatedOrganizations?: string[]
+  callouts?: ContentCalloutItem[]
+}
+
+type RelationGroup = {
+  label: string
+  collection: string
+  values?: string[]
+}
+
+const organizationTypeLabels: Record<string, string> = {
+  publisher: '出版社',
+  production_company: '制作公司',
+  animation_studio: '动画公司',
+  game_company: '游戏公司',
+  distributor: '发行商',
+  circle: '社团',
+  brand: '品牌',
+  platform: '平台',
+  committee: '制作委员会',
+  other: '其他机构',
+}
+
+const evidenceTypeLabels: Record<string, string> = {
+  work_screenshot: '原作截图',
+  official_page: '官方页面',
+  interview: '访谈',
+  social_media: '社交媒体',
+  legacy_wiki: '旧站记录',
+  platform_page: '平台页面',
+  other: '其他证据',
+}
 
 function collectionLabel(collection: string) {
   if (collection === 'works') return '作品'
   if (collection === 'creators') return '创作者'
+  if (collection === 'organizations') return '机构'
+  if (collection === 'evidence') return '证据材料'
   if (collection === 'terms') return '名词解释'
   if (collection === 'rules') return '排雷规则'
   return collection
@@ -21,6 +66,20 @@ function displayRank(rank?: string) {
   return `${rank}级`
 }
 
+function organizationTypeLabel(value?: string) {
+  if (!value) return ''
+  return organizationTypeLabels[value] || value
+}
+
+function evidenceTypeLabel(value?: string) {
+  if (!value) return ''
+  return evidenceTypeLabels[value] || value
+}
+
+function normalizeKey(value: string) {
+  return String(value || '').trim().toLowerCase()
+}
+
 function valuesOf(value: string | string[] | boolean | undefined) {
   if (Array.isArray(value)) return value.filter(Boolean)
   if (typeof value === 'boolean') return value ? ['是'] : []
@@ -31,6 +90,16 @@ function visibleFieldsOf(fields: Array<[string, string | string[] | boolean | un
   return fields
     .map(([label, value]) => [label, valuesOf(value)] as const)
     .filter(([, values]) => values.length > 0)
+}
+
+function detailTarget(collection: string, value: string) {
+  const index = readDetailIndex()
+  if (!index) return null
+
+  const key = normalizeKey(value)
+  if (!key) return null
+
+  return index.items.find((item) => item.collection === collection && normalizeKey(item.title) === key) || null
 }
 
 function FieldList({ fields }: { fields: Array<[string, string | string[] | boolean | undefined]> }) {
@@ -50,10 +119,18 @@ function FieldList({ fields }: { fields: Array<[string, string | string[] | bool
 }
 
 function BasicInfo({ item }: { item: DetailItem }) {
+  const extendedItem = item as ExtendedDetailItem
   const fields: Array<[string, string | string[] | boolean | undefined]> = [
+    ['机构类型', organizationTypeLabel(extendedItem.organizationType)],
+    ['证据类型', evidenceTypeLabel(extendedItem.evidenceType)],
+    ['截图时间', extendedItem.capturedAt],
     ['原名', item.originalTitle],
     ['别名', item.aliases],
+    ['关联作品', extendedItem.relatedWorks],
+    ['关联创作者', extendedItem.relatedCreators],
+    ['关联机构', extendedItem.relatedOrganizations],
     ['创作者', item.creators],
+    ['相关机构', extendedItem.organizations],
     ['标签', item.tags],
     ['注意点', item.warnings],
     ['相关名词', item.relatedTerms],
@@ -94,9 +171,143 @@ function SourceLinks({ item }: { item: DetailItem }) {
   )
 }
 
+function WorkCover({ cover, title }: { cover?: DetailCoverImage; title: string }) {
+  if (cover?.url) {
+    return (
+      <figure className="detail-cover">
+        <img alt={cover.alt || `${title}封面`} src={cover.url} />
+      </figure>
+    )
+  }
+
+  return (
+    <figure className="detail-cover detail-cover-placeholder" aria-label="暂无封面">
+      <span>暂无封面</span>
+    </figure>
+  )
+}
+
+function EvidenceImage({ image, title }: { image?: DetailCoverImage; title: string }) {
+  if (image?.url) {
+    return (
+      <figure className="evidence-image">
+        <img alt={image.alt || `${title}证据截图`} src={image.url} />
+      </figure>
+    )
+  }
+
+  return (
+    <figure className="evidence-image evidence-image-placeholder" aria-label="暂无证据截图">
+      <span>暂无截图</span>
+    </figure>
+  )
+}
+
+function DetailCallouts({ item }: { item: DetailItem }) {
+  const callouts = ((item as ExtendedDetailItem).callouts || []).filter(Boolean)
+  if (callouts.length === 0) return null
+
+  return (
+    <section className="detail-callouts" aria-label="图文提示块">
+      {callouts.map((callout, index) => (
+        <ContentCallout callout={callout} key={callout.id || `${callout.title || 'callout'}-${index}`} />
+      ))}
+    </section>
+  )
+}
+
+function RelationChip({ collection, value }: { collection: string; value: string }) {
+  const target = detailTarget(collection, value)
+  if (!target) return <span className="detail-relation-chip muted-chip">{value}</span>
+
+  return (
+    <Link className="detail-relation-chip" href={target.url}>
+      {value}
+    </Link>
+  )
+}
+
+function DetailRelations({ item }: { item: DetailItem }) {
+  const extendedItem = item as ExtendedDetailItem
+  const groups: RelationGroup[] = [
+    { label: '创作者', collection: 'creators', values: item.creators },
+    { label: '机构', collection: 'organizations', values: extendedItem.organizations },
+    { label: '关联作品', collection: 'works', values: extendedItem.relatedWorks },
+    { label: '关联创作者', collection: 'creators', values: extendedItem.relatedCreators },
+    { label: '关联机构', collection: 'organizations', values: extendedItem.relatedOrganizations },
+    { label: '相关名词', collection: 'terms', values: item.relatedTerms },
+    { label: '示例作品', collection: 'works', values: item.examples },
+  ].filter((group) => Array.isArray(group.values) && group.values.length > 0)
+
+  if (groups.length === 0) return null
+
+  return (
+    <section className="detail-card relation-links-card">
+      <h2>相关链接</h2>
+      <div className="detail-relation-groups">
+        {groups.map((group) => (
+          <div className="detail-relation-group" key={`${group.collection}-${group.label}`}>
+            <h3>{group.label}</h3>
+            <div className="detail-relation-chips">
+              {(group.values || []).map((value) => (
+                <RelationChip collection={group.collection} key={`${group.collection}-${value}`} value={value} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function RelatedEvidence({ evidence }: { evidence: DetailItem[] }) {
+  if (evidence.length === 0) return null
+
+  return (
+    <section className="detail-card evidence-card-list">
+      <h2>证据材料</h2>
+      <div className="evidence-list">
+        {evidence.map((item) => {
+          const evidenceItem = item as ExtendedDetailItem
+          return (
+            <Link className="evidence-item" href={item.url || `/evidence/${item.slug}`} key={item.id}>
+              <EvidenceImage image={evidenceItem.image} title={item.title} />
+              <div>
+                <span>{evidenceTypeLabel(evidenceItem.evidenceType) || '证据材料'}</span>
+                <strong>{item.title}</strong>
+                {evidenceItem.description ? <p>{evidenceItem.description}</p> : null}
+              </div>
+            </Link>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+function RelatedWorks({ works }: { works: DetailItem[] }) {
+  if (works.length === 0) return null
+
+  return (
+    <section className="detail-card related-works-card">
+      <h2>相关作品</h2>
+      <div className="related-work-list">
+        {works.map((work) => (
+          <Link className="related-work-item" href={work.url} key={work.id}>
+            <span>{displayRank(work.rank) || '未分级'}</span>
+            <strong>{work.title}</strong>
+            {work.originalTitle ? <em>{work.originalTitle}</em> : null}
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function RichTextSections({ item }: { item: DetailItem }) {
+  const extendedItem = item as ExtendedDetailItem
   const sections = item.sections || []
-  if (sections.length === 0) {
+  if (sections.length === 0 && !extendedItem.description) {
     return (
       <section className="detail-card">
         <h2>正文</h2>
@@ -107,6 +318,12 @@ function RichTextSections({ item }: { item: DetailItem }) {
 
   return (
     <>
+      {extendedItem.description ? (
+        <section className="detail-card">
+          <h2>说明</h2>
+          <p className="muted">{extendedItem.description}</p>
+        </section>
+      ) : null}
       {sections.map((section) => (
         <section className="detail-card" key={section.key}>
           <h2>{section.label}</h2>
@@ -117,8 +334,11 @@ function RichTextSections({ item }: { item: DetailItem }) {
   )
 }
 
-export default function DetailIndexDetail({ item }: { item: DetailItem }) {
+export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvidence = [] }: { item: DetailItem; relatedWorks?: DetailItem[]; relatedEvidence?: DetailItem[] }) {
+  const extendedItem = item as ExtendedDetailItem
   const rank = displayRank(item.rank)
+  const organizationType = organizationTypeLabel(extendedItem.organizationType)
+  const evidenceType = evidenceTypeLabel(extendedItem.evidenceType)
 
   return (
     <main className="page detail-page">
@@ -131,16 +351,28 @@ export default function DetailIndexDetail({ item }: { item: DetailItem }) {
             {collectionBackLabel(item.collection)}
           </Link>
         </div>
-        <p className="eyebrow">{collectionLabel(item.collection)}</p>
-        <h1>{item.title}</h1>
-        <div className="detail-chips">
-          {rank ? <span>{rank}</span> : null}
-          {item.category ? <span>{item.category}</span> : null}
-          {item.hasEvidence ? <span>有证据材料</span> : null}
+        <div className="detail-hero-layout">
+          {item.collection === 'works' ? <WorkCover cover={item.cover} title={item.title} /> : null}
+          {item.collection === 'evidence' ? <EvidenceImage image={extendedItem.image} title={item.title} /> : null}
+          <div>
+            <p className="eyebrow">{collectionLabel(item.collection)}</p>
+            <h1>{item.title}</h1>
+            <div className="detail-chips">
+              {rank ? <span>{rank}</span> : null}
+              {organizationType ? <span>{organizationType}</span> : null}
+              {evidenceType ? <span>{evidenceType}</span> : null}
+              {item.category ? <span>{item.category}</span> : null}
+              {item.hasEvidence ? <span>有证据材料</span> : null}
+            </div>
+          </div>
         </div>
       </section>
 
       <BasicInfo item={item} />
+      <DetailRelations item={item} />
+      <DetailCallouts item={item} />
+      <RelatedEvidence evidence={relatedEvidence} />
+      <RelatedWorks works={relatedWorks} />
       <RichTextSections item={item} />
       <SourceLinks item={item} />
     </main>

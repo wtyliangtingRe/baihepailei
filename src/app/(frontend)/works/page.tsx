@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 import MissingSearchIndex from '../_components/MissingSearchIndex'
-import { readSearchIndex } from '../_lib/search-index'
+import { readSearchIndex, type SearchCoverImage } from '../_lib/search-index'
 
 const rankOrder = ['AA', 'A', 'B', 'C', 'D', 'E', 'unknown']
 
@@ -31,6 +31,22 @@ function rankSortValue(rank?: string) {
   const normalizedRank = rank || 'unknown'
   const index = rankOrder.indexOf(normalizedRank)
   return index === -1 ? rankOrder.length : index
+}
+
+function CoverThumb({ cover, title }: { cover?: SearchCoverImage; title: string }) {
+  if (cover?.url) {
+    return (
+      <div className="work-cover-thumb">
+        <img alt={cover.alt || `${title}封面`} src={cover.url} />
+      </div>
+    )
+  }
+
+  return (
+    <div className="work-cover-thumb work-cover-placeholder" aria-label="暂无封面">
+      <span>暂无封面</span>
+    </div>
+  )
 }
 
 export default function WorksIndexPage() {
@@ -94,10 +110,13 @@ export default function WorksIndexPage() {
 
             <div className="collection-grid">
               {group.items.map((item) => (
-                <Link className="collection-card" href={item.url} key={item.id}>
-                  <p>{rankLabel(item.rank)}</p>
-                  <h2>{item.title}</h2>
-                  {item.originalTitle ? <span>{item.originalTitle}</span> : null}
+                <Link className="collection-card work-card" href={item.url} key={item.id}>
+                  <CoverThumb cover={item.cover} title={item.title} />
+                  <div className="work-card-body">
+                    <p>{rankLabel(item.rank)}</p>
+                    <h2>{item.title}</h2>
+                    {item.originalTitle ? <span>{item.originalTitle}</span> : null}
+                  </div>
                 </Link>
               ))}
             </div>

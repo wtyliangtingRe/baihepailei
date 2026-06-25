@@ -3,6 +3,8 @@ import Link from 'next/link'
 import React from 'react'
 
 import './styles.css'
+import './covers.css'
+import './callouts.css'
 
 export const metadata: Metadata = {
   title: 'Baihepailei',
@@ -13,6 +15,7 @@ const navItems = [
   { href: '/browse', label: '资料库' },
   { href: '/works', label: '作品' },
   { href: '/creators', label: '创作者' },
+  { href: '/organizations', label: '机构' },
   { href: '/terms', label: '名词解释' },
   { href: '/rules', label: '规则' },
   { href: '/search', label: '搜索' },

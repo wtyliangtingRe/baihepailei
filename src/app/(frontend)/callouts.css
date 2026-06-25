@@ -1,0 +1,122 @@
+.detail-callouts {
+  display: grid;
+  gap: 18px;
+}
+
+.content-callout {
+  display: grid;
+  grid-template-columns: minmax(120px, 200px) 1fr;
+  gap: 18px;
+  align-items: center;
+  padding: 20px;
+  border: 1px solid #303030;
+  border-radius: 22px;
+  background: #111;
+}
+
+.content-callout.note {
+  background: linear-gradient(135deg, #141414, #111);
+}
+
+.content-callout.warning {
+  border-color: rgb(255 181 215 / 0.55);
+  background:
+    radial-gradient(circle at 16% 18%, rgb(255 181 215 / 0.18), transparent 34%),
+    #120d10;
+}
+
+.content-callout.black-banner {
+  border-color: #3a3a3a;
+  background:
+    linear-gradient(90deg, #050505, #101010 62%, #171017);
+}
+
+.content-callout.image-text {
+  background:
+    radial-gradient(circle at 16% 18%, rgb(255 181 215 / 0.12), transparent 30%),
+    #111;
+}
+
+.content-callout-image {
+  display: grid;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  margin: 0;
+  place-items: center;
+  border: 1px solid #303030;
+  border-radius: 18px;
+  background: #080808;
+}
+
+.content-callout-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.content-callout-body {
+  display: grid;
+  gap: 10px;
+}
+
+.content-callout-label {
+  width: fit-content;
+  margin: 0;
+  padding: 4px 9px;
+  border: 1px solid rgb(255 181 215 / 0.3);
+  border-radius: 999px;
+  color: #ffb5d7;
+  background: rgb(17 17 17 / 0.7);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.content-callout h2 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.3rem, 2vw, 2rem);
+}
+
+.content-callout p,
+.content-callout blockquote {
+  margin: 0;
+  color: #e8e8e8;
+  line-height: 1.8;
+}
+
+.content-callout blockquote {
+  padding-left: 16px;
+  border-left: 3px solid #ffb5d7;
+  color: #f5ddec;
+}
+
+.content-callout a {
+  width: fit-content;
+  color: #ffb5d7;
+  text-underline-offset: 3px;
+}
+
+.content-callout.black-banner .content-callout-image {
+  border-color: #222;
+  background: #000;
+}
+
+.content-callout.black-banner h2 {
+  color: #fff;
+}
+
+.content-callout.black-banner blockquote {
+  color: #f2f2f2;
+}
+
+@media (max-width: 760px) {
+  .content-callout {
+    grid-template-columns: 1fr;
+  }
+
+  .content-callout-image {
+    max-width: 220px;
+  }
+}
