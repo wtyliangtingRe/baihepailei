@@ -5,6 +5,10 @@ export const collectionLabels = {
   rules: '规则',
 }
 
+export function getCollectionLabel(collection) {
+  return collectionLabels[collection] || collection
+}
+
 export function normalizeText(value) {
   return String(value || '').trim().toLowerCase()
 }
@@ -100,7 +104,7 @@ export function filterAndRankItems(items, options = {}) {
 }
 
 export function resultMeta(item) {
-  const parts = [collectionLabels[item.collection] || item.typeLabel || item.collection]
+  const parts = [getCollectionLabel(item.collection) || item.typeLabel || item.collection]
   if (item.rank && item.rank !== 'unknown') parts.push(`${item.rank}级`)
   if (item.category) parts.push(item.category)
   return parts.filter(Boolean).join(' · ')
@@ -115,7 +119,6 @@ export function resultSummary(item) {
     ...(item.warnings || []),
     ...(item.relatedTerms || []),
     ...(item.relatedWarnings || []),
-    item.legacyXWikiPage,
   ].filter(Boolean)
 
   return parts.slice(0, 8).join(' / ')
