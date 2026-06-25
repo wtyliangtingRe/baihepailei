@@ -91,7 +91,7 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
       <BasicInfo item={item} />
 
       <section className="detail-card">
-        <h2>Lite 搜索文本预览</h2>
+        <h2>搜索文本预览</h2>
         {searchLines.length ? (
           <ul className="search-text-preview">
             {searchLines.map((line, index) => (
