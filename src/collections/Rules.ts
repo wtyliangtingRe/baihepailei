@@ -66,7 +66,9 @@ export const Rules: CollectionConfig = {
     {
       name: 'searchText',
       type: 'textarea',
-      index: true,
+      admin: {
+        description: '用于导出前台搜索索引的长文本，不在数据库中建立 btree 索引。',
+      },
     },
     {
       name: 'legacyXWikiPage',
