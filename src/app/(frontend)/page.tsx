@@ -53,6 +53,16 @@ export default function HomePage() {
           <form action="/search" className="search-box" role="search">
             <span>快速搜索</span>
             <input id="home-search-input" name="q" placeholder="输入作品名、作者、分级或旧站关键词" type="search" />
+            <label className="home-search-scope" htmlFor="home-search-collection">
+              <span>搜索范围</span>
+              <select defaultValue="all" id="home-search-collection" name="collection">
+                <option value="all">全部资料</option>
+                <option value="works">只搜作品</option>
+                <option value="creators">只搜创作者</option>
+                <option value="terms">只搜名词解释</option>
+                <option value="rules">只搜排雷规则</option>
+              </select>
+            </label>
             <button className="result-link" type="submit">搜索资料</button>
           </form>
           <div className="home-stats" aria-label="当前索引统计">
