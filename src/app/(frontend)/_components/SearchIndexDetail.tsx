@@ -10,6 +10,12 @@ function collectionLabel(collection: string) {
   return collection
 }
 
+function displayRank(rank?: string) {
+  if (!rank || rank === 'unknown') return ''
+  if (rank === 'AA') return 'S级'
+  return `${rank}级`
+}
+
 function compactLines(text: string) {
   return String(text || '')
     .split('\n')
@@ -65,6 +71,7 @@ function BasicInfo({ item }: { item: SearchItem }) {
 }
 
 export default function SearchIndexDetail({ item }: { item: SearchItem }) {
+  const rank = displayRank(item.rank)
   const searchLines = compactLines(item.searchText)
 
   return (
@@ -76,7 +83,7 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
         <p className="eyebrow">{collectionLabel(item.collection)}</p>
         <h1>{item.title}</h1>
         <div className="detail-chips">
-          {item.rank && item.rank !== 'unknown' ? <span>{item.rank}级</span> : null}
+          {rank ? <span>{rank}</span> : null}
           {item.category ? <span>{item.category}</span> : null}
         </div>
       </section>
