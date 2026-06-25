@@ -67,6 +67,50 @@
   border-radius: 22px;
 }
 
+.related-works-card {
+  display: grid;
+  gap: 18px;
+}
+
+.related-work-list {
+  display: grid;
+  gap: 10px;
+}
+
+.related-work-item {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid #303030;
+  border-radius: 18px;
+  background: #111;
+  text-decoration: none;
+}
+
+.related-work-item:hover {
+  border-color: #ffb5d7;
+}
+
+.related-work-item span {
+  width: fit-content;
+  padding: 4px 9px;
+  border: 1px solid #333;
+  border-radius: 999px;
+  color: #ffb5d7;
+  background: #171017;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.related-work-item strong,
+.related-work-item em {
+  font-style: normal;
+}
+
+.related-work-item em {
+  color: #cfcfcf;
+}
+
 @media (max-width: 760px) {
   .detail-hero-layout {
     grid-template-columns: 1fr;
