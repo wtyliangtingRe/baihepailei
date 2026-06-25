@@ -345,6 +345,12 @@ h1 {
   gap: 14px;
 }
 
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .back-link {
   width: fit-content;
   color: #ffb5d7;
@@ -372,6 +378,65 @@ h1 {
   margin: 0;
   color: #f2f2f2;
   line-height: 1.7;
+}
+
+.rich-text {
+  color: #e8e8e8;
+  line-height: 1.85;
+}
+
+.rich-text > :first-child {
+  margin-top: 0;
+}
+
+.rich-text > :last-child {
+  margin-bottom: 0;
+}
+
+.rich-text p,
+.rich-text ul,
+.rich-text ol,
+.rich-text blockquote {
+  margin: 14px 0;
+}
+
+.rich-text h2,
+.rich-text h3,
+.rich-text h4 {
+  margin: 24px 0 10px;
+  line-height: 1.35;
+}
+
+.rich-text ul,
+.rich-text ol {
+  padding-left: 1.4rem;
+}
+
+.rich-text blockquote {
+  padding: 4px 0 4px 18px;
+  border-left: 3px solid #ffb5d7;
+  color: #d8d8d8;
+}
+
+.rich-text code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #080808;
+  color: #ffb5d7;
+}
+
+.rich-text a,
+.source-links a {
+  color: #ffb5d7;
+  text-underline-offset: 3px;
+}
+
+.source-links {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding-left: 1.2rem;
+  color: #d8d8d8;
 }
 
 .search-text-preview {
