@@ -125,7 +125,6 @@ export default function DetailIndexDetail({ item }: { item: DetailItem }) {
           {item.rank && item.rank !== 'unknown' ? <span>{item.rank}级</span> : null}
           {item.category ? <span>{item.category}</span> : null}
           {item.hasEvidence ? <span>有证据材料</span> : null}
-          <span>{item.slug}</span>
         </div>
       </section>
 
