@@ -55,7 +55,7 @@ export default function WorksIndexPage() {
         <h1>作品</h1>
         <p>按排雷分级浏览轻量搜索索引中的作品条目。</p>
         <div className="collection-actions">
-          <Link className="back-link" href="/search">搜索</Link>
+          <Link className="back-link" href="/search?collection=works">搜索作品</Link>
           <Link className="back-link" href="/browse">浏览全部</Link>
           <span>{items.length} 条</span>
         </div>
