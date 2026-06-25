@@ -36,13 +36,27 @@ test('home cards use Chinese section labels', () => {
     assert.match(homePage, new RegExp(`eyebrow: '${label}'`))
   }
 
-  assert.match(homePage, /aria-label="Lite 资料分类"/)
+  assert.match(homePage, /aria-label="轻量资料分类"/)
   assert.match(homePage, />\s*浏览资料库\s*</)
   assert.doesNotMatch(homePage, /eyebrow: 'Works'/)
   assert.doesNotMatch(homePage, /eyebrow: 'Creators'/)
   assert.doesNotMatch(homePage, /eyebrow: 'Terms'/)
   assert.doesNotMatch(homePage, /eyebrow: 'Rules'/)
   assert.doesNotMatch(homePage, /aria-label="Lite archive sections"/)
+})
+
+test('frontend pages use Chinese wording for lightweight mode instead of raw Lite labels', () => {
+  assert.match(homePage, /百合排雷 · 轻量版/)
+  assert.match(homePage, /浏览轻量索引里的作品条目/)
+  assert.match(browsePage, /当前轻量索引共收录/)
+  assert.match(worksPage, /浏览轻量搜索索引中的作品条目/)
+  assert.match(searchIndexDetail, />\s*搜索文本预览\s*</)
+
+  assert.doesNotMatch(homePage, /Baihepailei Lite/)
+  assert.doesNotMatch(homePage, /Lite 索引/)
+  assert.doesNotMatch(browsePage, /Lite 索引/)
+  assert.doesNotMatch(worksPage, /Lite 搜索索引/)
+  assert.doesNotMatch(searchIndexDetail, /Lite 搜索文本预览/)
 })
 
 test('browse cards use Chinese labels and actions instead of route text', () => {
