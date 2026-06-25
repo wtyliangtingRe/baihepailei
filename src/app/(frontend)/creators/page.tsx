@@ -5,7 +5,7 @@ export default function CreatorsIndexPage() {
     <CollectionIndexPage
       collection="creators"
       description="浏览从旧 XWiki 清理出来的创作者资料。"
-      eyebrow="creators"
+      eyebrow="创作者"
       title="创作者"
     />
   )
