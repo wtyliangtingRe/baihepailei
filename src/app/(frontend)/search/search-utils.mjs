@@ -9,6 +9,12 @@ export function getCollectionLabel(collection) {
   return collectionLabels[collection] || collection
 }
 
+export function displayRank(rank) {
+  if (!rank || rank === 'unknown') return ''
+  if (rank === 'AA') return 'S级'
+  return `${rank}级`
+}
+
 export function normalizeText(value) {
   return String(value || '').trim().toLowerCase()
 }
@@ -105,7 +111,8 @@ export function filterAndRankItems(items, options = {}) {
 
 export function resultMeta(item) {
   const parts = [getCollectionLabel(item.collection) || item.typeLabel || item.collection]
-  if (item.rank && item.rank !== 'unknown') parts.push(`${item.rank}级`)
+  const rank = displayRank(item.rank)
+  if (rank) parts.push(rank)
   if (item.category) parts.push(item.category)
   return parts.filter(Boolean).join(' · ')
 }
