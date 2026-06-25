@@ -3,6 +3,14 @@ import path from 'node:path'
 
 export type SearchCollection = 'works' | 'creators' | 'terms' | 'rules'
 
+export type SearchCoverImage = {
+  url?: string
+  alt?: string
+  filename?: string
+  width?: number
+  height?: number
+}
+
 export type SearchItem = {
   id: string
   collection: SearchCollection | string
@@ -19,6 +27,7 @@ export type SearchItem = {
   relatedTerms?: string[]
   relatedWarnings?: string[]
   category?: string
+  cover?: SearchCoverImage
   legacyXWikiPage?: string
   searchText: string
 }
