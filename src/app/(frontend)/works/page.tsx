@@ -5,6 +5,16 @@ import { readSearchIndex } from '../_lib/search-index'
 
 const rankOrder = ['AA', 'A', 'B', 'C', 'D', 'E', 'unknown']
 
+const rankDescriptions: Record<string, string> = {
+  AA: '最高优先级关注项，旧站 AA 级在前台统一显示为 S 级。',
+  A: '需要优先阅读说明与正文，再决定是否继续深入。',
+  B: '存在明确注意点，适合结合标签、说明和上下文判断。',
+  C: '一般注意级别，通常适合作为补充参考。',
+  D: '较低注意级别，多用于轻量标记或待复核条目。',
+  E: '最低注意级别，通常只保留基础记录。',
+  unknown: '暂时没有明确分级，等待后续整理或复核。',
+}
+
 function rankLabel(rank?: string) {
   if (!rank || rank === 'unknown') return '未分级'
   if (rank === 'AA') return 'S级'
@@ -56,6 +66,22 @@ export default function WorksIndexPage() {
             </a>
           ))}
         </nav>
+      </section>
+
+      <section className="rank-explainer" aria-label="排雷分级说明">
+        <div>
+          <p className="eyebrow">分级说明</p>
+          <h2>如何理解这些分级？</h2>
+          <p>分级用于帮助快速定位阅读优先级，不等于最终结论。具体判断仍以条目正文、标签和来源说明为准。</p>
+        </div>
+        <div className="rank-explainer-grid">
+          {rankOrder.map((rank) => (
+            <article className="rank-explainer-card" key={rank}>
+              <h3>{rankLabel(rank)}</h3>
+              <p>{rankDescriptions[rank]}</p>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="ranked-collection-list">
