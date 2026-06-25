@@ -260,6 +260,39 @@ h1 {
   line-height: 1.7;
 }
 
+.ranked-collection-list {
+  display: grid;
+  gap: 28px;
+}
+
+.rank-group {
+  display: grid;
+  gap: 14px;
+}
+
+.rank-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0 2px 10px;
+  border-bottom: 1px solid #303030;
+}
+
+.rank-group-heading h2 {
+  margin: 0;
+  font-size: clamp(26px, 4vw, 42px);
+}
+
+.rank-group-heading span {
+  padding: 6px 11px;
+  border: 1px solid #333;
+  border-radius: 999px;
+  color: #aaa;
+  background: #141414;
+  white-space: nowrap;
+}
+
 .search-panel {
   padding: 28px;
 }
@@ -559,6 +592,11 @@ h1 {
 
   .collection-card {
     min-height: auto;
+  }
+
+  .rank-group-heading {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .detail-fields div {
