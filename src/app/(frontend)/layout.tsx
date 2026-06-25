@@ -9,6 +9,13 @@ export const metadata: Metadata = {
   description: 'A structured reference database.',
 }
 
+const navItems = [
+  { href: '/browse', label: 'Browse' },
+  { href: '/works', label: 'Works' },
+  { href: '/search', label: 'Search' },
+  { href: '/admin', label: 'Admin' },
+]
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN">
@@ -19,9 +26,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               Baihepailei
             </Link>
             <nav className="site-nav" aria-label="Main navigation">
-              <Link href="/works">Works</Link>
-              <Link href="/search">Search</Link>
-              <Link href="/admin">Admin</Link>
+              {navItems.map((item) => (
+                <Link href={item.href} key={item.href}>
+                  {item.label}
+                </Link>
+              ))}
             </nav>
           </header>
           {children}
