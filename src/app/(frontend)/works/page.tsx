@@ -7,6 +7,7 @@ const rankOrder = ['AA', 'A', 'B', 'C', 'D', 'E', 'unknown']
 
 function rankLabel(rank?: string) {
   if (!rank || rank === 'unknown') return '未分级'
+  if (rank === 'AA') return 'S级'
   return `${rank}级`
 }
 
