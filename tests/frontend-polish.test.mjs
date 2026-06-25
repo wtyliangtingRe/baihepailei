@@ -6,10 +6,23 @@ function read(path) {
   return fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 }
 
+const layout = read('src/app/(frontend)/layout.tsx')
 const detailIndexDetail = read('src/app/(frontend)/_components/DetailIndexDetail.tsx')
 const searchIndexDetail = read('src/app/(frontend)/_components/SearchIndexDetail.tsx')
 const searchClient = read('src/app/(frontend)/search/search-client.tsx')
 const collectionIndexPage = read('src/app/(frontend)/_components/CollectionIndexPage.tsx')
+
+test('global navigation uses user-facing Chinese labels', () => {
+  for (const label of ['资料库', '作品', '创作者', '名词解释', '规则', '搜索', '后台']) {
+    assert.match(layout, new RegExp(`label: '${label}'`))
+  }
+
+  assert.match(layout, /aria-label="主导航"/)
+  assert.doesNotMatch(layout, /label: 'Browse'/)
+  assert.doesNotMatch(layout, /label: 'Works'/)
+  assert.doesNotMatch(layout, /label: 'Search'/)
+  assert.doesNotMatch(layout, /label: 'Admin'/)
+})
 
 test('detail pages do not show raw slug chips in the hero area', () => {
   assert.doesNotMatch(detailIndexDetail, /<span>\{item\.slug\}<\/span>/)
