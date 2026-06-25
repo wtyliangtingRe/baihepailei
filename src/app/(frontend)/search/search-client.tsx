@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import {
-  collectionLabels,
   filterAndRankItems,
+  getCollectionLabel,
   resultMeta,
   resultSummary,
   splitQuery,
@@ -150,7 +150,7 @@ export default function SearchClient() {
             onClick={() => setActiveCollection(collection)}
             type="button"
           >
-            {collectionLabels[collection] || collection} {count}
+            {getCollectionLabel(collection)} {count}
           </button>
         ))}
       </div>
