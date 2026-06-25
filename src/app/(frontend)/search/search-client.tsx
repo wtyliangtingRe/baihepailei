@@ -2,6 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
+import {
+  collectionLabels,
+  filterAndRankItems,
+  resultMeta,
+  resultSummary,
+  splitQuery,
+} from './search-utils.mjs'
+
 type SearchItem = {
   id: string
   collection: 'works' | 'creators' | 'terms' | 'rules' | string
@@ -35,64 +43,12 @@ type SearchResult = SearchItem & {
   score: number
 }
 
-const collectionLabels: Record<string, string> = {
-  works: '作品',
-  creators: '创作者',
-  terms: '名词解释',
-  rules: '规则',
-}
-
-function normalizeText(value: string) {
-  return value.trim().toLowerCase()
-}
-
-function splitQuery(query: string) {
-  return normalizeText(query)
-    .split(/\s+/g)
-    .map((part) => part.trim())
-    .filter(Boolean)
-}
-
-function scoreItem(item: SearchItem, query: string) {
-  const terms = splitQuery(query)
-  if (terms.length === 0) return 0
-
-  const title = normalizeText(item.title || '')
-  const originalTitle = normalizeText(item.originalTitle || '')
-  const aliases = (item.aliases || []).map(normalizeText)
-  const creators = (item.creators || []).map(normalizeText)
-  const searchText = normalizeText(item.searchText || '')
-  const slug = normalizeText(item.slug || '')
-  const legacy = normalizeText(item.legacyXWikiPage || '')
-
-  let score = 0
-
-  for (const term of terms) {
-    if (title === term) score += 120
-    if (title.includes(term)) score += 60
-    if (originalTitle === term) score += 90
-    if (originalTitle.includes(term)) score += 45
-    if (aliases.some((alias) => alias === term)) score += 80
-    if (aliases.some((alias) => alias.includes(term))) score += 40
-    if (creators.some((creator) => creator.includes(term))) score += 35
-    if (slug.includes(term)) score += 18
-    if (legacy.includes(term)) score += 12
-    if (searchText.includes(term)) score += 10
-  }
-
-  const compactQuery = terms.join('')
-  const compactTitle = title.replaceAll(' ', '')
-  if (compactQuery && compactTitle.includes(compactQuery)) score += 30
-
-  return score
-}
-
 function HighlightedText({ query, text }: { query: string; text: string }) {
   const terms = splitQuery(query)
   if (!text || terms.length === 0) return <>{text}</>
 
   const lowerText = text.toLowerCase()
-  const term = terms.find((item) => lowerText.includes(item))
+  const term = terms.find((item: string) => lowerText.includes(item))
   if (!term) return <>{text}</>
 
   const index = lowerText.indexOf(term)
@@ -107,26 +63,6 @@ function HighlightedText({ query, text }: { query: string; text: string }) {
       {after}
     </>
   )
-}
-
-function resultMeta(item: SearchItem) {
-  const parts = [collectionLabels[item.collection] || item.typeLabel || item.collection]
-  if (item.rank && item.rank !== 'unknown') parts.push(`${item.rank}级`)
-  if (item.category) parts.push(item.category)
-  return parts.filter(Boolean).join(' · ')
-}
-
-function resultSummary(item: SearchItem) {
-  const parts = [
-    item.originalTitle,
-    ...(item.aliases || []),
-    ...(item.creators || []),
-    ...(item.tags || []),
-    ...(item.warnings || []),
-    item.legacyXWikiPage,
-  ].filter(Boolean)
-
-  return parts.slice(0, 8).join(' / ')
 }
 
 export default function SearchClient() {
@@ -165,19 +101,7 @@ export default function SearchClient() {
 
   const results = useMemo<SearchResult[]>(() => {
     const items = index?.items || []
-    const visibleItems = activeCollection === 'all'
-      ? items
-      : items.filter((item) => item.collection === activeCollection)
-
-    if (!query.trim()) {
-      return visibleItems.slice(0, 30).map((item) => ({ ...item, score: 0 }))
-    }
-
-    return visibleItems
-      .map((item) => ({ ...item, score: scoreItem(item, query) }))
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, 'zh-CN'))
-      .slice(0, 50)
+    return filterAndRankItems(items, { activeCollection, query }) as SearchResult[]
   }, [activeCollection, index?.items, query])
 
   const collectionCounts = index?.counts || {}
