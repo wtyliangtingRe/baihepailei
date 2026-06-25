@@ -11,6 +11,12 @@ function rankLabel(rank?: string) {
   return `${rank}级`
 }
 
+function rankAnchor(rank?: string) {
+  if (!rank || rank === 'unknown') return 'rank-unknown'
+  if (rank === 'AA') return 'rank-s'
+  return `rank-${rank.toLowerCase()}`
+}
+
 function rankSortValue(rank?: string) {
   const normalizedRank = rank || 'unknown'
   const index = rankOrder.indexOf(normalizedRank)
@@ -43,11 +49,18 @@ export default function WorksIndexPage() {
           <Link className="back-link" href="/browse">浏览全部</Link>
           <span>{items.length} 条</span>
         </div>
+        <nav className="rank-jump-list" aria-label="作品分级快速跳转">
+          {groups.map((group) => (
+            <a href={`#${rankAnchor(group.rank)}`} key={group.rank}>
+              {rankLabel(group.rank)} <span>{group.items.length}</span>
+            </a>
+          ))}
+        </nav>
       </section>
 
       <section className="ranked-collection-list">
         {groups.map((group) => (
-          <section className="rank-group" key={group.rank}>
+          <section className="rank-group" id={rankAnchor(group.rank)} key={group.rank}>
             <div className="rank-group-heading">
               <h2>{rankLabel(group.rank)}</h2>
               <span>{group.items.length} 条</span>
