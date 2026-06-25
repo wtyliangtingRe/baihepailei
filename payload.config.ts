@@ -4,6 +4,7 @@ import { buildConfig } from 'payload'
 
 import { Creators } from './src/collections/Creators'
 import { Media } from './src/collections/Media'
+import { Organizations } from './src/collections/Organizations'
 import { Rules } from './src/collections/Rules'
 import { Tags } from './src/collections/Tags'
 import { Terms } from './src/collections/Terms'
@@ -15,7 +16,7 @@ export default buildConfig({
   admin: {
     user: Users.slug,
   },
-  collections: [Users, Media, Works, Creators, Terms, Warnings, Tags, Rules],
+  collections: [Users, Media, Works, Creators, Organizations, Terms, Warnings, Tags, Rules],
   db: postgresAdapter({
     pool: {
       connectionString: String(process.env['DATABASE_URL'] || ''),
