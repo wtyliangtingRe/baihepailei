@@ -63,10 +63,7 @@ export default function WorksIndexPage() {
           <section className="rank-group" id={rankAnchor(group.rank)} key={group.rank}>
             <div className="rank-group-heading">
               <h2>{rankLabel(group.rank)}</h2>
-              <div className="rank-group-actions">
-                <span>{group.items.length} 条</span>
-                <a href="#works-rank-nav">返回分级导航</a>
-              </div>
+              <span>{group.items.length} 条</span>
             </div>
 
             <div className="collection-grid">
@@ -77,6 +74,10 @@ export default function WorksIndexPage() {
                   {item.originalTitle ? <span>{item.originalTitle}</span> : null}
                 </Link>
               ))}
+            </div>
+
+            <div className="rank-group-actions">
+              <a href="#works-rank-nav">返回分级导航</a>
             </div>
           </section>
         ))}
