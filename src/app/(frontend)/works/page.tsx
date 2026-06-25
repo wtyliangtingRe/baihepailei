@@ -43,7 +43,7 @@ export default function WorksIndexPage() {
       <section className="page-heading collection-heading">
         <p className="eyebrow">作品</p>
         <h1>作品</h1>
-        <p>按排雷分级浏览 Lite 搜索索引中的作品条目。</p>
+        <p>按排雷分级浏览轻量搜索索引中的作品条目。</p>
         <div className="collection-actions">
           <Link className="back-link" href="/search">搜索</Link>
           <Link className="back-link" href="/browse">浏览全部</Link>
