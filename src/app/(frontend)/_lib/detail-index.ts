@@ -85,3 +85,13 @@ export function findDetailItem(collection: DetailCollection, slug: string) {
 
   return index.items.find((item) => item.collection === collection && item.slug === slug) || null
 }
+
+export function findWorksByCreatorName(creatorName: string) {
+  const index = readDetailIndex()
+  if (!index) return []
+
+  return index.items
+    .filter((item) => item.collection === 'works')
+    .filter((item) => (item.creators || []).includes(creatorName))
+    .sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
+}
