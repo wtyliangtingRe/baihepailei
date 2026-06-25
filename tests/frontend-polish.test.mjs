@@ -9,6 +9,7 @@ function read(path) {
 const layout = read('src/app/(frontend)/layout.tsx')
 const homePage = read('src/app/(frontend)/page.tsx')
 const browsePage = read('src/app/(frontend)/browse/page.tsx')
+const searchPage = read('src/app/(frontend)/search/page.tsx')
 const detailIndexDetail = read('src/app/(frontend)/_components/DetailIndexDetail.tsx')
 const searchIndexDetail = read('src/app/(frontend)/_components/SearchIndexDetail.tsx')
 const searchClient = read('src/app/(frontend)/search/search-client.tsx')
@@ -55,6 +56,17 @@ test('browse cards use Chinese labels and actions instead of route text', () => 
   assert.doesNotMatch(browsePage, /eyebrow: 'Terms'/)
   assert.doesNotMatch(browsePage, /eyebrow: 'Rules'/)
   assert.doesNotMatch(browsePage, />\s*\{section\.href\}\s*</)
+})
+
+test('search page and result links use user-facing Chinese labels', () => {
+  assert.match(searchPage, />\s*搜索\s*</)
+  assert.doesNotMatch(searchPage, />\s*Search\s*</)
+
+  assert.match(searchClient, /模式：\{indexModeLabel\(index\.mode\)\}/)
+  assert.match(searchClient, /if \(mode === 'include-drafts'\) return '含草稿'/)
+  assert.match(searchClient, /if \(mode === 'published'\) return '仅已发布'/)
+  assert.match(searchClient, />\s*查看详情\s*</)
+  assert.doesNotMatch(searchClient, />\s*\{item\.url\}\s*</)
 })
 
 test('detail pages do not show raw slug chips in the hero area', () => {
