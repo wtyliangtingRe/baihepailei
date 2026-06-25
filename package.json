@@ -13,7 +13,8 @@
     "generate:types": "payload generate:types",
     "dev:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev.ps1",
     "import:clean-seed": "node scripts/import/direct-seed-clean-data.mjs",
-    "export:lite-search": "node scripts/export/build-lite-search-index.mjs"
+    "export:lite-search": "node scripts/export/build-lite-search-index.mjs",
+    "export:lite-details": "node scripts/export/build-lite-detail-index.mjs"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "latest",
