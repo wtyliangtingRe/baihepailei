@@ -41,7 +41,7 @@ export default function WorksIndexPage() {
   return (
     <main className="page collection-page">
       <section className="page-heading collection-heading">
-        <p className="eyebrow">works</p>
+        <p className="eyebrow">作品</p>
         <h1>作品</h1>
         <p>按排雷分级浏览 Lite 搜索索引中的作品条目。</p>
         <div className="collection-actions">
