@@ -113,6 +113,51 @@ export const Works: CollectionConfig = {
       hasMany: true,
     },
     {
+      name: 'organizations',
+      type: 'array',
+      label: '相关机构',
+      admin: {
+        description: '出版社、制作公司、发行商、平台、制作委员会等机构关系。',
+      },
+      fields: [
+        {
+          name: 'organization',
+          type: 'relationship',
+          label: '机构',
+          relationTo: 'organizations',
+          required: true,
+        },
+        {
+          name: 'role',
+          type: 'select',
+          label: '机构角色',
+          defaultValue: 'other',
+          required: true,
+          options: [
+            { label: '出版社', value: 'publisher' },
+            { label: '制作公司', value: 'production_company' },
+            { label: '动画制作', value: 'animation_studio' },
+            { label: '游戏开发', value: 'game_developer' },
+            { label: '发行商', value: 'distributor' },
+            { label: '社团', value: 'circle' },
+            { label: '品牌', value: 'brand' },
+            { label: '平台', value: 'platform' },
+            { label: '制作委员会', value: 'committee' },
+            { label: '版权方', value: 'rights_holder' },
+            { label: '其他', value: 'other' },
+          ],
+        },
+        {
+          name: 'note',
+          type: 'text',
+          label: '备注',
+          admin: {
+            description: '可记录具体名义、系列品牌、旧站说明或迁移备注。',
+          },
+        },
+      ],
+    },
+    {
       name: 'tags',
       type: 'relationship',
       label: '标签',
