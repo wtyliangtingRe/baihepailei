@@ -72,13 +72,15 @@
 }
 
 .related-works-card,
-.evidence-card-list {
+.evidence-card-list,
+.relation-links-card {
   display: grid;
   gap: 18px;
 }
 
 .related-work-list,
-.evidence-list {
+.evidence-list,
+.detail-relation-groups {
   display: grid;
   gap: 10px;
 }
@@ -140,6 +142,49 @@
   margin: 0;
   place-items: center;
   border-radius: 16px;
+}
+
+.detail-relation-group {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #303030;
+  border-radius: 18px;
+  background: #111;
+}
+
+.detail-relation-group h3 {
+  margin: 0;
+  color: #cfcfcf;
+  font-size: 14px;
+}
+
+.detail-relation-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-relation-chip {
+  display: inline-flex;
+  width: fit-content;
+  padding: 6px 10px;
+  border: 1px solid rgb(255 181 215 / 0.35);
+  border-radius: 999px;
+  color: #ffb5d7;
+  background: #171017;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.detail-relation-chip:hover {
+  border-color: #ffb5d7;
+}
+
+.detail-relation-chip.muted-chip {
+  color: #bdbdbd;
+  border-color: #303030;
+  background: #151515;
 }
 
 @media (max-width: 760px) {
