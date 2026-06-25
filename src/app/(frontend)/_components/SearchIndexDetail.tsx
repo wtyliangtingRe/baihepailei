@@ -69,7 +69,6 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
             ['注意点', item.warnings],
             ['相关名词', item.relatedTerms],
             ['相关注意点', item.relatedWarnings],
-            ['旧 XWiki 页面', item.legacyXWikiPage],
           ]}
         />
       </section>

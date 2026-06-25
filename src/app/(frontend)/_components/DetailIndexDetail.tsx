@@ -87,7 +87,7 @@ export default function DetailIndexDetail({ item }: { item: DetailItem }) {
           <Link className="back-link" href="/search">
             ← 返回搜索
           </Link>
-          <Link className="back-link" href={`/browse/${item.collection}`}>
+          <Link className="back-link" href={`/${item.collection}`}>
             浏览同类
           </Link>
         </div>
@@ -115,7 +115,6 @@ export default function DetailIndexDetail({ item }: { item: DetailItem }) {
             ['相关标签', item.relatedTags],
             ['相关作品', item.examples],
             ['证据备注', item.evidenceNote],
-            ['旧 XWiki 页面', item.legacyXWikiPage],
             ['状态', item.status],
           ]}
         />
