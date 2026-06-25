@@ -32,6 +32,19 @@ test('homepage quick search submits to the search page', () => {
   assert.match(homePage, />搜索资料<\/button>/)
 })
 
+test('homepage quick search can scope the search collection', () => {
+  assert.match(homePage, /className="home-search-scope"/)
+  assert.match(homePage, /htmlFor="home-search-collection"/)
+  assert.match(homePage, /name="collection"/)
+  assert.match(homePage, /<option value="all">全部资料<\/option>/)
+  assert.match(homePage, /<option value="works">只搜作品<\/option>/)
+  assert.match(homePage, /<option value="creators">只搜创作者<\/option>/)
+  assert.match(homePage, /<option value="terms">只搜名词解释<\/option>/)
+  assert.match(homePage, /<option value="rules">只搜排雷规则<\/option>/)
+  assert.match(styles, /\.home-search-scope\s*\{/)
+  assert.match(styles, /\.search-box input,\n\.search-box select/)
+})
+
 test('search page initializes from URL query parameters', () => {
   assert.match(searchClient, /new URLSearchParams\(window\.location\.search\)/)
   assert.match(searchClient, /params\.get\('q'\)/)

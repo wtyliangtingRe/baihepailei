@@ -23,7 +23,8 @@ a {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -154,6 +155,11 @@ h1 {
   font-size: 13px;
   font-weight: 700;
   line-height: 1.2;
+}
+
+.home-search-scope {
+  display: grid;
+  gap: 8px;
 }
 
 .home-section-grid {
@@ -462,7 +468,8 @@ h1 {
   font-weight: 700;
 }
 
-.search-box input {
+.search-box input,
+.search-box select {
   width: 100%;
   padding: 16px 18px;
   border: 1px solid #444;
@@ -472,7 +479,8 @@ h1 {
   color: #fff;
 }
 
-.search-box input:focus {
+.search-box input:focus,
+.search-box select:focus {
   border-color: #ffb5d7;
   box-shadow: 0 0 0 4px rgb(255 181 215 / 0.12);
 }
