@@ -9,6 +9,7 @@ function read(path) {
 const styles = read('src/app/(frontend)/styles.css')
 const homePage = read('src/app/(frontend)/page.tsx')
 const worksPage = read('src/app/(frontend)/works/page.tsx')
+const collectionIndexPage = read('src/app/(frontend)/_components/CollectionIndexPage.tsx')
 const detailIndexDetail = read('src/app/(frontend)/_components/DetailIndexDetail.tsx')
 const searchIndexDetail = read('src/app/(frontend)/_components/SearchIndexDetail.tsx')
 const searchClient = read('src/app/(frontend)/search/search-client.tsx')
@@ -37,6 +38,13 @@ test('search page initializes from URL query parameters', () => {
   assert.match(searchClient, /params\.get\('collection'\)/)
   assert.match(searchClient, /if \(initialQuery\) setQuery\(initialQuery\)/)
   assert.match(searchClient, /validCollections\.has\(initialCollection\)/)
+})
+
+test('collection search links preserve collection scope', () => {
+  assert.match(collectionIndexPage, /href=\{`\/search\?collection=\$\{collection\}`\}/)
+  assert.match(collectionIndexPage, />\s*搜索\{title\}\s*</)
+  assert.match(worksPage, /href="\/search\?collection=works"/)
+  assert.match(worksPage, />搜索作品<\/Link>/)
 })
 
 test('works page includes a rank explanation section', () => {
