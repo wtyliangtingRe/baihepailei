@@ -24,6 +24,16 @@ const organizationTypeLabels: Record<string, string> = {
   other: '其他机构',
 }
 
+const evidenceTypeLabels: Record<string, string> = {
+  work_screenshot: '原作截图',
+  official_page: '官方页面',
+  interview: '访谈',
+  social_media: '社交媒体',
+  legacy_wiki: '旧站记录',
+  platform_page: '平台页面',
+  other: '其他证据',
+}
+
 function compactValues(values: string[] | undefined, limit = 3) {
   if (!Array.isArray(values)) return ''
   return values.filter(Boolean).slice(0, limit).join(' / ')
@@ -40,6 +50,11 @@ function organizationTypeLabel(value?: string) {
   return organizationTypeLabels[value] || value
 }
 
+function evidenceTypeLabel(value?: string) {
+  if (!value) return ''
+  return evidenceTypeLabels[value] || value
+}
+
 function primaryMeta(item: SearchItem) {
   if (item.collection === 'works') {
     return displayRank(item.rank) || item.slug
@@ -51,6 +66,10 @@ function primaryMeta(item: SearchItem) {
 
   if (item.collection === 'organizations') {
     return organizationTypeLabel(item.organizationType) || item.slug
+  }
+
+  if (item.collection === 'evidence') {
+    return evidenceTypeLabel(item.evidenceType) || item.slug
   }
 
   if (item.collection === 'terms') {
@@ -69,6 +88,7 @@ function secondaryMeta(item: SearchItem) {
   if (item.collection === 'works') return item.originalTitle || compactValues(item.creators)
   if (item.collection === 'creators') return compactValues(item.aliases)
   if (item.collection === 'organizations') return compactValues(item.aliases)
+  if (item.collection === 'evidence') return compactValues(item.relatedWorks) || compactValues(item.relatedOrganizations)
   if (item.collection === 'terms') return compactValues(item.relatedWarnings)
   if (item.collection === 'rules') return compactValues(item.relatedWarnings)
   return ''
