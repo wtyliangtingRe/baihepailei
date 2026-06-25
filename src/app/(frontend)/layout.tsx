@@ -4,6 +4,7 @@ import React from 'react'
 
 import './styles.css'
 import './covers.css'
+import './callouts.css'
 
 export const metadata: Metadata = {
   title: 'Baihepailei',
