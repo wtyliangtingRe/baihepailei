@@ -185,6 +185,81 @@ h1 {
   margin-bottom: 28px;
 }
 
+.collection-page {
+  width: min(1040px, 100%);
+}
+
+.collection-heading {
+  display: grid;
+  gap: 12px;
+}
+
+.collection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  color: #aaa;
+}
+
+.collection-actions span {
+  padding: 8px 12px;
+  border: 1px solid #303030;
+  border-radius: 999px;
+  background: #141414;
+}
+
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.collection-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-height: 170px;
+  padding: 22px;
+  border: 1px solid #303030;
+  border-radius: 22px;
+  background: #121212;
+  text-decoration: none;
+}
+
+.collection-card:hover {
+  border-color: #ffb5d7;
+  background: #151015;
+}
+
+.collection-card p,
+.collection-card h2,
+.collection-card span {
+  margin: 0;
+}
+
+.collection-card p {
+  width: fit-content;
+  padding: 5px 10px;
+  border: 1px solid #333;
+  border-radius: 999px;
+  color: #ffb5d7;
+  background: #171017;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.collection-card h2 {
+  font-size: clamp(24px, 4vw, 34px);
+  line-height: 1.2;
+}
+
+.collection-card span {
+  color: #cfcfcf;
+  line-height: 1.7;
+}
+
 .search-panel {
   padding: 28px;
 }
@@ -476,6 +551,14 @@ h1 {
 
   .page {
     padding-inline: 16px;
+  }
+
+  .collection-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .collection-card {
+    min-height: auto;
   }
 
   .detail-fields div {
