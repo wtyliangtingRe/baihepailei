@@ -43,6 +43,12 @@ type SearchResult = SearchItem & {
   score: number
 }
 
+function indexModeLabel(mode: string) {
+  if (mode === 'include-drafts') return '含草稿'
+  if (mode === 'published') return '仅已发布'
+  return mode || '未知模式'
+}
+
 function HighlightedText({ query, text }: { query: string; text: string }) {
   const terms = splitQuery(query)
   if (!text || terms.length === 0) return <>{text}</>
@@ -125,7 +131,7 @@ export default function SearchClient() {
       <div className="search-meta">
         <span>索引：{index.total} 条</span>
         <span>生成：{new Date(index.generatedAt).toLocaleString('zh-CN')}</span>
-        <span>{index.mode}</span>
+        <span>模式：{indexModeLabel(index.mode)}</span>
       </div>
 
       <label className="search-box">
@@ -176,7 +182,7 @@ export default function SearchClient() {
               </h2>
               {resultSummary(item) ? <p className="result-text">{resultSummary(item)}</p> : null}
               <a className="result-link" href={item.url}>
-                {item.url}
+                查看详情
               </a>
             </article>
           ))
