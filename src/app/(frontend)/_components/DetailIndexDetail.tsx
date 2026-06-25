@@ -110,6 +110,25 @@ function WorkCover({ cover, title }: { cover?: DetailCoverImage; title: string }
   )
 }
 
+function RelatedWorks({ works }: { works: DetailItem[] }) {
+  if (works.length === 0) return null
+
+  return (
+    <section className="detail-card related-works-card">
+      <h2>相关作品</h2>
+      <div className="related-work-list">
+        {works.map((work) => (
+          <Link className="related-work-item" href={work.url} key={work.id}>
+            <span>{displayRank(work.rank) || '未分级'}</span>
+            <strong>{work.title}</strong>
+            {work.originalTitle ? <em>{work.originalTitle}</em> : null}
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function RichTextSections({ item }: { item: DetailItem }) {
   const sections = item.sections || []
   if (sections.length === 0) {
@@ -133,7 +152,7 @@ function RichTextSections({ item }: { item: DetailItem }) {
   )
 }
 
-export default function DetailIndexDetail({ item }: { item: DetailItem }) {
+export default function DetailIndexDetail({ item, relatedWorks = [] }: { item: DetailItem; relatedWorks?: DetailItem[] }) {
   const rank = displayRank(item.rank)
 
   return (
@@ -162,6 +181,7 @@ export default function DetailIndexDetail({ item }: { item: DetailItem }) {
       </section>
 
       <BasicInfo item={item} />
+      <RelatedWorks works={relatedWorks} />
       <RichTextSections item={item} />
       <SourceLinks item={item} />
     </main>
