@@ -1,0 +1,79 @@
+.work-card {
+  overflow: hidden;
+  padding: 0;
+}
+
+.work-card-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 22px 22px;
+}
+
+.work-cover-thumb,
+.detail-cover {
+  overflow: hidden;
+  border: 1px solid #303030;
+  background:
+    radial-gradient(circle at 22% 18%, rgb(255 181 215 / 0.28), transparent 32%),
+    linear-gradient(135deg, #231320, #111 62%);
+}
+
+.work-cover-thumb {
+  display: grid;
+  aspect-ratio: 16 / 10;
+  width: 100%;
+  place-items: center;
+  border-width: 0 0 1px;
+  border-radius: 22px 22px 0 0;
+}
+
+.work-cover-thumb img,
+.detail-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.work-cover-placeholder,
+.detail-cover-placeholder {
+  color: #ffb5d7;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.work-cover-placeholder span,
+.detail-cover-placeholder span {
+  padding: 8px 12px;
+  border: 1px solid rgb(255 181 215 / 0.35);
+  border-radius: 999px;
+  background: rgb(17 17 17 / 0.72);
+}
+
+.detail-hero-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) 1fr;
+  gap: 28px;
+  align-items: center;
+}
+
+.detail-cover {
+  display: grid;
+  aspect-ratio: 3 / 4;
+  width: min(280px, 100%);
+  margin: 0;
+  place-items: center;
+  border-radius: 22px;
+}
+
+@media (max-width: 760px) {
+  .detail-hero-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-cover {
+    width: 100%;
+    max-width: 320px;
+  }
+}
