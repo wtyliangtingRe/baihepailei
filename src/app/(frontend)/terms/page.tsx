@@ -5,7 +5,7 @@ export default function TermsIndexPage() {
     <CollectionIndexPage
       collection="terms"
       description="集中浏览迁移后的概念、术语和解释性条目。"
-      eyebrow="terms"
+      eyebrow="名词解释"
       title="名词解释"
     />
   )
