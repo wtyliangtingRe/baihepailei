@@ -7,6 +7,7 @@ function read(path) {
 }
 
 const layout = read('src/app/(frontend)/layout.tsx')
+const browsePage = read('src/app/(frontend)/browse/page.tsx')
 const detailIndexDetail = read('src/app/(frontend)/_components/DetailIndexDetail.tsx')
 const searchIndexDetail = read('src/app/(frontend)/_components/SearchIndexDetail.tsx')
 const searchClient = read('src/app/(frontend)/search/search-client.tsx')
@@ -22,6 +23,23 @@ test('global navigation uses user-facing Chinese labels', () => {
   assert.doesNotMatch(layout, /label: 'Works'/)
   assert.doesNotMatch(layout, /label: 'Search'/)
   assert.doesNotMatch(layout, /label: 'Admin'/)
+})
+
+test('browse cards use Chinese labels and actions instead of route text', () => {
+  for (const label of ['作品', '创作者', '名词解释', '排雷规则']) {
+    assert.match(browsePage, new RegExp(`eyebrow: '${label}'`))
+  }
+
+  for (const action of ['浏览作品', '浏览创作者', '浏览名词解释', '浏览排雷规则']) {
+    assert.match(browsePage, new RegExp(`actionLabel: '${action}'`))
+  }
+
+  assert.match(browsePage, />\s*\{section\.actionLabel\}\s*</)
+  assert.doesNotMatch(browsePage, /eyebrow: 'Works'/)
+  assert.doesNotMatch(browsePage, /eyebrow: 'Creators'/)
+  assert.doesNotMatch(browsePage, /eyebrow: 'Terms'/)
+  assert.doesNotMatch(browsePage, /eyebrow: 'Rules'/)
+  assert.doesNotMatch(browsePage, />\s*\{section\.href\}\s*</)
 })
 
 test('detail pages do not show raw slug chips in the hero area', () => {
