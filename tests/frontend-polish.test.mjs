@@ -7,6 +7,7 @@ function read(path) {
 }
 
 const layout = read('src/app/(frontend)/layout.tsx')
+const homePage = read('src/app/(frontend)/page.tsx')
 const browsePage = read('src/app/(frontend)/browse/page.tsx')
 const detailIndexDetail = read('src/app/(frontend)/_components/DetailIndexDetail.tsx')
 const searchIndexDetail = read('src/app/(frontend)/_components/SearchIndexDetail.tsx')
@@ -23,6 +24,20 @@ test('global navigation uses user-facing Chinese labels', () => {
   assert.doesNotMatch(layout, /label: 'Works'/)
   assert.doesNotMatch(layout, /label: 'Search'/)
   assert.doesNotMatch(layout, /label: 'Admin'/)
+})
+
+test('home cards use Chinese section labels', () => {
+  for (const label of ['作品', '创作者', '名词解释', '排雷规则']) {
+    assert.match(homePage, new RegExp(`eyebrow: '${label}'`))
+  }
+
+  assert.match(homePage, /aria-label="Lite 资料分类"/)
+  assert.match(homePage, />\s*浏览资料库\s*</)
+  assert.doesNotMatch(homePage, /eyebrow: 'Works'/)
+  assert.doesNotMatch(homePage, /eyebrow: 'Creators'/)
+  assert.doesNotMatch(homePage, /eyebrow: 'Terms'/)
+  assert.doesNotMatch(homePage, /eyebrow: 'Rules'/)
+  assert.doesNotMatch(homePage, /aria-label="Lite archive sections"/)
 })
 
 test('browse cards use Chinese labels and actions instead of route text', () => {
