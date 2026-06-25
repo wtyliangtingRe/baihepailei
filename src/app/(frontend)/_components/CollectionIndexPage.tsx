@@ -18,16 +18,16 @@ function compactValues(values: string[] | undefined, limit = 3) {
 
 function primaryMeta(item: SearchItem) {
   if (item.collection === 'works') {
-    return item.rank && item.rank !== 'unknown' ? `${item.rank} rank` : item.slug
+    return item.rank && item.rank !== 'unknown' ? `${item.rank}级` : item.slug
   }
 
   if (item.collection === 'creators') {
-    return item.rank && item.rank !== 'unknown' ? `${item.rank} rank` : item.slug
+    return item.rank && item.rank !== 'unknown' ? `${item.rank}级` : item.slug
   }
 
   if (item.collection === 'terms') {
     const relatedTerms = compactValues(item.relatedTerms)
-    return relatedTerms ? `Related: ${relatedTerms}` : item.slug
+    return relatedTerms ? `相关：${relatedTerms}` : item.slug
   }
 
   if (item.collection === 'rules') {
@@ -61,12 +61,12 @@ export default function CollectionIndexPage({ collection, eyebrow, title, descri
         <p>{description}</p>
         <div className="collection-actions">
           <Link className="back-link" href="/search">
-            Search
+            搜索
           </Link>
           <Link className="back-link" href="/browse">
-            Browse all
+            浏览全部
           </Link>
-          <span>{items.length} entries</span>
+          <span>{items.length} 条</span>
         </div>
       </section>
 
