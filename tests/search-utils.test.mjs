@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 
 import {
   filterAndRankItems,
+  getCollectionLabel,
   resultMeta,
   resultSummary,
   scoreItem,
@@ -53,6 +54,11 @@ test('splitQuery trims whitespace and lowercases terms', () => {
   assert.deepEqual(splitQuery('  Sakura   Trick  '), ['sakura', 'trick'])
 })
 
+test('getCollectionLabel returns labels and falls back to raw collection names', () => {
+  assert.equal(getCollectionLabel('works'), '作品')
+  assert.equal(getCollectionLabel('unknown'), 'unknown')
+})
+
 test('scoreItem gives title and alias matches a stronger score than body-only matches', () => {
   const titleScore = scoreItem(work, '樱trick')
   const bodyScore = scoreItem(work, '校园')
@@ -89,8 +95,11 @@ test('filterAndRankItems limits empty-query browse results to 30 items', () => {
   assert.equal(results.length, 30)
 })
 
-test('resultMeta and resultSummary produce compact display strings', () => {
+test('resultMeta and resultSummary produce compact display strings without legacy XWiki pages', () => {
+  const summary = resultSummary(work)
+
   assert.equal(resultMeta(work), '作品 · B级')
-  assert.match(resultSummary(work), /桜Trick/)
-  assert.match(resultSummary(work), /タチ/)
+  assert.match(summary, /桜Trick/)
+  assert.match(summary, /タチ/)
+  assert.doesNotMatch(summary, /Main\.作品/)
 })
