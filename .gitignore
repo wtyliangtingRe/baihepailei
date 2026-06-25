@@ -35,6 +35,10 @@ exported_pages*/
 *.sqlite
 *.db
 
+# Generated exports may contain real content
+public/search-index.json
+public/search-index.*.json
+
 # Local app runtime data
 postgres-data/
 media/
