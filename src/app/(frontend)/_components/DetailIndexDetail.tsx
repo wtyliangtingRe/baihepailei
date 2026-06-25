@@ -3,6 +3,11 @@ import Link from 'next/link'
 import type { DetailCoverImage, DetailItem } from '../_lib/detail-index'
 import RichTextRenderer from './RichTextRenderer'
 
+type ExtendedDetailItem = DetailItem & {
+  organizationType?: string
+  organizations?: string[]
+}
+
 const organizationTypeLabels: Record<string, string> = {
   publisher: '出版社',
   production_company: '制作公司',
@@ -69,12 +74,13 @@ function FieldList({ fields }: { fields: Array<[string, string | string[] | bool
 }
 
 function BasicInfo({ item }: { item: DetailItem }) {
+  const extendedItem = item as ExtendedDetailItem
   const fields: Array<[string, string | string[] | boolean | undefined]> = [
-    ['机构类型', organizationTypeLabel(item.organizationType)],
+    ['机构类型', organizationTypeLabel(extendedItem.organizationType)],
     ['原名', item.originalTitle],
     ['别名', item.aliases],
     ['创作者', item.creators],
-    ['相关机构', item.organizations],
+    ['相关机构', extendedItem.organizations],
     ['标签', item.tags],
     ['注意点', item.warnings],
     ['相关名词', item.relatedTerms],
@@ -174,8 +180,9 @@ function RichTextSections({ item }: { item: DetailItem }) {
 }
 
 export default function DetailIndexDetail({ item, relatedWorks = [] }: { item: DetailItem; relatedWorks?: DetailItem[] }) {
+  const extendedItem = item as ExtendedDetailItem
   const rank = displayRank(item.rank)
-  const organizationType = organizationTypeLabel(item.organizationType)
+  const organizationType = organizationTypeLabel(extendedItem.organizationType)
 
   return (
     <main className="page detail-page">
