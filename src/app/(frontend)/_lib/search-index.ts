@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-export type SearchCollection = 'works' | 'creators' | 'terms' | 'rules'
+export type SearchCollection = 'works' | 'creators' | 'terms' | 'rules' | 'organizations'
 
 export type SearchCoverImage = {
   url?: string
@@ -19,14 +19,16 @@ export type SearchItem = {
   slug: string
   url: string
   rank?: string
+  category?: string
+  organizationType?: string
   originalTitle?: string
   aliases?: string[]
   creators?: string[]
+  organizations?: string[]
   tags?: string[]
   warnings?: string[]
   relatedTerms?: string[]
   relatedWarnings?: string[]
-  category?: string
   cover?: SearchCoverImage
   legacyXWikiPage?: string
   searchText: string
