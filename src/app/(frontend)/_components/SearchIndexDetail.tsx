@@ -78,7 +78,6 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
         <div className="detail-chips">
           {item.rank && item.rank !== 'unknown' ? <span>{item.rank}级</span> : null}
           {item.category ? <span>{item.category}</span> : null}
-          <span>{item.slug}</span>
         </div>
       </section>
 
