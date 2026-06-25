@@ -170,7 +170,6 @@ export default function SearchClient() {
             <article className="result-card" key={item.id}>
               <div className="result-card-header">
                 <p>{resultMeta(item)}</p>
-                {item.score > 0 ? <span>score {item.score}</span> : null}
               </div>
               <h2>
                 <HighlightedText query={query} text={item.title} />
