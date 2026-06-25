@@ -12,7 +12,7 @@ import {
 
 type SearchItem = {
   id: string
-  collection: 'works' | 'creators' | 'organizations' | 'terms' | 'rules' | string
+  collection: 'works' | 'creators' | 'organizations' | 'evidence' | 'terms' | 'rules' | string
   typeLabel: string
   title: string
   slug: string
@@ -22,12 +22,16 @@ type SearchItem = {
   aliases?: string[]
   creators?: string[]
   organizations?: string[]
+  relatedWorks?: string[]
+  relatedCreators?: string[]
+  relatedOrganizations?: string[]
   tags?: string[]
   warnings?: string[]
   relatedTerms?: string[]
   relatedWarnings?: string[]
   category?: string
   organizationType?: string
+  evidenceType?: string
   legacyXWikiPage?: string
   searchText: string
 }
@@ -45,8 +49,8 @@ type SearchResult = SearchItem & {
   score: number
 }
 
-const searchSuggestions = ['作品中文名或日文名', '作者 / 社团 / 制作组 / 机构', 'S级、B级、D级等分级', '旧站关键词或别名']
-const validCollections = new Set(['all', 'works', 'creators', 'organizations', 'terms', 'rules'])
+const searchSuggestions = ['作品中文名或日文名', '作者 / 社团 / 制作组 / 机构', '证据类型或来源页面', '旧站关键词或别名']
+const validCollections = new Set(['all', 'works', 'creators', 'organizations', 'evidence', 'terms', 'rules'])
 
 function indexModeLabel(mode: string) {
   if (mode === 'include-drafts') return '含草稿'
@@ -155,7 +159,7 @@ export default function SearchClient() {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="例如：樱trick、タチ、分级、作者名、机构名"
+          placeholder="例如：樱trick、タチ、分级、作者名、机构名、证据类型"
         />
       </label>
 
