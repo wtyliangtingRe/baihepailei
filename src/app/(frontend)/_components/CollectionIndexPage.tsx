@@ -66,8 +66,8 @@ export default function CollectionIndexPage({ collection, eyebrow, title, descri
         <h1>{title}</h1>
         <p>{description}</p>
         <div className="collection-actions">
-          <Link className="back-link" href="/search">
-            搜索
+          <Link className="back-link" href={`/search?collection=${collection}`}>
+            搜索{title}
           </Link>
           <Link className="back-link" href="/browse">
             浏览全部
