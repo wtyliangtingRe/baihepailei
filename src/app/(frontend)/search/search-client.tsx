@@ -87,21 +87,26 @@ function scoreItem(item: SearchItem, query: string) {
   return score
 }
 
-function highlightText(text: string, query: string) {
+function HighlightedText({ query, text }: { query: string; text: string }) {
   const terms = splitQuery(query)
-  if (!text || terms.length === 0) return text
+  if (!text || terms.length === 0) return <>{text}</>
 
-  let output = text
-  for (const term of terms) {
-    const index = output.toLowerCase().indexOf(term)
-    if (index < 0) continue
-    const before = output.slice(0, index)
-    const match = output.slice(index, index + term.length)
-    const after = output.slice(index + term.length)
-    output = `${before}<mark>${match}</mark>${after}`
-    break
-  }
-  return output
+  const lowerText = text.toLowerCase()
+  const term = terms.find((item) => lowerText.includes(item))
+  if (!term) return <>{text}</>
+
+  const index = lowerText.indexOf(term)
+  const before = text.slice(0, index)
+  const match = text.slice(index, index + term.length)
+  const after = text.slice(index + term.length)
+
+  return (
+    <>
+      {before}
+      <mark>{match}</mark>
+      {after}
+    </>
+  )
 }
 
 function resultMeta(item: SearchItem) {
@@ -243,7 +248,9 @@ export default function SearchClient() {
                 <p>{resultMeta(item)}</p>
                 {item.score > 0 ? <span>score {item.score}</span> : null}
               </div>
-              <h2 dangerouslySetInnerHTML={{ __html: highlightText(item.title, query) }} />
+              <h2>
+                <HighlightedText query={query} text={item.title} />
+              </h2>
               {resultSummary(item) ? <p className="result-text">{resultSummary(item)}</p> : null}
               <a className="result-link" href={item.url}>
                 {item.url}
