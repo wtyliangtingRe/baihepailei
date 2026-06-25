@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-import type { DetailItem } from '../_lib/detail-index'
+import type { DetailCoverImage, DetailItem } from '../_lib/detail-index'
 import RichTextRenderer from './RichTextRenderer'
 
 function collectionLabel(collection: string) {
@@ -94,6 +94,22 @@ function SourceLinks({ item }: { item: DetailItem }) {
   )
 }
 
+function WorkCover({ cover, title }: { cover?: DetailCoverImage; title: string }) {
+  if (cover?.url) {
+    return (
+      <figure className="detail-cover">
+        <img alt={cover.alt || `${title}封面`} src={cover.url} />
+      </figure>
+    )
+  }
+
+  return (
+    <figure className="detail-cover detail-cover-placeholder" aria-label="暂无封面">
+      <span>暂无封面</span>
+    </figure>
+  )
+}
+
 function RichTextSections({ item }: { item: DetailItem }) {
   const sections = item.sections || []
   if (sections.length === 0) {
@@ -131,12 +147,17 @@ export default function DetailIndexDetail({ item }: { item: DetailItem }) {
             {collectionBackLabel(item.collection)}
           </Link>
         </div>
-        <p className="eyebrow">{collectionLabel(item.collection)}</p>
-        <h1>{item.title}</h1>
-        <div className="detail-chips">
-          {rank ? <span>{rank}</span> : null}
-          {item.category ? <span>{item.category}</span> : null}
-          {item.hasEvidence ? <span>有证据材料</span> : null}
+        <div className="detail-hero-layout">
+          {item.collection === 'works' ? <WorkCover cover={item.cover} title={item.title} /> : null}
+          <div>
+            <p className="eyebrow">{collectionLabel(item.collection)}</p>
+            <h1>{item.title}</h1>
+            <div className="detail-chips">
+              {rank ? <span>{rank}</span> : null}
+              {item.category ? <span>{item.category}</span> : null}
+              {item.hasEvidence ? <span>有证据材料</span> : null}
+            </div>
+          </div>
         </div>
       </section>
 
