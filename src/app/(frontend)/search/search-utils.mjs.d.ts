@@ -28,6 +28,8 @@ export const collectionLabels: Record<string, string>
 
 export function getCollectionLabel(collection: string): string
 
+export function displayRank(rank?: string): string
+
 export function normalizeText(value: unknown): string
 
 export function splitQuery(query: string): string[]
