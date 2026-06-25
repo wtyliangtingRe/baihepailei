@@ -1,0 +1,91 @@
+import Link from 'next/link'
+
+import type { SearchItem } from '../_lib/search-index'
+
+function collectionLabel(collection: string) {
+  if (collection === 'works') return '作品'
+  if (collection === 'creators') return '创作者'
+  if (collection === 'terms') return '名词解释'
+  if (collection === 'rules') return '规则'
+  return collection
+}
+
+function compactLines(text: string) {
+  return String(text || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 18)
+}
+
+function FieldList({ fields }: { fields: Array<[string, string | string[] | undefined]> }) {
+  const visibleFields = fields
+    .map(([label, value]) => {
+      const values = Array.isArray(value) ? value.filter(Boolean) : value ? [value] : []
+      return [label, values] as const
+    })
+    .filter(([, values]) => values.length > 0)
+
+  if (visibleFields.length === 0) return null
+
+  return (
+    <dl className="detail-fields">
+      {visibleFields.map(([label, values]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd>{values.join(' / ')}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+export default function SearchIndexDetail({ item }: { item: SearchItem }) {
+  const searchLines = compactLines(item.searchText)
+
+  return (
+    <main className="page detail-page">
+      <section className="detail-hero">
+        <Link className="back-link" href="/search">
+          ← 返回搜索
+        </Link>
+        <p className="eyebrow">{collectionLabel(item.collection)}</p>
+        <h1>{item.title}</h1>
+        <div className="detail-chips">
+          {item.rank && item.rank !== 'unknown' ? <span>{item.rank}级</span> : null}
+          {item.category ? <span>{item.category}</span> : null}
+          <span>{item.slug}</span>
+        </div>
+      </section>
+
+      <section className="detail-card">
+        <h2>基础信息</h2>
+        <FieldList
+          fields={[
+            ['原名', item.originalTitle],
+            ['别名', item.aliases],
+            ['创作者', item.creators],
+            ['标签', item.tags],
+            ['注意点', item.warnings],
+            ['相关名词', item.relatedTerms],
+            ['相关注意点', item.relatedWarnings],
+            ['旧 XWiki 页面', item.legacyXWikiPage],
+          ]}
+        />
+      </section>
+
+      <section className="detail-card">
+        <h2>Lite 搜索文本预览</h2>
+        {searchLines.length ? (
+          <ul className="search-text-preview">
+            {searchLines.map((line, index) => (
+              <li key={`${line}-${index}`}>{line}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="muted">暂无搜索文本。</p>
+        )}
+      </section>
+    </main>
+  )
+}

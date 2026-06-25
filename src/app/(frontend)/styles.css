@@ -55,7 +55,8 @@ input {
 
 .site-nav a,
 .actions a,
-.result-link {
+.result-link,
+.back-link {
   padding: 10px 16px;
   border: 1px solid #444;
   border-radius: 999px;
@@ -66,6 +67,7 @@ input {
 .site-nav a:hover,
 .actions a:hover,
 .result-link:hover,
+.back-link:hover,
 .search-filters button:hover {
   border-color: #ffb5d7;
 }
@@ -79,14 +81,18 @@ input {
 
 .hero,
 .search-panel,
-.empty-state {
+.empty-state,
+.detail-hero,
+.detail-card {
   width: min(980px, 100%);
   border: 1px solid #333;
   border-radius: 28px;
   background: #181818;
 }
 
-.hero {
+.hero,
+.detail-hero,
+.detail-card {
   padding: 48px;
 }
 
@@ -134,7 +140,8 @@ h1 {
 
 .search-meta,
 .result-card-header,
-.result-summary {
+.result-summary,
+.detail-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -143,7 +150,8 @@ h1 {
 }
 
 .search-meta span,
-.result-card-header span {
+.result-card-header span,
+.detail-chips span {
   padding: 5px 10px;
   border: 1px solid #333;
   border-radius: 999px;
@@ -256,11 +264,13 @@ h1 {
   background: #121212;
 }
 
-.empty-state h2 {
+.empty-state h2,
+.detail-card h2 {
   margin: 0 0 10px;
 }
 
-.empty-state p {
+.empty-state p,
+.muted {
   margin: 0 0 16px;
   color: #d0d0d0;
 }
@@ -274,6 +284,61 @@ h1 {
   color: #ffb5d7;
 }
 
+.detail-page {
+  display: grid;
+  gap: 18px;
+}
+
+.detail-hero {
+  display: grid;
+  gap: 14px;
+}
+
+.back-link {
+  width: fit-content;
+  color: #ffb5d7;
+}
+
+.detail-fields {
+  display: grid;
+  gap: 12px;
+  margin: 22px 0 0;
+}
+
+.detail-fields div {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid #303030;
+}
+
+.detail-fields dt {
+  color: #aaa;
+}
+
+.detail-fields dd {
+  margin: 0;
+  color: #f2f2f2;
+  line-height: 1.7;
+}
+
+.search-text-preview {
+  display: grid;
+  gap: 8px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-text-preview li {
+  padding: 12px 14px;
+  border: 1px solid #303030;
+  border-radius: 14px;
+  background: #111;
+  color: #d8d8d8;
+}
+
 @media (max-width: 640px) {
   .site-header {
     align-items: flex-start;
@@ -282,12 +347,19 @@ h1 {
 
   .hero,
   .search-panel,
-  .empty-state {
+  .empty-state,
+  .detail-hero,
+  .detail-card {
     border-radius: 20px;
     padding: 24px;
   }
 
   .page {
     padding-inline: 16px;
+  }
+
+  .detail-fields div {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 }
