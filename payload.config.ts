@@ -3,6 +3,7 @@ import { lexicalEditor as makeEditor } from '@payloadcms/richtext-lexical'
 import { buildConfig } from 'payload'
 
 import { Creators } from './src/collections/Creators'
+import { Evidence } from './src/collections/Evidence'
 import { Media } from './src/collections/Media'
 import { Organizations } from './src/collections/Organizations'
 import { Rules } from './src/collections/Rules'
@@ -16,7 +17,7 @@ export default buildConfig({
   admin: {
     user: Users.slug,
   },
-  collections: [Users, Media, Works, Creators, Organizations, Terms, Warnings, Tags, Rules],
+  collections: [Users, Media, Works, Creators, Organizations, Evidence, Terms, Warnings, Tags, Rules],
   db: postgresAdapter({
     pool: {
       connectionString: String(process.env['DATABASE_URL'] || ''),
