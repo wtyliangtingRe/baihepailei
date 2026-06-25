@@ -5,7 +5,7 @@ export default function RulesIndexPage() {
     <CollectionIndexPage
       collection="rules"
       description="整理旧站中的原则、说明与轻量规则内容。"
-      eyebrow="rules"
+      eyebrow="排雷规则"
       title="排雷规则"
     />
   )
