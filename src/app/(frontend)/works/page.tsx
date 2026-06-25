@@ -49,7 +49,7 @@ export default function WorksIndexPage() {
           <Link className="back-link" href="/browse">浏览全部</Link>
           <span>{items.length} 条</span>
         </div>
-        <nav className="rank-jump-list" aria-label="作品分级快速跳转">
+        <nav className="rank-jump-list" id="works-rank-nav" aria-label="作品分级快速跳转">
           {groups.map((group) => (
             <a href={`#${rankAnchor(group.rank)}`} key={group.rank}>
               {rankLabel(group.rank)} <span>{group.items.length}</span>
@@ -74,6 +74,10 @@ export default function WorksIndexPage() {
                   {item.originalTitle ? <span>{item.originalTitle}</span> : null}
                 </Link>
               ))}
+            </div>
+
+            <div className="rank-group-actions">
+              <a href="#works-rank-nav">返回分级导航</a>
             </div>
           </section>
         ))}
