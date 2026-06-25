@@ -3,11 +3,35 @@ import Link from 'next/link'
 import MissingSearchIndex from '../_components/MissingSearchIndex'
 import { readSearchIndex } from '../_lib/search-index'
 
-const links = [
-  ['works', 'Works'],
-  ['creators', 'Creators'],
-  ['terms', 'Terms'],
-  ['rules', 'Rules'],
+const sections = [
+  {
+    kind: 'works',
+    href: '/works',
+    eyebrow: 'Works',
+    title: '作品',
+    description: '以作品为核心浏览条目，适合从具体名称进入排雷信息。',
+  },
+  {
+    kind: 'creators',
+    href: '/creators',
+    eyebrow: 'Creators',
+    title: '创作者',
+    description: '查看与创作者相关的资料，辅助判断作品来源与关联信息。',
+  },
+  {
+    kind: 'terms',
+    href: '/terms',
+    eyebrow: 'Terms',
+    title: '名词解释',
+    description: '集中浏览旧站迁移出的概念、术语和解释性条目。',
+  },
+  {
+    kind: 'rules',
+    href: '/rules',
+    eyebrow: 'Rules',
+    title: '排雷规则',
+    description: '整理旧站中的原则、说明与轻量规则内容。',
+  },
 ]
 
 export default function BrowsePage() {
@@ -18,18 +42,26 @@ export default function BrowsePage() {
     <main className="page">
       <section className="page-heading">
         <p className="eyebrow">browse</p>
-        <h1>Browse</h1>
-        <p>{index.total} indexed entries</p>
+        <h1>浏览资料库</h1>
+        <p>当前 Lite 索引共收录 {index.total} 个条目。你可以按内容类型浏览，也可以直接使用搜索。</p>
+        <div className="actions">
+          <Link href="/search">开始搜索</Link>
+          <Link href="/">返回首页</Link>
+        </div>
       </section>
 
       <section className="results-list">
-        {links.map(([kind, label]) => (
-          <article className="result-card" key={kind}>
+        {sections.map((section) => (
+          <article className="result-card" key={section.kind}>
             <div className="result-card-header">
-              <p>{index.counts[kind] || 0} entries</p>
+              <p>{section.eyebrow}</p>
+              <span>{index.counts[section.kind] || 0} 条</span>
             </div>
-            <h2>{label}</h2>
-            <Link className="result-link" href={`/${kind}`}>/{kind}</Link>
+            <h2>{section.title}</h2>
+            <p className="result-text">{section.description}</p>
+            <Link className="result-link" href={section.href}>
+              {section.href}
+            </Link>
           </article>
         ))}
       </section>
