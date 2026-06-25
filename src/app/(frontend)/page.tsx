@@ -8,19 +8,19 @@ const sections = [
     description: '浏览 Lite 索引里的作品条目，后续会逐步升级为完整正文详情页。',
   },
   {
-    href: '/browse/creators',
+    href: '/creators',
     eyebrow: 'Creators',
     title: '创作者',
     description: '查看从旧 XWiki 清理出来的创作者相关资料。',
   },
   {
-    href: '/browse/terms',
+    href: '/terms',
     eyebrow: 'Terms',
     title: '名词解释',
     description: '集中浏览迁移后的概念、术语和解释性条目。',
   },
   {
-    href: '/browse/rules',
+    href: '/rules',
     eyebrow: 'Rules',
     title: '排雷规则',
     description: '整理旧站中的原则、说明与轻量规则内容。',
