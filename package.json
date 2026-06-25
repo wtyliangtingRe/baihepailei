@@ -15,7 +15,8 @@
     "import:clean-seed": "node scripts/import/direct-seed-clean-data.mjs",
     "export:lite-search": "node scripts/export/build-lite-search-index.mjs",
     "export:lite-details": "node scripts/export/build-lite-detail-index.mjs",
-    "test:search": "node --test tests/search-utils.test.mjs"
+    "test:search": "node --test tests/search-utils.test.mjs",
+    "test:frontend-polish": "node --test tests/frontend-polish.test.mjs"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "latest",
