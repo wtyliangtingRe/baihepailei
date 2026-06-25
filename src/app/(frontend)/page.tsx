@@ -50,12 +50,10 @@ export default function HomePage() {
           <p>
             这里会重做为结构化资料站：作品、创作者、名词解释和排雷规则都在 Payload 后台维护，前台优先提供轻量文字浏览与快速搜索。
           </p>
-          <form action="/search" className="home-search" role="search">
-            <label htmlFor="home-search-input">快速搜索</label>
-            <div>
-              <input id="home-search-input" name="q" placeholder="输入作品名、作者、分级或旧站关键词" type="search" />
-              <button type="submit">搜索资料</button>
-            </div>
+          <form action="/search" className="search-box" role="search">
+            <span>快速搜索</span>
+            <input id="home-search-input" name="q" placeholder="输入作品名、作者、分级或旧站关键词" type="search" />
+            <button className="result-link" type="submit">搜索资料</button>
           </form>
           <div className="home-stats" aria-label="当前索引统计">
             <span>{index ? `当前收录 ${index.total} 条` : '生成索引后显示条目数'}</span>
