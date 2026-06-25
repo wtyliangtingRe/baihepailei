@@ -15,10 +15,21 @@ const organizationTypeLabels: Record<string, string> = {
   other: '其他机构',
 }
 
+const evidenceTypeLabels: Record<string, string> = {
+  work_screenshot: '原作截图',
+  official_page: '官方页面',
+  interview: '访谈',
+  social_media: '社交媒体',
+  legacy_wiki: '旧站记录',
+  platform_page: '平台页面',
+  other: '其他证据',
+}
+
 function collectionLabel(collection: string) {
   if (collection === 'works') return '作品'
   if (collection === 'creators') return '创作者'
   if (collection === 'organizations') return '机构'
+  if (collection === 'evidence') return '证据材料'
   if (collection === 'terms') return '名词解释'
   if (collection === 'rules') return '排雷规则'
   return collection
@@ -37,6 +48,11 @@ function displayRank(rank?: string) {
 function organizationTypeLabel(value?: string) {
   if (!value) return ''
   return organizationTypeLabels[value] || value
+}
+
+function evidenceTypeLabel(value?: string) {
+  if (!value) return ''
+  return evidenceTypeLabels[value] || value
 }
 
 function compactLines(text: string) {
@@ -75,9 +91,14 @@ function FieldList({ fields }: { fields: Array<[string, string | string[] | unde
 function BasicInfo({ item }: { item: SearchItem }) {
   const fields: Array<[string, string | string[] | undefined]> = [
     ['机构类型', organizationTypeLabel(item.organizationType)],
+    ['证据类型', evidenceTypeLabel(item.evidenceType)],
     ['原名', item.originalTitle],
     ['别名', item.aliases],
+    ['关联作品', item.relatedWorks],
+    ['关联创作者', item.relatedCreators],
+    ['关联机构', item.relatedOrganizations],
     ['创作者', item.creators],
+    ['相关机构', item.organizations],
     ['标签', item.tags],
     ['注意点', item.warnings],
     ['相关名词', item.relatedTerms],
@@ -97,6 +118,7 @@ function BasicInfo({ item }: { item: SearchItem }) {
 export default function SearchIndexDetail({ item }: { item: SearchItem }) {
   const rank = displayRank(item.rank)
   const organizationType = organizationTypeLabel(item.organizationType)
+  const evidenceType = evidenceTypeLabel(item.evidenceType)
   const searchLines = compactLines(item.searchText)
 
   return (
@@ -115,6 +137,7 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
         <div className="detail-chips">
           {rank ? <span>{rank}</span> : null}
           {organizationType ? <span>{organizationType}</span> : null}
+          {evidenceType ? <span>{evidenceType}</span> : null}
           {item.category ? <span>{item.category}</span> : null}
         </div>
       </section>
