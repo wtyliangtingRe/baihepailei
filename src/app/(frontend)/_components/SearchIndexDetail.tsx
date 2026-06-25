@@ -6,8 +6,12 @@ function collectionLabel(collection: string) {
   if (collection === 'works') return '作品'
   if (collection === 'creators') return '创作者'
   if (collection === 'terms') return '名词解释'
-  if (collection === 'rules') return '规则'
+  if (collection === 'rules') return '排雷规则'
   return collection
+}
+
+function collectionBackLabel(collection: string) {
+  return `返回${collectionLabel(collection)}列表`
 }
 
 function displayRank(rank?: string) {
@@ -77,9 +81,14 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
   return (
     <main className="page detail-page">
       <section className="detail-hero">
-        <Link className="back-link" href="/search">
-          ← 返回搜索
-        </Link>
+        <div className="detail-actions">
+          <Link className="back-link" href="/search">
+            ← 返回搜索
+          </Link>
+          <Link className="back-link" href={`/${item.collection}`}>
+            {collectionBackLabel(item.collection)}
+          </Link>
+        </div>
         <p className="eyebrow">{collectionLabel(item.collection)}</p>
         <h1>{item.title}</h1>
         <div className="detail-chips">
