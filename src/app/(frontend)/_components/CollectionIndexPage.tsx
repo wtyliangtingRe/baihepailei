@@ -16,13 +16,19 @@ function compactValues(values: string[] | undefined, limit = 3) {
   return values.filter(Boolean).slice(0, limit).join(' / ')
 }
 
+function displayRank(rank?: string) {
+  if (!rank || rank === 'unknown') return ''
+  if (rank === 'AA') return 'S级'
+  return `${rank}级`
+}
+
 function primaryMeta(item: SearchItem) {
   if (item.collection === 'works') {
-    return item.rank && item.rank !== 'unknown' ? `${item.rank}级` : item.slug
+    return displayRank(item.rank) || item.slug
   }
 
   if (item.collection === 'creators') {
-    return item.rank && item.rank !== 'unknown' ? `${item.rank}级` : item.slug
+    return displayRank(item.rank) || item.slug
   }
 
   if (item.collection === 'terms') {
