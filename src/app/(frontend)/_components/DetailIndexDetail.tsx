@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-import type { DetailCoverImage, DetailItem } from '../_lib/detail-index'
+import { readDetailIndex, type DetailCoverImage, type DetailItem } from '../_lib/detail-index'
 import ContentCallout, { type ContentCalloutItem } from './ContentCallout'
 import RichTextRenderer from './RichTextRenderer'
 
@@ -15,6 +15,12 @@ type ExtendedDetailItem = DetailItem & {
   relatedCreators?: string[]
   relatedOrganizations?: string[]
   callouts?: ContentCalloutItem[]
+}
+
+type RelationGroup = {
+  label: string
+  collection: string
+  values?: string[]
 }
 
 const organizationTypeLabels: Record<string, string> = {
@@ -70,6 +76,10 @@ function evidenceTypeLabel(value?: string) {
   return evidenceTypeLabels[value] || value
 }
 
+function normalizeKey(value: string) {
+  return String(value || '').trim().toLowerCase()
+}
+
 function valuesOf(value: string | string[] | boolean | undefined) {
   if (Array.isArray(value)) return value.filter(Boolean)
   if (typeof value === 'boolean') return value ? ['是'] : []
@@ -80,6 +90,16 @@ function visibleFieldsOf(fields: Array<[string, string | string[] | boolean | un
   return fields
     .map(([label, value]) => [label, valuesOf(value)] as const)
     .filter(([, values]) => values.length > 0)
+}
+
+function detailTarget(collection: string, value: string) {
+  const index = readDetailIndex()
+  if (!index) return null
+
+  const key = normalizeKey(value)
+  if (!key) return null
+
+  return index.items.find((item) => item.collection === collection && normalizeKey(item.title) === key) || null
 }
 
 function FieldList({ fields }: { fields: Array<[string, string | string[] | boolean | undefined]> }) {
@@ -196,6 +216,50 @@ function DetailCallouts({ item }: { item: DetailItem }) {
   )
 }
 
+function RelationChip({ collection, value }: { collection: string; value: string }) {
+  const target = detailTarget(collection, value)
+  if (!target) return <span className="detail-relation-chip muted-chip">{value}</span>
+
+  return (
+    <Link className="detail-relation-chip" href={target.url}>
+      {value}
+    </Link>
+  )
+}
+
+function DetailRelations({ item }: { item: DetailItem }) {
+  const extendedItem = item as ExtendedDetailItem
+  const groups: RelationGroup[] = [
+    { label: '创作者', collection: 'creators', values: item.creators },
+    { label: '机构', collection: 'organizations', values: extendedItem.organizations },
+    { label: '关联作品', collection: 'works', values: extendedItem.relatedWorks },
+    { label: '关联创作者', collection: 'creators', values: extendedItem.relatedCreators },
+    { label: '关联机构', collection: 'organizations', values: extendedItem.relatedOrganizations },
+    { label: '相关名词', collection: 'terms', values: item.relatedTerms },
+    { label: '示例作品', collection: 'works', values: item.examples },
+  ].filter((group) => Array.isArray(group.values) && group.values.length > 0)
+
+  if (groups.length === 0) return null
+
+  return (
+    <section className="detail-card relation-links-card">
+      <h2>相关链接</h2>
+      <div className="detail-relation-groups">
+        {groups.map((group) => (
+          <div className="detail-relation-group" key={`${group.collection}-${group.label}`}>
+            <h3>{group.label}</h3>
+            <div className="detail-relation-chips">
+              {(group.values || []).map((value) => (
+                <RelationChip collection={group.collection} key={`${group.collection}-${value}`} value={value} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function RelatedEvidence({ evidence }: { evidence: DetailItem[] }) {
   if (evidence.length === 0) return null
 
@@ -305,6 +369,7 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
       </section>
 
       <BasicInfo item={item} />
+      <DetailRelations item={item} />
       <DetailCallouts item={item} />
       <RelatedEvidence evidence={relatedEvidence} />
       <RelatedWorks works={relatedWorks} />
