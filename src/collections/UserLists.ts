@@ -49,14 +49,14 @@ export const UserLists: CollectionConfig = {
     update: ownListOrEditor,
   },
   hooks: {
-    beforeChange: [
-      ({ data, operation, req }) => {
+    beforeValidate: [
+      ({ data, req }) => {
         const user = req.user as ListUser | undefined
-        if (!user?.id) return data
+        if (!user?.id || !data?.workSlug) return data
 
         return {
           ...data,
-          user: operation === 'create' ? user.id : data.user || user.id,
+          user: user.id,
           uniqueKey: `${user.id}:${data.workSlug}`,
         }
       },
