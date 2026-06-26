@@ -31,7 +31,7 @@
     "next": "^16.2.6",
     "payload": "latest",
     "react": "^19.2.0",
-    "react-dom": "latest",
+    "react-dom": "^19.2.0",
     "sharp": "latest"
   },
   "devDependencies": {
