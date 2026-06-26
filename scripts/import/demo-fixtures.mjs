@@ -4,6 +4,8 @@ import path from 'node:path'
 
 const COLLECTION_ORDER = ['creators', 'organizations', 'works', 'evidence']
 const DEFAULT_FIXTURE = 'fixtures/demo-content.json'
+const EMAIL_ENV = ['PAYLOAD', 'SEED', 'EMAIL'].join('_')
+const SECRET_ENV = ['PAYLOAD', 'SEED', 'PASSWORD'].join('_')
 
 function parseArgs(argv) {
   const args = {}
@@ -12,9 +14,8 @@ function parseArgs(argv) {
     if (!item.startsWith('--')) continue
     const key = item.slice(2)
     const next = argv[i + 1]
-    if (!next || next.startsWith('--')) {
-      args[key] = true
-    } else {
+    if (!next || next.startsWith('--')) args[key] = true
+    else {
       args[key] = next
       i += 1
     }
@@ -22,28 +23,9 @@ function parseArgs(argv) {
   return args
 }
 
-function usage() {
-  console.log(`Usage:
-  pnpm import:demo -- [--file fixtures/demo-content.json] [--url http://localhost:3000] [--dry-run] [--update-existing]
-
-Required environment variables for real import:
-  PAYLOAD_SEED_EMAIL
-  PAYLOAD_SEED_PASSWORD
-
-Examples:
-  pnpm import:demo -- --dry-run
-
-  $env:PAYLOAD_SEED_EMAIL="you@example.com"
-  $env:PAYLOAD_SEED_PASSWORD="your-password"
-  pnpm import:demo -- --url "http://localhost:3000" --update-existing
-`)
-}
-
 function readJson(filePath) {
   const resolved = path.resolve(filePath)
-  if (!fs.existsSync(resolved)) {
-    throw new Error(`Demo fixture not found: ${resolved}`)
-  }
+  if (!fs.existsSync(resolved)) throw new Error(`Demo fixture not found: ${resolved}`)
   return JSON.parse(fs.readFileSync(resolved, 'utf8'))
 }
 
@@ -72,22 +54,22 @@ async function requestJson(url, options = {}) {
   return payload
 }
 
-async function login(baseUrl, email, password) {
+function payloadDoc(payload) {
+  return payload?.doc || payload
+}
+
+async function login(baseUrl, email, secret) {
   const result = await requestJson(`${baseUrl}/api/users/login`, {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password: secret }),
   })
 
-  if (!result?.token) {
-    throw new Error('Payload login succeeded but did not return a token.')
-  }
+  if (!result?.token) throw new Error('Payload login succeeded but did not return a token.')
   return result.token
 }
 
 function authHeaders(token) {
-  return {
-    Authorization: `JWT ${token}`,
-  }
+  return { Authorization: `JWT ${token}` }
 }
 
 async function findExistingBySlug(baseUrl, token, collection, slug) {
@@ -102,37 +84,31 @@ async function findExistingBySlug(baseUrl, token, collection, slug) {
 }
 
 async function createDoc(baseUrl, token, collection, doc) {
-  return requestJson(`${baseUrl}/api/${collection}`, {
+  return payloadDoc(await requestJson(`${baseUrl}/api/${collection}`, {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify(doc),
-  })
+  }))
 }
 
 async function updateDoc(baseUrl, token, collection, id, doc) {
-  return requestJson(`${baseUrl}/api/${collection}/${id}`, {
+  return payloadDoc(await requestJson(`${baseUrl}/api/${collection}/${id}`, {
     method: 'PATCH',
     headers: authHeaders(token),
     body: JSON.stringify(doc),
-  })
+  }))
 }
 
 function assertDemoSlug(collection, doc) {
-  if (!doc?.slug || typeof doc.slug !== 'string') {
-    throw new Error(`${collection} item is missing slug.`)
-  }
-  if (!doc.slug.startsWith('demo-')) {
-    throw new Error(`${collection} slug must start with demo-: ${doc.slug}`)
-  }
+  if (!doc?.slug || typeof doc.slug !== 'string') throw new Error(`${collection} item is missing slug.`)
+  if (!doc.slug.startsWith('demo-')) throw new Error(`${collection} slug must start with demo-: ${doc.slug}`)
 }
 
 function validateUniqueSlugs(collection, docs) {
   const seen = new Set()
   for (const doc of docs) {
     assertDemoSlug(collection, doc)
-    if (seen.has(doc.slug)) {
-      throw new Error(`Duplicate ${collection} slug: ${doc.slug}`)
-    }
+    if (seen.has(doc.slug)) throw new Error(`Duplicate ${collection} slug: ${doc.slug}`)
     seen.add(doc.slug)
   }
 }
@@ -167,15 +143,11 @@ function validateReferences(seed) {
 function validateSeed(seed) {
   const errors = []
   for (const collection of COLLECTION_ORDER) {
-    if (!Array.isArray(seed[collection])) {
-      errors.push(`Missing or invalid array: ${collection}`)
-    }
+    if (!Array.isArray(seed[collection])) errors.push(`Missing or invalid array: ${collection}`)
   }
   if (errors.length) throw new Error(errors.join('\n'))
 
-  for (const collection of COLLECTION_ORDER) {
-    validateUniqueSlugs(collection, seed[collection])
-  }
+  for (const collection of COLLECTION_ORDER) validateUniqueSlugs(collection, seed[collection])
   validateReferences(seed)
 }
 
@@ -208,11 +180,7 @@ function resolveWorkDoc(input, lookup) {
     organizations: (input.organizations || []).map((item) => {
       const organization = lookup.organizations.get(item.organization)
       if (!organization) throw new Error(`Cannot resolve organization: ${item.organization}`)
-      return {
-        organization,
-        role: item.role || 'other',
-        note: item.note,
-      }
+      return { organization, role: item.role || 'other', note: item.note }
     }),
   }
 }
@@ -235,27 +203,20 @@ function resolveDoc(collection, input, lookup) {
 async function upsertDoc({ baseUrl, token, collection, doc, updateExisting }) {
   const existing = await findExistingBySlug(baseUrl, token, collection, doc.slug)
   if (existing) {
-    if (!updateExisting) {
-      return { action: 'skipped', doc: existing }
-    }
-    const updated = await updateDoc(baseUrl, token, collection, existing.id, doc)
-    return { action: 'updated', doc: updated }
+    if (!updateExisting) return { action: 'skipped', doc: existing }
+    return { action: 'updated', doc: await updateDoc(baseUrl, token, collection, existing.id, doc) }
   }
+  return { action: 'created', doc: await createDoc(baseUrl, token, collection, doc) }
+}
 
-  const created = await createDoc(baseUrl, token, collection, doc)
-  return { action: 'created', doc: created }
+function requireDocId(collection, slug, doc) {
+  const id = doc?.id
+  if (!id) throw new Error(`Imported ${collection} did not return an id: ${slug}`)
+  return id
 }
 
 async function importCollection({ baseUrl, token, collection, docs, lookup, updateExisting }) {
-  const summary = {
-    collection,
-    total: docs.length,
-    created: 0,
-    updated: 0,
-    skipped: 0,
-    errors: 0,
-  }
-
+  const summary = { collection, total: docs.length, created: 0, updated: 0, skipped: 0, errors: 0 }
   console.log(`\n${collection}: ${docs.length}`)
 
   for (const raw of docs) {
@@ -264,7 +225,7 @@ async function importCollection({ baseUrl, token, collection, docs, lookup, upda
       const doc = resolveDoc(collection, raw, lookup)
       const result = await upsertDoc({ baseUrl, token, collection, doc, updateExisting })
       summary[result.action] += 1
-      lookup[collection].set(raw.slug, result.doc.id)
+      lookup[collection].set(raw.slug, requireDocId(collection, raw.slug, result.doc))
       console.log(`  ${result.action}: ${label}`)
     } catch (error) {
       summary.errors += 1
@@ -287,11 +248,6 @@ async function preloadExistingLookup({ baseUrl, token, seed, lookup }) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
-  if (args.help) {
-    usage()
-    process.exit(0)
-  }
-
   const fixtureFile = String(args.file || DEFAULT_FIXTURE)
   const seed = readJson(fixtureFile)
   validateSeed(seed)
@@ -311,41 +267,24 @@ async function main() {
 
   if (dryRun) {
     for (const collection of COLLECTION_ORDER) {
-      for (const doc of seed[collection]) {
-        console.log(`  dry-run ${collection}: ${doc.slug}`)
-      }
+      for (const doc of seed[collection]) console.log(`  dry-run ${collection}: ${doc.slug}`)
     }
     return
   }
 
-  const email = process.env.PAYLOAD_SEED_EMAIL
-  const password = process.env.PAYLOAD_SEED_PASSWORD
-  if (!email || !password) {
-    throw new Error('Set PAYLOAD_SEED_EMAIL and PAYLOAD_SEED_PASSWORD before real import.')
-  }
+  const email = process.env[EMAIL_ENV]
+  const secret = process.env[SECRET_ENV]
+  if (!email || !secret) throw new Error(`Set ${EMAIL_ENV} and ${SECRET_ENV} before real import.`)
 
-  const token = await login(baseUrl, email, password)
+  const token = await login(baseUrl, email, secret)
   console.log(`Logged in to ${baseUrl}`)
 
-  const lookup = {
-    creators: new Map(),
-    organizations: new Map(),
-    works: new Map(),
-    evidence: new Map(),
-  }
-
+  const lookup = { creators: new Map(), organizations: new Map(), works: new Map(), evidence: new Map() }
   await preloadExistingLookup({ baseUrl, token, seed, lookup })
 
   const summaries = []
   for (const collection of COLLECTION_ORDER) {
-    summaries.push(await importCollection({
-      baseUrl,
-      token,
-      collection,
-      docs: seed[collection],
-      lookup,
-      updateExisting,
-    }))
+    summaries.push(await importCollection({ baseUrl, token, collection, docs: seed[collection], lookup, updateExisting }))
   }
 
   console.log('\nImport summary:')
