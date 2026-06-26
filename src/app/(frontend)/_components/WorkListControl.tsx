@@ -107,7 +107,7 @@ export default function WorkListControl({ item }: { item: DetailItem }) {
   }
 
   return (
-    <section className="detail-card work-list-control" aria-label="我的作品列表">
+    <section className="work-list-control" aria-label="我的作品列表">
       <div className="work-list-head">
         <p className="eyebrow">我的列表</p>
         <h2>加入我的作品列表</h2>
