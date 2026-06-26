@@ -1,0 +1,64 @@
+.my-lists-page,
+.my-lists-content,
+.my-list-group {
+  display: grid;
+  gap: 24px;
+}
+
+.my-lists-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.my-lists-summary span,
+.my-list-item span {
+  padding: 6px 9px;
+  border: 1px solid #303030;
+  border-radius: 999px;
+  color: #ffb5d7;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.my-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.my-list-item {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid #303030;
+  border-radius: 18px;
+  background: #111;
+  color: inherit;
+  text-decoration: none;
+}
+
+.my-list-item:hover {
+  border-color: #ffb5d7;
+}
+
+.my-list-item strong {
+  color: #fff;
+}
+
+.my-list-item p {
+  margin: 0;
+  color: #aaa;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+[data-theme='light'] .my-lists-summary span,
+[data-theme='light'] .my-list-item {
+  border-color: #e2d6cc;
+  background: #fff7f2;
+}
+
+[data-theme='light'] .my-list-item strong {
+  color: #191716;
+}

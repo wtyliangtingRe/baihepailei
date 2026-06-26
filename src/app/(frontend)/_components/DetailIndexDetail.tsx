@@ -4,7 +4,7 @@ import { readDetailIndex, type DetailCoverImage, type DetailItem } from '../_lib
 import CommentBlock from './CommentBlock'
 import ContentCallout, { type ContentCalloutItem } from './ContentCallout'
 import RichTextRenderer from './RichTextRenderer'
-import WorkConclusionCard from './WorkConclusionCard'
+import WorkListControl from './WorkListControl'
 import WorkRiskMatrixCard from './WorkRiskMatrixCard'
 
 type ExtendedDetailItem = DetailItem & {
@@ -321,7 +321,7 @@ function RichTextSections({ item }: { item: DetailItem }) {
       return (
         <section className="detail-card">
           <h2>作品简介</h2>
-          <p className="muted">作品简介暂未填写。后续可在后台摘要字段补充，用于搜索和简易推荐。</p>
+          <p className="muted">作品简介暂未填写。后续可在后台摘要字段补充，用于搜索和推荐。</p>
         </section>
       )
     }
@@ -348,7 +348,7 @@ function RichTextSections({ item }: { item: DetailItem }) {
 
 export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvidence = [] }: { item: DetailItem; relatedWorks?: DetailItem[]; relatedEvidence?: DetailItem[] }) {
   const extendedItem = item as ExtendedDetailItem
-  const rank = displayRank(item.rank)
+  const rank = item.collection === 'works' ? displayRank(item.rank) : ''
   const organizationType = organizationTypeLabel(extendedItem.organizationType)
   const evidenceType = evidenceTypeLabel(extendedItem.evidenceType)
   const reviewStatus = reviewStatusLabel(extendedItem.reviewStatus)
@@ -385,9 +385,9 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
         </div>
       </section>
 
-      <WorkConclusionCard item={item} relatedEvidence={relatedEvidence} />
-      <WorkRiskMatrixCard item={item} />
       <BasicInfo item={item} />
+      <WorkRiskMatrixCard item={item} />
+      <WorkListControl item={item} />
       <DetailCallouts item={item} />
       <RelatedWorks works={relatedWorks} />
       <RichTextSections item={item} />

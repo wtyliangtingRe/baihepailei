@@ -29,6 +29,8 @@ type LegacySection = {
   entries: LegacyEntry[]
 }
 
+const legacyRankFallbackTitles = ['S级', 'A级', 'B级一类', 'B级二类', 'C级', 'D级', 'E级', '其他说明']
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
@@ -167,6 +169,8 @@ function looksLikeLegacyMarkup(text: string) {
 
 function cleanLegacyText(text: string) {
   return text
+    .replace(/AA\s*级/g, 'S级')
+    .replace(/AA级/g, 'S级')
     .replace(/\{\{velocity\}\}[\s\S]*?\{\{\/velocity\}\}/g, '')
     .replace(/\{\{warning\}\}/g, '\n{{warning}}\n')
     .replace(/\{\{\/warning\}\}/g, '\n{{/warning}}\n')
@@ -191,6 +195,8 @@ function plainInlineText(value: string) {
     .replace(/\(%\s*style\s*=\s*"[^"]*"\s*%\)/g, '')
     .replace(/\(%%\)/g, '')
     .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/AA\s*级/g, 'S级')
+    .replace(/^AA$/, 'S级')
 }
 
 function legacySlug(title: string, index: number) {
@@ -199,6 +205,12 @@ function legacySlug(title: string, index: number) {
     .replace(/^-+|-+$/g, '')
     .toLowerCase()
   return `rule-${cleaned || index + 1}`
+}
+
+function legacyHeadingTitle(rawTitle: string, index: number) {
+  const title = plainInlineText(rawTitle).trim()
+  if (!title || title === '未命名章节') return legacyRankFallbackTitles[index] || `章节 ${index + 1}`
+  return title
 }
 
 function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
@@ -247,12 +259,12 @@ function headingOf(line: string, index: number): LegacyHeading | null {
   const heading = line.trim().match(/^(={1,6})\s*(.*?)\s*=+$/)
   if (!heading) return null
   const rawTitle = heading[2].trim()
-  const title = plainInlineText(rawTitle).trim()
+  const title = legacyHeadingTitle(rawTitle, index)
   return {
     level: heading[1].length,
     title,
-    rawTitle,
-    id: legacySlug(title || rawTitle, index),
+    rawTitle: title,
+    id: legacySlug(title, index),
   }
 }
 
@@ -353,7 +365,7 @@ function renderLegacyToc(sections: LegacySection[]) {
       <div>
         {sections.map((section) => (
           <a data-level={section.heading.level} href={`#${section.heading.id}`} key={section.heading.id}>
-            {section.heading.title || '未命名章节'}
+            {section.heading.title}
           </a>
         ))}
       </div>
@@ -365,16 +377,16 @@ function renderLegacySection(section: LegacySection, index: number, fold: boolea
   if (!fold) {
     return (
       <React.Fragment key={section.heading.id}>
-        {renderLegacyLine(`=${section.heading.rawTitle}=`, `heading-${section.heading.id}`, section.heading.id)}
+        {renderLegacyLine(`=${section.heading.title}=`, `heading-${section.heading.id}`, section.heading.id)}
         {section.entries.map((entry, entryIndex) => renderLegacyEntry(entry, `${section.heading.id}-${entryIndex}`))}
       </React.Fragment>
     )
   }
 
   return (
-    <details className="xwiki-section" id={section.heading.id} key={section.heading.id} open={index < 2}>
+    <details className="xwiki-section" id={section.heading.id} key={section.heading.id}>
       <summary>
-        <span>{renderInline(section.heading.rawTitle, `summary-${section.heading.id}`)}</span>
+        <span>{section.heading.title}</span>
       </summary>
       <div className="xwiki-section-body">
         {section.entries.map((entry, entryIndex) => renderLegacyEntry(entry, `${section.heading.id}-${entryIndex}`))}

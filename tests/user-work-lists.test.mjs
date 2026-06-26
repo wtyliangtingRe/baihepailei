@@ -5,7 +5,7 @@ import fs from 'node:fs'
 const collection = fs.readFileSync(new URL('../src/collections/UserLists.ts', import.meta.url), 'utf8')
 const payloadConfig = fs.readFileSync(new URL('../payload.config.ts', import.meta.url), 'utf8')
 const control = fs.readFileSync(new URL('../src/app/(frontend)/_components/WorkListControl.tsx', import.meta.url), 'utf8')
-const conclusion = fs.readFileSync(new URL('../src/app/(frontend)/_components/WorkConclusionCard.tsx', import.meta.url), 'utf8')
+const detail = fs.readFileSync(new URL('../src/app/(frontend)/_components/DetailIndexDetail.tsx', import.meta.url), 'utf8')
 const css = fs.readFileSync(new URL('../src/app/(frontend)/work-list.css', import.meta.url), 'utf8')
 const layout = fs.readFileSync(new URL('../src/app/(frontend)/layout.tsx', import.meta.url), 'utf8')
 const docs = fs.readFileSync(new URL('../docs/user-lists.md', import.meta.url), 'utf8')
@@ -48,8 +48,8 @@ test('frontend work list control uses user-lists API', () => {
 })
 
 test('work list control is rendered and styled', () => {
-  assert.ok(conclusion.includes("import WorkListControl from './WorkListControl'"))
-  assert.ok(conclusion.includes('<WorkListControl item={item} />'))
+  assert.ok(detail.includes("import WorkListControl from './WorkListControl'"))
+  assert.ok(detail.includes('<WorkListControl item={item} />'))
   assert.ok(layout.includes("import './work-list.css'"))
   assert.ok(css.includes('.work-list-control'))
   assert.ok(css.includes('.work-list-option'))

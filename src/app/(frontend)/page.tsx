@@ -8,14 +8,14 @@ const sections = [
     href: '/works',
     eyebrow: '作品',
     title: '作品',
-    description: '浏览轻量索引里的作品条目，后续会逐步升级为完整正文详情页。',
+    description: '浏览作品条目、分级、创作者、机构和材料状态。',
   },
   {
     kind: 'creators',
     href: '/creators',
     eyebrow: '创作者',
     title: '创作者',
-    description: '查看从旧 XWiki 清理出来的创作者相关资料。',
+    description: '查看从旧站整理出的创作者资料。创作者暂不做单独评级。',
   },
   {
     kind: 'organizations',
@@ -25,25 +25,11 @@ const sections = [
     description: '查看出版社、制作公司、平台、品牌、制作委员会等机构资料。',
   },
   {
-    kind: 'evidence',
-    href: '/evidence',
-    eyebrow: '证据材料',
-    title: '证据材料',
-    description: '查看截图、页面和旧站记录等支撑材料。',
-  },
-  {
-    kind: 'terms',
-    href: '/terms',
-    eyebrow: '名词解释',
-    title: '名词解释',
-    description: '集中浏览迁移后的概念、术语和解释性条目。',
-  },
-  {
     kind: 'rules',
     href: '/rules',
     eyebrow: '排雷规则',
     title: '排雷规则',
-    description: '整理旧站中的原则、说明与轻量规则内容。',
+    description: '查看分级原则、排雷说明和判断边界。',
   },
 ]
 
@@ -62,11 +48,11 @@ export default function HomePage() {
           <p className="eyebrow">百合排雷 · 轻量版</p>
           <h1>百合作品排雷资料库</h1>
           <p>
-            这里会重做为结构化资料站：作品、创作者、机构、证据材料、名词解释和排雷规则都在 Payload 后台维护，前台优先提供轻量文字浏览与快速搜索。
+            这里会重做为结构化资料站。前台优先提供作品、创作者、机构和排雷规则的轻量浏览，证据材料和术语条目会在详情页与搜索中辅助呈现。
           </p>
           <form action="/search" className="search-box" role="search">
             <span>快速搜索</span>
-            <input id="home-search-input" name="q" placeholder="输入作品名、作者、机构、证据、分级或旧站关键词" type="search" />
+            <input id="home-search-input" name="q" placeholder="输入作品名、作者、机构、证据、分级或关键词" type="search" />
             <label className="home-search-scope" htmlFor="home-search-collection">
               <span>搜索范围</span>
               <select defaultValue="all" id="home-search-collection" name="collection">
@@ -89,7 +75,7 @@ export default function HomePage() {
             <Link href="/browse">浏览资料库</Link>
             <Link href="/works">浏览作品</Link>
             <Link href="/search">开始搜索</Link>
-            <Link href="/admin">进入后台</Link>
+            <Link href="/me/lists">我的列表</Link>
           </div>
         </section>
 

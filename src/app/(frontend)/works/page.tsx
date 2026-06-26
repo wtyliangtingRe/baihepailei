@@ -6,12 +6,12 @@ import { readSearchIndex, type SearchCoverImage, type SearchItem } from '../_lib
 const rankOrder = ['AA', 'A', 'B', 'C', 'D', 'E', 'unknown']
 
 const rankDescriptions: Record<string, string> = {
-  AA: '最高优先级关注项，旧站 AA 级在前台统一显示为 S 级。',
-  A: '需要优先阅读说明与正文，再决定是否继续深入。',
-  B: '存在明确注意点，适合结合标签、说明和上下文判断。',
-  C: '一般注意级别，通常适合作为补充参考。',
-  D: '较低注意级别，多用于轻量标记或待复核条目。',
-  E: '最低注意级别，通常只保留基础记录。',
+  AA: '最高优先级关注项。前台统一显示为 S 级，通常需要优先阅读正文和材料。',
+  A: '整体风险较低或关系较明确，但仍建议先看条目说明再决定是否深入。',
+  B: '存在明确注意点，需要结合标签、正文和上下文判断。',
+  C: '中等注意级别，适合作为补充参考，不宜只看分级下结论。',
+  D: '较低注意级别，多用于轻量标记、边缘情况或待复核条目。',
+  E: '最低注意级别，通常只保留基础记录，后续可再整理。',
   unknown: '暂时没有明确分级，等待后续整理或复核。',
 }
 
@@ -260,12 +260,12 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
         ) : null}
       </section>
 
-      <section className="rank-explainer" aria-label="排雷分级说明">
-        <div>
-          <p className="eyebrow">分级说明</p>
-          <h2>如何理解这些分级？</h2>
-          <p>分级用于帮助快速定位阅读优先级，不等于最终结论。具体判断仍以条目正文、标签和来源说明为准。</p>
-        </div>
+      <details className="rank-explainer" aria-label="排雷分级说明">
+        <summary>
+          <span>分级说明</span>
+          <strong>如何理解这些分级？</strong>
+        </summary>
+        <p>分级用于帮助快速定位阅读优先级，不等于最终结论。具体判断仍以条目正文、标签、材料和完整排雷原则为准。</p>
         <div className="rank-explainer-grid">
           {rankOrder.map((rank) => (
             <article className="rank-explainer-card" key={rank}>
@@ -273,8 +273,12 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
               <p>{rankDescriptions[rank]}</p>
             </article>
           ))}
+          <Link className="rank-explainer-card rank-explainer-link" href="/rules">
+            <h3>完整原则</h3>
+            <p>查看排雷原则全文，了解 S / A / B / C / D / E 各级的完整判断边界。</p>
+          </Link>
         </div>
-      </section>
+      </details>
 
       <section className="ranked-collection-list">
         {groups.length === 0 ? (
