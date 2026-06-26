@@ -16,6 +16,8 @@ const evidenceStrengthOptions = [
   { label: '强', value: 'strong' },
 ]
 
+const riskUnassessedOption = { label: '未评估', value: 'unassessed' }
+
 export const Works: CollectionConfig = {
   slug: 'works',
   labels: {
@@ -140,6 +142,78 @@ export const Works: CollectionConfig = {
       admin: {
         description: '用于提示 Full 版是否存在截图、附件或来源材料。',
       },
+    },
+    {
+      name: 'riskMatrix',
+      type: 'group',
+      label: '雷点 / 注意点矩阵',
+      admin: {
+        description: '用于作品页快速展示核心排雷维度；没有把握时保持未评估即可。',
+      },
+      fields: [
+        {
+          name: 'maleImpact',
+          type: 'select',
+          label: '男性角色影响',
+          defaultValue: 'unassessed',
+          options: [
+            riskUnassessedOption,
+            { label: '无', value: 'none' },
+            { label: '轻微', value: 'minor' },
+            { label: '明显', value: 'noticeable' },
+            { label: '严重', value: 'severe' },
+          ],
+        },
+        {
+          name: 'relationshipClarity',
+          type: 'select',
+          label: '恋爱关系明确度',
+          defaultValue: 'unassessed',
+          options: [
+            riskUnassessedOption,
+            { label: '明确恋爱', value: 'confirmed' },
+            { label: '发展中', value: 'developing' },
+            { label: '暧昧 / 亚文本', value: 'subtext' },
+            { label: '友情向', value: 'friendship' },
+            { label: '不明确', value: 'unclear' },
+          ],
+        },
+        {
+          name: 'endingSafety',
+          type: 'select',
+          label: '结局安全性',
+          defaultValue: 'unassessed',
+          options: [
+            riskUnassessedOption,
+            { label: '安全', value: 'safe' },
+            { label: '开放式', value: 'open' },
+            { label: '未完结', value: 'unfinished' },
+            { label: '有风险', value: 'risky' },
+            { label: '明确雷', value: 'bad' },
+          ],
+        },
+        {
+          name: 'creatorSpeechRisk',
+          type: 'select',
+          label: '创作者言论风险',
+          defaultValue: 'unassessed',
+          options: [
+            riskUnassessedOption,
+            { label: '无记录', value: 'none' },
+            { label: '轻微', value: 'minor' },
+            { label: '有争议', value: 'disputed' },
+            { label: '严重', value: 'severe' },
+          ],
+        },
+        {
+          name: 'note',
+          type: 'textarea',
+          label: '矩阵备注',
+          admin: {
+            description: '简短说明矩阵判断依据；详细材料仍放到证据材料和材料留存。',
+          },
+        },
+      ],
     },
     {
       name: 'creators',

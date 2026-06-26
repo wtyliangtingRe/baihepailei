@@ -1,0 +1,114 @@
+.work-risk-matrix-card {
+  display: grid;
+  gap: 18px;
+}
+
+.work-risk-matrix-head {
+  display: grid;
+  gap: 8px;
+}
+
+.work-risk-matrix-head h2 {
+  margin: 0;
+}
+
+.work-risk-matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.work-risk-matrix-item {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid #303030;
+  border-radius: 16px;
+  background: #151515;
+}
+
+.work-risk-matrix-item span,
+.work-risk-matrix-note span {
+  color: #aaa;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.work-risk-matrix-item strong {
+  color: #fff;
+  font-size: 1.05rem;
+}
+
+.work-risk-matrix-item p,
+.work-risk-matrix-note p {
+  margin: 0;
+  color: #cfcfcf;
+  line-height: 1.7;
+}
+
+.work-risk-matrix-item[data-value='none'],
+.work-risk-matrix-item[data-value='safe'],
+.work-risk-matrix-item[data-value='confirmed'] {
+  border-color: rgb(143 227 162 / 0.36);
+}
+
+.work-risk-matrix-item[data-value='minor'],
+.work-risk-matrix-item[data-value='developing'],
+.work-risk-matrix-item[data-value='open'],
+.work-risk-matrix-item[data-value='unfinished'],
+.work-risk-matrix-item[data-value='subtext'] {
+  border-color: rgb(255 181 215 / 0.36);
+}
+
+.work-risk-matrix-item[data-value='noticeable'],
+.work-risk-matrix-item[data-value='risky'],
+.work-risk-matrix-item[data-value='disputed'],
+.work-risk-matrix-item[data-value='friendship'],
+.work-risk-matrix-item[data-value='unclear'] {
+  border-color: rgb(255 177 109 / 0.45);
+}
+
+.work-risk-matrix-item[data-value='severe'],
+.work-risk-matrix-item[data-value='bad'] {
+  border-color: rgb(255 120 110 / 0.55);
+}
+
+.work-risk-matrix-note {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgb(255 181 215 / 0.28);
+  border-radius: 16px;
+  background: #111;
+}
+
+[data-theme='light'] .work-risk-matrix-item,
+[data-theme='light'] .work-risk-matrix-note {
+  border-color: #e2d6cc;
+  background: #fff7f2;
+}
+
+[data-theme='light'] .work-risk-matrix-item span,
+[data-theme='light'] .work-risk-matrix-note span {
+  color: #766a61;
+}
+
+[data-theme='light'] .work-risk-matrix-item strong {
+  color: #191716;
+}
+
+[data-theme='light'] .work-risk-matrix-item p,
+[data-theme='light'] .work-risk-matrix-note p {
+  color: #342d29;
+}
+
+[data-theme='light'] .work-risk-matrix-item[data-value='none'],
+[data-theme='light'] .work-risk-matrix-item[data-value='safe'],
+[data-theme='light'] .work-risk-matrix-item[data-value='confirmed'] {
+  border-color: rgb(41 124 60 / 0.35);
+}
+
+[data-theme='light'] .work-risk-matrix-item[data-value='severe'],
+[data-theme='light'] .work-risk-matrix-item[data-value='bad'] {
+  border-color: rgb(199 58 46 / 0.45);
+}

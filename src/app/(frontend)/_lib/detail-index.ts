@@ -38,6 +38,14 @@ export type DetailCallout = {
   sourceUrl?: string
 }
 
+export type WorkRiskMatrix = {
+  maleImpact?: string
+  relationshipClarity?: string
+  endingSafety?: string
+  creatorSpeechRisk?: string
+  note?: string
+}
+
 export type DetailItem = {
   id: string
   collection: DetailCollection | string
@@ -60,6 +68,7 @@ export type DetailItem = {
   relatedOrganizations?: string[]
   tags?: string[]
   warnings?: string[]
+  riskMatrix?: WorkRiskMatrix
   relatedTerms?: string[]
   relatedWarnings?: string[]
   relatedTags?: string[]

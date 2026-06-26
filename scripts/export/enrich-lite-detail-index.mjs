@@ -60,6 +60,7 @@ function detailsFromSearchItem(item) {
     relatedOrganizations: item.relatedOrganizations,
     tags: item.tags,
     warnings: item.warnings,
+    riskMatrix: item.riskMatrix,
     relatedTerms: item.relatedTerms,
     relatedWarnings: item.relatedWarnings,
     cover: item.cover,
@@ -79,6 +80,7 @@ function mergeDetailItem(detailItem, searchItem) {
     relatedWorks: searchItem.relatedWorks || detailItem.relatedWorks,
     relatedCreators: searchItem.relatedCreators || detailItem.relatedCreators,
     relatedOrganizations: searchItem.relatedOrganizations || detailItem.relatedOrganizations,
+    riskMatrix: searchItem.riskMatrix || detailItem.riskMatrix,
     cover: searchItem.cover || detailItem.cover,
     image: searchItem.image || detailItem.image,
   })
