@@ -1,0 +1,154 @@
+:root {
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+}
+
+.theme-toggle {
+  padding: 10px 16px;
+  border: 1px solid #444;
+  border-radius: 999px;
+  background: #222;
+  color: #f7f7f7;
+  cursor: pointer;
+  font: inherit;
+}
+
+.theme-toggle:hover {
+  border-color: #ffb5d7;
+}
+
+[data-theme='light'] body {
+  background: #f6f2ee;
+  color: #191716;
+}
+
+[data-theme='light'] .site-header {
+  border-bottom-color: #e0d7ce;
+  background: rgb(246 242 238 / 0.88);
+}
+
+[data-theme='light'] .theme-toggle,
+[data-theme='light'] .site-nav a,
+[data-theme='light'] .actions a,
+[data-theme='light'] .result-link,
+[data-theme='light'] .back-link,
+[data-theme='light'] .rank-jump-list a,
+[data-theme='light'] .search-filters button,
+[data-theme='light'] .comment-compose-placeholder button {
+  border-color: #d7c9bc;
+  background: #fffaf6;
+  color: #9f3d6e;
+}
+
+[data-theme='light'] .hero,
+[data-theme='light'] .search-panel,
+[data-theme='light'] .empty-state,
+[data-theme='light'] .detail-hero,
+[data-theme='light'] .detail-card,
+[data-theme='light'] .rank-explainer,
+[data-theme='light'] .collection-card,
+[data-theme='light'] .home-section-card,
+[data-theme='light'] .result-card,
+[data-theme='light'] .rank-explainer-card,
+[data-theme='light'] .update-card,
+[data-theme='light'] .feedback-type-card,
+[data-theme='light'] .feedback-guide,
+[data-theme='light'] .feedback-prompt,
+[data-theme='light'] .comment-block,
+[data-theme='light'] .related-work-item,
+[data-theme='light'] .evidence-item {
+  border-color: #e2d6cc;
+  background: #fffaf6;
+}
+
+[data-theme='light'] .collection-card:hover,
+[data-theme='light'] .home-section-card:hover,
+[data-theme='light'] .result-card:hover,
+[data-theme='light'] .related-work-item:hover,
+[data-theme='light'] .evidence-item:hover,
+[data-theme='light'] .update-card:hover {
+  border-color: #d86fa6;
+  background: #fff4fa;
+}
+
+[data-theme='light'] .eyebrow,
+[data-theme='light'] .home-section-card p,
+[data-theme='light'] .collection-card p,
+[data-theme='light'] .rank-explainer-card h3,
+[data-theme='light'] .result-link,
+[data-theme='light'] .back-link,
+[data-theme='light'] .rich-text a,
+[data-theme='light'] .source-links a,
+[data-theme='light'] .detail-inline-link {
+  color: #b64178;
+}
+
+[data-theme='light'] .hero p,
+[data-theme='light'] .page-heading p,
+[data-theme='light'] .collection-card span,
+[data-theme='light'] .home-section-card span,
+[data-theme='light'] .rank-explainer-card p,
+[data-theme='light'] .result-text,
+[data-theme='light'] .rich-text,
+[data-theme='light'] .muted,
+[data-theme='light'] .detail-fields dd,
+[data-theme='light'] .source-links,
+[data-theme='light'] .feedback-type-card p,
+[data-theme='light'] .feedback-guide ul,
+[data-theme='light'] .comment-compose-placeholder label {
+  color: #342d29;
+}
+
+[data-theme='light'] .collection-actions,
+[data-theme='light'] .rank-jump-list span,
+[data-theme='light'] .search-meta,
+[data-theme='light'] .result-card-header,
+[data-theme='light'] .result-summary,
+[data-theme='light'] .detail-chips,
+[data-theme='light'] .detail-fields dt {
+  color: #766a61;
+}
+
+[data-theme='light'] .detail-fields div,
+[data-theme='light'] .rank-group-heading {
+  border-top-color: #e2d6cc;
+  border-bottom-color: #e2d6cc;
+}
+
+[data-theme='light'] .home-stats span,
+[data-theme='light'] .home-section-card-header > span,
+[data-theme='light'] .collection-actions span,
+[data-theme='light'] .rank-group-heading > span,
+[data-theme='light'] .rank-group-actions a,
+[data-theme='light'] .search-meta span,
+[data-theme='light'] .result-card-header span,
+[data-theme='light'] .detail-chips span,
+[data-theme='light'] .search-suggestions li,
+[data-theme='light'] .related-work-item span,
+[data-theme='light'] .evidence-item span {
+  border-color: #e2d6cc;
+  background: #fff0f7;
+  color: #b64178;
+}
+
+[data-theme='light'] .search-box input,
+[data-theme='light'] .search-box select,
+[data-theme='light'] .comment-compose-placeholder textarea {
+  border-color: #d7c9bc;
+  background: #fff;
+  color: #191716;
+}
+
+[data-theme='light'] .rich-text code,
+[data-theme='light'] .empty-state pre {
+  background: #f0e7de;
+  color: #9f3d6e;
+}
+
+[data-theme='light'] .rich-text blockquote {
+  color: #4a4039;
+  border-left-color: #d86fa6;
+}
