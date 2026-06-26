@@ -5,6 +5,7 @@ import CommentBlock from './CommentBlock'
 import ContentCallout, { type ContentCalloutItem } from './ContentCallout'
 import RichTextRenderer from './RichTextRenderer'
 import WorkConclusionCard from './WorkConclusionCard'
+import WorkRiskMatrixCard from './WorkRiskMatrixCard'
 
 type ExtendedDetailItem = DetailItem & {
   organizationType?: string
@@ -385,6 +386,7 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
       </section>
 
       <WorkConclusionCard item={item} relatedEvidence={relatedEvidence} />
+      <WorkRiskMatrixCard item={item} />
       <BasicInfo item={item} />
       <DetailCallouts item={item} />
       <RelatedWorks works={relatedWorks} />
