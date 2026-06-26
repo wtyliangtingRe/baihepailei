@@ -17,6 +17,10 @@ const rankDescriptions: Record<string, string> = {
 
 type WorksSearchParams = Promise<Record<string, string | string[] | undefined>>
 
+type WorksSearchItem = SearchItem & {
+  hasEvidence?: boolean
+}
+
 type NormalizedFilters = {
   q: string
   rank: string
@@ -40,6 +44,10 @@ function normalizeRank(value: string) {
   if (rank.toUpperCase() === 'S') return 'AA'
   if (rank.toLowerCase() === 'unknown') return 'unknown'
   return rank.toUpperCase()
+}
+
+function hasEvidence(item: SearchItem) {
+  return Boolean((item as WorksSearchItem).hasEvidence)
 }
 
 function rankLabel(rank?: string) {
@@ -102,8 +110,8 @@ function itemMatchesFilters(item: SearchItem, filters: NormalizedFilters) {
   if (filters.rank !== 'all' && rank !== filters.rank) return false
   if (filters.creator && !compactValues(item.creators).includes(filters.creator)) return false
   if (filters.organization && !compactValues(item.organizations).includes(filters.organization)) return false
-  if (filters.evidence === 'with' && !item.hasEvidence) return false
-  if (filters.evidence === 'without' && item.hasEvidence) return false
+  if (filters.evidence === 'with' && !hasEvidence(item)) return false
+  if (filters.evidence === 'without' && hasEvidence(item)) return false
   return itemMatchesQuery(item, filters.q)
 }
 
@@ -293,7 +301,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
                       {item.originalTitle ? <span>{item.originalTitle}</span> : null}
                       {compactValues(item.creators).length ? <span>创作者：{compactValues(item.creators).join(' / ')}</span> : null}
                       {compactValues(item.organizations).length ? <span>机构：{compactValues(item.organizations).join(' / ')}</span> : null}
-                      {item.hasEvidence ? <span>有证据材料</span> : null}
+                      {hasEvidence(item) ? <span>有证据材料</span> : null}
                     </div>
                   </Link>
                 ))}
