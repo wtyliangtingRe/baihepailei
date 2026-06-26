@@ -206,6 +206,7 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
 }
 
 function renderXWikiLine(line: string, key: React.Key) {
+  const keyText = String(key)
   const cleaned = line
     .replace(/^\s*\*+\s*/, '')
     .replace(/\(%\s*style="(?![^"]*color)[^"]*"\s*%\)/g, '')
@@ -216,21 +217,21 @@ function renderXWikiLine(line: string, key: React.Key) {
   const heading = cleaned.match(/^(={1,6})\s*(.*?)\s*=+$/)
   if (heading) {
     const level = heading[1].length
-    const content = renderInline(heading[2], `h-${key}`)
+    const content = renderInline(heading[2], `h-${keyText}`)
     if (level <= 1) return <h2 key={key}>{content}</h2>
     if (level === 2) return <h3 key={key}>{content}</h3>
     return <h4 key={key}>{content}</h4>
   }
 
   if (/^\*+\s*/.test(line.trim())) {
-    return <li key={key}>{renderInline(cleaned, `li-${key}`)}</li>
+    return <li key={key}>{renderInline(cleaned, `li-${keyText}`)}</li>
   }
 
-  return <p key={key}>{renderInline(cleaned, `p-${key}`)}</p>
+  return <p key={key}>{renderInline(cleaned, `p-${keyText}`)}</p>
 }
 
 function renderXWikiBlock(lines: string[], key: React.Key, warning = false) {
-  const rendered = lines.map((line, index) => renderXWikiLine(line, `${key}-${index}`)).filter(Boolean)
+  const rendered = lines.map((line, index) => renderXWikiLine(line, `${String(key)}-${index}`)).filter(Boolean)
   if (rendered.length === 0) return null
   if (warning) return <aside className="xwiki-warning" key={key}>{rendered}</aside>
   return <React.Fragment key={key}>{rendered}</React.Fragment>
