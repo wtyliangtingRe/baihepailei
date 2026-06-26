@@ -4,6 +4,7 @@ import fs from 'node:fs'
 
 const searchExporter = fs.readFileSync(new URL('../scripts/export/build-lite-search-index.mjs', import.meta.url), 'utf8')
 const detailExporter = fs.readFileSync(new URL('../scripts/export/build-lite-detail-index.mjs', import.meta.url), 'utf8')
+const detailWrapper = fs.readFileSync(new URL('../scripts/export/build-and-enrich-lite-detail-index.mjs', import.meta.url), 'utf8')
 const detailEnricher = fs.readFileSync(new URL('../scripts/export/enrich-lite-detail-index.mjs', import.meta.url), 'utf8')
 const detailIndexTypes = fs.readFileSync(new URL('../src/app/(frontend)/_lib/detail-index.ts', import.meta.url), 'utf8')
 const packageJson = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
@@ -21,9 +22,11 @@ test('search export does not emit old wiki tracking fields', () => {
   assert.equal(searchExporter.includes('legacyXWikiPage'), false)
 })
 
-test('detail export is enriched after base export', () => {
-  assert.ok(packageJson.scripts['export:lite-details'].includes('build-lite-detail-index.mjs'))
-  assert.ok(packageJson.scripts['export:lite-details'].includes('enrich-lite-detail-index.mjs'))
+test('detail export is enriched after base export with forwarded arguments', () => {
+  assert.equal(packageJson.scripts['export:lite-details'], 'node scripts/export/build-and-enrich-lite-detail-index.mjs')
+  assert.ok(detailWrapper.includes('process.argv.slice(2)'))
+  assert.ok(detailWrapper.includes("['scripts/export/build-lite-detail-index.mjs', ...args]"))
+  assert.ok(detailWrapper.includes("['scripts/export/enrich-lite-detail-index.mjs', ...args]"))
   assert.ok(detailEnricher.includes('detailsFromSearchItem'))
   assert.ok(detailEnricher.includes("['organizations', 'evidence']"))
   assert.ok(detailEnricher.includes('delete copy.legacyXWikiPage'))
