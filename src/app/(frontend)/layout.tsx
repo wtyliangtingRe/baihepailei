@@ -16,6 +16,7 @@ import './work-conclusion.css'
 import './work-risk-matrix.css'
 import './work-list.css'
 import './recommendations.css'
+import './profile-lists.css'
 import './theme.css'
 
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ const navItems = [
   { href: '/terms', label: '名词解释' },
   { href: '/rules', label: '规则' },
   { href: '/recommendations', label: '推荐' },
+  { href: '/me/lists', label: '我的列表' },
   { href: '/updates', label: '最近更新' },
   { href: '/feedback', label: '反馈' },
   { href: '/search', label: '搜索' },
