@@ -29,8 +29,6 @@ type LegacySection = {
   entries: LegacyEntry[]
 }
 
-const legacyRankFallbackTitles = ['S级', 'A级', 'B级一类', 'B级二类', 'C级', 'D级', 'E级', '其他说明']
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
@@ -115,28 +113,17 @@ function renderHeading(node: RichNode, key: React.Key) {
 function renderNode(node: RichNode, key: React.Key): React.ReactNode {
   if (node.type === 'text') return renderTextNode(node, key)
 
-  if (node.type === 'root') {
-    return <React.Fragment key={key}>{renderChildren(node.children)}</React.Fragment>
-  }
-
-  if (node.type === 'paragraph') {
-    return <p key={key}>{renderChildren(node.children)}</p>
-  }
-
+  if (node.type === 'root') return <React.Fragment key={key}>{renderChildren(node.children)}</React.Fragment>
+  if (node.type === 'paragraph') return <p key={key}>{renderChildren(node.children)}</p>
   if (node.type === 'heading') return renderHeading(node, key)
-
-  if (node.type === 'quote') {
-    return <blockquote key={key}>{renderChildren(node.children)}</blockquote>
-  }
+  if (node.type === 'quote') return <blockquote key={key}>{renderChildren(node.children)}</blockquote>
 
   if (node.type === 'list') {
     const children = renderChildren(node.children)
     return node.listType === 'number' || node.tag === 'ol' ? <ol key={key}>{children}</ol> : <ul key={key}>{children}</ul>
   }
 
-  if (node.type === 'listitem') {
-    return <li key={key}>{renderChildren(node.children)}</li>
-  }
+  if (node.type === 'listitem') return <li key={key}>{renderChildren(node.children)}</li>
 
   if (node.type === 'link' || node.type === 'autolink') {
     const href = safeHref(node.url || node.fields?.url)
@@ -149,10 +136,7 @@ function renderNode(node: RichNode, key: React.Key): React.ReactNode {
     )
   }
 
-  if (node.children?.length) {
-    return <React.Fragment key={key}>{renderChildren(node.children)}</React.Fragment>
-  }
-
+  if (node.children?.length) return <React.Fragment key={key}>{renderChildren(node.children)}</React.Fragment>
   return null
 }
 
@@ -164,7 +148,7 @@ function plainTextParagraphs(text: string) {
 }
 
 function looksLikeLegacyMarkup(text: string) {
-  return /\{\{\/?\w+\}\}|\(%|\[\[.+?>>.+?\]\]|^\s*=+\s*.+?\s*=+\s*$/m.test(text)
+  return /\{\{\/?\w+\}\}|\(%|\[\[.+?>>.+?\]\]|^\s*=+\s*.+?/m.test(text)
 }
 
 function cleanLegacyText(text: string) {
@@ -190,6 +174,10 @@ function wikiHref(target: string) {
   return undefined
 }
 
+function stripHeadingMarks(value: string) {
+  return value.replace(/^\s*=+\s*/, '').replace(/\s*=+\s*$/g, '').trim()
+}
+
 function plainInlineText(value: string) {
   return value
     .replace(/\(%\s*style\s*=\s*"[^"]*"\s*%\)/g, '')
@@ -207,10 +195,27 @@ function legacySlug(title: string, index: number) {
   return `rule-${cleaned || index + 1}`
 }
 
-function legacyHeadingTitle(rawTitle: string, index: number) {
-  const title = plainInlineText(rawTitle).trim()
-  if (!title || title === '未命名章节') return legacyRankFallbackTitles[index] || `章节 ${index + 1}`
-  return title
+function rankTitleFromLine(line: string) {
+  const cleaned = plainInlineText(stripHeadingMarks(line)).trim()
+  const match = cleaned.match(/^([SABCDE]级(?:[一二三四五六七八九十]+类)?)/)
+  return match?.[1] || ''
+}
+
+function sectionStartOf(line: string, index: number): { heading: LegacyHeading; body?: string } | null {
+  const stripped = stripHeadingMarks(line)
+  const title = rankTitleFromLine(stripped)
+  if (!title) return null
+
+  const body = stripped === title ? undefined : stripped
+  return {
+    heading: {
+      level: 2,
+      title,
+      rawTitle: title,
+      id: legacySlug(title, index),
+    },
+    body,
+  }
 }
 
 function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
@@ -224,25 +229,15 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
     if (match.index > lastIndex) output.push(plainInlineText(text.slice(lastIndex, match.index)))
 
     if (match[1]) {
-      const color = match[1].trim()
-      const inner = plainInlineText(match[2] || '')
       output.push(
-        <strong className="xwiki-color-emphasis" data-color={color} key={`${keyPrefix}-color-${index}`}>
-          {inner}
+        <strong className="xwiki-color-emphasis" data-color={match[1].trim()} key={`${keyPrefix}-color-${index}`}>
+          {plainInlineText(match[2] || '')}
         </strong>,
       )
     } else if (match[3]) {
       const label = plainInlineText(match[3])
       const href = wikiHref(match[4] || '')
-      output.push(
-        href ? (
-          <a href={href} key={`${keyPrefix}-link-${index}`}>
-            {label}
-          </a>
-        ) : (
-          <strong key={`${keyPrefix}-link-${index}`}>{label}</strong>
-        ),
-      )
+      output.push(href ? <a href={href} key={`${keyPrefix}-link-${index}`}>{label}</a> : <strong key={`${keyPrefix}-link-${index}`}>{label}</strong>)
     } else if (match[5]) {
       output.push(<strong key={`${keyPrefix}-bold-${index}`}>{plainInlineText(match[5])}</strong>)
     }
@@ -258,8 +253,8 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
 function headingOf(line: string, index: number): LegacyHeading | null {
   const heading = line.trim().match(/^(={1,6})\s*(.*?)\s*=+$/)
   if (!heading) return null
-  const rawTitle = heading[2].trim()
-  const title = legacyHeadingTitle(rawTitle, index)
+  const title = plainInlineText(heading[2]).trim()
+  if (!title) return null
   return {
     level: heading[1].length,
     title,
@@ -270,10 +265,11 @@ function headingOf(line: string, index: number): LegacyHeading | null {
 
 function renderLegacyLine(line: string, key: React.Key, headingId?: string) {
   const keyText = String(key)
-  const cleaned = line
-    .replace(/^\s*\*+\s*/, '')
-    .replace(/\(%\s*style\s*=\s*"(?![^"]*color)[^"]*"\s*%\)/g, '')
-    .trim()
+  const cleaned = stripHeadingMarks(
+    line
+      .replace(/^\s*\*+\s*/, '')
+      .replace(/\(%\s*style\s*=\s*"(?![^"]*color)[^"]*"\s*%\)/g, ''),
+  )
 
   if (!cleaned) return null
 
@@ -286,10 +282,7 @@ function renderLegacyLine(line: string, key: React.Key, headingId?: string) {
     return <h4 id={headingId} key={key}>{content}</h4>
   }
 
-  if (/^\*+\s*/.test(line.trim())) {
-    return <li key={key}>{renderInline(cleaned, `li-${keyText}`)}</li>
-  }
-
+  if (/^\*+\s*/.test(line.trim())) return <li key={key}>{renderInline(cleaned, `li-${keyText}`)}</li>
   return <p key={key}>{renderInline(cleaned, `p-${keyText}`)}</p>
 }
 
@@ -341,6 +334,15 @@ function splitLegacySections(entries: LegacyEntry[]) {
   let headingIndex = 0
 
   for (const entry of entries) {
+    const sectionStart = entry.type === 'line' ? sectionStartOf(entry.value, headingIndex) : null
+    if (sectionStart) {
+      current = { heading: sectionStart.heading, entries: [] }
+      if (sectionStart.body) current.entries.push({ type: 'line', value: sectionStart.body })
+      sections.push(current)
+      headingIndex += 1
+      continue
+    }
+
     const heading = entry.type === 'line' ? headingOf(entry.value, headingIndex) : null
     if (heading) {
       current = { heading, entries: [] }
@@ -353,7 +355,7 @@ function splitLegacySections(entries: LegacyEntry[]) {
     else intro.push(entry)
   }
 
-  return { intro, sections }
+  return { intro, sections: sections.filter((section) => section.entries.length > 0) }
 }
 
 function renderLegacyToc(sections: LegacySection[]) {
