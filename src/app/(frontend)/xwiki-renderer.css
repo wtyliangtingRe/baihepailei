@@ -90,12 +90,22 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 18px 20px;
+  padding: 16px 18px;
   color: #fff;
   cursor: pointer;
-  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
-  font-weight: 900;
   list-style: none;
+}
+
+.xwiki-section summary span {
+  display: inline-flex;
+  width: fit-content;
+  padding: 6px 10px;
+  border: 1px solid rgb(255 181 215 / 0.35);
+  border-radius: 999px;
+  color: #ffb5d7;
+  background: #171017;
+  font-size: 14px;
+  font-weight: 900;
 }
 
 .xwiki-section summary::-webkit-details-marker {
@@ -177,12 +187,14 @@
 
 [data-theme='light'] .xwiki-toc p,
 [data-theme='light'] .xwiki-toc a:hover,
-[data-theme='light'] .xwiki-section summary::after {
+[data-theme='light'] .xwiki-section summary::after,
+[data-theme='light'] .xwiki-section summary span {
   color: #b64178;
 }
 
 [data-theme='light'] .xwiki-toc a,
-[data-theme='light'] .xwiki-section summary::after {
+[data-theme='light'] .xwiki-section summary::after,
+[data-theme='light'] .xwiki-section summary span {
   border-color: #e2d6cc;
   background: #fff0f7;
   color: #6c5d54;
