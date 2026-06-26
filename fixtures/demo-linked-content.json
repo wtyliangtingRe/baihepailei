@@ -1,0 +1,272 @@
+{
+  "meta": {
+    "kind": "demo-linked-fixture",
+    "description": "Safe fake relationship graph content for local development. All slugs start with demo-linked-."
+  },
+  "creators": [
+    {
+      "name": "Demo 联动作者 A",
+      "slug": "demo-linked-creator-a",
+      "rank": "A",
+      "aliases": [{ "value": "联动测试作者 A" }],
+      "searchText": "demo linked creator author A",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "name": "Demo 联动画师 B",
+      "slug": "demo-linked-creator-b",
+      "rank": "B",
+      "aliases": [{ "value": "联动测试画师 B" }],
+      "searchText": "demo linked creator illustrator B",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "name": "Demo 联动剧本 C",
+      "slug": "demo-linked-creator-c",
+      "rank": "unknown",
+      "aliases": [{ "value": "联动测试剧本 C" }],
+      "searchText": "demo linked creator scenario C",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "name": "Demo 联动监督 D",
+      "slug": "demo-linked-creator-d",
+      "rank": "A",
+      "aliases": [{ "value": "联动测试监督 D" }],
+      "searchText": "demo linked creator director D",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "name": "Demo 联动音乐 E",
+      "slug": "demo-linked-creator-e",
+      "rank": "B",
+      "aliases": [{ "value": "联动测试音乐 E" }],
+      "searchText": "demo linked creator music E",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    }
+  ],
+  "organizations": [
+    {
+      "name": "Demo 联动出版社",
+      "slug": "demo-linked-org-publisher",
+      "type": "publisher",
+      "aliases": [{ "value": "联动测试出版社" }],
+      "sourceLinks": [{ "label": "Demo 页面", "url": "https://example.invalid/demo-linked-publisher" }],
+      "searchText": "demo linked organization publisher",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "name": "Demo 联动动画工房",
+      "slug": "demo-linked-org-studio",
+      "type": "animation_studio",
+      "aliases": [{ "value": "联动测试动画工房" }],
+      "sourceLinks": [{ "label": "Demo 页面", "url": "https://example.invalid/demo-linked-studio" }],
+      "searchText": "demo linked organization animation studio",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "name": "Demo 联动游戏平台",
+      "slug": "demo-linked-org-game",
+      "type": "game_company",
+      "aliases": [{ "value": "联动测试游戏平台" }],
+      "sourceLinks": [{ "label": "Demo 页面", "url": "https://example.invalid/demo-linked-game" }],
+      "searchText": "demo linked organization game company",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "name": "Demo 联动发布平台",
+      "slug": "demo-linked-org-platform",
+      "type": "platform",
+      "aliases": [{ "value": "联动测试发布平台" }],
+      "sourceLinks": [{ "label": "Demo 页面", "url": "https://example.invalid/demo-linked-platform" }],
+      "searchText": "demo linked organization platform",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    }
+  ],
+  "works": [
+    {
+      "title": "Demo 联动作品：花园协议",
+      "slug": "demo-linked-work-garden-protocol",
+      "rank": "A",
+      "reviewStatus": "reviewed",
+      "evidenceStrength": "medium",
+      "originalTitle": "Demo Linked Garden Protocol",
+      "aliases": [{ "value": "联动花园协议" }],
+      "creators": ["demo-linked-creator-a", "demo-linked-creator-b"],
+      "organizations": [
+        { "organization": "demo-linked-org-publisher", "role": "publisher", "note": "Demo 出版方" },
+        { "organization": "demo-linked-org-platform", "role": "platform", "note": "Demo 发布平台" }
+      ],
+      "hasEvidence": true,
+      "sourceLinks": [{ "label": "Demo 页面", "url": "https://example.invalid/demo-linked-work-garden-protocol" }],
+      "searchText": "demo linked work garden protocol creator A B publisher platform",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "title": "Demo 联动作品：星灯动画",
+      "slug": "demo-linked-work-star-lamp",
+      "rank": "B",
+      "reviewStatus": "reviewed",
+      "evidenceStrength": "strong",
+      "originalTitle": "Demo Linked Star Lamp",
+      "aliases": [{ "value": "联动星灯动画" }],
+      "creators": ["demo-linked-creator-c", "demo-linked-creator-d", "demo-linked-creator-e"],
+      "organizations": [
+        { "organization": "demo-linked-org-studio", "role": "animation_studio", "note": "Demo 动画制作" },
+        { "organization": "demo-linked-org-platform", "role": "platform", "note": "Demo 播放平台" }
+      ],
+      "hasEvidence": true,
+      "sourceLinks": [{ "label": "Demo 页面", "url": "https://example.invalid/demo-linked-work-star-lamp" }],
+      "searchText": "demo linked work star lamp creator C D E studio platform",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "title": "Demo 联动作品：月光游戏",
+      "slug": "demo-linked-work-moon-game",
+      "rank": "A",
+      "reviewStatus": "disputed",
+      "evidenceStrength": "medium",
+      "originalTitle": "Demo Linked Moon Game",
+      "aliases": [{ "value": "联动月光游戏" }],
+      "creators": ["demo-linked-creator-a", "demo-linked-creator-c"],
+      "organizations": [
+        { "organization": "demo-linked-org-game", "role": "game_developer", "note": "Demo 游戏开发" },
+        { "organization": "demo-linked-org-platform", "role": "platform", "note": "Demo 发布平台" }
+      ],
+      "hasEvidence": true,
+      "sourceLinks": [{ "label": "Demo 页面", "url": "https://example.invalid/demo-linked-work-moon-game" }],
+      "searchText": "demo linked work moon game creator A C game platform",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "title": "Demo 联动作品：交叉企划",
+      "slug": "demo-linked-work-cross-project",
+      "rank": "AA",
+      "reviewStatus": "reviewed",
+      "evidenceStrength": "strong",
+      "originalTitle": "Demo Linked Cross Project",
+      "aliases": [{ "value": "联动交叉企划" }],
+      "creators": ["demo-linked-creator-a", "demo-linked-creator-b", "demo-linked-creator-c"],
+      "organizations": [
+        { "organization": "demo-linked-org-publisher", "role": "publisher", "note": "Demo 发行支持" },
+        { "organization": "demo-linked-org-studio", "role": "production_company", "note": "Demo 共同制作" },
+        { "organization": "demo-linked-org-game", "role": "game_developer", "note": "Demo 联合开发" }
+      ],
+      "hasEvidence": true,
+      "sourceLinks": [{ "label": "Demo 页面", "url": "https://example.invalid/demo-linked-work-cross-project" }],
+      "searchText": "demo linked work cross project creator A B C publisher studio game",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    },
+    {
+      "title": "Demo 联动作品：银色广播",
+      "slug": "demo-linked-work-silver-radio",
+      "rank": "C",
+      "reviewStatus": "pending",
+      "evidenceStrength": "weak",
+      "originalTitle": "Demo Linked Silver Radio",
+      "aliases": [{ "value": "联动银色广播" }],
+      "creators": ["demo-linked-creator-b", "demo-linked-creator-e"],
+      "organizations": [
+        { "organization": "demo-linked-org-platform", "role": "platform", "note": "Demo 音频发布" }
+      ],
+      "hasEvidence": true,
+      "sourceLinks": [{ "label": "Demo 页面", "url": "https://example.invalid/demo-linked-work-silver-radio" }],
+      "searchText": "demo linked work silver radio creator B E platform",
+      "isLiteVisible": true,
+      "isFullVisible": true,
+      "status": "published"
+    }
+  ],
+  "evidence": [
+    {
+      "title": "Demo 联动证据：花园协议官方页",
+      "slug": "demo-linked-evidence-garden",
+      "evidenceType": "official_page",
+      "reviewStatus": "reviewed",
+      "evidenceStrength": "medium",
+      "relatedWorks": ["demo-linked-work-garden-protocol"],
+      "relatedCreators": ["demo-linked-creator-a", "demo-linked-creator-b"],
+      "relatedOrganizations": ["demo-linked-org-publisher", "demo-linked-org-platform"],
+      "description": "用于测试作品、创作者、机构之间互链的假官方页证据。",
+      "sourceLinks": [{ "label": "Demo 来源", "url": "https://example.invalid/demo-linked-evidence-garden" }],
+      "capturedAt": "2026-01-01T00:00:00.000Z",
+      "isPublic": true,
+      "searchText": "demo linked evidence garden official",
+      "status": "confirmed"
+    },
+    {
+      "title": "Demo 联动证据：星灯动画平台页",
+      "slug": "demo-linked-evidence-star",
+      "evidenceType": "platform_page",
+      "reviewStatus": "reviewed",
+      "evidenceStrength": "strong",
+      "relatedWorks": ["demo-linked-work-star-lamp"],
+      "relatedCreators": ["demo-linked-creator-c", "demo-linked-creator-d", "demo-linked-creator-e"],
+      "relatedOrganizations": ["demo-linked-org-studio", "demo-linked-org-platform"],
+      "description": "用于测试多创作者动画作品互链的假平台页证据。",
+      "sourceLinks": [{ "label": "Demo 来源", "url": "https://example.invalid/demo-linked-evidence-star" }],
+      "capturedAt": "2026-01-02T00:00:00.000Z",
+      "isPublic": true,
+      "searchText": "demo linked evidence star platform",
+      "status": "confirmed"
+    },
+    {
+      "title": "Demo 联动证据：月光游戏截图",
+      "slug": "demo-linked-evidence-moon",
+      "evidenceType": "work_screenshot",
+      "reviewStatus": "disputed",
+      "evidenceStrength": "medium",
+      "relatedWorks": ["demo-linked-work-moon-game"],
+      "relatedCreators": ["demo-linked-creator-a", "demo-linked-creator-c"],
+      "relatedOrganizations": ["demo-linked-org-game", "demo-linked-org-platform"],
+      "description": "用于测试有争议状态和游戏机构互链的假截图证据。",
+      "sourceLinks": [{ "label": "Demo 来源", "url": "https://example.invalid/demo-linked-evidence-moon" }],
+      "capturedAt": "2026-01-03T00:00:00.000Z",
+      "isPublic": true,
+      "searchText": "demo linked evidence moon screenshot",
+      "status": "confirmed"
+    },
+    {
+      "title": "Demo 联动证据：交叉企划访谈",
+      "slug": "demo-linked-evidence-cross",
+      "evidenceType": "interview",
+      "reviewStatus": "reviewed",
+      "evidenceStrength": "strong",
+      "relatedWorks": ["demo-linked-work-cross-project"],
+      "relatedCreators": ["demo-linked-creator-a", "demo-linked-creator-b", "demo-linked-creator-c"],
+      "relatedOrganizations": ["demo-linked-org-publisher", "demo-linked-org-studio", "demo-linked-org-game"],
+      "description": "用于测试多创作者、多机构共同关联的假访谈证据。",
+      "sourceLinks": [{ "label": "Demo 来源", "url": "https://example.invalid/demo-linked-evidence-cross" }],
+      "capturedAt": "2026-01-04T00:00:00.000Z",
+      "isPublic": true,
+      "searchText": "demo linked evidence cross interview",
+      "status": "confirmed"
+    }
+  ]
+}
