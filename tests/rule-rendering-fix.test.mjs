@@ -8,7 +8,16 @@ const css = fs.readFileSync(new URL('../src/app/(frontend)/frontend-simplificati
 test('legacy rank lines become section starts instead of loose paragraphs', () => {
   assert.ok(renderer.includes('function sectionStartOf'))
   assert.ok(renderer.includes('rankTitleFromLine'))
-  assert.ok(renderer.includes('const body = stripped === title ? undefined : stripped'))
+  assert.ok(renderer.includes('removeRankPrefix'))
+})
+
+test('legacy rank section titles distinguish works and creators', () => {
+  assert.ok(renderer.includes('return target ? `${target}${rank}` : rank'))
+  assert.ok(renderer.includes('(作品|作者)?'))
+})
+
+test('legacy section keys stay unique', () => {
+  assert.ok(renderer.includes("return `rule-${cleaned || 'section'}-${index + 1}`"))
 })
 
 test('empty legacy sections are removed', () => {
