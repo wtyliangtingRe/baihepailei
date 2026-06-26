@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 
 import DetailIndexDetail from '../../_components/DetailIndexDetail'
+import FeedbackPrompt from '../../_components/FeedbackPrompt'
 import MissingSearchIndex from '../../_components/MissingSearchIndex'
 import SearchIndexDetail from '../../_components/SearchIndexDetail'
 import VersionInfo from '../../_components/VersionInfo'
@@ -35,6 +36,7 @@ export default async function WorkDetailPage({ params }: Args) {
       <>
         <DetailIndexDetail item={detailItem} relatedEvidence={evidenceByWorkTitle(detailItem.title)} />
         <VersionInfo item={detailItem} />
+        <FeedbackPrompt item={detailItem} />
       </>
     )
   }
