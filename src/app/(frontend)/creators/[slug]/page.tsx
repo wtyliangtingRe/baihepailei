@@ -5,7 +5,7 @@ import FeedbackPrompt from '../../_components/FeedbackPrompt'
 import MissingSearchIndex from '../../_components/MissingSearchIndex'
 import SearchIndexDetail from '../../_components/SearchIndexDetail'
 import VersionInfo from '../../_components/VersionInfo'
-import { findDetailItem, findWorksByCreatorName } from '../../_lib/detail-index'
+import { findDetailItem, findEvidenceByCreatorName, findWorksByCreatorName } from '../../_lib/detail-index'
 import { findSearchItem, readSearchIndex } from '../../_lib/search-index'
 
 type Args = {
@@ -20,7 +20,11 @@ export default async function CreatorDetailPage({ params }: Args) {
   if (detailItem) {
     return (
       <>
-        <DetailIndexDetail item={detailItem} relatedWorks={findWorksByCreatorName(detailItem.title)} />
+        <DetailIndexDetail
+          item={detailItem}
+          relatedEvidence={findEvidenceByCreatorName(detailItem.title)}
+          relatedWorks={findWorksByCreatorName(detailItem.title)}
+        />
         <VersionInfo item={detailItem} />
         <FeedbackPrompt item={detailItem} />
       </>
