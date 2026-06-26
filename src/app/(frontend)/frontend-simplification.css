@@ -1,3 +1,11 @@
+.detail-hero h1 {
+  max-width: 960px;
+  font-size: clamp(38px, 6vw, 64px);
+  line-height: 1.08;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
 .rank-explainer summary {
   display: flex;
   flex-wrap: wrap;
