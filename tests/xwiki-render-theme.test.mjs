@@ -8,22 +8,33 @@ const themeToggle = fs.readFileSync(new URL('../src/app/(frontend)/_components/T
 const themeCss = fs.readFileSync(new URL('../src/app/(frontend)/theme.css', import.meta.url), 'utf8')
 const xwikiCss = fs.readFileSync(new URL('../src/app/(frontend)/xwiki-renderer.css', import.meta.url), 'utf8')
 
-test('rich text renderer detects and renders legacy xwiki text', () => {
-  assert.ok(renderer.includes('function looksLikeXWiki'))
-  assert.ok(renderer.includes('function renderXWiki'))
+test('rich text renderer detects and renders legacy markup text', () => {
+  assert.ok(renderer.includes('function looksLikeLegacyMarkup'))
+  assert.ok(renderer.includes('function renderLegacyMarkup'))
   assert.ok(renderer.includes('xwiki-rendered'))
   assert.ok(renderer.includes('xwiki-warning'))
   assert.ok(renderer.includes('xwiki-color-emphasis'))
   assert.ok(renderer.includes('wikiHref'))
 })
 
-test('xwiki renderer strips legacy wrappers and supports readable blocks', () => {
+test('legacy renderer extracts text from lexical nodes before rendering', () => {
+  assert.ok(renderer.includes('function nodePlainText'))
+  assert.ok(renderer.includes('function nodesPlainText'))
+  assert.ok(renderer.includes('const extractedText = nodesPlainText(nodes)'))
+  assert.ok(renderer.includes('if (looksLikeLegacyMarkup(extractedText)) return renderLegacyMarkup(extractedText)'))
+})
+
+test('legacy renderer strips old wrappers and supports readable blocks', () => {
   assert.ok(renderer.includes('{{warning}}'))
   assert.ok(renderer.includes('{{/warning}}'))
   assert.ok(renderer.includes('velocity'))
   assert.ok(renderer.includes('doc:名词解释'))
   assert.ok(xwikiCss.includes('.xwiki-warning'))
   assert.ok(xwikiCss.includes('.xwiki-rendered h2'))
+})
+
+test('legacy renderer supports spaced style attributes', () => {
+  assert.ok(renderer.includes('style\\s*=\\s*'))
 })
 
 test('theme toggle is wired into the frontend layout', () => {
