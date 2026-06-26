@@ -36,6 +36,19 @@ function rootChildren(content: unknown): RichNode[] {
   return childNodes(node.children)
 }
 
+function nodePlainText(node: RichNode): string {
+  if (typeof node.text === 'string') return node.text
+  if (!node.children?.length) return ''
+
+  const children = node.children.map(nodePlainText).filter(Boolean).join(' ')
+  if (['paragraph', 'heading', 'quote', 'listitem'].includes(node.type || '')) return `${children}\n`
+  return children
+}
+
+function nodesPlainText(nodes: RichNode[]) {
+  return nodes.map(nodePlainText).join('\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
 function hasFormat(format: RichNode['format'], name: string, bit: number) {
   if (typeof format === 'number') return Boolean(format & bit)
   if (typeof format === 'string') return format.split(' ').includes(name)
@@ -132,18 +145,19 @@ function plainTextParagraphs(text: string) {
     .filter(Boolean)
 }
 
-function looksLikeXWiki(text: string) {
+function looksLikeLegacyMarkup(text: string) {
   return /\{\{\/?\w+\}\}|\(%|\[\[.+?>>.+?\]\]|^\s*=+\s*.+?\s*=+\s*$/m.test(text)
 }
 
-function cleanXWikiText(text: string) {
+function cleanLegacyText(text: string) {
   return text
     .replace(/\{\{velocity\}\}[\s\S]*?\{\{\/velocity\}\}/g, '')
     .replace(/\{\{warning\}\}/g, '\n{{warning}}\n')
     .replace(/\{\{\/warning\}\}/g, '\n{{/warning}}\n')
     .replace(/\(\(\(/g, '\n')
     .replace(/\)\)\)/g, '\n')
-    .replace(/\s+(={2,6}\s*)/g, '\n$1')
+    .replace(/\s+(={1,6}\s*)/g, '\n$1')
+    .replace(/\s+(\*\s*\(\(\()/g, '\n$1')
     .replace(/\n{3,}/g, '\n\n')
 }
 
@@ -158,14 +172,14 @@ function wikiHref(target: string) {
 
 function plainInlineText(value: string) {
   return value
-    .replace(/\(%\s*style="[^"]*"\s*%\)/g, '')
+    .replace(/\(%\s*style\s*=\s*"[^"]*"\s*%\)/g, '')
     .replace(/\(%%\)/g, '')
     .replace(/\*\*(.*?)\*\*/g, '$1')
 }
 
 function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
   const output: React.ReactNode[] = []
-  const pattern = /\(%\s*style="[^"]*color\s*:\s*([^;\"]+)[^"]*"\s*%\)([\s\S]*?)\(%%\)|\[\[(.*?)>>(.+?)\]\]|\*\*(.*?)\*\*/g
+  const pattern = /\(%\s*style\s*=\s*"[^"]*color\s*:\s*([^;\"]+)[^"]*"\s*%\)([\s\S]*?)\(%%\)|\[\[(.*?)>>(.+?)\]\]|\*\*(.*?)\*\*/g
   let lastIndex = 0
   let index = 0
   let match: RegExpExecArray | null
@@ -205,11 +219,11 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
   return output.filter((item) => item !== '')
 }
 
-function renderXWikiLine(line: string, key: React.Key) {
+function renderLegacyLine(line: string, key: React.Key) {
   const keyText = String(key)
   const cleaned = line
     .replace(/^\s*\*+\s*/, '')
-    .replace(/\(%\s*style="(?![^"]*color)[^"]*"\s*%\)/g, '')
+    .replace(/\(%\s*style\s*=\s*"(?![^"]*color)[^"]*"\s*%\)/g, '')
     .trim()
 
   if (!cleaned) return null
@@ -230,15 +244,15 @@ function renderXWikiLine(line: string, key: React.Key) {
   return <p key={key}>{renderInline(cleaned, `p-${keyText}`)}</p>
 }
 
-function renderXWikiBlock(lines: string[], key: React.Key, warning = false) {
-  const rendered = lines.map((line, index) => renderXWikiLine(line, `${String(key)}-${index}`)).filter(Boolean)
+function renderLegacyBlock(lines: string[], key: React.Key, warning = false) {
+  const rendered = lines.map((line, index) => renderLegacyLine(line, `${String(key)}-${index}`)).filter(Boolean)
   if (rendered.length === 0) return null
   if (warning) return <aside className="xwiki-warning" key={key}>{rendered}</aside>
   return <React.Fragment key={key}>{rendered}</React.Fragment>
 }
 
-function renderXWiki(text: string) {
-  const lines = cleanXWikiText(text)
+function renderLegacyMarkup(text: string) {
+  const lines = cleanLegacyText(text)
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
@@ -250,7 +264,7 @@ function renderXWiki(text: string) {
 
   function flushNormal() {
     if (normalLines.length) {
-      blocks.push(renderXWikiBlock(normalLines, `normal-${blocks.length}`))
+      blocks.push(renderLegacyBlock(normalLines, `normal-${blocks.length}`))
       normalLines = []
     }
   }
@@ -264,7 +278,7 @@ function renderXWiki(text: string) {
     }
 
     if (line === '{{/warning}}') {
-      blocks.push(renderXWikiBlock(warningLines, `warning-${blocks.length}`, true))
+      blocks.push(renderLegacyBlock(warningLines, `warning-${blocks.length}`, true))
       inWarning = false
       warningLines = []
       continue
@@ -276,7 +290,7 @@ function renderXWiki(text: string) {
     else normalLines.push(line)
   }
 
-  if (warningLines.length) blocks.push(renderXWikiBlock(warningLines, `warning-${blocks.length}`, true))
+  if (warningLines.length) blocks.push(renderLegacyBlock(warningLines, `warning-${blocks.length}`, true))
   flushNormal()
 
   return <div className="rich-text xwiki-rendered">{blocks}</div>
@@ -284,7 +298,7 @@ function renderXWiki(text: string) {
 
 export default function RichTextRenderer({ content, fallback }: { content?: unknown; fallback?: string }) {
   if (typeof content === 'string') {
-    if (looksLikeXWiki(content)) return renderXWiki(content)
+    if (looksLikeLegacyMarkup(content)) return renderLegacyMarkup(content)
     const paragraphs = plainTextParagraphs(content)
     if (paragraphs.length) {
       return (
@@ -299,10 +313,12 @@ export default function RichTextRenderer({ content, fallback }: { content?: unkn
 
   const nodes = rootChildren(content)
   if (nodes.length) {
+    const extractedText = nodesPlainText(nodes)
+    if (looksLikeLegacyMarkup(extractedText)) return renderLegacyMarkup(extractedText)
     return <div className="rich-text">{renderChildren(nodes)}</div>
   }
 
-  if (fallback && looksLikeXWiki(fallback)) return renderXWiki(fallback)
+  if (fallback && looksLikeLegacyMarkup(fallback)) return renderLegacyMarkup(fallback)
 
   const fallbackParagraphs = plainTextParagraphs(fallback || '')
   if (fallbackParagraphs.length === 0) return null
