@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 import { readDetailIndex, type DetailItem } from '../_lib/detail-index'
+import WorkListControl from './WorkListControl'
 
 type WorkConclusionItem = DetailItem & {
   reviewStatus?: string
@@ -120,6 +121,8 @@ export default function WorkConclusionCard({ item, relatedEvidence = [] }: { ite
           <dd><LinkedNames collection="organizations" names={work.organizations} /></dd>
         </div>
       </dl>
+
+      <WorkListControl item={item} />
     </section>
   )
 }
