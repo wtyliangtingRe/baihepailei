@@ -14,6 +14,7 @@ import './comments.css'
 import './xwiki-renderer.css'
 import './work-conclusion.css'
 import './work-risk-matrix.css'
+import './work-list.css'
 import './theme.css'
 
 export const metadata: Metadata = {

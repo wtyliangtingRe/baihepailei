@@ -10,6 +10,7 @@ import { Organizations } from './src/collections/Organizations'
 import { Rules } from './src/collections/Rules'
 import { Tags } from './src/collections/Tags'
 import { Terms } from './src/collections/Terms'
+import { UserLists } from './src/collections/UserLists'
 import { Users } from './src/collections/Users'
 import { Warnings } from './src/collections/Warnings'
 import { Works } from './src/collections/Works'
@@ -18,7 +19,7 @@ export default buildConfig({
   admin: {
     user: Users.slug,
   },
-  collections: [Users, Media, Works, Creators, Organizations, Evidence, Comments, Terms, Warnings, Tags, Rules],
+  collections: [Users, Media, Works, Creators, Organizations, Evidence, Comments, UserLists, Terms, Warnings, Tags, Rules],
   db: postgresAdapter({
     pool: {
       connectionString: String(process.env['DATABASE_URL'] || ''),
