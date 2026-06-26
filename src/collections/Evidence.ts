@@ -1,6 +1,6 @@
-import type { CollectionConfig, CollectionSlug } from 'payload'
+import type { Access, CollectionConfig, CollectionSlug } from 'payload'
 
-import { publishedOrSignedIn, trustedAndUp } from '@/access/roles'
+import { trustedAndUp } from '@/access/roles'
 
 const reviewStatusOptions = [
   { label: '待复核', value: 'pending' },
@@ -16,6 +16,26 @@ const evidenceStrengthOptions = [
   { label: '强', value: 'strong' },
 ]
 
+const evidenceStatusOptions = [
+  { label: '草稿', value: 'draft' },
+  { label: '待审核', value: 'review' },
+  { label: '已确认', value: 'confirmed' },
+  { label: '归档', value: 'archived' },
+]
+
+const publicEvidenceOrSignedIn: Access = ({ req }) => {
+  if (req.user) return true
+
+  return {
+    status: {
+      equals: 'confirmed',
+    },
+    isPublic: {
+      equals: true,
+    },
+  }
+}
+
 export const Evidence: CollectionConfig = {
   slug: 'evidence',
   labels: {
@@ -30,7 +50,7 @@ export const Evidence: CollectionConfig = {
   access: {
     create: trustedAndUp,
     delete: trustedAndUp,
-    read: publishedOrSignedIn,
+    read: publicEvidenceOrSignedIn,
     update: trustedAndUp,
   },
   versions: {
@@ -174,7 +194,7 @@ export const Evidence: CollectionConfig = {
       label: '状态',
       defaultValue: 'draft',
       required: true,
-      options: ['draft', 'review', 'confirmed', 'archived'],
+      options: evidenceStatusOptions,
     },
   ],
 }
