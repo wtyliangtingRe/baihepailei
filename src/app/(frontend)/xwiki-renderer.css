@@ -1,0 +1,111 @@
+.xwiki-rendered {
+  display: grid;
+  gap: 14px;
+}
+
+.xwiki-rendered h2,
+.xwiki-rendered h3,
+.xwiki-rendered h4 {
+  margin: 20px 0 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #303030;
+}
+
+.xwiki-rendered h2 {
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+}
+
+.xwiki-rendered h3 {
+  font-size: clamp(1.25rem, 2vw, 1.6rem);
+}
+
+.xwiki-rendered p,
+.xwiki-rendered li {
+  margin: 0;
+  line-height: 1.9;
+}
+
+.xwiki-rendered li {
+  padding: 12px 14px;
+  border: 1px solid #303030;
+  border-radius: 16px;
+  background: #111;
+  list-style: none;
+}
+
+.xwiki-warning {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid rgb(255 181 215 / 0.45);
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgb(255 181 215 / 0.12), rgb(255 181 215 / 0.03));
+}
+
+.xwiki-warning::before {
+  content: '提示';
+  width: fit-content;
+  padding: 5px 10px;
+  border: 1px solid rgb(255 181 215 / 0.4);
+  border-radius: 999px;
+  color: #ffb5d7;
+  background: #171017;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.xwiki-color-emphasis {
+  color: #ff7dad;
+}
+
+.xwiki-color-emphasis[data-color='red'],
+.xwiki-color-emphasis[data-color='#ff2800'] {
+  color: #ff786e;
+}
+
+.xwiki-color-emphasis[data-color='green'] {
+  color: #8fe3a2;
+}
+
+.xwiki-color-emphasis[data-color='#ff2896'] {
+  color: #ff8dcc;
+}
+
+[data-theme='light'] .xwiki-rendered h2,
+[data-theme='light'] .xwiki-rendered h3,
+[data-theme='light'] .xwiki-rendered h4 {
+  border-bottom-color: #e2d6cc;
+}
+
+[data-theme='light'] .xwiki-rendered li {
+  border-color: #e2d6cc;
+  background: #fff7f2;
+}
+
+[data-theme='light'] .xwiki-warning {
+  border-color: rgb(214 99 153 / 0.35);
+  background: linear-gradient(135deg, rgb(214 99 153 / 0.12), rgb(255 255 255 / 0.72));
+}
+
+[data-theme='light'] .xwiki-warning::before {
+  border-color: #e8c1d5;
+  color: #b64178;
+  background: #fff0f7;
+}
+
+[data-theme='light'] .xwiki-color-emphasis {
+  color: #b64178;
+}
+
+[data-theme='light'] .xwiki-color-emphasis[data-color='red'],
+[data-theme='light'] .xwiki-color-emphasis[data-color='#ff2800'] {
+  color: #c73a2e;
+}
+
+[data-theme='light'] .xwiki-color-emphasis[data-color='green'] {
+  color: #297c3c;
+}
+
+[data-theme='light'] .xwiki-color-emphasis[data-color='#ff2896'] {
+  color: #b64178;
+}

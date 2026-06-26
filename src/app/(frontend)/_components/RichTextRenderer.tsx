@@ -132,8 +132,159 @@ function plainTextParagraphs(text: string) {
     .filter(Boolean)
 }
 
+function looksLikeXWiki(text: string) {
+  return /\{\{\/?\w+\}\}|\(%|\[\[.+?>>.+?\]\]|^\s*=+\s*.+?\s*=+\s*$/m.test(text)
+}
+
+function cleanXWikiText(text: string) {
+  return text
+    .replace(/\{\{velocity\}\}[\s\S]*?\{\{\/velocity\}\}/g, '')
+    .replace(/\{\{warning\}\}/g, '\n{{warning}}\n')
+    .replace(/\{\{\/warning\}\}/g, '\n{{/warning}}\n')
+    .replace(/\(\(\(/g, '\n')
+    .replace(/\)\)\)/g, '\n')
+    .replace(/\s+(={2,6}\s*)/g, '\n$1')
+    .replace(/\n{3,}/g, '\n\n')
+}
+
+function wikiHref(target: string) {
+  const normalized = target.trim()
+  const termMatch = normalized.match(/^doc:名词解释\.([^\.]+)\.WebHome$/)
+  if (termMatch) return `/terms/${encodeURIComponent(termMatch[1])}`
+  const ruleMatch = normalized.match(/^doc:排雷原则\.([^\.]+)\.WebHome$/)
+  if (ruleMatch) return `/rules/${encodeURIComponent(ruleMatch[1])}`
+  return undefined
+}
+
+function plainInlineText(value: string) {
+  return value
+    .replace(/\(%\s*style="[^"]*"\s*%\)/g, '')
+    .replace(/\(%%\)/g, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+}
+
+function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
+  const output: React.ReactNode[] = []
+  const pattern = /\(%\s*style="[^"]*color\s*:\s*([^;\"]+)[^"]*"\s*%\)([\s\S]*?)\(%%\)|\[\[(.*?)>>(.+?)\]\]|\*\*(.*?)\*\*/g
+  let lastIndex = 0
+  let index = 0
+  let match: RegExpExecArray | null
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) output.push(plainInlineText(text.slice(lastIndex, match.index)))
+
+    if (match[1]) {
+      const color = match[1].trim()
+      const inner = plainInlineText(match[2] || '')
+      output.push(
+        <strong className="xwiki-color-emphasis" data-color={color} key={`${keyPrefix}-color-${index}`}>
+          {inner}
+        </strong>,
+      )
+    } else if (match[3]) {
+      const label = plainInlineText(match[3])
+      const href = wikiHref(match[4] || '')
+      output.push(
+        href ? (
+          <a href={href} key={`${keyPrefix}-link-${index}`}>
+            {label}
+          </a>
+        ) : (
+          <strong key={`${keyPrefix}-link-${index}`}>{label}</strong>
+        ),
+      )
+    } else if (match[5]) {
+      output.push(<strong key={`${keyPrefix}-bold-${index}`}>{plainInlineText(match[5])}</strong>)
+    }
+
+    lastIndex = pattern.lastIndex
+    index += 1
+  }
+
+  if (lastIndex < text.length) output.push(plainInlineText(text.slice(lastIndex)))
+  return output.filter((item) => item !== '')
+}
+
+function renderXWikiLine(line: string, key: React.Key) {
+  const keyText = String(key)
+  const cleaned = line
+    .replace(/^\s*\*+\s*/, '')
+    .replace(/\(%\s*style="(?![^"]*color)[^"]*"\s*%\)/g, '')
+    .trim()
+
+  if (!cleaned) return null
+
+  const heading = cleaned.match(/^(={1,6})\s*(.*?)\s*=+$/)
+  if (heading) {
+    const level = heading[1].length
+    const content = renderInline(heading[2], `h-${keyText}`)
+    if (level <= 1) return <h2 key={key}>{content}</h2>
+    if (level === 2) return <h3 key={key}>{content}</h3>
+    return <h4 key={key}>{content}</h4>
+  }
+
+  if (/^\*+\s*/.test(line.trim())) {
+    return <li key={key}>{renderInline(cleaned, `li-${keyText}`)}</li>
+  }
+
+  return <p key={key}>{renderInline(cleaned, `p-${keyText}`)}</p>
+}
+
+function renderXWikiBlock(lines: string[], key: React.Key, warning = false) {
+  const rendered = lines.map((line, index) => renderXWikiLine(line, `${String(key)}-${index}`)).filter(Boolean)
+  if (rendered.length === 0) return null
+  if (warning) return <aside className="xwiki-warning" key={key}>{rendered}</aside>
+  return <React.Fragment key={key}>{rendered}</React.Fragment>
+}
+
+function renderXWiki(text: string) {
+  const lines = cleanXWikiText(text)
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  const blocks: React.ReactNode[] = []
+  let warningLines: string[] = []
+  let inWarning = false
+  let normalLines: string[] = []
+
+  function flushNormal() {
+    if (normalLines.length) {
+      blocks.push(renderXWikiBlock(normalLines, `normal-${blocks.length}`))
+      normalLines = []
+    }
+  }
+
+  for (const line of lines) {
+    if (line === '{{warning}}') {
+      flushNormal()
+      inWarning = true
+      warningLines = []
+      continue
+    }
+
+    if (line === '{{/warning}}') {
+      blocks.push(renderXWikiBlock(warningLines, `warning-${blocks.length}`, true))
+      inWarning = false
+      warningLines = []
+      continue
+    }
+
+    if (line.startsWith('{{') && line.endsWith('}}')) continue
+
+    if (inWarning) warningLines.push(line)
+    else normalLines.push(line)
+  }
+
+  if (warningLines.length) blocks.push(renderXWikiBlock(warningLines, `warning-${blocks.length}`, true))
+  flushNormal()
+
+  return <div className="rich-text xwiki-rendered">{blocks}</div>
+}
+
 export default function RichTextRenderer({ content, fallback }: { content?: unknown; fallback?: string }) {
   if (typeof content === 'string') {
+    if (looksLikeXWiki(content)) return renderXWiki(content)
     const paragraphs = plainTextParagraphs(content)
     if (paragraphs.length) {
       return (
@@ -150,6 +301,8 @@ export default function RichTextRenderer({ content, fallback }: { content?: unkn
   if (nodes.length) {
     return <div className="rich-text">{renderChildren(nodes)}</div>
   }
+
+  if (fallback && looksLikeXWiki(fallback)) return renderXWiki(fallback)
 
   const fallbackParagraphs = plainTextParagraphs(fallback || '')
   if (fallbackParagraphs.length === 0) return null
