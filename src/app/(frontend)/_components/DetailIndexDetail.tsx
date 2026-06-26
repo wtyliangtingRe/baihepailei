@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 import { readDetailIndex, type DetailCoverImage, type DetailItem } from '../_lib/detail-index'
+import CommentBlock from './CommentBlock'
 import ContentCallout, { type ContentCalloutItem } from './ContentCallout'
 import RichTextRenderer from './RichTextRenderer'
 
@@ -384,10 +385,11 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
 
       <BasicInfo item={item} />
       <DetailCallouts item={item} />
-      <RelatedEvidence evidence={relatedEvidence} showPlaceholder={showEvidencePlaceholder} />
       <RelatedWorks works={relatedWorks} />
       <RichTextSections item={item} />
+      <RelatedEvidence evidence={relatedEvidence} showPlaceholder={showEvidencePlaceholder} />
       <SourceLinks item={item} />
+      <CommentBlock item={item} />
     </main>
   )
 }
