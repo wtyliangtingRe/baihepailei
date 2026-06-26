@@ -26,7 +26,7 @@ test('empty legacy sections are removed', () => {
 
 test('legacy heading markers are stripped from normal lines', () => {
   assert.ok(renderer.includes('function stripHeadingMarks'))
-  assert.ok(renderer.includes("replace(/^\\s*=+\\s*/"))
+  assert.ok(renderer.includes('replace(/^\\s*=+\\s*/'))
 })
 
 test('long detail titles stay readable', () => {
