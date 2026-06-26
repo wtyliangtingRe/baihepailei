@@ -19,12 +19,6 @@ type ExtendedDetailItem = DetailItem & {
   callouts?: ContentCalloutItem[]
 }
 
-type RelationGroup = {
-  label: string
-  collection: string
-  values?: string[]
-}
-
 const organizationTypeLabels: Record<string, string> = {
   publisher: '出版社',
   production_company: '制作公司',
@@ -118,14 +112,26 @@ function visibleFieldsOf(fields: Array<[string, string | string[] | boolean | un
     .filter(([, values]) => values.length > 0)
 }
 
+function relationCollection(label: string) {
+  if (['创作者', '关联创作者'].includes(label)) return 'creators'
+  if (['相关机构', '关联机构'].includes(label)) return 'organizations'
+  if (['相关作品', '关联作品', '示例作品'].includes(label)) return 'works'
+  if (label === '相关名词') return 'terms'
+  return ''
+}
+
 function detailTarget(collection: string, value: string) {
   const index = readDetailIndex()
   if (!index) return null
-
   const key = normalizeKey(value)
   if (!key) return null
-
   return index.items.find((item) => item.collection === collection && normalizeKey(item.title) === key) || null
+}
+
+function InlineValue({ collection, value }: { collection: string; value: string }) {
+  const target = collection ? detailTarget(collection, value) : null
+  if (!target) return <span>{value}</span>
+  return <Link className="detail-inline-link" href={target.url}>{value}</Link>
 }
 
 function FieldList({ fields }: { fields: Array<[string, string | string[] | boolean | undefined]> }) {
@@ -134,12 +140,22 @@ function FieldList({ fields }: { fields: Array<[string, string | string[] | bool
 
   return (
     <dl className="detail-fields">
-      {visibleFields.map(([label, values]) => (
-        <div key={label}>
-          <dt>{label}</dt>
-          <dd>{values.join(' / ')}</dd>
-        </div>
-      ))}
+      {visibleFields.map(([label, values]) => {
+        const collection = relationCollection(label)
+        return (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd className={collection ? 'detail-inline-values' : undefined}>
+              {values.map((value, index) => (
+                <span key={`${label}-${value}`}>
+                  {index > 0 ? <span className="detail-inline-separator">/</span> : null}
+                  <InlineValue collection={collection} value={value} />
+                </span>
+              ))}
+            </dd>
+          </div>
+        )
+      })}
     </dl>
   )
 }
@@ -244,72 +260,32 @@ function DetailCallouts({ item }: { item: DetailItem }) {
   )
 }
 
-function RelationChip({ collection, value }: { collection: string; value: string }) {
-  const target = detailTarget(collection, value)
-  if (!target) return <span className="detail-relation-chip muted-chip">{value}</span>
-
-  return (
-    <Link className="detail-relation-chip" href={target.url}>
-      {value}
-    </Link>
-  )
-}
-
-function DetailRelations({ item }: { item: DetailItem }) {
-  const extendedItem = item as ExtendedDetailItem
-  const groups: RelationGroup[] = [
-    { label: '创作者', collection: 'creators', values: item.creators },
-    { label: '机构', collection: 'organizations', values: extendedItem.organizations },
-    { label: '关联作品', collection: 'works', values: extendedItem.relatedWorks },
-    { label: '关联创作者', collection: 'creators', values: extendedItem.relatedCreators },
-    { label: '关联机构', collection: 'organizations', values: extendedItem.relatedOrganizations },
-    { label: '相关名词', collection: 'terms', values: item.relatedTerms },
-    { label: '示例作品', collection: 'works', values: item.examples },
-  ].filter((group) => Array.isArray(group.values) && group.values.length > 0)
-
-  if (groups.length === 0) return null
-
-  return (
-    <section className="detail-card relation-links-card">
-      <h2>相关链接</h2>
-      <div className="detail-relation-groups">
-        {groups.map((group) => (
-          <div className="detail-relation-group" key={`${group.collection}-${group.label}`}>
-            <h3>{group.label}</h3>
-            <div className="detail-relation-chips">
-              {(group.values || []).map((value) => (
-                <RelationChip collection={group.collection} key={`${group.collection}-${value}`} value={value} />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function RelatedEvidence({ evidence }: { evidence: DetailItem[] }) {
-  if (evidence.length === 0) return null
+function RelatedEvidence({ evidence, showPlaceholder }: { evidence: DetailItem[]; showPlaceholder: boolean }) {
+  if (evidence.length === 0 && !showPlaceholder) return null
 
   return (
     <section className="detail-card evidence-card-list">
-      <h2>证据材料</h2>
-      <div className="evidence-list">
-        {evidence.map((item) => {
-          const evidenceItem = item as ExtendedDetailItem
-          return (
-            <Link className="evidence-item" href={item.url || `/evidence/${item.slug}`} key={item.id}>
-              <EvidenceImage image={evidenceItem.image} title={item.title} />
-              <div>
-                <span>{evidenceTypeLabel(evidenceItem.evidenceType) || '证据材料'}</span>
-                {evidenceItem.evidenceStrength ? <span>{evidenceStrengthLabel(evidenceItem.evidenceStrength)}</span> : null}
-                <strong>{item.title}</strong>
-                {evidenceItem.description ? <p>{evidenceItem.description}</p> : null}
-              </div>
-            </Link>
-          )
-        })}
-      </div>
+      <h2>材料留存</h2>
+      {evidence.length === 0 ? (
+        <p className="muted">暂无材料。后续可在证据材料中关联这个条目。</p>
+      ) : (
+        <div className="evidence-list">
+          {evidence.map((item) => {
+            const evidenceItem = item as ExtendedDetailItem
+            return (
+              <Link className="evidence-item" href={item.url || `/evidence/${item.slug}`} key={item.id}>
+                <EvidenceImage image={evidenceItem.image} title={item.title} />
+                <div>
+                  <span>{evidenceTypeLabel(evidenceItem.evidenceType) || '证据材料'}</span>
+                  {evidenceItem.evidenceStrength ? <span>{evidenceStrengthLabel(evidenceItem.evidenceStrength)}</span> : null}
+                  <strong>{item.title}</strong>
+                  {evidenceItem.description ? <p>{evidenceItem.description}</p> : null}
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      )}
     </section>
   )
 }
@@ -337,12 +313,16 @@ function RichTextSections({ item }: { item: DetailItem }) {
   const extendedItem = item as ExtendedDetailItem
   const sections = item.sections || []
   if (sections.length === 0 && !extendedItem.description) {
-    return (
-      <section className="detail-card">
-        <h2>正文</h2>
-        <p className="muted">暂无正文详情。请重新生成 detail-index.json 后再查看。</p>
-      </section>
-    )
+    if (item.collection === 'creators' || item.collection === 'organizations') return null
+    if (item.collection === 'works') {
+      return (
+        <section className="detail-card">
+          <h2>作品简介</h2>
+          <p className="muted">作品简介暂未填写。后续可在后台摘要字段补充，用于搜索和简易推荐。</p>
+        </section>
+      )
+    }
+    return null
   }
 
   return (
@@ -355,7 +335,7 @@ function RichTextSections({ item }: { item: DetailItem }) {
       ) : null}
       {sections.map((section) => (
         <section className="detail-card" key={section.key}>
-          <h2>{section.label}</h2>
+          <h2>{item.collection === 'works' && section.key === 'summary' ? '作品简介' : section.label}</h2>
           <RichTextRenderer content={section.content} fallback={section.plainText} />
         </section>
       ))}
@@ -370,6 +350,7 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
   const evidenceType = evidenceTypeLabel(extendedItem.evidenceType)
   const reviewStatus = reviewStatusLabel(extendedItem.reviewStatus)
   const evidenceStrength = evidenceStrengthLabel(extendedItem.evidenceStrength)
+  const showEvidencePlaceholder = ['works', 'creators', 'organizations'].includes(item.collection)
 
   return (
     <main className="page detail-page">
@@ -402,9 +383,8 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
       </section>
 
       <BasicInfo item={item} />
-      <DetailRelations item={item} />
       <DetailCallouts item={item} />
-      <RelatedEvidence evidence={relatedEvidence} />
+      <RelatedEvidence evidence={relatedEvidence} showPlaceholder={showEvidencePlaceholder} />
       <RelatedWorks works={relatedWorks} />
       <RichTextSections item={item} />
       <SourceLinks item={item} />
