@@ -40,13 +40,20 @@ test('legacy renderer supports spaced style attributes', () => {
 test('legacy renderer builds toc and collapsed sections', () => {
   assert.ok(renderer.includes('function renderLegacyToc'))
   assert.ok(renderer.includes('function splitLegacySections'))
-  assert.ok(renderer.includes('legacyRankFallbackTitles'))
-  assert.ok(renderer.includes("'S级', 'A级', 'B级一类', 'B级二类'"))
+  assert.ok(renderer.includes('function sectionStartOf'))
+  assert.ok(renderer.includes('function rankTitleFromLine'))
   assert.ok(renderer.includes('className="xwiki-toc"'))
   assert.ok(renderer.includes('className="xwiki-section"'))
   assert.ok(renderer.includes('sections.length >= 4'))
   assert.ok(renderer.includes('<details'))
   assert.ok(!renderer.includes('open={index < 2}'))
+})
+
+test('legacy renderer parses rank explanation lines as sections', () => {
+  assert.ok(renderer.includes('const sectionStart = entry.type === \'line\' ? sectionStartOf(entry.value, headingIndex) : null'))
+  assert.ok(renderer.includes('if (sectionStart.body) current.entries.push'))
+  assert.ok(renderer.includes('sections: sections.filter((section) => section.entries.length > 0)'))
+  assert.ok(renderer.includes('stripHeadingMarks'))
 })
 
 test('legacy toc and section styles are present', () => {
