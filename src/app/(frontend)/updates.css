@@ -1,0 +1,65 @@
+.updates-list {
+  display: grid;
+  gap: 14px;
+}
+
+.update-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid #303030;
+  border-radius: 20px;
+  background: #111;
+  text-decoration: none;
+}
+
+.update-card:hover {
+  border-color: #ffb5d7;
+}
+
+.update-card > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.update-card span,
+.update-card time {
+  width: fit-content;
+  padding: 5px 10px;
+  border: 1px solid rgb(255 181 215 / 0.35);
+  border-radius: 999px;
+  color: #ffb5d7;
+  background: #171017;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.update-card time {
+  color: #d7d7d7;
+  border-color: #333;
+  background: #151515;
+}
+
+.update-card h2 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.1rem, 1.6vw, 1.4rem);
+}
+
+.update-card p {
+  margin: 0;
+  color: #cfcfcf;
+  line-height: 1.7;
+}
+
+.version-note {
+  display: grid;
+  gap: 10px;
+}
+
+.version-note p {
+  margin: 0;
+}
