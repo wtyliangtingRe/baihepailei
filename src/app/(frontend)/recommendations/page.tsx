@@ -87,7 +87,7 @@ export default function RecommendationsPage() {
       <section className="collection-heading">
         <div>
           <p className="eyebrow">规则推荐</p>
-          <h1>简易推荐</h1>
+          <h1>推荐</h1>
           <p className="muted">根据分级、复核状态、证据强度和雷点矩阵生成。它不是最终判断，只是帮你先筛出更值得看的条目。</p>
         </div>
       </section>
