@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 
 import type { DetailItem } from '../_lib/detail-index'
 
@@ -59,7 +59,7 @@ export default function CommentBlock({ item }: { item: DetailItem }) {
     }
   }, [apiUrl])
 
-  async function submitComment(event: React.FormEvent<HTMLFormElement>) {
+  async function submitComment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const text = body.trim()
     if (!text) return
