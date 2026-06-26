@@ -1,0 +1,120 @@
+.recommendations-page {
+  display: grid;
+  gap: 28px;
+}
+
+.recommendation-rules {
+  display: grid;
+  gap: 14px;
+}
+
+.recommendation-rules div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recommendation-rules span {
+  padding: 7px 10px;
+  border: 1px solid #303030;
+  border-radius: 999px;
+  background: #151515;
+  color: #d7d7d7;
+  font-size: 14px;
+}
+
+.recommendation-section {
+  display: grid;
+  gap: 18px;
+}
+
+.recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.recommendation-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #303030;
+  border-radius: 18px;
+  background: #111;
+  color: inherit;
+  text-decoration: none;
+}
+
+.recommendation-card:hover {
+  border-color: #ffb5d7;
+}
+
+.recommendation-card > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recommendation-card span {
+  padding: 4px 8px;
+  border: 1px solid #303030;
+  border-radius: 999px;
+  color: #ffb5d7;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.recommendation-card h3,
+.recommendation-card p,
+.recommendation-card ul {
+  margin: 0;
+}
+
+.recommendation-card h3 {
+  color: #fff;
+}
+
+.recommendation-card p {
+  color: #aaa;
+}
+
+.recommendation-card ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.recommendation-card li {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgb(255 181 215 / 0.08);
+  color: #d7d7d7;
+  font-size: 13px;
+}
+
+[data-theme='light'] .recommendation-rules span,
+[data-theme='light'] .recommendation-card {
+  border-color: #e2d6cc;
+  background: #fff7f2;
+}
+
+[data-theme='light'] .recommendation-card h3,
+[data-theme='light'] .recommendation-rules span {
+  color: #191716;
+}
+
+[data-theme='light'] .recommendation-card p {
+  color: #766a61;
+}
+
+[data-theme='light'] .recommendation-card span {
+  border-color: #e2d6cc;
+  color: #b64178;
+}
+
+[data-theme='light'] .recommendation-card li {
+  background: #fff0f7;
+  color: #5c514b;
+}
