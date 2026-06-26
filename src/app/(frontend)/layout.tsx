@@ -8,6 +8,7 @@ import './callouts.css'
 import './works-filters.css'
 import './updates.css'
 import './feedback.css'
+import './entity-relations.css'
 
 export const metadata: Metadata = {
   title: 'Baihepailei',

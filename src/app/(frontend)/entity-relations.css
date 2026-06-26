@@ -1,0 +1,43 @@
+.entity-relations {
+  display: grid;
+  gap: 18px;
+}
+
+.entity-relation-group,
+.entity-relation-card {
+  display: grid;
+  gap: 12px;
+}
+
+.entity-relation-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.entity-relation-card {
+  padding: 15px;
+  border: 1px solid #303030;
+  border-radius: 18px;
+  background: #111;
+  text-decoration: none;
+}
+
+.entity-relation-card:hover {
+  border-color: #ffb5d7;
+}
+
+.entity-relation-card span {
+  width: fit-content;
+  padding: 4px 9px;
+  border: 1px solid rgb(255 181 215 / 0.35);
+  border-radius: 999px;
+  color: #ffb5d7;
+  background: #171017;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.entity-relation-card strong {
+  color: #fff;
+}

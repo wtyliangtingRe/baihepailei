@@ -113,22 +113,57 @@ export function findDetailItem(collection: DetailCollection, slug: string) {
   return index.items.find((item) => item.collection === collection && item.slug === slug) || null
 }
 
+function uniqueItems(items: DetailItem[]) {
+  const seen = new Set<string>()
+  const output: DetailItem[] = []
+  for (const item of items) {
+    if (seen.has(item.id)) continue
+    seen.add(item.id)
+    output.push(item)
+  }
+  return output.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
+}
+
+export function findItemsByTitles(collection: DetailCollection, titles: string[] = []) {
+  const index = readDetailIndex()
+  if (!index) return []
+
+  const wanted = new Set(titles.map((title) => title.trim()).filter(Boolean))
+  if (wanted.size === 0) return []
+
+  return uniqueItems(index.items.filter((item) => item.collection === collection && wanted.has(item.title)))
+}
+
 export function findWorksByCreatorName(creatorName: string) {
   const index = readDetailIndex()
   if (!index) return []
 
-  return index.items
-    .filter((item) => item.collection === 'works')
-    .filter((item) => (item.creators || []).includes(creatorName))
-    .sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
+  return uniqueItems(
+    index.items
+      .filter((item) => item.collection === 'works')
+      .filter((item) => (item.creators || []).includes(creatorName)),
+  )
 }
 
 export function findWorksByOrganizationName(organizationName: string) {
   const index = readDetailIndex()
   if (!index) return []
 
-  return index.items
-    .filter((item) => item.collection === 'works')
-    .filter((item) => (item.organizations || []).includes(organizationName))
-    .sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
+  return uniqueItems(
+    index.items
+      .filter((item) => item.collection === 'works')
+      .filter((item) => (item.organizations || []).includes(organizationName)),
+  )
+}
+
+export function findOrganizationsByCreatorName(creatorName: string) {
+  const works = findWorksByCreatorName(creatorName)
+  const organizationNames = works.flatMap((work) => work.organizations || [])
+  return findItemsByTitles('organizations', organizationNames)
+}
+
+export function findCreatorsByOrganizationName(organizationName: string) {
+  const works = findWorksByOrganizationName(organizationName)
+  const creatorNames = works.flatMap((work) => work.creators || [])
+  return findItemsByTitles('creators', creatorNames)
 }
