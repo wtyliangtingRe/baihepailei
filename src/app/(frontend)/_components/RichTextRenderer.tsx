@@ -13,6 +13,22 @@ type RichNode = {
   }
 }
 
+type LegacyEntry =
+  | { type: 'line'; value: string }
+  | { type: 'warning'; lines: string[] }
+
+type LegacyHeading = {
+  level: number
+  title: string
+  rawTitle: string
+  id: string
+}
+
+type LegacySection = {
+  heading: LegacyHeading
+  entries: LegacyEntry[]
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
@@ -177,6 +193,14 @@ function plainInlineText(value: string) {
     .replace(/\*\*(.*?)\*\*/g, '$1')
 }
 
+function legacySlug(title: string, index: number) {
+  const cleaned = plainInlineText(title)
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase()
+  return `rule-${cleaned || index + 1}`
+}
+
 function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
   const output: React.ReactNode[] = []
   const pattern = /\(%\s*style\s*=\s*"[^"]*color\s*:\s*([^;\"]+)[^"]*"\s*%\)([\s\S]*?)\(%%\)|\[\[(.*?)>>(.+?)\]\]|\*\*(.*?)\*\*/g
@@ -219,7 +243,20 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
   return output.filter((item) => item !== '')
 }
 
-function renderLegacyLine(line: string, key: React.Key) {
+function headingOf(line: string, index: number): LegacyHeading | null {
+  const heading = line.trim().match(/^(={1,6})\s*(.*?)\s*=+$/)
+  if (!heading) return null
+  const rawTitle = heading[2].trim()
+  const title = plainInlineText(rawTitle).trim()
+  return {
+    level: heading[1].length,
+    title,
+    rawTitle,
+    id: legacySlug(title || rawTitle, index),
+  }
+}
+
+function renderLegacyLine(line: string, key: React.Key, headingId?: string) {
   const keyText = String(key)
   const cleaned = line
     .replace(/^\s*\*+\s*/, '')
@@ -232,9 +269,9 @@ function renderLegacyLine(line: string, key: React.Key) {
   if (heading) {
     const level = heading[1].length
     const content = renderInline(heading[2], `h-${keyText}`)
-    if (level <= 1) return <h2 key={key}>{content}</h2>
-    if (level === 2) return <h3 key={key}>{content}</h3>
-    return <h4 key={key}>{content}</h4>
+    if (level <= 1) return <h2 id={headingId} key={key}>{content}</h2>
+    if (level === 2) return <h3 id={headingId} key={key}>{content}</h3>
+    return <h4 id={headingId} key={key}>{content}</h4>
   }
 
   if (/^\*+\s*/.test(line.trim())) {
@@ -244,6 +281,11 @@ function renderLegacyLine(line: string, key: React.Key) {
   return <p key={key}>{renderInline(cleaned, `p-${keyText}`)}</p>
 }
 
+function renderLegacyEntry(entry: LegacyEntry, key: React.Key) {
+  if (entry.type === 'warning') return renderLegacyBlock(entry.lines, key, true)
+  return renderLegacyLine(entry.value, key)
+}
+
 function renderLegacyBlock(lines: string[], key: React.Key, warning = false) {
   const rendered = lines.map((line, index) => renderLegacyLine(line, `${String(key)}-${index}`)).filter(Boolean)
   if (rendered.length === 0) return null
@@ -251,34 +293,20 @@ function renderLegacyBlock(lines: string[], key: React.Key, warning = false) {
   return <React.Fragment key={key}>{rendered}</React.Fragment>
 }
 
-function renderLegacyMarkup(text: string) {
-  const lines = cleanLegacyText(text)
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-
-  const blocks: React.ReactNode[] = []
+function legacyEntries(lines: string[]) {
+  const entries: LegacyEntry[] = []
   let warningLines: string[] = []
   let inWarning = false
-  let normalLines: string[] = []
-
-  function flushNormal() {
-    if (normalLines.length) {
-      blocks.push(renderLegacyBlock(normalLines, `normal-${blocks.length}`))
-      normalLines = []
-    }
-  }
 
   for (const line of lines) {
     if (line === '{{warning}}') {
-      flushNormal()
       inWarning = true
       warningLines = []
       continue
     }
 
     if (line === '{{/warning}}') {
-      blocks.push(renderLegacyBlock(warningLines, `warning-${blocks.length}`, true))
+      entries.push({ type: 'warning', lines: warningLines })
       inWarning = false
       warningLines = []
       continue
@@ -287,13 +315,91 @@ function renderLegacyMarkup(text: string) {
     if (line.startsWith('{{') && line.endsWith('}}')) continue
 
     if (inWarning) warningLines.push(line)
-    else normalLines.push(line)
+    else entries.push({ type: 'line', value: line })
   }
 
-  if (warningLines.length) blocks.push(renderLegacyBlock(warningLines, `warning-${blocks.length}`, true))
-  flushNormal()
+  if (warningLines.length) entries.push({ type: 'warning', lines: warningLines })
+  return entries
+}
 
-  return <div className="rich-text xwiki-rendered">{blocks}</div>
+function splitLegacySections(entries: LegacyEntry[]) {
+  const intro: LegacyEntry[] = []
+  const sections: LegacySection[] = []
+  let current: LegacySection | null = null
+  let headingIndex = 0
+
+  for (const entry of entries) {
+    const heading = entry.type === 'line' ? headingOf(entry.value, headingIndex) : null
+    if (heading) {
+      current = { heading, entries: [] }
+      sections.push(current)
+      headingIndex += 1
+      continue
+    }
+
+    if (current) current.entries.push(entry)
+    else intro.push(entry)
+  }
+
+  return { intro, sections }
+}
+
+function renderLegacyToc(sections: LegacySection[]) {
+  if (sections.length < 4) return null
+
+  return (
+    <nav className="xwiki-toc" aria-label="本页目录">
+      <p>本页目录</p>
+      <div>
+        {sections.map((section) => (
+          <a data-level={section.heading.level} href={`#${section.heading.id}`} key={section.heading.id}>
+            {section.heading.title || '未命名章节'}
+          </a>
+        ))}
+      </div>
+    </nav>
+  )
+}
+
+function renderLegacySection(section: LegacySection, index: number, fold: boolean) {
+  if (!fold) {
+    return (
+      <React.Fragment key={section.heading.id}>
+        {renderLegacyLine(`=${section.heading.rawTitle}=`, `heading-${section.heading.id}`, section.heading.id)}
+        {section.entries.map((entry, entryIndex) => renderLegacyEntry(entry, `${section.heading.id}-${entryIndex}`))}
+      </React.Fragment>
+    )
+  }
+
+  return (
+    <details className="xwiki-section" id={section.heading.id} key={section.heading.id} open={index < 2}>
+      <summary>
+        <span>{renderInline(section.heading.rawTitle, `summary-${section.heading.id}`)}</span>
+      </summary>
+      <div className="xwiki-section-body">
+        {section.entries.map((entry, entryIndex) => renderLegacyEntry(entry, `${section.heading.id}-${entryIndex}`))}
+      </div>
+    </details>
+  )
+}
+
+function renderLegacyMarkup(text: string) {
+  const lines = cleanLegacyText(text)
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  const entries = legacyEntries(lines)
+  const { intro, sections } = splitLegacySections(entries)
+  const fold = sections.length >= 4
+
+  return (
+    <div className="rich-text xwiki-rendered">
+      {renderLegacyToc(sections)}
+      {intro.map((entry, index) => renderLegacyEntry(entry, `intro-${index}`))}
+      {sections.map((section, index) => renderLegacySection(section, index, fold))}
+    </div>
+  )
 }
 
 export default function RichTextRenderer({ content, fallback }: { content?: unknown; fallback?: string }) {

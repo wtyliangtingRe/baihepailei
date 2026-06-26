@@ -37,6 +37,22 @@ test('legacy renderer supports spaced style attributes', () => {
   assert.ok(renderer.includes('style\\s*=\\s*'))
 })
 
+test('legacy renderer builds toc and collapsible sections', () => {
+  assert.ok(renderer.includes('function renderLegacyToc'))
+  assert.ok(renderer.includes('function splitLegacySections'))
+  assert.ok(renderer.includes('className="xwiki-toc"'))
+  assert.ok(renderer.includes('className="xwiki-section"'))
+  assert.ok(renderer.includes('sections.length >= 4'))
+  assert.ok(renderer.includes('<details'))
+})
+
+test('legacy toc and section styles are present', () => {
+  assert.ok(xwikiCss.includes('.xwiki-toc'))
+  assert.ok(xwikiCss.includes('.xwiki-section'))
+  assert.ok(xwikiCss.includes('.xwiki-section-body'))
+  assert.ok(xwikiCss.includes('[data-theme=\'light\'] .xwiki-section'))
+})
+
 test('theme toggle is wired into the frontend layout', () => {
   assert.ok(layout.includes("import ThemeToggle from './_components/ThemeToggle'"))
   assert.ok(layout.includes('<ThemeToggle />'))
