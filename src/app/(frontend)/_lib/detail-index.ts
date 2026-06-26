@@ -49,6 +49,8 @@ export type DetailItem = {
   category?: string
   organizationType?: string
   evidenceType?: string
+  reviewStatus?: string
+  evidenceStrength?: string
   originalTitle?: string
   aliases?: string[]
   creators?: string[]
