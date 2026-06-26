@@ -2,8 +2,21 @@ import type { Access, CollectionConfig } from 'payload'
 
 import { editorsAndUp, signedIn } from '@/access/roles'
 
-const approvedCommentsOrSignedIn: Access = ({ req }) => {
-  if (req.user) return true
+type CommentUser = {
+  id?: string | number
+  email?: string
+  displayName?: string
+  role?: string
+}
+
+function canModerateComments(user: unknown) {
+  if (!user || typeof user !== 'object') return false
+  const role = (user as CommentUser).role
+  return role === 'admin' || role === 'editor' || role === 'reviewer'
+}
+
+const approvedCommentsOrModerator: Access = ({ req }) => {
+  if (canModerateComments(req.user)) return true
 
   return {
     moderationStatus: {
@@ -42,7 +55,7 @@ export const Comments: CollectionConfig = {
   access: {
     create: signedIn,
     delete: editorsAndUp,
-    read: approvedCommentsOrSignedIn,
+    read: approvedCommentsOrModerator,
     update: editorsAndUp,
   },
   hooks: {
@@ -50,7 +63,7 @@ export const Comments: CollectionConfig = {
       ({ data, operation, req }) => {
         if (operation !== 'create') return data
 
-        const user = req.user as { id?: string | number; email?: string; displayName?: string } | undefined
+        const user = req.user as CommentUser | undefined
         const authorName = user?.displayName || user?.email || '注册用户'
 
         return {
