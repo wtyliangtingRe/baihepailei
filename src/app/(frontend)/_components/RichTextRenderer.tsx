@@ -192,13 +192,25 @@ function legacySlug(title: string, index: number) {
     .replace(/[^\p{L}\p{N}]+/gu, '-')
     .replace(/^-+|-+$/g, '')
     .toLowerCase()
-  return `rule-${cleaned || index + 1}`
+  return `rule-${cleaned || 'section'}-${index + 1}`
 }
 
 function rankTitleFromLine(line: string) {
   const cleaned = plainInlineText(stripHeadingMarks(line)).trim()
-  const match = cleaned.match(/^([SABCDE]级(?:[一二三四五六七八九十]+类)?)/)
-  return match?.[1] || ''
+  const match = cleaned.match(/^([SABCDE]级(?:[一二三四五六七八九十]+类)?)(作品|作者)?/)
+  if (!match) return ''
+  const rank = match[1]
+  const target = match[2]
+  return target ? `${target}${rank}` : rank
+}
+
+function removeRankPrefix(line: string) {
+  return stripHeadingMarks(line)
+    .replace(
+      /^([SABCDE]级(?:[一二三四五六七八九十]+类)?)(?:\s*\(%\s*style\s*=\s*"[^"]*"\s*%\)\s*)?(作品|作者)?(?:\s*\(%%\))?\s*[：:]?\s*/,
+      '',
+    )
+    .trim()
 }
 
 function sectionStartOf(line: string, index: number): { heading: LegacyHeading; body?: string } | null {
@@ -206,7 +218,7 @@ function sectionStartOf(line: string, index: number): { heading: LegacyHeading; 
   const title = rankTitleFromLine(stripped)
   if (!title) return null
 
-  const body = stripped === title ? undefined : stripped
+  const body = removeRankPrefix(stripped)
   return {
     heading: {
       level: 2,
@@ -214,7 +226,7 @@ function sectionStartOf(line: string, index: number): { heading: LegacyHeading; 
       rawTitle: title,
       id: legacySlug(title, index),
     },
-    body,
+    body: body || undefined,
   }
 }
 
