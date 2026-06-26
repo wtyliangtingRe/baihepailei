@@ -2,6 +2,20 @@ import type { CollectionConfig, CollectionSlug } from 'payload'
 
 import { publishedOrSignedIn, trustedAndUp } from '@/access/roles'
 
+const reviewStatusOptions = [
+  { label: '待复核', value: 'pending' },
+  { label: '已复核', value: 'reviewed' },
+  { label: '有争议', value: 'disputed' },
+  { label: '已废弃', value: 'deprecated' },
+]
+
+const evidenceStrengthOptions = [
+  { label: '未评估', value: 'unassessed' },
+  { label: '弱', value: 'weak' },
+  { label: '中', value: 'medium' },
+  { label: '强', value: 'strong' },
+]
+
 export const Evidence: CollectionConfig = {
   slug: 'evidence',
   labels: {
@@ -9,7 +23,7 @@ export const Evidence: CollectionConfig = {
     plural: '证据材料',
   },
   admin: {
-    defaultColumns: ['title', 'evidenceType', 'isPublic', 'status', 'updatedAt'],
+    defaultColumns: ['title', 'evidenceType', 'reviewStatus', 'evidenceStrength', 'isPublic', 'status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'title',
   },
@@ -56,6 +70,28 @@ export const Evidence: CollectionConfig = {
       ],
     },
     {
+      name: 'reviewStatus',
+      type: 'select',
+      label: '复核状态',
+      required: true,
+      defaultValue: 'pending',
+      options: reviewStatusOptions,
+      admin: {
+        description: '新站自己的复核状态，不表示旧站来源。',
+      },
+    },
+    {
+      name: 'evidenceStrength',
+      type: 'select',
+      label: '证据强度',
+      required: true,
+      defaultValue: 'unassessed',
+      options: evidenceStrengthOptions,
+      admin: {
+        description: '按当前新站证据材料评估强弱；未评估不等于没有证据。',
+      },
+    },
+    {
       name: 'relatedWorks',
       type: 'relationship',
       label: '关联作品',
@@ -95,16 +131,8 @@ export const Evidence: CollectionConfig = {
       type: 'array',
       label: '来源链接',
       fields: [
-        {
-          name: 'label',
-          type: 'text',
-          label: '名称',
-        },
-        {
-          name: 'url',
-          type: 'text',
-          label: 'URL',
-        },
+        { name: 'label', type: 'text', label: '名称' },
+        { name: 'url', type: 'text', label: 'URL' },
       ],
     },
     {

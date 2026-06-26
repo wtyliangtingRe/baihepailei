@@ -25,6 +25,20 @@ const evidenceTypeLabels: Record<string, string> = {
   other: '其他证据',
 }
 
+const reviewStatusLabels: Record<string, string> = {
+  pending: '待复核',
+  reviewed: '已复核',
+  disputed: '有争议',
+  deprecated: '已废弃',
+}
+
+const evidenceStrengthLabels: Record<string, string> = {
+  unassessed: '未评估',
+  weak: '证据弱',
+  medium: '证据中',
+  strong: '证据强',
+}
+
 function collectionLabel(collection: string) {
   if (collection === 'works') return '作品'
   if (collection === 'creators') return '创作者'
@@ -53,6 +67,16 @@ function organizationTypeLabel(value?: string) {
 function evidenceTypeLabel(value?: string) {
   if (!value) return ''
   return evidenceTypeLabels[value] || value
+}
+
+function reviewStatusLabel(value?: string) {
+  if (!value) return ''
+  return reviewStatusLabels[value] || value
+}
+
+function evidenceStrengthLabel(value?: string) {
+  if (!value) return ''
+  return evidenceStrengthLabels[value] || value
 }
 
 function compactLines(text: string) {
@@ -90,6 +114,8 @@ function FieldList({ fields }: { fields: Array<[string, string | string[] | unde
 
 function BasicInfo({ item }: { item: SearchItem }) {
   const fields: Array<[string, string | string[] | undefined]> = [
+    ['复核状态', reviewStatusLabel(item.reviewStatus)],
+    ['证据强度', evidenceStrengthLabel(item.evidenceStrength)],
     ['机构类型', organizationTypeLabel(item.organizationType)],
     ['证据类型', evidenceTypeLabel(item.evidenceType)],
     ['原名', item.originalTitle],
@@ -119,6 +145,8 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
   const rank = displayRank(item.rank)
   const organizationType = organizationTypeLabel(item.organizationType)
   const evidenceType = evidenceTypeLabel(item.evidenceType)
+  const reviewStatus = reviewStatusLabel(item.reviewStatus)
+  const evidenceStrength = evidenceStrengthLabel(item.evidenceStrength)
   const searchLines = compactLines(item.searchText)
 
   return (
@@ -136,6 +164,8 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
         <h1>{item.title}</h1>
         <div className="detail-chips">
           {rank ? <span>{rank}</span> : null}
+          {reviewStatus ? <span>{reviewStatus}</span> : null}
+          {evidenceStrength ? <span>{evidenceStrength}</span> : null}
           {organizationType ? <span>{organizationType}</span> : null}
           {evidenceType ? <span>{evidenceType}</span> : null}
           {item.category ? <span>{item.category}</span> : null}

@@ -2,6 +2,20 @@ import type { CollectionConfig, CollectionSlug } from 'payload'
 
 import { publishedOrSignedIn, trustedAndUp } from '@/access/roles'
 
+const reviewStatusOptions = [
+  { label: '待复核', value: 'pending' },
+  { label: '已复核', value: 'reviewed' },
+  { label: '有争议', value: 'disputed' },
+  { label: '已废弃', value: 'deprecated' },
+]
+
+const evidenceStrengthOptions = [
+  { label: '未评估', value: 'unassessed' },
+  { label: '弱', value: 'weak' },
+  { label: '中', value: 'medium' },
+  { label: '强', value: 'strong' },
+]
+
 export const Works: CollectionConfig = {
   slug: 'works',
   labels: {
@@ -9,7 +23,7 @@ export const Works: CollectionConfig = {
     plural: '作品',
   },
   admin: {
-    defaultColumns: ['title', 'rank', 'isLiteVisible', 'isFullVisible', 'status', 'updatedAt'],
+    defaultColumns: ['title', 'rank', 'reviewStatus', 'evidenceStrength', 'isLiteVisible', 'status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'title',
   },
@@ -57,6 +71,28 @@ export const Works: CollectionConfig = {
         { label: '垃圾', value: 'trash' },
         { label: '未知', value: 'unknown' },
       ],
+    },
+    {
+      name: 'reviewStatus',
+      type: 'select',
+      label: '复核状态',
+      required: true,
+      defaultValue: 'pending',
+      options: reviewStatusOptions,
+      admin: {
+        description: '新站自己的复核状态，不表示旧站来源。',
+      },
+    },
+    {
+      name: 'evidenceStrength',
+      type: 'select',
+      label: '证据强度',
+      required: true,
+      defaultValue: 'unassessed',
+      options: evidenceStrengthOptions,
+      admin: {
+        description: '按当前新站证据材料评估强弱；未评估不等于没有证据。',
+      },
     },
     {
       name: 'originalTitle',
@@ -152,7 +188,7 @@ export const Works: CollectionConfig = {
           type: 'text',
           label: '备注',
           admin: {
-            description: '可记录具体名义、系列品牌、旧站说明或迁移备注。',
+            description: '可记录具体名义、系列品牌或迁移备注。',
           },
         },
       ],
@@ -192,16 +228,8 @@ export const Works: CollectionConfig = {
       type: 'array',
       label: '来源链接',
       fields: [
-        {
-          name: 'label',
-          type: 'text',
-          label: '名称',
-        },
-        {
-          name: 'url',
-          type: 'text',
-          label: 'URL',
-        },
+        { name: 'label', type: 'text', label: '名称' },
+        { name: 'url', type: 'text', label: 'URL' },
       ],
     },
     {
@@ -209,7 +237,7 @@ export const Works: CollectionConfig = {
       type: 'textarea',
       label: '搜索补充文本',
       admin: {
-        description: '用于导出前台搜索索引的补充文本，不在数据库中建立 btree 索引。可放日文名、英文名、别名、作者名、关键词、旧站残留关键字等。',
+        description: '用于导出前台搜索索引的补充文本，不在数据库中建立 btree 索引。可放日文名、英文名、别名、作者名、关键词等。',
       },
     },
     {

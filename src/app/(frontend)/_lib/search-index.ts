@@ -22,6 +22,8 @@ export type SearchItem = {
   category?: string
   organizationType?: string
   evidenceType?: string
+  reviewStatus?: string
+  evidenceStrength?: string
   originalTitle?: string
   aliases?: string[]
   creators?: string[]
@@ -33,6 +35,7 @@ export type SearchItem = {
   warnings?: string[]
   relatedTerms?: string[]
   relatedWarnings?: string[]
+  hasEvidence?: boolean
   cover?: SearchCoverImage
   image?: SearchCoverImage
   legacyXWikiPage?: string
