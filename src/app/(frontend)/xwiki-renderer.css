@@ -1,6 +1,6 @@
 .xwiki-rendered {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .xwiki-rendered h2,
@@ -31,6 +31,97 @@
   border-radius: 16px;
   background: #111;
   list-style: none;
+}
+
+.xwiki-toc {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid rgb(255 181 215 / 0.28);
+  border-radius: 20px;
+  background: #111;
+}
+
+.xwiki-toc p {
+  margin: 0;
+  color: #ffb5d7;
+  font-weight: 800;
+}
+
+.xwiki-toc div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.xwiki-toc a {
+  display: inline-flex;
+  padding: 6px 10px;
+  border: 1px solid #303030;
+  border-radius: 999px;
+  color: #d7d7d7;
+  background: #151515;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.xwiki-toc a:hover {
+  border-color: #ffb5d7;
+  color: #ffb5d7;
+}
+
+.xwiki-toc a[data-level='1'] {
+  font-weight: 800;
+}
+
+.xwiki-section {
+  border: 1px solid #303030;
+  border-radius: 20px;
+  background: #111;
+  overflow: hidden;
+}
+
+.xwiki-section[open] {
+  border-color: rgb(255 181 215 / 0.42);
+}
+
+.xwiki-section summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  color: #fff;
+  cursor: pointer;
+  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+  font-weight: 900;
+  list-style: none;
+}
+
+.xwiki-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.xwiki-section summary::after {
+  content: '展开';
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  border: 1px solid #303030;
+  border-radius: 999px;
+  color: #ffb5d7;
+  background: #171017;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.xwiki-section[open] summary::after {
+  content: '收起';
+}
+
+.xwiki-section-body {
+  display: grid;
+  gap: 14px;
+  padding: 0 20px 20px;
 }
 
 .xwiki-warning {
@@ -77,9 +168,32 @@
   border-bottom-color: #e2d6cc;
 }
 
-[data-theme='light'] .xwiki-rendered li {
+[data-theme='light'] .xwiki-rendered li,
+[data-theme='light'] .xwiki-toc,
+[data-theme='light'] .xwiki-section {
   border-color: #e2d6cc;
   background: #fff7f2;
+}
+
+[data-theme='light'] .xwiki-toc p,
+[data-theme='light'] .xwiki-toc a:hover,
+[data-theme='light'] .xwiki-section summary::after {
+  color: #b64178;
+}
+
+[data-theme='light'] .xwiki-toc a,
+[data-theme='light'] .xwiki-section summary::after {
+  border-color: #e2d6cc;
+  background: #fff0f7;
+  color: #6c5d54;
+}
+
+[data-theme='light'] .xwiki-section summary {
+  color: #191716;
+}
+
+[data-theme='light'] .xwiki-section[open] {
+  border-color: rgb(214 99 153 / 0.35);
 }
 
 [data-theme='light'] .xwiki-warning {
