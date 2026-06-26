@@ -27,18 +27,12 @@ const publicEvidenceOrSignedIn: Access = ({ req }) => {
   if (req.user) return true
 
   return {
-    and: [
-      {
-        status: {
-          equals: 'confirmed',
-        },
-      },
-      {
-        isPublic: {
-          equals: true,
-        },
-      },
-    ],
+    status: {
+      equals: 'confirmed',
+    },
+    isPublic: {
+      equals: true,
+    },
   }
 }
 
