@@ -3,10 +3,9 @@ import { spawnSync } from 'node:child_process'
 
 const args = process.argv.slice(2)
 
-function run(command, commandArgs) {
-  const result = spawnSync(command, commandArgs, {
+function run(commandArgs) {
+  const result = spawnSync(process.execPath, commandArgs, {
     stdio: 'inherit',
-    shell: process.platform === 'win32',
   })
 
   if (result.status !== 0) {
@@ -14,5 +13,5 @@ function run(command, commandArgs) {
   }
 }
 
-run('node', ['scripts/export/build-lite-detail-index.mjs', ...args])
-run('node', ['scripts/export/enrich-lite-detail-index.mjs', ...args])
+run(['scripts/export/build-lite-detail-index.mjs', ...args])
+run(['scripts/export/enrich-lite-detail-index.mjs', ...args])
