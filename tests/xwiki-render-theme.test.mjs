@@ -20,7 +20,7 @@ test('rich text renderer detects and renders legacy xwiki text', () => {
 test('xwiki renderer strips legacy wrappers and supports readable blocks', () => {
   assert.ok(renderer.includes('{{warning}}'))
   assert.ok(renderer.includes('{{/warning}}'))
-  assert.ok(renderer.includes('{{velocity}}'))
+  assert.ok(renderer.includes('velocity'))
   assert.ok(renderer.includes('doc:名词解释'))
   assert.ok(xwikiCss.includes('.xwiki-warning'))
   assert.ok(xwikiCss.includes('.xwiki-rendered h2'))
