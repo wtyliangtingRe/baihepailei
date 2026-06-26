@@ -26,6 +26,8 @@ test('recommendations are grouped into buckets', () => {
 test('recommendations page reads detail index and shows groups', () => {
   assert.ok(page.includes('readDetailIndex'))
   assert.ok(page.includes('recommendationsByBucket'))
+  assert.ok(page.includes('<h1>推荐</h1>'))
+  assert.ok(!page.includes('<h1>简易推荐</h1>'))
   assert.ok(page.includes('优先推荐'))
   assert.ok(page.includes('谨慎尝试'))
   assert.ok(page.includes('暂不推荐'))
