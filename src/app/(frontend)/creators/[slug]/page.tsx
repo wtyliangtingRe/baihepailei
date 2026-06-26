@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import DetailIndexDetail from '../../_components/DetailIndexDetail'
 import MissingSearchIndex from '../../_components/MissingSearchIndex'
 import SearchIndexDetail from '../../_components/SearchIndexDetail'
+import VersionInfo from '../../_components/VersionInfo'
 import { findDetailItem, findWorksByCreatorName } from '../../_lib/detail-index'
 import { findSearchItem, readSearchIndex } from '../../_lib/search-index'
 
@@ -16,7 +17,12 @@ export default async function CreatorDetailPage({ params }: Args) {
 
   const detailItem = findDetailItem('creators', decodedSlug)
   if (detailItem) {
-    return <DetailIndexDetail item={detailItem} relatedWorks={findWorksByCreatorName(detailItem.title)} />
+    return (
+      <>
+        <DetailIndexDetail item={detailItem} relatedWorks={findWorksByCreatorName(detailItem.title)} />
+        <VersionInfo item={detailItem} />
+      </>
+    )
   }
 
   const index = readSearchIndex()
