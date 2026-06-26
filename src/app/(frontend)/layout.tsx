@@ -9,6 +9,7 @@ import './works-filters.css'
 import './updates.css'
 import './feedback.css'
 import './entity-relations.css'
+import './comments.css'
 
 export const metadata: Metadata = {
   title: 'Baihepailei',
