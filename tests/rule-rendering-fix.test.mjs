@@ -11,9 +11,11 @@ test('legacy rank lines become section starts instead of loose paragraphs', () =
   assert.ok(renderer.includes('removeRankPrefix'))
 })
 
-test('legacy rank section titles distinguish works and creators', () => {
-  assert.ok(renderer.includes('return target ? `${target}${rank}` : rank'))
-  assert.ok(renderer.includes('(作品|作者)?'))
+test('legacy author rating sections are hidden', () => {
+  assert.ok(renderer.includes('function isAuthorRatingMarker'))
+  assert.ok(renderer.includes('function isAuthorRankTitle'))
+  assert.ok(renderer.includes('let skipAuthorRatings = false'))
+  assert.ok(renderer.includes('if (skipAuthorRatings) continue'))
 })
 
 test('legacy section keys stay unique', () => {
