@@ -54,6 +54,7 @@ test('legacy renderer parses rank explanation lines as sections', () => {
   assert.ok(renderer.includes('if (sectionStart.body) current.entries.push'))
   assert.ok(renderer.includes('sections: sections.filter((section) => section.entries.length > 0)'))
   assert.ok(renderer.includes('stripHeadingMarks'))
+  assert.ok(renderer.includes('removeRankPrefix'))
 })
 
 test('legacy toc and section styles are present', () => {
