@@ -14,8 +14,9 @@ test('work summary renders before retained materials', () => {
 test('comment block is wired into details', () => {
   assert.ok(detail.includes("import CommentBlock from './CommentBlock'"))
   assert.ok(detail.includes('<CommentBlock item={item} />'))
-  assert.ok(block.includes('简易评论'))
-  assert.ok(block.includes('登录后评论'))
+  assert.ok(block.includes('读者评论'))
+  assert.ok(block.includes('/api/comments'))
+  assert.ok(block.includes('提交评论'))
   assert.ok(css.includes('.comment-block'))
 })
 
