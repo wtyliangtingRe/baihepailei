@@ -1,7 +1,8 @@
 import Link from 'next/link'
 
+import PersonalRecommendationPanel from '../_components/PersonalRecommendationPanel'
 import { readDetailIndex } from '../_lib/detail-index'
-import { recommendationsByBucket, type RecommendedWork } from '../_lib/recommendations'
+import { recommendedWorks, recommendationsByBucket, type RecommendedWork } from '../_lib/recommendations'
 
 const reasonLabels: Record<string, string> = {
   'rank-good': '分级较高',
@@ -77,7 +78,9 @@ function RecommendationGroup({ title, description, works }: { title: string; des
 
 export default function RecommendationsPage() {
   const index = readDetailIndex()
-  const groups = recommendationsByBucket(index?.items || [])
+  const items = index?.items || []
+  const groups = recommendationsByBucket(items)
+  const allRecommendations = recommendedWorks(items)
 
   return (
     <main className="page recommendations-page">
@@ -89,6 +92,8 @@ export default function RecommendationsPage() {
         </div>
       </section>
 
+      <PersonalRecommendationPanel recommendations={allRecommendations} />
+
       <section className="recommendation-rules detail-card">
         <h2>当前规则</h2>
         <div>
@@ -96,6 +101,7 @@ export default function RecommendationsPage() {
           <span>已复核和证据较强会加分</span>
           <span>严重雷点会扣分</span>
           <span>矩阵未填写时只做保守推荐</span>
+          <span>个人列表会排除已看和避雷</span>
         </div>
       </section>
 
