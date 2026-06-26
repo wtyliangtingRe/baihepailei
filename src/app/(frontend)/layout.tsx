@@ -13,6 +13,7 @@ import './entity-relations.css'
 import './comments.css'
 import './xwiki-renderer.css'
 import './work-conclusion.css'
+import './work-risk-matrix.css'
 import './theme.css'
 
 export const metadata: Metadata = {
