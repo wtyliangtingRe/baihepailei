@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import React from 'react'
 
+import ThemeToggle from './_components/ThemeToggle'
 import './styles.css'
 import './covers.css'
 import './callouts.css'
@@ -10,6 +11,7 @@ import './updates.css'
 import './feedback.css'
 import './entity-relations.css'
 import './comments.css'
+import './theme.css'
 
 export const metadata: Metadata = {
   title: 'Baihepailei',
@@ -44,6 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   {item.label}
                 </Link>
               ))}
+              <ThemeToggle />
             </nav>
           </header>
           {children}
