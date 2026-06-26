@@ -17,6 +17,7 @@ import './work-risk-matrix.css'
 import './work-list.css'
 import './recommendations.css'
 import './profile-lists.css'
+import './frontend-simplification.css'
 import './theme.css'
 
 export const metadata: Metadata = {
