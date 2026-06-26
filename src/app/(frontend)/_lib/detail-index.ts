@@ -133,6 +133,16 @@ function uniqueItems(items: DetailItem[]) {
   return output.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
 }
 
+function evidenceItems() {
+  const index = readDetailIndex()
+  if (!index) return []
+  return index.items.filter((item) => item.collection === 'evidence')
+}
+
+function evidenceByRelation(field: 'relatedWorks' | 'relatedCreators' | 'relatedOrganizations', title: string) {
+  return uniqueItems(evidenceItems().filter((item) => (item[field] || []).includes(title)))
+}
+
 export function findItemsByTitles(collection: DetailCollection, titles: string[] = []) {
   const index = readDetailIndex()
   if (!index) return []
@@ -141,6 +151,18 @@ export function findItemsByTitles(collection: DetailCollection, titles: string[]
   if (wanted.size === 0) return []
 
   return uniqueItems(index.items.filter((item) => item.collection === collection && wanted.has(item.title)))
+}
+
+export function findEvidenceByWorkTitle(workTitle: string) {
+  return evidenceByRelation('relatedWorks', workTitle)
+}
+
+export function findEvidenceByCreatorName(creatorName: string) {
+  return evidenceByRelation('relatedCreators', creatorName)
+}
+
+export function findEvidenceByOrganizationName(organizationName: string) {
+  return evidenceByRelation('relatedOrganizations', organizationName)
 }
 
 export function findWorksByCreatorName(creatorName: string) {
