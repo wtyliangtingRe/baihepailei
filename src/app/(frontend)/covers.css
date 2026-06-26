@@ -144,6 +144,28 @@
   border-radius: 16px;
 }
 
+.detail-inline-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.detail-inline-link {
+  color: #ffb5d7;
+  text-decoration: none;
+  border-bottom: 1px solid rgb(255 181 215 / 0.55);
+}
+
+.detail-inline-link:hover {
+  border-bottom-color: #ffb5d7;
+}
+
+.detail-inline-separator {
+  margin: 0 6px 0 0;
+  color: #777;
+}
+
 .detail-relation-group {
   display: grid;
   gap: 8px;
