@@ -15,7 +15,7 @@
     "import:clean-seed": "node scripts/import/direct-seed-clean-data.mjs",
     "import:demo": "node scripts/import/demo-fixtures.mjs",
     "export:lite-search": "node scripts/export/build-lite-search-index.mjs",
-    "export:lite-details": "node scripts/export/build-lite-detail-index.mjs && node scripts/export/enrich-lite-detail-index.mjs",
+    "export:lite-details": "node scripts/export/build-and-enrich-lite-detail-index.mjs",
     "export:lite-details:base": "node scripts/export/build-lite-detail-index.mjs",
     "export:lite-details:enrich": "node scripts/export/enrich-lite-detail-index.mjs",
     "test:search": "node --test tests/search-utils.test.mjs",
@@ -31,7 +31,7 @@
     "next": "^16.2.6",
     "payload": "latest",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "react-dom": "latest",
     "sharp": "latest"
   },
   "devDependencies": {
