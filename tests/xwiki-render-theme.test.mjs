@@ -37,19 +37,23 @@ test('legacy renderer supports spaced style attributes', () => {
   assert.ok(renderer.includes('style\\s*=\\s*'))
 })
 
-test('legacy renderer builds toc and collapsible sections', () => {
+test('legacy renderer builds toc and collapsed sections', () => {
   assert.ok(renderer.includes('function renderLegacyToc'))
   assert.ok(renderer.includes('function splitLegacySections'))
+  assert.ok(renderer.includes('legacyRankFallbackTitles'))
+  assert.ok(renderer.includes("'S级', 'A级', 'B级一类', 'B级二类'"))
   assert.ok(renderer.includes('className="xwiki-toc"'))
   assert.ok(renderer.includes('className="xwiki-section"'))
   assert.ok(renderer.includes('sections.length >= 4'))
   assert.ok(renderer.includes('<details'))
+  assert.ok(!renderer.includes('open={index < 2}'))
 })
 
 test('legacy toc and section styles are present', () => {
   assert.ok(xwikiCss.includes('.xwiki-toc'))
   assert.ok(xwikiCss.includes('.xwiki-section'))
   assert.ok(xwikiCss.includes('.xwiki-section-body'))
+  assert.ok(xwikiCss.includes('.xwiki-section summary span'))
   assert.ok(xwikiCss.includes('[data-theme=\'light\'] .xwiki-section'))
 })
 
