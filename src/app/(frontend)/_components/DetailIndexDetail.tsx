@@ -4,6 +4,7 @@ import { readDetailIndex, type DetailCoverImage, type DetailItem } from '../_lib
 import CommentBlock from './CommentBlock'
 import ContentCallout, { type ContentCalloutItem } from './ContentCallout'
 import RichTextRenderer from './RichTextRenderer'
+import WorkConclusionCard from './WorkConclusionCard'
 
 type ExtendedDetailItem = DetailItem & {
   organizationType?: string
@@ -383,6 +384,7 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
         </div>
       </section>
 
+      <WorkConclusionCard item={item} relatedEvidence={relatedEvidence} />
       <BasicInfo item={item} />
       <DetailCallouts item={item} />
       <RelatedWorks works={relatedWorks} />

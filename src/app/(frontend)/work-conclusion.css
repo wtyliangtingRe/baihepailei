@@ -1,0 +1,106 @@
+.work-conclusion-card {
+  display: grid;
+  gap: 18px;
+  border-color: rgb(255 181 215 / 0.42);
+  background:
+    radial-gradient(circle at 12% 0%, rgb(255 181 215 / 0.14), transparent 34%),
+    #111;
+}
+
+.work-conclusion-head {
+  display: grid;
+  gap: 8px;
+}
+
+.work-conclusion-head h2 {
+  margin: 0;
+  max-width: 980px;
+  font-size: clamp(1.25rem, 2.3vw, 1.85rem);
+  line-height: 1.45;
+}
+
+.work-conclusion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.work-conclusion-grid > div,
+.work-conclusion-meta > div {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid #303030;
+  border-radius: 16px;
+  background: #151515;
+}
+
+.work-conclusion-grid span,
+.work-conclusion-meta dt {
+  color: #aaa;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.work-conclusion-grid strong,
+.work-conclusion-meta dd {
+  margin: 0;
+  color: #fff;
+  font-weight: 800;
+}
+
+.work-conclusion-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.work-conclusion-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.work-conclusion-links a {
+  color: #ffb5d7;
+  text-decoration: none;
+  border-bottom: 1px solid rgb(255 181 215 / 0.55);
+}
+
+.work-conclusion-links a:hover {
+  border-bottom-color: #ffb5d7;
+}
+
+.work-conclusion-separator {
+  margin-right: 6px;
+  color: #777;
+}
+
+[data-theme='light'] .work-conclusion-card {
+  border-color: rgb(214 99 153 / 0.32);
+  background:
+    radial-gradient(circle at 12% 0%, rgb(214 99 153 / 0.12), transparent 34%),
+    #fffaf6;
+}
+
+[data-theme='light'] .work-conclusion-grid > div,
+[data-theme='light'] .work-conclusion-meta > div {
+  border-color: #e2d6cc;
+  background: #fff7f2;
+}
+
+[data-theme='light'] .work-conclusion-grid span,
+[data-theme='light'] .work-conclusion-meta dt {
+  color: #766a61;
+}
+
+[data-theme='light'] .work-conclusion-grid strong,
+[data-theme='light'] .work-conclusion-meta dd {
+  color: #191716;
+}
+
+[data-theme='light'] .work-conclusion-links a {
+  color: #b64178;
+  border-bottom-color: rgb(182 65 120 / 0.5);
+}

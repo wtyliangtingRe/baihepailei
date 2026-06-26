@@ -12,6 +12,7 @@ import './feedback.css'
 import './entity-relations.css'
 import './comments.css'
 import './xwiki-renderer.css'
+import './work-conclusion.css'
 import './theme.css'
 
 export const metadata: Metadata = {
