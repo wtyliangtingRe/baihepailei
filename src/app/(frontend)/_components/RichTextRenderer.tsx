@@ -204,6 +204,15 @@ function rankTitleFromLine(line: string) {
   return target ? `${target}${rank}` : rank
 }
 
+function isAuthorRankTitle(title: string) {
+  return title.startsWith('作者') || title.startsWith('创作者')
+}
+
+function isAuthorRatingMarker(line: string) {
+  const cleaned = plainInlineText(stripHeadingMarks(line)).trim()
+  return /^(创作者|作者)(分级|评级)/.test(cleaned) || /^(分级|评级).*(创作者|作者)/.test(cleaned)
+}
+
 function removeRankPrefix(line: string) {
   return stripHeadingMarks(line)
     .replace(
@@ -344,10 +353,26 @@ function splitLegacySections(entries: LegacyEntry[]) {
   const sections: LegacySection[] = []
   let current: LegacySection | null = null
   let headingIndex = 0
+  let skipAuthorRatings = false
 
   for (const entry of entries) {
+    if (entry.type === 'line' && isAuthorRatingMarker(entry.value)) {
+      current = null
+      skipAuthorRatings = true
+      continue
+    }
+
+    if (skipAuthorRatings) continue
+
     const sectionStart = entry.type === 'line' ? sectionStartOf(entry.value, headingIndex) : null
     if (sectionStart) {
+      if (isAuthorRankTitle(sectionStart.heading.title)) {
+        current = null
+        skipAuthorRatings = true
+        headingIndex += 1
+        continue
+      }
+
       current = { heading: sectionStart.heading, entries: [] }
       if (sectionStart.body) current.entries.push({ type: 'line', value: sectionStart.body })
       sections.push(current)
@@ -357,6 +382,13 @@ function splitLegacySections(entries: LegacyEntry[]) {
 
     const heading = entry.type === 'line' ? headingOf(entry.value, headingIndex) : null
     if (heading) {
+      if (isAuthorRatingMarker(heading.title) || isAuthorRankTitle(heading.title)) {
+        current = null
+        skipAuthorRatings = true
+        headingIndex += 1
+        continue
+      }
+
       current = { heading, entries: [] }
       sections.push(current)
       headingIndex += 1
