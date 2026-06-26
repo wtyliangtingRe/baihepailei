@@ -7,6 +7,11 @@ const DEFAULT_FIXTURE = 'fixtures/demo-content.json'
 const EMAIL_ENV = ['PAYLOAD', 'SEED', 'EMAIL'].join('_')
 const SECRET_ENV = ['PAYLOAD', 'SEED', 'PASSWORD'].join('_')
 
+const evidenceStatusValues = new Set(['draft', 'review', 'confirmed', 'archived'])
+const evidenceTypeValues = new Set(['work_screenshot', 'official_page', 'interview', 'social_media', 'legacy_wiki', 'platform_page', 'other'])
+const reviewStatusValues = new Set(['pending', 'reviewed', 'disputed', 'deprecated'])
+const evidenceStrengthValues = new Set(['unassessed', 'weak', 'medium', 'strong'])
+
 function parseArgs(argv) {
   const args = {}
   for (let i = 0; i < argv.length; i += 1) {
@@ -140,6 +145,15 @@ function validateReferences(seed) {
   }
 }
 
+function validateEvidenceValues(seed) {
+  for (const item of seed.evidence || []) {
+    if (item.status && !evidenceStatusValues.has(item.status)) throw new Error(`Invalid evidence status for ${item.slug}: ${item.status}`)
+    if (item.evidenceType && !evidenceTypeValues.has(item.evidenceType)) throw new Error(`Invalid evidence type for ${item.slug}: ${item.evidenceType}`)
+    if (item.reviewStatus && !reviewStatusValues.has(item.reviewStatus)) throw new Error(`Invalid evidence review status for ${item.slug}: ${item.reviewStatus}`)
+    if (item.evidenceStrength && !evidenceStrengthValues.has(item.evidenceStrength)) throw new Error(`Invalid evidence strength for ${item.slug}: ${item.evidenceStrength}`)
+  }
+}
+
 function validateSeed(seed) {
   const errors = []
   for (const collection of COLLECTION_ORDER) {
@@ -149,6 +163,7 @@ function validateSeed(seed) {
 
   for (const collection of COLLECTION_ORDER) validateUniqueSlugs(collection, seed[collection])
   validateReferences(seed)
+  validateEvidenceValues(seed)
 }
 
 function stripRelationshipSlugs(collection, input) {
@@ -185,12 +200,24 @@ function resolveWorkDoc(input, lookup) {
   }
 }
 
-function resolveEvidenceDoc(input, lookup) {
+function normalizeEvidenceDoc(input) {
   return {
-    ...stripRelationshipSlugs('evidence', input),
-    relatedWorks: resolveMany(input.relatedWorks, lookup.works, 'work'),
-    relatedCreators: resolveMany(input.relatedCreators, lookup.creators, 'creator'),
-    relatedOrganizations: resolveMany(input.relatedOrganizations, lookup.organizations, 'organization'),
+    evidenceType: 'other',
+    reviewStatus: 'pending',
+    evidenceStrength: 'unassessed',
+    isPublic: false,
+    status: 'draft',
+    ...input,
+  }
+}
+
+function resolveEvidenceDoc(input, lookup) {
+  const normalized = normalizeEvidenceDoc(input)
+  return {
+    ...stripRelationshipSlugs('evidence', normalized),
+    relatedWorks: resolveMany(normalized.relatedWorks, lookup.works, 'work'),
+    relatedCreators: resolveMany(normalized.relatedCreators, lookup.creators, 'creator'),
+    relatedOrganizations: resolveMany(normalized.relatedOrganizations, lookup.organizations, 'organization'),
   }
 }
 
