@@ -6,6 +6,7 @@ import './styles.css'
 import './covers.css'
 import './callouts.css'
 import './works-filters.css'
+import './updates.css'
 
 export const metadata: Metadata = {
   title: 'Baihepailei',
@@ -19,6 +20,7 @@ const navItems = [
   { href: '/organizations', label: '机构' },
   { href: '/terms', label: '名词解释' },
   { href: '/rules', label: '规则' },
+  { href: '/updates', label: '最近更新' },
   { href: '/search', label: '搜索' },
   { href: '/admin', label: '后台' },
 ]

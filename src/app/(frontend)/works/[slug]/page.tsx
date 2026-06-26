@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import DetailIndexDetail from '../../_components/DetailIndexDetail'
 import MissingSearchIndex from '../../_components/MissingSearchIndex'
 import SearchIndexDetail from '../../_components/SearchIndexDetail'
+import VersionInfo from '../../_components/VersionInfo'
 import { findDetailItem, readDetailIndex, type DetailItem } from '../../_lib/detail-index'
 import { findSearchItem, readSearchIndex } from '../../_lib/search-index'
 
@@ -29,7 +30,14 @@ export default async function WorkDetailPage({ params }: Args) {
   const decodedSlug = decodeURIComponent(slug)
 
   const detailItem = findDetailItem('works', decodedSlug)
-  if (detailItem) return <DetailIndexDetail item={detailItem} relatedEvidence={evidenceByWorkTitle(detailItem.title)} />
+  if (detailItem) {
+    return (
+      <>
+        <DetailIndexDetail item={detailItem} relatedEvidence={evidenceByWorkTitle(detailItem.title)} />
+        <VersionInfo item={detailItem} />
+      </>
+    )
+  }
 
   const index = readSearchIndex()
   if (!index) return <MissingSearchIndex />
