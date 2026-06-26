@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-export type DetailCollection = 'works' | 'creators' | 'terms' | 'rules'
+export type DetailCollection = 'works' | 'creators' | 'organizations' | 'evidence' | 'terms' | 'rules'
 
 export type DetailSourceLink = {
   label?: string
@@ -23,6 +23,21 @@ export type DetailRichTextSection = {
   plainText?: string
 }
 
+export type DetailCallout = {
+  id?: string
+  style?: string
+  title?: string
+  text?: string
+  quote?: string
+  image?: {
+    url?: string
+    alt?: string
+    filename?: string
+  }
+  sourceLabel?: string
+  sourceUrl?: string
+}
+
 export type DetailItem = {
   id: string
   collection: DetailCollection | string
@@ -32,20 +47,30 @@ export type DetailItem = {
   url: string
   rank?: string
   category?: string
+  organizationType?: string
+  evidenceType?: string
   originalTitle?: string
   aliases?: string[]
   creators?: string[]
+  organizations?: string[]
+  relatedWorks?: string[]
+  relatedCreators?: string[]
+  relatedOrganizations?: string[]
   tags?: string[]
   warnings?: string[]
   relatedTerms?: string[]
   relatedWarnings?: string[]
   relatedTags?: string[]
   examples?: string[]
-  legacyXWikiPage?: string
   cover?: DetailCoverImage
+  image?: DetailCoverImage
+  description?: string
+  capturedAt?: string
+  isPublic?: boolean
   hasEvidence?: boolean
   evidenceNote?: string
   sourceLinks?: DetailSourceLink[]
+  callouts?: DetailCallout[]
   sections: DetailRichTextSection[]
   updatedAt?: string
   createdAt?: string
@@ -93,5 +118,15 @@ export function findWorksByCreatorName(creatorName: string) {
   return index.items
     .filter((item) => item.collection === 'works')
     .filter((item) => (item.creators || []).includes(creatorName))
+    .sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
+}
+
+export function findWorksByOrganizationName(organizationName: string) {
+  const index = readDetailIndex()
+  if (!index) return []
+
+  return index.items
+    .filter((item) => item.collection === 'works')
+    .filter((item) => (item.organizations || []).includes(organizationName))
     .sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
 }

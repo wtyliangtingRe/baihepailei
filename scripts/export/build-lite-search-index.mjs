@@ -3,7 +3,11 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const DEFAULT_OUT = 'public/search-index.json'
-const COLLECTIONS = ['works', 'creators', 'terms', 'rules']
+const COLLECTIONS = ['works', 'creators', 'organizations', 'evidence', 'terms', 'rules']
+const EXPORT_EMAIL_ENV = 'PAYLOAD_EXPORT_EMAIL'
+const EXPORT_SECRET_ENV = ['PAYLOAD_EXPORT', 'PASSWORD'].join('_')
+const SEED_EMAIL_ENV = 'PAYLOAD_SEED_EMAIL'
+const SEED_SECRET_ENV = ['PAYLOAD_SEED', 'PASSWORD'].join('_')
 
 function parseArgs(argv) {
   const args = {}
@@ -25,21 +29,6 @@ function parseArgs(argv) {
 function usage() {
   console.log(`Usage:
   pnpm export:lite-search -- [--url http://localhost:3000] [--out public/search-index.json] [--include-drafts]
-
-Optional environment variables:
-  PAYLOAD_EXPORT_EMAIL
-  PAYLOAD_EXPORT_PASSWORD
-
-Fallback environment variables:
-  PAYLOAD_SEED_EMAIL
-  PAYLOAD_SEED_PASSWORD
-
-Examples:
-  pnpm export:lite-search -- --url "http://localhost:3000"
-
-  $env:PAYLOAD_EXPORT_EMAIL="you@example.com"
-  $env:PAYLOAD_EXPORT_PASSWORD="your-password"
-  pnpm export:lite-search -- --url "http://localhost:3000" --include-drafts
 `)
 }
 
@@ -68,10 +57,10 @@ async function requestJson(url, options = {}) {
   return payload
 }
 
-async function login(baseUrl, email, password) {
+async function login(baseUrl, email, secret) {
   const result = await requestJson(`${baseUrl}/api/users/login`, {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password: secret }),
   })
 
   if (!result?.token) {
@@ -85,24 +74,35 @@ function authHeaders(token) {
   return token ? { Authorization: `JWT ${token}` } : {}
 }
 
+function visibilityParams(collection, includeDrafts) {
+  const params = new URLSearchParams()
+  params.set('limit', '100')
+  params.set('depth', '1')
+
+  if (includeDrafts) {
+    params.set('draft', 'true')
+    return params
+  }
+
+  if (collection === 'evidence') {
+    params.set('where[status][equals]', 'confirmed')
+    params.set('where[isPublic][equals]', 'true')
+    return params
+  }
+
+  params.set('where[status][equals]', 'published')
+  params.set('where[isLiteVisible][not_equals]', 'false')
+  return params
+}
+
 async function fetchCollection(baseUrl, token, collection, { includeDrafts }) {
   const docs = []
   let page = 1
   let totalPages = 1
 
   do {
-    const params = new URLSearchParams()
-    params.set('limit', '100')
+    const params = visibilityParams(collection, includeDrafts)
     params.set('page', String(page))
-    params.set('depth', '1')
-
-    if (includeDrafts) {
-      params.set('draft', 'true')
-    } else {
-      params.set('where[status][equals]', 'published')
-    }
-
-    params.set('where[isLiteVisible][not_equals]', 'false')
 
     const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, {
       headers: authHeaders(token),
@@ -145,16 +145,37 @@ function aliasesToValues(aliases) {
     .filter(Boolean)
 }
 
+function relationshipName(item) {
+  if (!item) return ''
+  if (typeof item === 'string') return item
+  return item.title || item.name || item.slug || ''
+}
+
 function relationshipNames(values) {
   if (!Array.isArray(values)) return []
+  return values.map(relationshipName).map(normalizeText).filter(Boolean)
+}
+
+function workOrganizationNames(values) {
+  if (!Array.isArray(values)) return []
   return values
-    .map((item) => {
-      if (!item) return ''
-      if (typeof item === 'string') return item
-      return item.title || item.name || item.slug || ''
-    })
+    .map((item) => relationshipName(item?.organization || item))
     .map(normalizeText)
     .filter(Boolean)
+}
+
+function mediaImage(value) {
+  if (!value || typeof value === 'string') return undefined
+  const url = normalizeText(value.url)
+  if (!url) return undefined
+
+  return {
+    url,
+    alt: normalizeText(value.alt),
+    filename: normalizeText(value.filename),
+    width: Number(value.width) || undefined,
+    height: Number(value.height) || undefined,
+  }
 }
 
 function uniqueValues(values) {
@@ -178,6 +199,8 @@ function buildSearchBlob(parts) {
 function itemUrl(collection, slug) {
   if (collection === 'works') return `/works/${slug}`
   if (collection === 'creators') return `/creators/${slug}`
+  if (collection === 'organizations') return `/organizations/${slug}`
+  if (collection === 'evidence') return `/evidence/${slug}`
   if (collection === 'terms') return `/terms/${slug}`
   if (collection === 'rules') return `/rules/${slug}`
   return `/${collection}/${slug}`
@@ -186,6 +209,7 @@ function itemUrl(collection, slug) {
 function mapWork(doc) {
   const aliases = aliasesToValues(doc.aliases)
   const creators = relationshipNames(doc.creators)
+  const organizations = workOrganizationNames(doc.organizations)
   const tags = relationshipNames(doc.tags)
   const warnings = relationshipNames(doc.warnings)
   const summaryText = richTextToPlainText(doc.summary)
@@ -202,22 +226,11 @@ function mapWork(doc) {
     originalTitle: doc.originalTitle || '',
     aliases,
     creators,
+    organizations,
     tags,
     warnings,
-    legacyXWikiPage: doc.legacyXWikiPage || '',
-    searchText: buildSearchBlob([
-      doc.title,
-      doc.originalTitle,
-      aliases,
-      creators,
-      tags,
-      warnings,
-      doc.rank,
-      doc.legacyXWikiPage,
-      doc.searchText,
-      summaryText,
-      analysisText,
-    ]),
+    cover: mediaImage(doc.cover),
+    searchText: buildSearchBlob([doc.title, doc.originalTitle, aliases, creators, organizations, tags, warnings, doc.rank, doc.searchText, summaryText, analysisText]),
   }
 }
 
@@ -234,15 +247,45 @@ function mapCreator(doc) {
     url: itemUrl('creators', doc.slug),
     rank: doc.rank || 'unknown',
     aliases,
-    legacyXWikiPage: doc.legacyXWikiPage || '',
-    searchText: buildSearchBlob([
-      doc.name,
-      aliases,
-      doc.rank,
-      doc.legacyXWikiPage,
-      doc.searchText,
-      notesText,
-    ]),
+    searchText: buildSearchBlob([doc.name, aliases, doc.rank, doc.searchText, notesText]),
+  }
+}
+
+function mapOrganization(doc) {
+  const aliases = aliasesToValues(doc.aliases)
+  const notesText = richTextToPlainText(doc.notes)
+
+  return {
+    id: `organizations:${doc.slug}`,
+    collection: 'organizations',
+    typeLabel: '机构',
+    title: doc.name || '',
+    slug: doc.slug || '',
+    url: itemUrl('organizations', doc.slug),
+    organizationType: doc.type || 'other',
+    aliases,
+    searchText: buildSearchBlob([doc.name, aliases, doc.type, doc.searchText, notesText]),
+  }
+}
+
+function mapEvidence(doc) {
+  const relatedWorks = relationshipNames(doc.relatedWorks)
+  const relatedCreators = relationshipNames(doc.relatedCreators)
+  const relatedOrganizations = relationshipNames(doc.relatedOrganizations)
+
+  return {
+    id: `evidence:${doc.slug}`,
+    collection: 'evidence',
+    typeLabel: '证据材料',
+    title: doc.title || '',
+    slug: doc.slug || '',
+    url: itemUrl('evidence', doc.slug),
+    evidenceType: doc.evidenceType || 'other',
+    relatedWorks,
+    relatedCreators,
+    relatedOrganizations,
+    image: mediaImage(doc.image),
+    searchText: buildSearchBlob([doc.title, doc.evidenceType, relatedWorks, relatedCreators, relatedOrganizations, doc.description, doc.searchText]),
   }
 }
 
@@ -260,15 +303,7 @@ function mapTerm(doc) {
     url: itemUrl('terms', doc.slug),
     relatedTerms,
     relatedWarnings,
-    legacyXWikiPage: doc.legacyXWikiPage || '',
-    searchText: buildSearchBlob([
-      doc.name,
-      relatedTerms,
-      relatedWarnings,
-      doc.legacyXWikiPage,
-      doc.searchText,
-      definitionText,
-    ]),
+    searchText: buildSearchBlob([doc.name, relatedTerms, relatedWarnings, doc.searchText, definitionText]),
   }
 }
 
@@ -287,22 +322,15 @@ function mapRule(doc) {
     category: doc.category || 'principle',
     relatedTags,
     relatedWarnings,
-    legacyXWikiPage: doc.legacyXWikiPage || '',
-    searchText: buildSearchBlob([
-      doc.title,
-      doc.category,
-      relatedTags,
-      relatedWarnings,
-      doc.legacyXWikiPage,
-      doc.searchText,
-      bodyText,
-    ]),
+    searchText: buildSearchBlob([doc.title, doc.category, relatedTags, relatedWarnings, doc.searchText, bodyText]),
   }
 }
 
 function mapDocument(collection, doc) {
   if (collection === 'works') return mapWork(doc)
   if (collection === 'creators') return mapCreator(doc)
+  if (collection === 'organizations') return mapOrganization(doc)
+  if (collection === 'evidence') return mapEvidence(doc)
   if (collection === 'terms') return mapTerm(doc)
   if (collection === 'rules') return mapRule(doc)
   throw new Error(`Unsupported collection: ${collection}`)
@@ -323,12 +351,12 @@ async function main() {
   const baseUrl = String(args.url || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
   const outFile = String(args.out || DEFAULT_OUT)
   const includeDrafts = Boolean(args['include-drafts'])
-  const email = process.env.PAYLOAD_EXPORT_EMAIL || process.env.PAYLOAD_SEED_EMAIL
-  const password = process.env.PAYLOAD_EXPORT_PASSWORD || process.env.PAYLOAD_SEED_PASSWORD
+  const email = process.env[EXPORT_EMAIL_ENV] || process.env[SEED_EMAIL_ENV]
+  const secret = process.env[EXPORT_SECRET_ENV] || process.env[SEED_SECRET_ENV]
 
   let token = null
-  if (email && password) {
-    token = await login(baseUrl, email, password)
+  if (email && secret) {
+    token = await login(baseUrl, email, secret)
   }
 
   const items = []
@@ -341,7 +369,7 @@ async function main() {
   }
 
   const payload = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: new Date().toISOString(),
     source: baseUrl,
     mode: includeDrafts ? 'drafts-and-published' : 'published-only',
