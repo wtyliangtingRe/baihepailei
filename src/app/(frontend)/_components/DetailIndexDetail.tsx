@@ -8,6 +8,8 @@ type ExtendedDetailItem = DetailItem & {
   organizationType?: string
   organizations?: string[]
   evidenceType?: string
+  reviewStatus?: string
+  evidenceStrength?: string
   image?: DetailCoverImage
   description?: string
   capturedAt?: string
@@ -46,6 +48,20 @@ const evidenceTypeLabels: Record<string, string> = {
   other: '其他证据',
 }
 
+const reviewStatusLabels: Record<string, string> = {
+  pending: '待复核',
+  reviewed: '已复核',
+  disputed: '有争议',
+  deprecated: '已废弃',
+}
+
+const evidenceStrengthLabels: Record<string, string> = {
+  unassessed: '未评估',
+  weak: '证据弱',
+  medium: '证据中',
+  strong: '证据强',
+}
+
 function collectionLabel(collection: string) {
   if (collection === 'works') return '作品'
   if (collection === 'creators') return '创作者'
@@ -74,6 +90,16 @@ function organizationTypeLabel(value?: string) {
 function evidenceTypeLabel(value?: string) {
   if (!value) return ''
   return evidenceTypeLabels[value] || value
+}
+
+function reviewStatusLabel(value?: string) {
+  if (!value) return ''
+  return reviewStatusLabels[value] || value
+}
+
+function evidenceStrengthLabel(value?: string) {
+  if (!value) return ''
+  return evidenceStrengthLabels[value] || value
 }
 
 function normalizeKey(value: string) {
@@ -121,6 +147,8 @@ function FieldList({ fields }: { fields: Array<[string, string | string[] | bool
 function BasicInfo({ item }: { item: DetailItem }) {
   const extendedItem = item as ExtendedDetailItem
   const fields: Array<[string, string | string[] | boolean | undefined]> = [
+    ['复核状态', reviewStatusLabel(extendedItem.reviewStatus)],
+    ['证据强度', evidenceStrengthLabel(extendedItem.evidenceStrength)],
     ['机构类型', organizationTypeLabel(extendedItem.organizationType)],
     ['证据类型', evidenceTypeLabel(extendedItem.evidenceType)],
     ['截图时间', extendedItem.capturedAt],
@@ -274,6 +302,7 @@ function RelatedEvidence({ evidence }: { evidence: DetailItem[] }) {
               <EvidenceImage image={evidenceItem.image} title={item.title} />
               <div>
                 <span>{evidenceTypeLabel(evidenceItem.evidenceType) || '证据材料'}</span>
+                {evidenceItem.evidenceStrength ? <span>{evidenceStrengthLabel(evidenceItem.evidenceStrength)}</span> : null}
                 <strong>{item.title}</strong>
                 {evidenceItem.description ? <p>{evidenceItem.description}</p> : null}
               </div>
@@ -339,6 +368,8 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
   const rank = displayRank(item.rank)
   const organizationType = organizationTypeLabel(extendedItem.organizationType)
   const evidenceType = evidenceTypeLabel(extendedItem.evidenceType)
+  const reviewStatus = reviewStatusLabel(extendedItem.reviewStatus)
+  const evidenceStrength = evidenceStrengthLabel(extendedItem.evidenceStrength)
 
   return (
     <main className="page detail-page">
@@ -359,6 +390,8 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
             <h1>{item.title}</h1>
             <div className="detail-chips">
               {rank ? <span>{rank}</span> : null}
+              {reviewStatus ? <span>{reviewStatus}</span> : null}
+              {evidenceStrength ? <span>{evidenceStrength}</span> : null}
               {organizationType ? <span>{organizationType}</span> : null}
               {evidenceType ? <span>{evidenceType}</span> : null}
               {item.category ? <span>{item.category}</span> : null}
