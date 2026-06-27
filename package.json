@@ -34,6 +34,7 @@
     "test:payload-candidate-import": "node --test tests/payload-candidate-import.test.mjs",
     "test:payload-preview-report": "node --test tests/payload-preview-report.test.mjs",
     "test:media-groups": "node --test tests/media-groups.test.mjs",
+    "test:work-groups": "node --test tests/work-groups.test.mjs",
     "test:search": "node --test tests/search-utils.test.mjs",
     "test:frontend-polish": "node --test tests/frontend-polish.test.mjs",
     "test:works-rank": "node --test tests/works-rank-page.test.mjs",
