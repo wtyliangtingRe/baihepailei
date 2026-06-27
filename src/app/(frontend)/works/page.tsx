@@ -285,7 +285,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
       <section className="page-heading collection-heading">
         <p className="eyebrow">作品</p>
         <h1>作品</h1>
-        <p>按作品类型、排雷分级、创作者、机构和证据材料状态筛选轻量搜索索引中的作品条目。</p>
+        <p>浏览轻量搜索索引中的作品条目，并按作品类型、排雷分级、创作者、机构和证据材料状态筛选。</p>
         <div className="collection-actions">
           <Link className="back-link" href="/search?collection=works">搜索作品</Link>
           <Link className="back-link" href="/browse">浏览全部</Link>
