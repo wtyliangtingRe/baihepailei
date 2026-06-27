@@ -145,6 +145,22 @@ function aliasesToValues(aliases) {
     .filter(Boolean)
 }
 
+function localizedTitleValues(values) {
+  if (!Array.isArray(values)) return []
+  return values
+    .map((item) => (typeof item === 'string' ? item : item?.title))
+    .map(normalizeText)
+    .filter(Boolean)
+}
+
+function localizedNameValues(values) {
+  if (!Array.isArray(values)) return []
+  return values
+    .map((item) => (typeof item === 'string' ? item : item?.name))
+    .map(normalizeText)
+    .filter(Boolean)
+}
+
 function relationshipName(item) {
   if (!item) return ''
   if (typeof item === 'string') return item
@@ -208,6 +224,7 @@ function itemUrl(collection, slug) {
 
 function mapWork(doc) {
   const aliases = aliasesToValues(doc.aliases)
+  const localizedTitles = localizedTitleValues(doc.localizedTitles)
   const creators = relationshipNames(doc.creators)
   const organizations = workOrganizationNames(doc.organizations)
   const tags = relationshipNames(doc.tags)
@@ -225,17 +242,40 @@ function mapWork(doc) {
     rank: doc.rank || 'unknown',
     originalTitle: doc.originalTitle || '',
     aliases,
+    localizedTitles,
+    mediaGroup: doc.mediaGroup || 'unknown',
+    mediaType: doc.mediaType || 'unknown',
+    format: doc.format || 'unknown',
+    firstPublishedLabel: doc.firstPublishedLabel || '',
     creators,
     organizations,
     tags,
     warnings,
     cover: mediaImage(doc.cover),
-    searchText: buildSearchBlob([doc.title, doc.originalTitle, aliases, creators, organizations, tags, warnings, doc.rank, doc.searchText, summaryText, analysisText]),
+    searchText: buildSearchBlob([
+      doc.title,
+      doc.originalTitle,
+      aliases,
+      localizedTitles,
+      creators,
+      organizations,
+      tags,
+      warnings,
+      doc.rank,
+      doc.mediaGroup,
+      doc.mediaType,
+      doc.format,
+      doc.firstPublishedLabel,
+      doc.searchText,
+      summaryText,
+      analysisText,
+    ]),
   }
 }
 
 function mapCreator(doc) {
   const aliases = aliasesToValues(doc.aliases)
+  const localizedNames = localizedNameValues(doc.localizedNames)
   const notesText = richTextToPlainText(doc.notes)
 
   return {
@@ -247,12 +287,14 @@ function mapCreator(doc) {
     url: itemUrl('creators', doc.slug),
     rank: doc.rank || 'unknown',
     aliases,
-    searchText: buildSearchBlob([doc.name, aliases, doc.rank, doc.searchText, notesText]),
+    localizedNames,
+    searchText: buildSearchBlob([doc.name, aliases, localizedNames, doc.rank, doc.searchText, notesText]),
   }
 }
 
 function mapOrganization(doc) {
   const aliases = aliasesToValues(doc.aliases)
+  const localizedNames = localizedNameValues(doc.localizedNames)
   const notesText = richTextToPlainText(doc.notes)
 
   return {
@@ -264,7 +306,8 @@ function mapOrganization(doc) {
     url: itemUrl('organizations', doc.slug),
     organizationType: doc.type || 'other',
     aliases,
-    searchText: buildSearchBlob([doc.name, aliases, doc.type, doc.searchText, notesText]),
+    localizedNames,
+    searchText: buildSearchBlob([doc.name, aliases, localizedNames, doc.type, doc.searchText, notesText]),
   }
 }
 
