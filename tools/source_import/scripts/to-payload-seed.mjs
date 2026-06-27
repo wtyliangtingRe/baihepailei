@@ -36,9 +36,7 @@ function cleanSlugPart(value) {
     .replace(/^-+|-+$/gu, '')
 }
 
-export function candidateSlugBase(candidate) {
-  if (candidate.slug) return candidate.slug
-
+function externalIdSlug(candidate) {
   const externalIds = candidate.externalIds || {}
   const externalIdPairs = [
     ['bangumi', externalIds.bangumiSubjectId],
@@ -59,7 +57,13 @@ export function candidateSlugBase(candidate) {
     if (sourceKey && externalId) return `${sourceKey}-${externalId}`
   }
 
-  return slugify(candidate.title, { fallback: 'candidate-work' })
+  return ''
+}
+
+export function candidateSlugBase(candidate) {
+  return externalIdSlug(candidate)
+    || candidate.slug
+    || slugify(candidate.title, { fallback: 'candidate-work' })
 }
 
 export function toPayloadSeed(candidates) {
