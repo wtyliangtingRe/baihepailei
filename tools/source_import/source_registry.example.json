@@ -1,0 +1,137 @@
+[
+  {
+    "key": "bangumi",
+    "name": "Bangumi",
+    "baseUrl": "https://bgm.tv",
+    "fetchMethod": "official_api_or_manual_export",
+    "allowedUse": [
+      "subject metadata",
+      "tags and aggregate signals",
+      "external links",
+      "derived summaries"
+    ],
+    "restrictedUse": [
+      "do not publicly republish user comment text",
+      "do not store private or login-only data in the repository",
+      "do not commit raw source exports"
+    ],
+    "publicDisplay": [
+      "source name",
+      "source link",
+      "derived non-verbatim summary"
+    ],
+    "licenseNotes": "Review source terms before expanding use. Treat user-generated comments as analysis input only unless separately permitted.",
+    "rateLimitNotes": "Use documented API behavior and conservative local throttling."
+  },
+  {
+    "key": "anilist",
+    "name": "AniList",
+    "baseUrl": "https://anilist.co",
+    "fetchMethod": "graphql_api",
+    "allowedUse": [
+      "anime and manga metadata",
+      "tags and genres",
+      "staff and studio links",
+      "external links"
+    ],
+    "restrictedUse": [
+      "do not commit raw source exports",
+      "do not assume user reviews can be republished"
+    ],
+    "publicDisplay": [
+      "source name",
+      "source link",
+      "derived metadata fields"
+    ],
+    "licenseNotes": "Review API and site terms before using large exports.",
+    "rateLimitNotes": "Use GraphQL pagination and conservative local throttling."
+  },
+  {
+    "key": "vndb",
+    "name": "VNDB",
+    "baseUrl": "https://vndb.org",
+    "fetchMethod": "official_api",
+    "allowedUse": [
+      "visual novel metadata",
+      "producer links",
+      "staff links",
+      "tags and traits",
+      "external links"
+    ],
+    "restrictedUse": [
+      "do not commit raw source exports",
+      "do not treat tags as final Baihepailei ratings"
+    ],
+    "publicDisplay": [
+      "source name",
+      "source link",
+      "derived metadata fields"
+    ],
+    "licenseNotes": "Review VNDB API and data terms before publication.",
+    "rateLimitNotes": "Respect documented limits and cache locally."
+  },
+  {
+    "key": "wikidata",
+    "name": "Wikidata",
+    "baseUrl": "https://www.wikidata.org",
+    "fetchMethod": "sparql_or_entity_json",
+    "allowedUse": [
+      "structured metadata",
+      "external identifiers",
+      "cross-source alignment",
+      "aliases and basic relations"
+    ],
+    "restrictedUse": [
+      "do not assume Wikidata relations are complete or final"
+    ],
+    "publicDisplay": [
+      "source name",
+      "source link",
+      "derived metadata fields"
+    ],
+    "licenseNotes": "Structured data is intended for reuse, but attribution and source links are still useful for traceability.",
+    "rateLimitNotes": "Prefer cached SPARQL/entity results for repeat runs."
+  },
+  {
+    "key": "wikipedia",
+    "name": "Wikipedia",
+    "baseUrl": "https://www.wikipedia.org",
+    "fetchMethod": "manual_seed_or_page_extract",
+    "allowedUse": [
+      "candidate seed lists",
+      "source links",
+      "non-verbatim derived notes"
+    ],
+    "restrictedUse": [
+      "do not copy long article text into Baihepailei records",
+      "do not commit raw extracted pages"
+    ],
+    "publicDisplay": [
+      "source name",
+      "source link",
+      "candidate source note"
+    ],
+    "licenseNotes": "Follow source license requirements if text is reused. Prefer links and derived metadata.",
+    "rateLimitNotes": "Use small seed extraction first."
+  },
+  {
+    "key": "manual",
+    "name": "Manual curation",
+    "baseUrl": "",
+    "fetchMethod": "human_entered",
+    "allowedUse": [
+      "editor notes",
+      "source links",
+      "migration notes"
+    ],
+    "restrictedUse": [
+      "do not store private notes in public fields",
+      "do not commit local-only raw notes"
+    ],
+    "publicDisplay": [
+      "curation note when appropriate"
+    ],
+    "licenseNotes": "Manual entries should still cite source links when based on external material.",
+    "rateLimitNotes": "Not applicable."
+  }
+]
