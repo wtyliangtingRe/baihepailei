@@ -253,6 +253,7 @@ h1 {
   background: #141414;
 }
 
+.media-group-links,
 .rank-jump-list {
   display: flex;
   flex-wrap: wrap;
@@ -260,6 +261,7 @@ h1 {
   margin-top: 10px;
 }
 
+.media-group-links a,
 .rank-jump-list a {
   padding: 8px 12px;
   border: 1px solid #303030;
@@ -269,6 +271,7 @@ h1 {
   text-decoration: none;
 }
 
+.media-group-links a:hover,
 .rank-jump-list a:hover {
   border-color: #ffb5d7;
 }
