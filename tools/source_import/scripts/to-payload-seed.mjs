@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { readJsonl, writeJsonFile } from '../lib/jsonl.mjs'
 import { slugify, uniqueSlug } from '../lib/slug.mjs'
 
@@ -75,6 +78,8 @@ async function main() {
   console.log(`Wrote ${seed.works.length} Payload candidate works -> ${output}`)
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+
+if (isDirectRun) {
   await main()
 }
