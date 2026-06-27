@@ -110,7 +110,7 @@ export default function CollectionIndexPage({ collection, eyebrow, title, descri
         <p>{description}</p>
         <div className="collection-actions">
           <Link className="back-link" href={`/search?collection=${collection}`}>
-            搜索{title}
+            搜索
           </Link>
           <Link className="back-link" href="/browse">
             浏览全部
