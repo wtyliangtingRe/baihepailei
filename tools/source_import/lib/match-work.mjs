@@ -6,6 +6,8 @@ import {
   titleValues,
 } from './title-normalize.mjs'
 
+const VERSION_VARIANT_PATTERN = /(ova|ona|oad|movie|season\s*\d+|s\d+|part\s*\d+|第[一二三四五六七八九十0-9]+季|第[一二三四五六七八九十0-9]+期|剧场版|劇場版|映画|特别篇|特別篇|special|sp|番外|外传|外傳|总集篇|總集篇|recap|remake|reboot|再編集|edition|version)/iu
+
 function clean(value) {
   return String(value ?? '').trim()
 }
@@ -72,6 +74,17 @@ function strongestTitleSimilarity(a, b) {
   return best
 }
 
+export function hasVersionVariantHint(candidate) {
+  return titleValues(candidate).some((value) => VERSION_VARIANT_PATTERN.test(value))
+}
+
+function exactOriginalTitleNeedsReview(candidate, existing) {
+  const distance = yearDistance(candidate, existing)
+  const hasVersionHint = hasVersionVariantHint(candidate) || hasVersionVariantHint(existing)
+
+  return hasVersionHint && (distance === null || distance > 0)
+}
+
 export function compareWorkCandidates(candidate, existing) {
   const signals = []
 
@@ -91,6 +104,14 @@ export function compareWorkCandidates(candidate, existing) {
   if (candidateOriginal && candidateOriginal === existingOriginal && sameMediaType(candidate, existing)) {
     signals.push(`same normalized originalTitle: ${candidateOriginal}`)
     signals.push(`compatible mediaType: ${candidate.mediaType || 'unknown'} / ${existing.mediaType || 'unknown'}`)
+
+    if (exactOriginalTitleNeedsReview(candidate, existing)) {
+      const distance = yearDistance(candidate, existing)
+      signals.push(distance === null ? 'first published year unavailable' : `first published year distance: ${distance}`)
+      signals.push('version or edition marker detected in title values')
+      return { action: 'conflict', confidence: 'same_original_title_version_variant', signals }
+    }
+
     return { action: 'merge', confidence: 'exact_original_title', signals }
   }
 
