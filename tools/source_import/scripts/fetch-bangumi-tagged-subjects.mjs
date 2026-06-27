@@ -1,0 +1,227 @@
+#!/usr/bin/env node
+
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { writeJsonl, writeJsonFile } from '../lib/jsonl.mjs'
+import {
+  annotateBangumiYuriSignal,
+  bangumiSubjectToRawSource,
+  subjectPassesYuriTagThreshold,
+} from '../sources/bangumi.mjs'
+
+const API_BASE_URL = 'https://api.bgm.tv'
+const DEFAULT_TAGS = ['百合', '轻百合', 'GL']
+const DEFAULT_TYPES = [1, 2, 4]
+const DEFAULT_USER_AGENT = 'BaihepaileiSourceImport/0.1 (https://github.com/wtyliangtingRe/baihepailei)'
+
+function parseArgs(argv) {
+  const args = new Map()
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const item = argv[index]
+    if (!item.startsWith('--')) continue
+
+    const key = item.slice(2)
+    const value = argv[index + 1] && !argv[index + 1].startsWith('--') ? argv[index + 1] : 'true'
+    args.set(key, value)
+
+    if (value !== 'true') index += 1
+  }
+
+  return args
+}
+
+function parseCsv(value, fallback) {
+  if (!value) return fallback
+  return String(value)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function parseNumberCsv(value, fallback) {
+  return parseCsv(value, fallback.map(String))
+    .map((item) => Number(item))
+    .filter((item) => Number.isFinite(item))
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function uniqueById(subjects) {
+  const seen = new Set()
+  const result = []
+
+  for (const subject of subjects) {
+    const id = subject?.id ?? subject?.subject_id
+    if (!id || seen.has(String(id))) continue
+
+    seen.add(String(id))
+    result.push(subject)
+  }
+
+  return result
+}
+
+function requestHeaders({ userAgent, token }) {
+  return {
+    'User-Agent': userAgent,
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
+async function requestJson(url, options) {
+  const response = await fetch(url, options)
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new Error(`Bangumi request failed ${response.status} ${response.statusText}: ${text.slice(0, 300)}`)
+  }
+
+  return response.json()
+}
+
+export async function searchBangumiSubjects({ tag, type, limit, offset, sort, userAgent, token }) {
+  const url = new URL('/v0/search/subjects', API_BASE_URL)
+  url.searchParams.set('limit', String(limit))
+  url.searchParams.set('offset', String(offset))
+
+  const body = {
+    keyword: tag,
+    sort,
+    filter: {
+      tag: [tag],
+      type: [type],
+    },
+  }
+
+  const json = await requestJson(url, {
+    method: 'POST',
+    headers: requestHeaders({ userAgent, token }),
+    body: JSON.stringify(body),
+  })
+
+  return Array.isArray(json?.data) ? json.data : []
+}
+
+export async function fetchBangumiSubject(subjectId, { userAgent, token }) {
+  const url = new URL(`/v0/subjects/${subjectId}`, API_BASE_URL)
+  return requestJson(url, {
+    method: 'GET',
+    headers: requestHeaders({ userAgent, token }),
+  })
+}
+
+export async function fetchBangumiTaggedSubjects({
+  tags = DEFAULT_TAGS,
+  types = DEFAULT_TYPES,
+  limit = 20,
+  pages = 1,
+  sort = 'rank',
+  delayMs = 900,
+  minWeightedScore = 5,
+  minTopTagCount = 5,
+  userAgent = DEFAULT_USER_AGENT,
+  token = process.env.BANGUMI_ACCESS_TOKEN || '',
+} = {}) {
+  const searched = []
+
+  for (const tag of tags) {
+    for (const type of types) {
+      for (let page = 0; page < pages; page += 1) {
+        const offset = page * limit
+        const subjects = await searchBangumiSubjects({ tag, type, limit, offset, sort, userAgent, token })
+        searched.push(...subjects)
+        await sleep(delayMs)
+      }
+    }
+  }
+
+  const detailed = []
+
+  for (const subject of uniqueById(searched)) {
+    const id = subject?.id ?? subject?.subject_id
+    const detail = await fetchBangumiSubject(id, { userAgent, token })
+    const annotated = annotateBangumiYuriSignal(detail)
+
+    if (subjectPassesYuriTagThreshold(annotated, { minWeightedScore, minTopTagCount })) {
+      detailed.push(annotated)
+    }
+
+    await sleep(delayMs)
+  }
+
+  detailed.sort((a, b) => {
+    const aSignal = a?._baihepailei?.yuriTagSignal
+    const bSignal = b?._baihepailei?.yuriTagSignal
+    return (bSignal?.weightedScore || 0) - (aSignal?.weightedScore || 0)
+  })
+
+  return detailed
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2))
+  const output = args.get('out') || 'data_local/raw/bangumi/bangumi-yuri-tagged.jsonl'
+  const reportOutput = args.get('report') || 'data_local/reports/bangumi-yuri-tagged-summary.json'
+  const fetchedAt = new Date().toISOString()
+  const tags = parseCsv(args.get('tags'), DEFAULT_TAGS)
+  const types = parseNumberCsv(args.get('types'), DEFAULT_TYPES)
+  const limit = Number(args.get('limit') || 20)
+  const pages = Number(args.get('pages') || 1)
+  const delayMs = Number(args.get('delay-ms') || 900)
+  const minWeightedScore = Number(args.get('min-weighted-score') || 5)
+  const minTopTagCount = Number(args.get('min-top-tag-count') || 5)
+  const sort = args.get('sort') || 'rank'
+  const userAgent = args.get('user-agent') || process.env.BANGUMI_USER_AGENT || DEFAULT_USER_AGENT
+  const token = args.get('token') || process.env.BANGUMI_ACCESS_TOKEN || ''
+
+  const subjects = await fetchBangumiTaggedSubjects({
+    tags,
+    types,
+    limit,
+    pages,
+    sort,
+    delayMs,
+    minWeightedScore,
+    minTopTagCount,
+    userAgent,
+    token,
+  })
+
+  const rawRecords = subjects.map((subject) => bangumiSubjectToRawSource(subject, { fetchedAt }))
+  await writeJsonl(output, rawRecords)
+
+  await writeJsonFile(reportOutput, {
+    fetchedAt,
+    tags,
+    types,
+    limit,
+    pages,
+    sort,
+    minWeightedScore,
+    minTopTagCount,
+    count: rawRecords.length,
+    subjects: subjects.map((subject) => ({
+      id: subject.id,
+      name: subject.name,
+      name_cn: subject.name_cn,
+      type: subject.type,
+      date: subject.date,
+      yuriTagSignal: subject._baihepailei?.yuriTagSignal,
+    })),
+  })
+
+  console.log(`Fetched ${rawRecords.length} Bangumi yuri-tagged subjects -> ${output}`)
+  console.log(`Wrote summary -> ${reportOutput}`)
+}
+
+const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+
+if (isDirectRun) {
+  await main()
+}
