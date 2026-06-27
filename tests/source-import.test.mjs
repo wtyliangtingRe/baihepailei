@@ -16,6 +16,12 @@ test('JSONL helpers parse and stringify records', () => {
   assert.equal(stringifyJsonl(records), '{"a":1}\n{"b":2}\n')
 })
 
+test('JSONL parser accepts a UTF-8 BOM on the first line', () => {
+  const records = parseJsonl('\uFEFF{"a":1}\n{"b":2}\n')
+
+  assert.deepEqual(records, [{ a: 1 }, { b: 2 }])
+})
+
 test('date precision helper handles year, month, day, and unknown labels', () => {
   assert.deepEqual(parseDateWithPrecision('2015'), {
     date: '2015-01-01',
