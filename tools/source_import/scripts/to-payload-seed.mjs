@@ -1,0 +1,85 @@
+#!/usr/bin/env node
+
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { readJsonl, writeJsonFile } from '../lib/jsonl.mjs'
+import { slugify, uniqueSlug } from '../lib/slug.mjs'
+
+function parseArgs(argv) {
+  const args = new Map()
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const item = argv[index]
+    if (!item.startsWith('--')) continue
+
+    const key = item.slice(2)
+    const value = argv[index + 1] && !argv[index + 1].startsWith('--') ? argv[index + 1] : 'true'
+    args.set(key, value)
+
+    if (value !== 'true') index += 1
+  }
+
+  return args
+}
+
+function cleanArray(value) {
+  return Array.isArray(value) ? value.filter(Boolean) : []
+}
+
+export function toPayloadSeed(candidates) {
+  const seenSlugs = new Set()
+
+  const works = candidates.map((candidate) => {
+    const slug = uniqueSlug(candidate.slug || slugify(candidate.title, { fallback: 'candidate-work' }), seenSlugs)
+
+    return {
+      siteId: candidate.siteId || undefined,
+      title: candidate.title,
+      slug,
+      rank: 'unknown',
+      reviewStatus: 'pending',
+      evidenceStrength: 'unassessed',
+      originalTitle: candidate.originalTitle || undefined,
+      aliases: cleanArray(candidate.aliases),
+      mediaType: candidate.mediaType || 'unknown',
+      format: candidate.format || 'unknown',
+      firstPublishedAt: candidate.firstPublishedAt || undefined,
+      firstPublishedPrecision: candidate.firstPublishedPrecision || 'unknown',
+      firstPublishedLabel: candidate.firstPublishedLabel || undefined,
+      externalIds: candidate.externalIds || {},
+      candidateSources: cleanArray(candidate.candidateSources),
+      yuriCandidateScore: candidate.yuriCandidateScore ?? undefined,
+      isLiteVisible: false,
+      isFullVisible: false,
+      hasEvidence: false,
+      status: 'draft',
+    }
+  })
+
+  return { works }
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2))
+  const input = args.get('in')
+  const output = args.get('out')
+
+  if (!input || !output) {
+    console.error('Usage: pnpm source:to-payload -- --in <works.deduped.jsonl> --out <payload-candidates.json>')
+    process.exitCode = 1
+    return
+  }
+
+  const candidates = await readJsonl(input)
+  const seed = toPayloadSeed(candidates)
+  await writeJsonFile(output, seed)
+
+  console.log(`Wrote ${seed.works.length} Payload candidate works -> ${output}`)
+}
+
+const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+
+if (isDirectRun) {
+  await main()
+}
