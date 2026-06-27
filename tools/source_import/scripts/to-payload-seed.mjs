@@ -92,6 +92,7 @@ export function toPayloadSeed(candidates) {
       firstPublishedLabel: candidate.firstPublishedLabel || undefined,
       externalIds: candidate.externalIds || {},
       candidateSources: cleanArray(candidate.candidateSources),
+      externalCoverImages: cleanArray(candidate.externalCoverImages),
       yuriCandidateScore: candidate.yuriCandidateScore ?? undefined,
       isLiteVisible: false,
       isFullVisible: false,
