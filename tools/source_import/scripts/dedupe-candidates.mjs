@@ -2,7 +2,7 @@
 
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 
 import { readJsonl, writeJsonl } from '../lib/jsonl.mjs'
 import { compareWorkCandidates } from '../lib/match-work.mjs'
@@ -40,6 +40,65 @@ function uniqueByJson(values) {
   return result
 }
 
+function normalizeKeyPart(value) {
+  return String(value || '').normalize('NFKC').trim().toLowerCase()
+}
+
+function candidateSourceKey(source) {
+  return [
+    normalizeKeyPart(source?.source || source?.label),
+    normalizeKeyPart(source?.externalId),
+    normalizeKeyPart(source?.url),
+  ].join('|')
+}
+
+function mergeNotes(existingNote, nextNote) {
+  const notes = String(existingNote || '')
+    .split('；')
+    .map((note) => note.trim())
+    .filter(Boolean)
+
+  for (const note of String(nextNote || '').split('；').map((value) => value.trim()).filter(Boolean)) {
+    if (!notes.includes(note)) notes.push(note)
+  }
+
+  return notes.join('；')
+}
+
+export function uniqueCandidateSources(values) {
+  const byKey = new Map()
+  const passthrough = []
+
+  for (const source of values || []) {
+    if (!source) continue
+
+    const key = candidateSourceKey(source)
+    if (key === '||') {
+      passthrough.push(source)
+      continue
+    }
+
+    const existing = byKey.get(key)
+    if (!existing) {
+      byKey.set(key, { ...source })
+      continue
+    }
+
+    byKey.set(key, {
+      ...existing,
+      ...source,
+      label: existing.label || source.label,
+      source: existing.source || source.source,
+      externalId: existing.externalId || source.externalId,
+      url: existing.url || source.url,
+      fetchedAt: existing.fetchedAt || source.fetchedAt || null,
+      note: mergeNotes(existing.note, source.note),
+    })
+  }
+
+  return [...byKey.values(), ...uniqueByJson(passthrough)]
+}
+
 function mergeScalar(baseValue, nextValue) {
   return nextValue !== null && nextValue !== undefined && nextValue !== '' ? nextValue : baseValue
 }
@@ -59,7 +118,7 @@ export function mergeCandidate(base, next) {
     yuriCandidateScore: Math.max(Number(base.yuriCandidateScore || 0), Number(next.yuriCandidateScore || 0)),
     aliases: uniqueByJson([...(base.aliases || []), ...(next.aliases || [])]),
     externalIds: { ...(base.externalIds || {}), ...(next.externalIds || {}) },
-    candidateSources: uniqueByJson([...(base.candidateSources || []), ...(next.candidateSources || [])]),
+    candidateSources: uniqueCandidateSources([...(base.candidateSources || []), ...(next.candidateSources || [])]),
   }
 }
 
@@ -126,7 +185,7 @@ export function dedupeCandidates(candidates) {
 }
 
 async function writeTextFile(filePath, text) {
-  await import('node:fs/promises').then(async ({ mkdir }) => mkdir(path.dirname(filePath), { recursive: true }))
+  await mkdir(path.dirname(filePath), { recursive: true })
   await writeFile(filePath, text, 'utf8')
 }
 
