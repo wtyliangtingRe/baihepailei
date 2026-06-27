@@ -83,6 +83,10 @@ function imageMetadataPreview(work) {
   return images.length === 1 ? label : `${label} +${images.length - 1}`
 }
 
+function workGroupPreview(work) {
+  return cleanText(work?.workGroup?.title || work?.workGroup?.key || '')
+}
+
 function hiddenDraftState(work) {
   const flags = []
   flags.push(work.status || 'no-status')
@@ -104,9 +108,42 @@ function markdownCountTable(title, rows) {
   ].join('\n')
 }
 
+function summarizeWorkGroups(works) {
+  const groups = new Map()
+
+  for (const work of works) {
+    const group = work?.workGroup
+    const key = cleanText(group?.key || group?.title)
+    const title = cleanText(group?.title || group?.key)
+    if (!key || !title) continue
+
+    const existing = groups.get(key) || { key, title, count: 0, works: [] }
+    existing.count += 1
+    existing.works.push(cleanText(work.title || work.slug || 'untitled'))
+    groups.set(key, existing)
+  }
+
+  return [...groups.values()].sort((a, b) => b.count - a.count || a.title.localeCompare(b.title))
+}
+
+function markdownWorkGroupTable(groups) {
+  const rows = groups.filter((group) => group.count > 1)
+  if (rows.length === 0) return '## 候选系列分组\n\n暂无多条目候选分组。\n'
+
+  return [
+    '## 候选系列分组',
+    '',
+    '| 分组 | 数量 | 作品 |',
+    '| --- | ---: | --- |',
+    ...rows.map((group) => `| ${escapeMarkdownCell(group.title)} | ${group.count} | ${escapeMarkdownCell(group.works.join('；'))} |`),
+    '',
+  ].join('\n')
+}
+
 export function summarizePayloadSeed(seed) {
   const works = Array.isArray(seed?.works) ? seed.works : []
   const sourceCounts = new Map()
+  const workGroups = summarizeWorkGroups(works)
 
   for (const work of works) {
     for (const source of Array.isArray(work.candidateSources) ? work.candidateSources : []) {
@@ -123,6 +160,8 @@ export function summarizePayloadSeed(seed) {
     localizedTitleCount: works.reduce((sum, work) => sum + (Array.isArray(work.localizedTitles) ? work.localizedTitles.length : 0), 0),
     externalCoverImageCount: works.reduce((sum, work) => sum + (Array.isArray(work.externalCoverImages) ? work.externalCoverImages.length : 0), 0),
     externalCoverWorkCount: works.filter((work) => Array.isArray(work.externalCoverImages) && work.externalCoverImages.length > 0).length,
+    workGroups,
+    multiWorkGroupCount: workGroups.filter((group) => group.count > 1).length,
     mediaGroups: countBy(works.map((work) => work.mediaGroup || 'unknown')),
     mediaTypes: countBy(works.map((work) => work.mediaType || 'unknown')),
     statuses: countBy(works.map((work) => work.status || 'unknown')),
@@ -149,16 +188,18 @@ export function createPayloadSeedPreviewReport(seed, { inputPath = '' } = {}) {
     `- 多译名条目数：${summary.localizedTitleCount}`,
     `- 外部封面候选数：${summary.externalCoverImageCount}`,
     `- 带外部封面候选作品：${summary.externalCoverWorkCount}`,
+    `- 多条目候选系列分组：${summary.multiWorkGroupCount}`,
     '',
     markdownCountTable('作品大类', summary.mediaGroups),
     markdownCountTable('作品类型', summary.mediaTypes),
     markdownCountTable('状态', summary.statuses),
     markdownCountTable('来源', summary.sources),
+    markdownWorkGroupTable(summary.workGroups),
     '## 作品候选清单',
     '',
-    '| # | Slug | 标题 | 大类 / 类型 | 首次日期 | 多译名预览 | 来源 | 外部封面 | 状态 |',
-    '| ---: | --- | --- | --- | --- | --- | --- | --- | --- |',
-    ...works.map((work, index) => `| ${index + 1} | ${escapeMarkdownCell(work.slug)} | ${escapeMarkdownCell(work.title)} | ${escapeMarkdownCell([work.mediaGroup, work.mediaType].filter(Boolean).join(' / '))} | ${escapeMarkdownCell(work.firstPublishedLabel || '')} | ${escapeMarkdownCell(localizedTitlePreview(work))} | ${escapeMarkdownCell(sourcePreview(work))} | ${escapeMarkdownCell(imageMetadataPreview(work))} | ${escapeMarkdownCell(hiddenDraftState(work))} |`),
+    '| # | Slug | 标题 | 大类 / 类型 | 首次日期 | 多译名预览 | 来源 | 外部封面 | 候选分组 | 状态 |',
+    '| ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...works.map((work, index) => `| ${index + 1} | ${escapeMarkdownCell(work.slug)} | ${escapeMarkdownCell(work.title)} | ${escapeMarkdownCell([work.mediaGroup, work.mediaType].filter(Boolean).join(' / '))} | ${escapeMarkdownCell(work.firstPublishedLabel || '')} | ${escapeMarkdownCell(localizedTitlePreview(work))} | ${escapeMarkdownCell(sourcePreview(work))} | ${escapeMarkdownCell(imageMetadataPreview(work))} | ${escapeMarkdownCell(workGroupPreview(work))} | ${escapeMarkdownCell(hiddenDraftState(work))} |`),
     '',
     '## 导入前检查建议',
     '',
@@ -167,6 +208,7 @@ export function createPayloadSeedPreviewReport(seed, { inputPath = '' } = {}) {
     '- 优先检查同名、同译名、同来源 ID 的候选是否有重复。',
     '- 多译名来自外部来源时只作为候选元数据，导入后仍建议人工复核。',
     '- 外部封面只作为候选 URL 元数据，不代表已下载、已上传或已公开展示。',
+    '- 候选系列分组只用于复核和预览，不代表已经确认同系列导航。',
     '',
   ]
 
