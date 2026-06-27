@@ -81,7 +81,7 @@ export const Works: CollectionConfig = {
     plural: '作品',
   },
   admin: {
-    defaultColumns: ['title', 'mediaType', 'rank', 'reviewStatus', 'evidenceStrength', 'isLiteVisible', 'status', 'updatedAt'],
+    defaultColumns: ['title', 'siteId', 'mediaType', 'rank', 'reviewStatus', 'evidenceStrength', 'isLiteVisible', 'status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'title',
   },
@@ -109,6 +109,15 @@ export const Works: CollectionConfig = {
       unique: true,
       admin: {
         description: '用于 URL 和导入匹配，例如 magical-girl-lyrical-nanoha。',
+      },
+    },
+    {
+      name: 'siteId',
+      type: 'text',
+      label: '站内 ID',
+      unique: true,
+      admin: {
+        description: '本站内部稳定唯一标识，用于迁移、导入、跨来源合并和人工追踪。',
       },
     },
     {
@@ -255,21 +264,6 @@ export const Works: CollectionConfig = {
         { name: 'url', type: 'text', label: '来源链接' },
         { name: 'fetchedAt', type: 'date', label: '采集时间' },
         { name: 'note', type: 'textarea', label: '来源备注' },
-      ],
-    },
-    {
-      name: 'candidateReasons',
-      type: 'array',
-      label: '入选候选理由',
-      admin: {
-        description: '例如 Bangumi 标签命中、AniList Yuri tag、Wikidata 类型匹配、旧站已有记录等。',
-      },
-      fields: [
-        {
-          name: 'value',
-          type: 'text',
-          label: '理由',
-        },
       ],
     },
     {
