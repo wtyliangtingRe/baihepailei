@@ -5,7 +5,7 @@ import { parseDateWithPrecision } from '../tools/source_import/lib/date-precisio
 import { parseJsonl, stringifyJsonl } from '../tools/source_import/lib/jsonl.mjs'
 import { createRawSourceRecord, sourceRecordToCandidateWork } from '../tools/source_import/lib/source-record.mjs'
 import { slugify, uniqueSlug } from '../tools/source_import/lib/slug.mjs'
-import { dedupeCandidates } from '../tools/source_import/scripts/dedupe-candidates.mjs'
+import { dedupeCandidates, uniqueCandidateSources } from '../tools/source_import/scripts/dedupe-candidates.mjs'
 import { normalizeCandidateRecords } from '../tools/source_import/scripts/normalize-candidates.mjs'
 import { candidateSlugBase, toPayloadSeed } from '../tools/source_import/scripts/to-payload-seed.mjs'
 
@@ -112,8 +112,35 @@ test('normalize and dedupe candidates by external IDs', () => {
   assert.equal(candidates.length, 2)
   assert.equal(result.deduped.length, 1)
   assert.equal(result.conflicts.length, 0)
-  assert.equal(result.deduped[0].candidateSources.length, 2)
+  assert.equal(result.deduped[0].candidateSources.length, 1)
   assert.equal(result.deduped[0].candidateSources[0].externalId, '1')
+})
+
+test('candidate source link dedupe ignores fetchedAt and merges notes', () => {
+  const sources = uniqueCandidateSources([
+    {
+      source: 'bangumi',
+      label: 'Bangumi',
+      externalId: '1',
+      url: 'https://bgm.tv/subject/1',
+      fetchedAt: '2026-06-27T00:00:00.000Z',
+      note: 'Bangumi 标签命中：百合(120)',
+    },
+    {
+      source: 'bangumi',
+      label: 'Bangumi',
+      externalId: '1',
+      url: 'https://bgm.tv/subject/1',
+      fetchedAt: '2026-06-27T00:00:01.000Z',
+      note: 'Bangumi 标签搜索命中：百合',
+    },
+  ])
+
+  assert.equal(sources.length, 1)
+  assert.equal(sources[0].externalId, '1')
+  assert.equal(sources[0].fetchedAt, '2026-06-27T00:00:00.000Z')
+  assert.match(sources[0].note, /标签命中/u)
+  assert.match(sources[0].note, /标签搜索命中/u)
 })
 
 test('candidate slug base prefers stable external IDs over non-Latin titles', () => {
