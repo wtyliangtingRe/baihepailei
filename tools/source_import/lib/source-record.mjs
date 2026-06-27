@@ -1,4 +1,5 @@
 import { parseDateWithPrecision } from './date-precision.mjs'
+import { normalizeMediaGroup } from './media-groups.mjs'
 import { normalizeText, slugify } from './slug.mjs'
 
 const DEFAULT_WORK_STATUS = {
@@ -51,12 +52,47 @@ export function normalizeAliasList(values) {
   return aliases
 }
 
+function cleanArrayRows(rows) {
+  return Array.isArray(rows) ? rows.filter(Boolean) : []
+}
+
+function normalizeLocalizedTitleRows(rows) {
+  const seen = new Set()
+  const output = []
+
+  for (const row of cleanArrayRows(rows)) {
+    const title = normalizeText(typeof row === 'string' ? row : row?.title)
+    if (!title) continue
+
+    const language = typeof row === 'object' ? row.language || 'unknown' : 'unknown'
+    const region = typeof row === 'object' ? row.region || '' : ''
+    const kind = typeof row === 'object' ? row.kind || 'alias' : 'alias'
+    const key = [title.toLowerCase(), language, region, kind].join('|')
+    if (seen.has(key)) continue
+    seen.add(key)
+
+    output.push({
+      title,
+      language,
+      region,
+      kind,
+      isPrimary: typeof row === 'object' ? Boolean(row.isPrimary) : false,
+      source: typeof row === 'object' ? row.source || undefined : undefined,
+      note: typeof row === 'object' ? row.note || undefined : undefined,
+    })
+  }
+
+  return output
+}
+
 export function createCandidateWork(input) {
   const title = normalizeText(input.title || input.name || input.name_cn || input.originalTitle)
   const originalTitle = normalizeText(input.originalTitle || input.name || '')
   const dateInfo = parseDateWithPrecision(input.firstPublishedLabel || input.firstPublishedAt || input.date)
   const sourceRecord = input.sourceRecord || null
   const fallbackSlug = input.siteId || title || originalTitle || 'candidate-work'
+  const mediaType = input.mediaType || 'unknown'
+  const mediaGroup = normalizeMediaGroup(input.mediaGroup, mediaType)
 
   return {
     siteId: input.siteId ?? null,
@@ -67,7 +103,9 @@ export function createCandidateWork(input) {
     evidenceStrength: input.evidenceStrength || DEFAULT_WORK_STATUS.evidenceStrength,
     originalTitle: originalTitle || undefined,
     aliases: normalizeAliasList(input.aliases || []),
-    mediaType: input.mediaType || 'unknown',
+    localizedTitles: normalizeLocalizedTitleRows(input.localizedTitles || []),
+    mediaGroup,
+    mediaType,
     format: input.format || 'unknown',
     firstPublishedAt: dateInfo.date,
     firstPublishedPrecision: dateInfo.precision,
@@ -92,6 +130,8 @@ export function sourceRecordToCandidateWork(record) {
     title,
     originalTitle,
     aliases,
+    localizedTitles: raw.localizedTitles || record.localizedTitles || [],
+    mediaGroup: raw.mediaGroup || record.mediaGroup,
     mediaType: raw.mediaType || record.mediaType || 'unknown',
     format: raw.format || record.format || 'unknown',
     firstPublishedLabel: raw.date || raw.firstPublishedLabel || record.date || record.firstPublishedLabel,

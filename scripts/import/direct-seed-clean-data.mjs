@@ -3,6 +3,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { normalizeMediaGroup } from '../../tools/source_import/lib/media-groups.mjs'
+
 const DEFAULT_COLLECTION_ORDER = ['rules', 'terms', 'creators', 'works']
 const WORK_EXTERNAL_ID_FIELDS = ['bangumiSubjectId', 'anilistMediaId', 'vndbId', 'wikidataQid', 'malId', 'officialUrl']
 
@@ -265,6 +267,22 @@ function cleanObject(value) {
   return entries.length > 0 ? Object.fromEntries(entries) : undefined
 }
 
+function localizedTitleValues(rows) {
+  if (!Array.isArray(rows)) return []
+  return rows
+    .map((row) => (typeof row === 'string' ? row : row?.title))
+    .map(normalizeValue)
+    .filter(Boolean)
+}
+
+function localizedNameValues(rows) {
+  if (!Array.isArray(rows)) return []
+  return rows
+    .map((row) => (typeof row === 'string' ? row : row?.name))
+    .map(normalizeValue)
+    .filter(Boolean)
+}
+
 function buildSearchText(parts) {
   const seen = new Set()
   const lines = []
@@ -364,10 +382,12 @@ export function cleanDoc(collection, input) {
     const existingAliases = arrayRowsToValues(doc.aliases)
     const aliasesFromNotes = splitAliasText(findHeadingValue(notesText, ['别名', '其他名称']))
     const aliases = valuesToArrayRows([...existingAliases, ...aliasesFromNotes])
+    const localizedNames = cleanArrayRows(doc.localizedNames)
     const rank = doc.rank && doc.rank !== 'unknown' ? doc.rank : inferRankFromLegacyPage(doc.legacyXWikiPage)
     const searchText = doc.searchText || buildSearchText([
       doc.name,
       aliases.map((item) => item.value),
+      localizedNameValues(localizedNames),
       rank,
       doc.slug,
       doc.legacyXWikiPage,
@@ -380,10 +400,42 @@ export function cleanDoc(collection, input) {
       slug: doc.slug,
       rank,
       aliases,
+      localizedNames,
       isLiteVisible: doc.isLiteVisible ?? true,
       isFullVisible: doc.isFullVisible ?? true,
       notes: doc.notes,
       searchText,
+      legacyXWikiPage: doc.legacyXWikiPage,
+      status: doc.status || 'draft',
+    }
+  }
+
+  if (collection === 'organizations') {
+    const notesText = richTextToPlainText(doc.notes)
+    const aliases = valuesToArrayRows(arrayRowsToValues(doc.aliases))
+    const localizedNames = cleanArrayRows(doc.localizedNames)
+    const searchText = doc.searchText || buildSearchText([
+      doc.name,
+      aliases.map((item) => item.value),
+      localizedNameValues(localizedNames),
+      doc.type,
+      doc.slug,
+      doc.legacyXWikiPage,
+      notesText,
+    ])
+
+    return {
+      siteId: doc.siteId,
+      name: doc.name,
+      slug: doc.slug,
+      type: doc.type || 'other',
+      aliases,
+      localizedNames,
+      notes: doc.notes,
+      sourceLinks: doc.sourceLinks,
+      searchText,
+      isLiteVisible: doc.isLiteVisible ?? true,
+      isFullVisible: doc.isFullVisible ?? true,
       legacyXWikiPage: doc.legacyXWikiPage,
       status: doc.status || 'draft',
     }
@@ -396,6 +448,9 @@ export function cleanDoc(collection, input) {
     const existingAliases = arrayRowsToValues(doc.aliases)
     const aliasesFromSummary = splitAliasText(findHeadingValue(summaryText, ['其他名称', '别名']))
     const aliases = valuesToArrayRows([...existingAliases, ...aliasesFromSummary])
+    const localizedTitles = cleanArrayRows(doc.localizedTitles)
+    const mediaType = doc.mediaType || 'unknown'
+    const mediaGroup = normalizeMediaGroup(doc.mediaGroup, mediaType)
     const rank = doc.rank && doc.rank !== 'unknown' ? doc.rank : inferRankFromLegacyPage(doc.legacyXWikiPage)
     const creatorHint = findHeadingValue(summaryText, ['作者', '开发商', '发行商', '出版社', '其他创作者'])
     const candidateSources = cleanArrayRows(doc.candidateSources)
@@ -407,9 +462,11 @@ export function cleanDoc(collection, input) {
       doc.title,
       originalTitle,
       aliases.map((item) => item.value),
+      localizedTitleValues(localizedTitles),
       creatorHint,
       rank,
-      doc.mediaType,
+      mediaGroup,
+      mediaType,
       doc.format,
       doc.firstPublishedLabel,
       doc.slug,
@@ -428,7 +485,9 @@ export function cleanDoc(collection, input) {
       evidenceStrength: doc.evidenceStrength || 'unassessed',
       originalTitle,
       aliases,
-      mediaType: doc.mediaType || 'unknown',
+      localizedTitles,
+      mediaGroup,
+      mediaType,
       format: doc.format || 'unknown',
       firstPublishedAt: doc.firstPublishedAt || undefined,
       firstPublishedPrecision: doc.firstPublishedPrecision || 'unknown',
