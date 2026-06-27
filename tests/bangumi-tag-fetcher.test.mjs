@@ -2,6 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  createCurlJsonArgs,
+} from '../tools/source_import/scripts/fetch-bangumi-tagged-subjects.mjs'
+import {
   annotateBangumiYuriSignal,
   bangumiSubjectToCandidateInput,
   scoreBangumiYuriTags,
@@ -72,4 +75,34 @@ test('Annotated Bangumi signal flows into candidate source notes and score', () 
 
   assert.equal(candidate.yuriCandidateScore, 1)
   assert.match(candidate.candidateSources[0].note, /百合\(120\)/u)
+})
+
+test('Bangumi fetcher builds curl args with a scoped proxy', () => {
+  const args = createCurlJsonArgs(
+    new URL('https://api.bgm.tv/v0/search/subjects?limit=5&offset=0'),
+    {
+      method: 'POST',
+      headers: {
+        'User-Agent': 'BaihepaileiSourceImport/0.1',
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ keyword: '百合' }),
+    },
+    { proxy: 'socks5h://127.0.0.1:10808' },
+  )
+
+  assert.deepEqual(args.slice(0, 8), [
+    '--silent',
+    '--show-error',
+    '--fail',
+    '--location',
+    '--connect-timeout',
+    '30',
+    '--request',
+    'POST',
+  ])
+  assert.match(args.join('\n'), /--proxy\nsocks5h:\/\/127\.0\.0\.1:10808/u)
+  assert.match(args.join('\n'), /--data-binary\n\{"keyword":"百合"\}/u)
+  assert.equal(args.at(-1), 'https://api.bgm.tv/v0/search/subjects?limit=5&offset=0')
 })
