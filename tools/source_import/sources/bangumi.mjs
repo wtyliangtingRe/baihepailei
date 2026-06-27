@@ -1,3 +1,4 @@
+import { mediaGroupForType } from '../lib/media-groups.mjs'
 import { createRawSourceRecord } from '../lib/source-record.mjs'
 
 const BANGUMI_SUBJECT_BASE_URL = 'https://bgm.tv/subject'
@@ -36,24 +37,127 @@ function tagCount(tag) {
   return Number.isFinite(count) && count > 0 ? count : 0
 }
 
-function getInfoboxValue(subject, keys) {
+function rawInfoboxValues(subject, keys) {
   const infobox = Array.isArray(subject?.infobox) ? subject.infobox : []
   const keySet = new Set(keys)
+  const values = []
 
   for (const item of infobox) {
     if (!item || !keySet.has(item.key)) continue
 
-    if (typeof item.value === 'string') return normalizeText(item.value)
+    if (typeof item.value === 'string') {
+      values.push(item.value)
+      continue
+    }
+
     if (Array.isArray(item.value)) {
-      return item.value
-        .map((value) => (typeof value === 'string' ? value : value?.v || value?.name || ''))
-        .map(normalizeText)
-        .filter(Boolean)
-        .join(' / ')
+      values.push(...item.value.map((value) => (typeof value === 'string' ? value : value?.v || value?.name || '')))
     }
   }
 
-  return ''
+  return values
+    .flatMap((value) => String(value || '').split(/\s*\/\s*|\s*、\s*|\s*;\s*|\s*；\s*/gu))
+    .map(normalizeText)
+    .filter(Boolean)
+}
+
+function getInfoboxValue(subject, keys) {
+  return rawInfoboxValues(subject, keys).join(' / ')
+}
+
+function uniqueValues(values) {
+  const seen = new Set()
+  const output = []
+
+  for (const value of values.map(normalizeText).filter(Boolean)) {
+    const key = value.toLowerCase()
+    if (seen.has(key)) continue
+
+    seen.add(key)
+    output.push(value)
+  }
+
+  return output
+}
+
+function inferTitleLanguage(title, fallback = 'unknown') {
+  const value = normalizeText(title)
+  if (!value) return fallback
+  if (/[ぁ-ゖァ-ヺー]/u.test(value)) return 'ja'
+  if (/[가-힣]/u.test(value)) return 'ko'
+  if (/^[\p{Script=Latin}\p{Number}\p{Punctuation}\p{Separator}\p{Symbol}]+$/u.test(value)) return 'en'
+  if (/[\p{Script=Han}]/u.test(value)) return fallback
+  return fallback
+}
+
+function addLocalizedTitle(rows, seen, title, { language = 'unknown', region = '', kind = 'alias', isPrimary = false, note = '' } = {}) {
+  const normalizedTitle = normalizeText(title)
+  if (!normalizedTitle) return
+
+  const key = [normalizedTitle.toLowerCase(), language, region, kind].join('|')
+  if (seen.has(key)) return
+
+  seen.add(key)
+  rows.push({
+    title: normalizedTitle,
+    language,
+    region,
+    kind,
+    isPrimary,
+    source: 'Bangumi',
+    note: note || undefined,
+  })
+}
+
+export function bangumiSubjectLocalizedTitles(subject) {
+  const rows = []
+  const seen = new Set()
+  const originalTitle = normalizeText(subject?.name || '')
+  const chineseTitle = normalizeText(subject?.name_cn || '')
+
+  addLocalizedTitle(rows, seen, originalTitle, {
+    language: inferTitleLanguage(originalTitle, 'unknown'),
+    region: inferTitleLanguage(originalTitle, 'unknown') === 'ja' ? 'JP' : '',
+    kind: 'original',
+    isPrimary: !chineseTitle,
+  })
+
+  addLocalizedTitle(rows, seen, chineseTitle, {
+    language: 'zh-Hans',
+    region: 'CN',
+    kind: 'localized',
+    isPrimary: Boolean(chineseTitle),
+  })
+
+  for (const title of rawInfoboxValues(subject, ['中文名', '简体中文名', '中文名称'])) {
+    addLocalizedTitle(rows, seen, title, { language: 'zh-Hans', region: 'CN', kind: 'localized' })
+  }
+
+  for (const title of rawInfoboxValues(subject, ['日文名', '日文名称', '原名'])) {
+    addLocalizedTitle(rows, seen, title, { language: inferTitleLanguage(title, 'ja'), region: 'JP', kind: 'original' })
+  }
+
+  for (const title of rawInfoboxValues(subject, ['英文名', '英文名称'])) {
+    addLocalizedTitle(rows, seen, title, { language: 'en', kind: 'official' })
+  }
+
+  for (const title of rawInfoboxValues(subject, ['别名', '别称', '其它名称', '其他名称'])) {
+    addLocalizedTitle(rows, seen, title, {
+      language: inferTitleLanguage(title, 'unknown'),
+      kind: 'alias',
+      note: 'Bangumi infobox alias',
+    })
+  }
+
+  return rows
+}
+
+function bangumiAliasTitles(subject) {
+  return uniqueValues([
+    subject?.name_cn,
+    subject?.name,
+    ...rawInfoboxValues(subject, ['中文名', '简体中文名', '中文名称', '日文名', '日文名称', '原名', '英文名', '英文名称', '别名', '别称', '其它名称', '其他名称']),
+  ])
 }
 
 function bestYuriRuleForTag(tagName) {
@@ -200,10 +304,7 @@ export function bangumiSubjectToCandidateInput(subject) {
   const originalTitle = normalizeText(subject?.name || '')
   const yuriSignal = subject?._baihepailei?.yuriTagSignal || scoreBangumiYuriTags(subject)
   const searchSignalTags = uniqueSearchSignalTags(subject?._baihepailei?.searchSignals)
-  const aliases = [
-    subject?.name_cn && subject?.name_cn !== title ? subject.name_cn : null,
-    subject?.name && subject?.name !== title ? subject.name : null,
-  ].filter(Boolean)
+  const aliases = bangumiAliasTitles(subject).filter((alias) => alias !== title)
   const sourceNote = yuriSignal.matchedTags.length > 0
     ? `Bangumi 标签命中：${yuriSignal.matchedTags.map((tag) => `${tag.name}(${tag.count})`).join('、')}`
     : searchSignalTags.length > 0
@@ -214,6 +315,8 @@ export function bangumiSubjectToCandidateInput(subject) {
     title,
     originalTitle,
     aliases,
+    localizedTitles: bangumiSubjectLocalizedTitles(subject),
+    mediaGroup: mediaGroupForType(mappedType.mediaType),
     mediaType: mappedType.mediaType,
     format: mappedType.format,
     firstPublishedLabel: normalizeText(subject?.date || ''),
