@@ -1,8 +1,8 @@
 param(
   [string]$Out = "data_local/raw/bangumi/bangumi-yuri-tagged.jsonl",
   [string]$Report = "data_local/reports/bangumi-yuri-tagged-summary.json",
-  [string[]]$Tags = @("百合", "轻百合", "GL"),
-  [int[]]$Types = @(1, 2, 4),
+  [string]$Tags = "百合,轻百合,GL",
+  [string]$Types = "1,2,4",
   [int]$Limit = 10,
   [int]$Pages = 1,
   [string]$Sort = "rank",
@@ -14,6 +14,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+$TagList = $Tags -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+$TypeList = $Types -split "," | ForEach-Object { [int]$_.Trim() }
 
 function New-Headers {
   $headers = @{
@@ -144,8 +147,8 @@ Remove-Item $Out -ErrorAction SilentlyContinue
 $fetchedAt = (Get-Date).ToUniversalTime().ToString("o")
 $searched = @()
 
-foreach ($tag in $Tags) {
-  foreach ($type in $Types) {
+foreach ($tag in $TagList) {
+  foreach ($type in $TypeList) {
     for ($page = 0; $page -lt $Pages; $page++) {
       $offset = $page * $Limit
       Write-Host "Searching tag=$tag type=$type offset=$offset"
@@ -191,8 +194,8 @@ foreach ($subject in $searched) {
 
 $summary = [ordered]@{
   fetchedAt = $fetchedAt
-  tags = $Tags
-  types = $Types
+  tags = $TagList
+  types = $TypeList
   limit = $Limit
   pages = $Pages
   sort = $Sort
