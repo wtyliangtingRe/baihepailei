@@ -2,6 +2,8 @@ import type { CollectionConfig, CollectionSlug } from 'payload'
 
 import { publishedOrSignedIn, trustedAndUp } from '@/access/roles'
 
+import { localizedTitlesField, mediaGroupOptions } from './fields/localizedMetadata'
+
 const reviewStatusOptions = [
   { label: '待复核', value: 'pending' },
   { label: '已复核', value: 'reviewed' },
@@ -81,7 +83,7 @@ export const Works: CollectionConfig = {
     plural: '作品',
   },
   admin: {
-    defaultColumns: ['title', 'siteId', 'mediaType', 'rank', 'reviewStatus', 'evidenceStrength', 'isLiteVisible', 'status', 'updatedAt'],
+    defaultColumns: ['title', 'siteId', 'mediaGroup', 'mediaType', 'rank', 'reviewStatus', 'evidenceStrength', 'isLiteVisible', 'status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'title',
   },
@@ -180,6 +182,17 @@ export const Works: CollectionConfig = {
           label: '别名',
         },
       ],
+    },
+    localizedTitlesField(),
+    {
+      name: 'mediaGroup',
+      type: 'select',
+      label: '作品大类',
+      defaultValue: 'unknown',
+      options: mediaGroupOptions,
+      admin: {
+        description: '前台筛选用的大类：动画、漫画、小说、游戏等。后续导入可由作品类型自动推导。',
+      },
     },
     {
       name: 'mediaType',
