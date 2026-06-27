@@ -20,11 +20,11 @@ const DEFAULT_FORMAT_BY_MEDIA_TYPE = new Map([
 ])
 
 const YURI_TAG_RULES = [
-  { label: '百合', pattern: /百合/u, weight: 1 },
-  { label: '轻百合', pattern: /(轻|輕)百合/u, weight: 0.75 },
-  { label: 'GL', pattern: /^gl$/iu, weight: 1 },
-  { label: 'Yuri', pattern: /^yuri$/iu, weight: 0.9 },
-  { label: 'ガールズラブ', pattern: /ガールズラブ|ガルラブ/iu, weight: 1 },
+  { label: '轻百合', pattern: /^(轻|輕)百合$/u, weight: 0.75, priority: 20 },
+  { label: '百合', pattern: /^百合$/u, weight: 1, priority: 10 },
+  { label: 'GL', pattern: /^gl$/iu, weight: 1, priority: 10 },
+  { label: 'Yuri', pattern: /^yuri$/iu, weight: 0.9, priority: 10 },
+  { label: 'ガールズラブ', pattern: /^(ガールズラブ|ガルラブ)$/iu, weight: 1, priority: 10 },
 ]
 
 function normalizeText(value) {
@@ -62,7 +62,7 @@ function bestYuriRuleForTag(tagName) {
 
   if (matches.length === 0) return null
 
-  return matches.toSorted((a, b) => b.weight - a.weight)[0]
+  return matches.toSorted((a, b) => b.priority - a.priority || b.weight - a.weight)[0]
 }
 
 function hasTag(subject, patterns) {
