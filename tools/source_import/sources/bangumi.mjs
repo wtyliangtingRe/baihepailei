@@ -19,8 +19,21 @@ const DEFAULT_FORMAT_BY_MEDIA_TYPE = new Map([
   ['live_action', 'live_action'],
 ])
 
+const YURI_TAG_RULES = [
+  { label: '百合', pattern: /百合/u, weight: 1 },
+  { label: '轻百合', pattern: /(轻|輕)百合/u, weight: 0.75 },
+  { label: 'GL', pattern: /^gl$/iu, weight: 1 },
+  { label: 'Yuri', pattern: /^yuri$/iu, weight: 0.9 },
+  { label: 'ガールズラブ', pattern: /ガールズラブ|ガルラブ/iu, weight: 1 },
+]
+
 function normalizeText(value) {
   return String(value ?? '').normalize('NFKC').trim().replace(/\s+/gu, ' ')
+}
+
+function tagCount(tag) {
+  const count = Number(tag?.count ?? tag?.total ?? tag?.votes ?? 0)
+  return Number.isFinite(count) && count > 0 ? count : 0
 }
 
 function getInfoboxValue(subject, keys) {
@@ -41,6 +54,15 @@ function getInfoboxValue(subject, keys) {
   }
 
   return ''
+}
+
+function bestYuriRuleForTag(tagName) {
+  const normalized = normalizeText(tagName)
+  const matches = YURI_TAG_RULES.filter((rule) => rule.pattern.test(normalized))
+
+  if (matches.length === 0) return null
+
+  return matches.toSorted((a, b) => b.weight - a.weight)[0]
 }
 
 function hasTag(subject, patterns) {
@@ -92,6 +114,55 @@ export function mapBangumiSubjectType(subject) {
   }
 }
 
+export function scoreBangumiYuriTags(subject) {
+  const matchedTags = []
+
+  for (const tag of Array.isArray(subject?.tags) ? subject.tags : []) {
+    const name = normalizeText(tag?.name)
+    const rule = bestYuriRuleForTag(name)
+
+    if (!rule) continue
+
+    const count = tagCount(tag)
+    matchedTags.push({
+      name,
+      count,
+      matchedAs: rule.label,
+      weight: rule.weight,
+      weightedCount: count * rule.weight,
+    })
+  }
+
+  matchedTags.sort((a, b) => b.weightedCount - a.weightedCount || b.count - a.count || a.name.localeCompare(b.name))
+
+  const weightedScore = matchedTags.reduce((sum, tag) => sum + tag.weightedCount, 0)
+  const maxCount = matchedTags.reduce((max, tag) => Math.max(max, tag.count), 0)
+
+  return {
+    matchedTags,
+    weightedScore,
+    maxCount,
+    candidateScore: Math.min(1, weightedScore / 100),
+  }
+}
+
+export function subjectPassesYuriTagThreshold(subject, { minWeightedScore = 5, minTopTagCount = 5 } = {}) {
+  const signal = scoreBangumiYuriTags(subject)
+  return signal.weightedScore >= minWeightedScore || signal.maxCount >= minTopTagCount
+}
+
+export function annotateBangumiYuriSignal(subject) {
+  const signal = scoreBangumiYuriTags(subject)
+
+  return {
+    ...subject,
+    _baihepailei: {
+      ...(subject?._baihepailei || {}),
+      yuriTagSignal: signal,
+    },
+  }
+}
+
 export function bangumiSubjectToRawSource(subject, { fetchedAt } = {}) {
   const id = subject?.id ?? subject?.subject_id
   if (!id) throw new Error('Bangumi subject id is required')
@@ -112,6 +183,7 @@ export function bangumiSubjectToCandidateInput(subject) {
   const mappedType = mapBangumiSubjectType(subject)
   const title = normalizeText(subject?.name_cn || subject?.name || '')
   const originalTitle = normalizeText(subject?.name || '')
+  const yuriSignal = subject?._baihepailei?.yuriTagSignal || scoreBangumiYuriTags(subject)
   const aliases = [
     subject?.name_cn && subject?.name_cn !== title ? subject.name_cn : null,
     subject?.name && subject?.name !== title ? subject.name : null,
@@ -134,8 +206,11 @@ export function bangumiSubjectToCandidateInput(subject) {
         externalId: id ? String(id) : '',
         url: id ? bangumiSubjectUrl(id) : '',
         fetchedAt: null,
-        note: '',
+        note: yuriSignal.matchedTags.length > 0
+          ? `Bangumi 标签命中：${yuriSignal.matchedTags.map((tag) => `${tag.name}(${tag.count})`).join('、')}`
+          : '',
       },
     ],
+    yuriCandidateScore: yuriSignal.candidateScore,
   }
 }
