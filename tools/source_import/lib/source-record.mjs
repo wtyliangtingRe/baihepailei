@@ -1,6 +1,7 @@
 import { parseDateWithPrecision } from './date-precision.mjs'
 import { normalizeMediaGroup } from './media-groups.mjs'
 import { normalizeText, slugify } from './slug.mjs'
+import { inferCandidateWorkGroup, normalizeWorkGroup } from './work-groups.mjs'
 
 const DEFAULT_WORK_STATUS = {
   rank: 'unknown',
@@ -93,6 +94,7 @@ export function createCandidateWork(input) {
   const fallbackSlug = input.siteId || title || originalTitle || 'candidate-work'
   const mediaType = input.mediaType || 'unknown'
   const mediaGroup = normalizeMediaGroup(input.mediaGroup, mediaType)
+  const candidateForGrouping = { ...input, title, originalTitle }
 
   return {
     siteId: input.siteId ?? null,
@@ -113,6 +115,7 @@ export function createCandidateWork(input) {
     externalIds: input.externalIds || {},
     candidateSources: input.candidateSources || (sourceRecord ? [sourceRecordToCandidateSource(sourceRecord)] : []),
     externalCoverImages: cleanArrayRows(input.externalCoverImages || []),
+    workGroup: normalizeWorkGroup(input.workGroup) || inferCandidateWorkGroup(candidateForGrouping),
     yuriCandidateScore: input.yuriCandidateScore ?? null,
     isLiteVisible: input.isLiteVisible ?? false,
     isFullVisible: input.isFullVisible ?? false,
@@ -139,6 +142,7 @@ export function sourceRecordToCandidateWork(record) {
     externalIds: raw.externalIds || record.externalIds || {},
     sourceRecord: record,
     externalCoverImages: raw.externalCoverImages || record.externalCoverImages || [],
+    workGroup: raw.workGroup || record.workGroup,
     yuriCandidateScore: raw.yuriCandidateScore ?? record.yuriCandidateScore ?? null,
   })
 }
