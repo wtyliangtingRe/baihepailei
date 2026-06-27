@@ -16,6 +16,7 @@ _audit_out/
 _audit_out_full_content/
 _clean_export/
 _clean_attachments/
+data_local/
 
 # XWiki / database backups
 baihepailei_data_backup/
