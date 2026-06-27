@@ -39,6 +39,15 @@ const evidenceStrengthLabels: Record<string, string> = {
   strong: '证据强',
 }
 
+const mediaGroupLabels: Record<string, string> = {
+  anime: '动画',
+  manga: '漫画',
+  novel: '小说',
+  game: '游戏',
+  other: '其他',
+  unknown: '未知类型',
+}
+
 function collectionLabel(collection: string) {
   if (collection === 'works') return '作品'
   if (collection === 'creators') return '创作者'
@@ -57,6 +66,11 @@ function displayRank(rank?: string) {
   if (!rank || rank === 'unknown') return ''
   if (rank === 'AA') return 'S级'
   return `${rank}级`
+}
+
+function mediaGroupLabel(value?: string) {
+  if (!value) return ''
+  return mediaGroupLabels[value] || value
 }
 
 function organizationTypeLabel(value?: string) {
@@ -116,9 +130,14 @@ function BasicInfo({ item }: { item: SearchItem }) {
   const fields: Array<[string, string | string[] | undefined]> = [
     ['复核状态', reviewStatusLabel(item.reviewStatus)],
     ['证据强度', evidenceStrengthLabel(item.evidenceStrength)],
+    ['作品大类', mediaGroupLabel(item.mediaGroup)],
+    ['作品类型', item.mediaType],
+    ['作品形态', item.format],
+    ['首次发表', item.firstPublishedLabel],
     ['机构类型', organizationTypeLabel(item.organizationType)],
     ['证据类型', evidenceTypeLabel(item.evidenceType)],
     ['原名', item.originalTitle],
+    ['译名 / 地区名', item.localizedTitles || item.localizedNames],
     ['别名', item.aliases],
     ['关联作品', item.relatedWorks],
     ['关联创作者', item.relatedCreators],
@@ -143,6 +162,7 @@ function BasicInfo({ item }: { item: SearchItem }) {
 
 export default function SearchIndexDetail({ item }: { item: SearchItem }) {
   const rank = displayRank(item.rank)
+  const mediaGroup = mediaGroupLabel(item.mediaGroup)
   const organizationType = organizationTypeLabel(item.organizationType)
   const evidenceType = evidenceTypeLabel(item.evidenceType)
   const reviewStatus = reviewStatusLabel(item.reviewStatus)
@@ -164,6 +184,9 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
         <h1>{item.title}</h1>
         <div className="detail-chips">
           {rank ? <span>{rank}</span> : null}
+          {mediaGroup ? <span>{mediaGroup}</span> : null}
+          {item.mediaType ? <span>{item.mediaType}</span> : null}
+          {item.firstPublishedLabel ? <span>{item.firstPublishedLabel}</span> : null}
           {reviewStatus ? <span>{reviewStatus}</span> : null}
           {evidenceStrength ? <span>{evidenceStrength}</span> : null}
           {organizationType ? <span>{organizationType}</span> : null}
