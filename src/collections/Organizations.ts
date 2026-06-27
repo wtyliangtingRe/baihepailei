@@ -9,7 +9,7 @@ export const Organizations: CollectionConfig = {
     plural: '机构',
   },
   admin: {
-    defaultColumns: ['name', 'type', 'isLiteVisible', 'isFullVisible', 'status', 'updatedAt'],
+    defaultColumns: ['name', 'siteId', 'type', 'isLiteVisible', 'isFullVisible', 'status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'name',
   },
@@ -37,6 +37,15 @@ export const Organizations: CollectionConfig = {
       unique: true,
       admin: {
         description: '用于 URL 和导入匹配，例如 hobunsha、studio-example。',
+      },
+    },
+    {
+      name: 'siteId',
+      type: 'text',
+      label: '站内 ID',
+      unique: true,
+      admin: {
+        description: '本站内部稳定唯一标识，用于迁移、导入、跨来源合并和人工追踪。',
       },
     },
     {
