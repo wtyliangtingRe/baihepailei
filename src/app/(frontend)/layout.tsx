@@ -30,12 +30,14 @@ const navItems = [
   { href: '/works', label: '作品' },
   { href: '/creators', label: '创作者' },
   { href: '/organizations', label: '机构' },
+  { href: '/terms', label: '名词解释' },
   { href: '/rules', label: '规则' },
   { href: '/recommendations', label: '推荐' },
   { href: '/me/lists', label: '我的列表' },
   { href: '/updates', label: '最近更新' },
   { href: '/feedback', label: '反馈' },
   { href: '/search', label: '搜索' },
+  { href: '/admin', label: '后台' },
 ]
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
