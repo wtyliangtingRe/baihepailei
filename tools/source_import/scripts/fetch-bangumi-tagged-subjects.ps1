@@ -14,6 +14,15 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+
+function Write-Utf8NoBomFile($Path, $Text) {
+  [System.IO.File]::WriteAllText($Path, $Text, $Utf8NoBom)
+}
+
+function Add-Utf8NoBomLine($Path, $Text) {
+  [System.IO.File]::AppendAllText($Path, "$Text`n", $Utf8NoBom)
+}
 
 function Join-Chars([int[]]$Codes) {
   return -join ($Codes | ForEach-Object { [char]$_ })
@@ -158,6 +167,7 @@ function Get-BangumiSubject($Id) {
 New-Item -ItemType Directory -Force (Split-Path $Out) | Out-Null
 New-Item -ItemType Directory -Force (Split-Path $Report) | Out-Null
 Remove-Item $Out -ErrorAction SilentlyContinue
+Remove-Item $Report -ErrorAction SilentlyContinue
 
 $fetchedAt = (Get-Date).ToUniversalTime().ToString("o")
 $searched = @()
@@ -200,7 +210,7 @@ foreach ($subject in $searched) {
       raw = $detail
     }
 
-    Add-Content -Path $Out -Value ($rawRecord | ConvertTo-Json -Depth 100 -Compress) -Encoding utf8NoBOM
+    Add-Utf8NoBomLine -Path $Out -Text ($rawRecord | ConvertTo-Json -Depth 100 -Compress)
     $kept += $detail
   }
 
@@ -230,7 +240,7 @@ $summary = [ordered]@{
   })
 }
 
-$summary | ConvertTo-Json -Depth 100 | Set-Content -Path $Report -Encoding utf8NoBOM
+Write-Utf8NoBomFile -Path $Report -Text ($summary | ConvertTo-Json -Depth 100)
 
 Write-Host "Fetched $($kept.Count) Bangumi yuri-tagged subjects -> $Out"
 Write-Host "Wrote summary -> $Report"
