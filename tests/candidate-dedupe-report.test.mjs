@@ -54,6 +54,29 @@ test('candidate comparison auto-merges by original title and media type', () => 
   assert.equal(romanized.confidence, 'exact_original_title')
 })
 
+test('candidate comparison keeps exact original title version variants for review', () => {
+  const result = compareWorkCandidates(
+    candidate({
+      title: '百合星人奈绪子',
+      originalTitle: '百合星人ナオコサン',
+      mediaType: 'anime',
+      firstPublishedAt: '2010-12-18',
+      firstPublishedLabel: '2010',
+    }),
+    candidate({
+      title: '百合星人奈绪子 OVA',
+      originalTitle: '百合星人ナオコサン',
+      mediaType: 'anime',
+      firstPublishedAt: '2012-02-15',
+      firstPublishedLabel: '2012',
+    }),
+  )
+
+  assert.equal(result.action, 'conflict')
+  assert.equal(result.confidence, 'same_original_title_version_variant')
+  assert.match(result.signals.join('\n'), /version or edition marker/u)
+})
+
 test('dedupe keeps possible same-title date matches as review items', () => {
   const result = dedupeCandidates([
     candidate({ title: '终将成为你', originalTitle: 'Bloom Into You', firstPublishedLabel: '2015' }),
@@ -74,6 +97,30 @@ test('dedupe keeps same-title different-media matches as review items', () => {
   assert.equal(result.deduped.length, 2)
   assert.equal(result.conflicts.length, 1)
   assert.equal(result.conflicts[0].confidence, 'same_title_different_media')
+})
+
+test('dedupe keeps exact original title version variants as review items', () => {
+  const result = dedupeCandidates([
+    candidate({
+      title: '百合星人奈绪子 OVA',
+      originalTitle: '百合星人ナオコサン',
+      mediaType: 'anime',
+      firstPublishedLabel: '2012',
+      candidateSources: [{ source: 'bangumi', externalId: '24546' }],
+    }),
+    candidate({
+      title: '百合星人奈绪子',
+      originalTitle: '百合星人ナオコサン',
+      mediaType: 'anime',
+      firstPublishedLabel: '2010',
+      candidateSources: [{ source: 'bangumi', externalId: '10954' }],
+    }),
+  ])
+
+  assert.equal(result.deduped.length, 2)
+  assert.equal(result.merges.length, 0)
+  assert.equal(result.conflicts.length, 1)
+  assert.equal(result.conflicts[0].confidence, 'same_original_title_version_variant')
 })
 
 test('dedupe auto-merges exact external IDs and records merge metadata', () => {
