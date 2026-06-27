@@ -5,7 +5,7 @@ import { publishedOrSignedIn, trustedAndUp } from '@/access/roles'
 export const Rules: CollectionConfig = {
   slug: 'rules',
   admin: {
-    defaultColumns: ['title', 'category', 'isLiteVisible', 'isFullVisible', 'status', 'updatedAt'],
+    defaultColumns: ['title', 'siteId', 'category', 'isLiteVisible', 'isFullVisible', 'status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'title',
   },
@@ -29,6 +29,15 @@ export const Rules: CollectionConfig = {
       type: 'text',
       required: true,
       unique: true,
+    },
+    {
+      name: 'siteId',
+      type: 'text',
+      label: '站内 ID',
+      unique: true,
+      admin: {
+        description: '本站内部稳定唯一标识，用于迁移、导入、跨来源合并和人工追踪。',
+      },
     },
     {
       name: 'category',
