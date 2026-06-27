@@ -115,6 +115,14 @@ test('candidate slug base prefers stable external IDs over non-Latin titles', ()
   }), 'bangumi-18313')
 })
 
+test('candidate slug base lets external IDs override generated legacy slugs', () => {
+  assert.equal(candidateSlugBase({
+    title: '終將成為妳',
+    slug: 'e-e-æ2-æ-æ-1-4æ-e3-43-4a',
+    externalIds: { bangumiSubjectId: '73577' },
+  }), 'bangumi-73577')
+})
+
 test('Payload seed export keeps candidates as hidden drafts', () => {
   const seed = toPayloadSeed([
     {
