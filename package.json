@@ -26,7 +26,6 @@
     "source:to-payload": "node tools/source_import/scripts/to-payload-seed.mjs",
     "source:normalize:bangumi": "node tools/source_import/scripts/normalize-bangumi-subjects.mjs",
     "source:fetch:bangumi": "node tools/source_import/scripts/fetch-bangumi-tagged-subjects.mjs",
-    "source:fetch:bangumi:ps": "powershell -NoProfile -ExecutionPolicy Bypass -File ./tools/source_import/scripts/fetch-bangumi-tagged-subjects.ps1",
     "test:source-import": "node --test tests/source-import.test.mjs",
     "test:source-bangumi": "node --test tests/bangumi-source.test.mjs",
     "test:source-bangumi-fetch": "node --test tests/bangumi-tag-fetcher.test.mjs",
