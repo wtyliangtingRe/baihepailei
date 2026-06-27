@@ -280,6 +280,23 @@ export const Works: CollectionConfig = {
       ],
     },
     {
+      name: 'workGroup',
+      type: 'group',
+      label: '候选系列分组',
+      admin: {
+        description: '候选导入阶段生成的系列/条目归组提示，仅供后台复核；不代表已经确认公开系列导航。',
+      },
+      fields: [
+        { name: 'key', type: 'text', label: '分组 Key' },
+        { name: 'title', type: 'text', label: '分组标题' },
+        { name: 'relation', type: 'text', label: '关系类型' },
+        { name: 'orderLabel', type: 'text', label: '顺序标签' },
+        { name: 'source', type: 'text', label: '来源' },
+        { name: 'confidence', type: 'text', label: '置信标记' },
+        { name: 'note', type: 'textarea', label: '备注' },
+      ],
+    },
+    {
       name: 'yuriCandidateScore',
       type: 'number',
       label: '百合候选分',
