@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { readJsonl, writeJsonl } from '../lib/jsonl.mjs'
 import { sourceRecordToCandidateWork } from '../lib/source-record.mjs'
 
@@ -42,6 +45,8 @@ async function main() {
   console.log(`Normalized ${candidates.length} candidate works -> ${output}`)
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+
+if (isDirectRun) {
   await main()
 }
