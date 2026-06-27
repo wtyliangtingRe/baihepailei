@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const COLLECTION_ORDER = ['rules', 'terms', 'creators', 'works']
+const DEFAULT_COLLECTION_ORDER = ['rules', 'terms', 'creators', 'works']
+const WORK_EXTERNAL_ID_FIELDS = ['bangumiSubjectId', 'anilistMediaId', 'vndbId', 'wikidataQid', 'malId', 'officialUrl']
 
 function parseArgs(argv) {
   const args = {}
@@ -23,18 +25,18 @@ function parseArgs(argv) {
 
 function usage() {
   console.log(`Usage:
-  pnpm import:clean-seed -- --file <payload_seed_direct_v2_clean.json> [--url http://localhost:3000] [--dry-run] [--update-existing]
+  pnpm import:clean-seed -- --file <payload_seed.json> [--url http://localhost:3000] [--dry-run] [--update-existing] [--collections works]
 
 Required environment variables for real import:
   PAYLOAD_SEED_EMAIL
   PAYLOAD_SEED_PASSWORD
 
 Examples:
-  pnpm import:clean-seed -- --file "D:\\0GitHubtest\\Baihepailei\\_clean_real_data\\payload_seed_direct_v2_clean.json" --dry-run
+  pnpm import:clean-seed -- --file "E:\\data\\baihepailei\\data_local\\import_ready\\bangumi-yuri-tagged.payload.json" --collections works --dry-run
 
   $env:PAYLOAD_SEED_EMAIL="you@example.com"
   $env:PAYLOAD_SEED_PASSWORD="your-password"
-  pnpm import:clean-seed -- --file "D:\\0GitHubtest\\Baihepailei\\_clean_real_data\\payload_seed_direct_v2_clean.json" --url "http://localhost:3000" --update-existing
+  pnpm import:clean-seed -- --file "E:\\data\\baihepailei\\data_local\\import_ready\\bangumi-yuri-tagged.payload.json" --url "http://localhost:3000" --collections works --update-existing
 `)
 }
 
@@ -89,15 +91,74 @@ function authHeaders(token) {
   }
 }
 
-async function findExistingBySlug(baseUrl, token, collection, slug) {
-  if (!slug) return null
+function setWhere(params, field, operator, value, prefix = 'where') {
+  params.set(`${prefix}[${field}][${operator}]`, String(value))
+}
+
+async function findOne(baseUrl, token, collection, configureParams) {
   const params = new URLSearchParams()
-  params.set('where[slug][equals]', slug)
+  configureParams(params)
   params.set('limit', '1')
   const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, {
     headers: authHeaders(token),
   })
   return result?.docs?.[0] || null
+}
+
+async function findExistingBySlug(baseUrl, token, collection, slug) {
+  if (!slug) return null
+  return findOne(baseUrl, token, collection, (params) => setWhere(params, 'slug', 'equals', slug))
+}
+
+export function candidateWorkLookupPlan(doc) {
+  const lookups = []
+
+  if (doc.siteId) {
+    lookups.push({ type: 'siteId', field: 'siteId', value: doc.siteId })
+  }
+
+  for (const field of WORK_EXTERNAL_ID_FIELDS) {
+    const value = doc.externalIds?.[field]
+    if (value) {
+      lookups.push({ type: 'externalId', field: `externalIds.${field}`, value })
+    }
+  }
+
+  if (doc.slug) {
+    lookups.push({ type: 'slug', field: 'slug', value: doc.slug })
+  }
+
+  if (doc.title && doc.mediaType) {
+    lookups.push({
+      type: 'titleMediaDate',
+      and: [
+        { field: 'title', operator: 'equals', value: doc.title },
+        { field: 'mediaType', operator: 'equals', value: doc.mediaType },
+        { field: 'firstPublishedLabel', operator: 'equals', value: doc.firstPublishedLabel || '' },
+      ],
+    })
+  }
+
+  return lookups
+}
+
+async function findExistingWork(baseUrl, token, doc) {
+  for (const lookup of candidateWorkLookupPlan(doc)) {
+    if (lookup.type === 'titleMediaDate') {
+      const existing = await findOne(baseUrl, token, 'works', (params) => {
+        lookup.and.forEach((condition, index) => {
+          params.set(`where[and][${index}][${condition.field}][${condition.operator}]`, String(condition.value))
+        })
+      })
+      if (existing) return { existing, lookup }
+      continue
+    }
+
+    const existing = await findOne(baseUrl, token, 'works', (params) => setWhere(params, lookup.field, 'equals', lookup.value))
+    if (existing) return { existing, lookup }
+  }
+
+  return { existing: null, lookup: null }
 }
 
 async function createDoc(baseUrl, token, collection, doc) {
@@ -194,6 +255,16 @@ function valuesToArrayRows(values) {
   return output
 }
 
+function cleanArrayRows(rows) {
+  return Array.isArray(rows) ? rows.filter(Boolean) : []
+}
+
+function cleanObject(value) {
+  if (!value || typeof value !== 'object') return undefined
+  const entries = Object.entries(value).filter(([, item]) => item !== null && item !== undefined && item !== '')
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined
+}
+
 function buildSearchText(parts) {
   const seen = new Set()
   const lines = []
@@ -218,7 +289,17 @@ function inferRankFromLegacyPage(legacyXWikiPage) {
   return 'unknown'
 }
 
-function cleanDoc(collection, input) {
+function candidateSourceText(candidateSources) {
+  return cleanArrayRows(candidateSources).map((source) => [
+    source.label,
+    source.source,
+    source.externalId,
+    source.url,
+    source.note,
+  ].filter(Boolean).join(' '))
+}
+
+export function cleanDoc(collection, input) {
   const doc = { ...input }
 
   // Keep this import focused on base documents. Relationship resolution and media uploads
@@ -243,6 +324,7 @@ function cleanDoc(collection, input) {
     ])
 
     return {
+      siteId: doc.siteId,
       title: doc.title,
       slug: doc.slug,
       category: doc.category || 'principle',
@@ -265,6 +347,7 @@ function cleanDoc(collection, input) {
     ])
 
     return {
+      siteId: doc.siteId,
       name: doc.name,
       slug: doc.slug,
       isLiteVisible: doc.isLiteVisible ?? true,
@@ -292,6 +375,7 @@ function cleanDoc(collection, input) {
     ])
 
     return {
+      siteId: doc.siteId,
       name: doc.name,
       slug: doc.slug,
       rank,
@@ -314,31 +398,51 @@ function cleanDoc(collection, input) {
     const aliases = valuesToArrayRows([...existingAliases, ...aliasesFromSummary])
     const rank = doc.rank && doc.rank !== 'unknown' ? doc.rank : inferRankFromLegacyPage(doc.legacyXWikiPage)
     const creatorHint = findHeadingValue(summaryText, ['作者', '开发商', '发行商', '出版社', '其他创作者'])
+    const candidateSources = cleanArrayRows(doc.candidateSources)
+    const externalIds = cleanObject(doc.externalIds)
+    const sourceLinks = doc.sourceLinks || candidateSources
+      .filter((source) => source.url)
+      .map((source) => ({ label: source.label || source.source || 'source', url: source.url }))
     const searchText = doc.searchText || buildSearchText([
       doc.title,
       originalTitle,
       aliases.map((item) => item.value),
       creatorHint,
       rank,
+      doc.mediaType,
+      doc.format,
+      doc.firstPublishedLabel,
       doc.slug,
       doc.legacyXWikiPage,
       summaryText,
       analysisText,
+      candidateSourceText(candidateSources),
     ])
 
     return {
+      siteId: doc.siteId,
       title: doc.title,
       slug: doc.slug,
       rank,
+      reviewStatus: doc.reviewStatus || 'pending',
+      evidenceStrength: doc.evidenceStrength || 'unassessed',
       originalTitle,
       aliases,
+      mediaType: doc.mediaType || 'unknown',
+      format: doc.format || 'unknown',
+      firstPublishedAt: doc.firstPublishedAt || undefined,
+      firstPublishedPrecision: doc.firstPublishedPrecision || 'unknown',
+      firstPublishedLabel: doc.firstPublishedLabel || undefined,
+      externalIds,
+      candidateSources,
+      yuriCandidateScore: doc.yuriCandidateScore ?? undefined,
       isLiteVisible: doc.isLiteVisible ?? true,
       isFullVisible: doc.isFullVisible ?? true,
       hasEvidence: doc.hasEvidence ?? false,
       summary: doc.summary,
       analysis: doc.analysis,
       searchText,
-      sourceLinks: doc.sourceLinks,
+      sourceLinks,
       legacyXWikiPage: doc.legacyXWikiPage,
       status: doc.status || 'draft',
     }
@@ -347,16 +451,46 @@ function cleanDoc(collection, input) {
   return doc
 }
 
-function validateSeed(seed) {
+function parseCollectionList(value) {
+  if (!value || value === true) return null
+  return String(value)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+export function collectionsForSeed(seed, collectionArg) {
+  const requested = parseCollectionList(collectionArg)
+  const order = requested || DEFAULT_COLLECTION_ORDER.filter((collection) => Array.isArray(seed[collection]))
+
+  if (order.length === 0) {
+    throw new Error(`Seed must contain at least one collection array: ${DEFAULT_COLLECTION_ORDER.join(', ')}`)
+  }
+
   const errors = []
-  for (const collection of COLLECTION_ORDER) {
+  for (const collection of order) {
+    if (!DEFAULT_COLLECTION_ORDER.includes(collection)) {
+      errors.push(`Unsupported collection: ${collection}`)
+    }
     if (!Array.isArray(seed[collection])) {
       errors.push(`Missing or invalid array: ${collection}`)
     }
   }
+
   if (errors.length) {
     throw new Error(errors.join('\n'))
   }
+
+  return order
+}
+
+async function findExistingDoc({ baseUrl, token, collection, doc }) {
+  if (collection === 'works') {
+    return findExistingWork(baseUrl, token, doc)
+  }
+
+  const existing = await findExistingBySlug(baseUrl, token, collection, doc.slug)
+  return { existing, lookup: existing ? { type: 'slug', field: 'slug', value: doc.slug } : null }
 }
 
 async function importCollection({ baseUrl, token, collection, docs, dryRun, updateExisting }) {
@@ -381,15 +515,15 @@ async function importCollection({ baseUrl, token, collection, docs, dryRun, upda
     }
 
     try {
-      const existing = await findExistingBySlug(baseUrl, token, collection, doc.slug)
+      const { existing, lookup } = await findExistingDoc({ baseUrl, token, collection, doc })
       if (existing) {
         if (updateExisting) {
           await updateDoc(baseUrl, token, collection, existing.id, doc)
           summary.updated += 1
-          console.log(`  updated: ${label}`)
+          console.log(`  updated: ${label} (${lookup?.type || 'matched'})`)
         } else {
           summary.skipped += 1
-          console.log(`  skipped existing: ${label}`)
+          console.log(`  skipped existing: ${label} (${lookup?.type || 'matched'})`)
         }
         continue
       }
@@ -407,15 +541,15 @@ async function importCollection({ baseUrl, token, collection, docs, dryRun, upda
   return summary
 }
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2))
+export async function runImport(argv = process.argv.slice(2)) {
+  const args = parseArgs(argv)
   if (args.help || !args.file) {
     usage()
-    process.exit(args.help ? 0 : 1)
+    return args.help ? 0 : 1
   }
 
   const seed = readJson(String(args.file))
-  validateSeed(seed)
+  const collections = collectionsForSeed(seed, args.collections || args.collection)
 
   const baseUrl = String(args.url || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
   const dryRun = Boolean(args['dry-run'])
@@ -427,11 +561,12 @@ async function main() {
     url: baseUrl,
     dryRun,
     updateExisting,
-    counts: Object.fromEntries(COLLECTION_ORDER.map((key) => [key, seed[key].length])),
+    collections,
+    counts: Object.fromEntries(collections.map((key) => [key, seed[key].length])),
   }, null, 2))
 
   if (dryRun) {
-    for (const collection of COLLECTION_ORDER) {
+    for (const collection of collections) {
       await importCollection({
         baseUrl,
         token: null,
@@ -441,7 +576,7 @@ async function main() {
         updateExisting,
       })
     }
-    return
+    return 0
   }
 
   const email = process.env.PAYLOAD_SEED_EMAIL
@@ -454,7 +589,7 @@ async function main() {
   console.log(`Logged in to ${baseUrl}`)
 
   const summaries = []
-  for (const collection of COLLECTION_ORDER) {
+  for (const collection of collections) {
     summaries.push(await importCollection({
       baseUrl,
       token,
@@ -467,9 +602,16 @@ async function main() {
 
   console.log('\nImport summary:')
   console.log(JSON.stringify(summaries, null, 2))
+  return 0
 }
 
-main().catch((error) => {
-  console.error(error)
-  process.exit(1)
-})
+const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+
+if (isDirectRun) {
+  runImport().then((code) => {
+    process.exitCode = code
+  }).catch((error) => {
+    console.error(error)
+    process.exit(1)
+  })
+}
