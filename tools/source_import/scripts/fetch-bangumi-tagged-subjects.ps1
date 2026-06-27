@@ -9,6 +9,7 @@ param(
   [int]$DelayMs = 1200,
   [int]$MinTopTagCount = 10,
   [double]$MinWeightedScore = 10,
+  [bool]$KeepSearchHits = $true,
   [string]$UserAgent = "BaihepaileiSourceImport/0.1 (https://github.com/wtyliangtingRe/baihepailei)",
   [string]$Token = $env:BANGUMI_ACCESS_TOKEN
 )
@@ -164,20 +165,43 @@ function Get-BangumiSubject($Id) {
   return Invoke-BangumiJson -Uri "https://api.bgm.tv/v0/subjects/$Id" -Method "GET"
 }
 
+function Add-SearchHit($SearchHitsById, $Id, $Tag, $Type, $Offset) {
+  $idKey = [string]$Id
+  if (-not $SearchHitsById.ContainsKey($idKey)) {
+    $SearchHitsById[$idKey] = @()
+  }
+
+  $SearchHitsById[$idKey] += [ordered]@{
+    tag = $Tag
+    type = $Type
+    offset = $Offset
+  }
+}
+
 New-Item -ItemType Directory -Force (Split-Path $Out) | Out-Null
 New-Item -ItemType Directory -Force (Split-Path $Report) | Out-Null
 Remove-Item $Out -ErrorAction SilentlyContinue
 Remove-Item $Report -ErrorAction SilentlyContinue
+Write-Utf8NoBomFile -Path $Out -Text ""
 
 $fetchedAt = (Get-Date).ToUniversalTime().ToString("o")
 $searched = @()
+$searchHitsById = @{}
 
 foreach ($tag in $TagList) {
   foreach ($type in $TypeList) {
     for ($page = 0; $page -lt $Pages; $page++) {
       $offset = $page * $Limit
       Write-Host "Searching tag=$tag type=$type offset=$offset"
-      $searched += Search-BangumiSubjects -Tag $tag -Type $type -Offset $offset
+      $results = Search-BangumiSubjects -Tag $tag -Type $type -Offset $offset
+
+      foreach ($result in $results) {
+        $resultId = $result.id
+        if (-not $resultId) { $resultId = $result.subject_id }
+        if ($resultId) { Add-SearchHit -SearchHitsById $searchHitsById -Id $resultId -Tag $tag -Type $type -Offset $offset }
+      }
+
+      $searched += $results
       Start-Sleep -Milliseconds $DelayMs
     }
   }
@@ -185,6 +209,7 @@ foreach ($tag in $TagList) {
 
 $seen = @{}
 $kept = @()
+$rejected = @()
 
 foreach ($subject in $searched) {
   $id = $subject.id
@@ -198,10 +223,19 @@ foreach ($subject in $searched) {
   Write-Host "Fetching subject $idKey"
   $detail = Get-BangumiSubject -Id $idKey
   $signal = Get-YuriSignal $detail
+  $searchSignals = @()
+  if ($searchHitsById.ContainsKey($idKey)) { $searchSignals = @($searchHitsById[$idKey]) }
 
-  if (($signal.weightedScore -ge $MinWeightedScore) -or ($signal.maxCount -ge $MinTopTagCount)) {
-    $detail | Add-Member -NotePropertyName "_baihepailei" -NotePropertyValue @{ yuriTagSignal = $signal } -Force
+  $passesDetailThreshold = ($signal.weightedScore -ge $MinWeightedScore) -or ($signal.maxCount -ge $MinTopTagCount)
+  $passesSearchFallback = $KeepSearchHits -and ($searchSignals.Count -gt 0)
 
+  $detail | Add-Member -NotePropertyName "_baihepailei" -NotePropertyValue @{
+    yuriTagSignal = $signal
+    searchSignals = $searchSignals
+    keptBy = $(if ($passesDetailThreshold) { "detail_tag_count" } elseif ($passesSearchFallback) { "search_tag_hit" } else { "rejected" })
+  } -Force
+
+  if ($passesDetailThreshold -or $passesSearchFallback) {
     $rawRecord = [ordered]@{
       source = "bangumi"
       sourceRecordId = $idKey
@@ -212,6 +246,8 @@ foreach ($subject in $searched) {
 
     Add-Utf8NoBomLine -Path $Out -Text ($rawRecord | ConvertTo-Json -Depth 100 -Compress)
     $kept += $detail
+  } else {
+    $rejected += $detail
   }
 
   Start-Sleep -Milliseconds $DelayMs
@@ -226,8 +262,11 @@ $summary = [ordered]@{
   sort = $Sort
   minWeightedScore = $MinWeightedScore
   minTopTagCount = $MinTopTagCount
+  keepSearchHits = $KeepSearchHits
   searchedCount = $searched.Count
+  uniqueSearchedCount = $seen.Count
   keptCount = $kept.Count
+  rejectedCount = $rejected.Count
   subjects = @($kept | ForEach-Object {
     [ordered]@{
       id = $_.id
@@ -235,7 +274,20 @@ $summary = [ordered]@{
       name_cn = $_.name_cn
       type = $_.type
       date = $_.date
+      keptBy = $_._baihepailei.keptBy
       yuriTagSignal = $_._baihepailei.yuriTagSignal
+      searchSignals = $_._baihepailei.searchSignals
+    }
+  })
+  rejected = @($rejected | ForEach-Object {
+    [ordered]@{
+      id = $_.id
+      name = $_.name
+      name_cn = $_.name_cn
+      type = $_.type
+      date = $_.date
+      yuriTagSignal = $_._baihepailei.yuriTagSignal
+      searchSignals = $_._baihepailei.searchSignals
     }
   })
 }
