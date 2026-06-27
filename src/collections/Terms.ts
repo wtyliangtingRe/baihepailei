@@ -9,7 +9,7 @@ export const Terms: CollectionConfig = {
     plural: '名词解释',
   },
   admin: {
-    defaultColumns: ['name', 'isLiteVisible', 'isFullVisible', 'status', 'updatedAt'],
+    defaultColumns: ['name', 'siteId', 'isLiteVisible', 'isFullVisible', 'status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'name',
   },
@@ -35,6 +35,15 @@ export const Terms: CollectionConfig = {
       label: 'Slug',
       required: true,
       unique: true,
+    },
+    {
+      name: 'siteId',
+      type: 'text',
+      label: '站内 ID',
+      unique: true,
+      admin: {
+        description: '本站内部稳定唯一标识，用于迁移、导入、跨来源合并和人工追踪。',
+      },
     },
     {
       name: 'isLiteVisible',
