@@ -12,6 +12,8 @@ const VARIANT_SUFFIXES = [
   /\s+(?:夏日时光|暑假时光|夏日時光|なちゅやちゅみ)$/iu,
 ]
 
+const PREFIX_VARIANT_PATTERNS = [/^迷你(.+)$/u, /^みに(.+)$/u, /^mini\s+(.+)$/iu]
+
 function stripTrailingMarks(value) {
   return normalizeText(value).replace(TRAILING_MARKS, '').trim()
 }
@@ -33,6 +35,19 @@ export function inferWorkGroupBaseTitle(value) {
   }
 
   return current
+}
+
+function inferPrefixedAliasBaseTitle(value) {
+  const normalized = stripTrailingMarks(value)
+  if (!normalized) return ''
+
+  for (const pattern of PREFIX_VARIANT_PATTERNS) {
+    const match = normalized.match(pattern)
+    const base = stripTrailingMarks(match?.[1] || '')
+    if (base.length >= 4) return inferWorkGroupBaseTitle(base)
+  }
+
+  return ''
 }
 
 function aliasValue(alias) {
@@ -73,7 +88,10 @@ export function normalizeWorkGroup(value) {
 export function inferCandidateWorkGroup(candidate) {
   const values = candidateTitleValues(candidate)
   const title = normalizeText(candidate?.title || candidate?.name_cn || values[0] || '')
-  const baseTitle = inferWorkGroupBaseTitle(title || values[0])
+  const aliasBaseTitle = values
+    .map(inferPrefixedAliasBaseTitle)
+    .find((value) => value && value !== title)
+  const baseTitle = aliasBaseTitle || inferWorkGroupBaseTitle(title || values[0])
   if (!baseTitle) return undefined
 
   const changed = baseTitle !== title
@@ -82,7 +100,7 @@ export function inferCandidateWorkGroup(candidate) {
     key: slugify(baseTitle, { fallback: 'work-group' }),
     title: baseTitle,
     relation: 'series_member',
-    source: 'title_heuristic',
+    source: aliasBaseTitle ? 'alias_heuristic' : 'title_heuristic',
     confidence: changed ? 'title_variant' : 'title_base',
     note: REVIEW_NOTE,
   })
