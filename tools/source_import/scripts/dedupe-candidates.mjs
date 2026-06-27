@@ -2,9 +2,11 @@
 
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { writeFile } from 'node:fs/promises'
 
 import { readJsonl, writeJsonl } from '../lib/jsonl.mjs'
-import { normalizeText } from '../lib/slug.mjs'
+import { compareWorkCandidates } from '../lib/match-work.mjs'
+import { createDedupeReport } from '../lib/dedupe-report.mjs'
 
 function parseArgs(argv) {
   const args = new Map()
@@ -23,63 +25,109 @@ function parseArgs(argv) {
   return args
 }
 
-function externalIdKeys(candidate) {
-  return Object.entries(candidate.externalIds || {})
-    .filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '')
-    .map(([key, value]) => `external:${key}:${String(value).trim().toLowerCase()}`)
+function uniqueByJson(values) {
+  const seen = new Set()
+  const result = []
+
+  for (const value of values || []) {
+    const key = JSON.stringify(value)
+    if (seen.has(key)) continue
+
+    seen.add(key)
+    result.push(value)
+  }
+
+  return result
 }
 
-function titleKey(candidate) {
-  const title = normalizeText(candidate.originalTitle || candidate.title).toLowerCase()
-  const mediaType = candidate.mediaType || 'unknown'
-  return title ? `title:${mediaType}:${title}` : null
+function mergeScalar(baseValue, nextValue) {
+  return nextValue !== null && nextValue !== undefined && nextValue !== '' ? nextValue : baseValue
 }
 
-function candidateKeys(candidate) {
-  return [
-    candidate.siteId ? `site:${candidate.siteId}` : null,
-    ...externalIdKeys(candidate),
-    titleKey(candidate),
-  ].filter(Boolean)
-}
-
-function mergeCandidate(base, next) {
+export function mergeCandidate(base, next) {
   return {
     ...base,
-    ...Object.fromEntries(Object.entries(next).filter(([, value]) => value !== null && value !== undefined && value !== '')),
-    aliases: [...(base.aliases || []), ...(next.aliases || [])],
+    title: mergeScalar(base.title, next.title),
+    originalTitle: mergeScalar(base.originalTitle, next.originalTitle),
+    slug: mergeScalar(base.slug, next.slug),
+    siteId: mergeScalar(base.siteId, next.siteId),
+    mediaType: mergeScalar(base.mediaType, next.mediaType),
+    format: mergeScalar(base.format, next.format),
+    firstPublishedAt: mergeScalar(base.firstPublishedAt, next.firstPublishedAt),
+    firstPublishedPrecision: mergeScalar(base.firstPublishedPrecision, next.firstPublishedPrecision),
+    firstPublishedLabel: mergeScalar(base.firstPublishedLabel, next.firstPublishedLabel),
+    yuriCandidateScore: Math.max(Number(base.yuriCandidateScore || 0), Number(next.yuriCandidateScore || 0)),
+    aliases: uniqueByJson([...(base.aliases || []), ...(next.aliases || [])]),
     externalIds: { ...(base.externalIds || {}), ...(next.externalIds || {}) },
-    candidateSources: [...(base.candidateSources || []), ...(next.candidateSources || [])],
+    candidateSources: uniqueByJson([...(base.candidateSources || []), ...(next.candidateSources || [])]),
+  }
+}
+
+function conflictRecord(candidate, existing, match, existingIndex) {
+  return {
+    type: 'possible_duplicate',
+    confidence: match.confidence,
+    signals: match.signals,
+    existingIndex,
+    candidate,
+    existing,
+  }
+}
+
+function mergeRecord(candidate, existing, match, existingIndex) {
+  return {
+    confidence: match.confidence,
+    signals: match.signals,
+    existingIndex,
+    candidate,
+    existing,
   }
 }
 
 export function dedupeCandidates(candidates) {
   const deduped = []
   const conflicts = []
-  const indexByKey = new Map()
+  const merges = []
 
   for (const candidate of candidates) {
-    const keys = candidateKeys(candidate)
-    const existingIndexes = [...new Set(keys.map((key) => indexByKey.get(key)).filter((value) => value !== undefined))]
+    const matches = deduped
+      .map((existing, existingIndex) => ({ existing, existingIndex, match: compareWorkCandidates(candidate, existing) }))
+      .filter(({ match }) => match.action !== 'new')
 
-    if (existingIndexes.length === 0) {
-      const index = deduped.length
+    const mergeMatches = matches.filter(({ match }) => match.action === 'merge')
+    const conflictMatches = matches.filter(({ match }) => match.action === 'conflict')
+
+    if (mergeMatches.length === 1) {
+      const { existing, existingIndex, match } = mergeMatches[0]
+      merges.push(mergeRecord(candidate, existing, match, existingIndex))
+      deduped[existingIndex] = mergeCandidate(existing, candidate)
+      continue
+    }
+
+    if (mergeMatches.length > 1) {
+      for (const { existing, existingIndex, match } of mergeMatches) {
+        conflicts.push(conflictRecord(candidate, existing, { ...match, confidence: `multi_match_${match.confidence}` }, existingIndex))
+      }
+      continue
+    }
+
+    if (conflictMatches.length > 0) {
+      for (const { existing, existingIndex, match } of conflictMatches) {
+        conflicts.push(conflictRecord(candidate, existing, match, existingIndex))
+      }
       deduped.push(candidate)
-      keys.forEach((key) => indexByKey.set(key, index))
       continue
     }
 
-    if (existingIndexes.length > 1) {
-      conflicts.push({ reason: 'candidate matched multiple existing records', candidate, existingIndexes })
-      continue
-    }
-
-    const index = existingIndexes[0]
-    deduped[index] = mergeCandidate(deduped[index], candidate)
-    candidateKeys(deduped[index]).forEach((key) => indexByKey.set(key, index))
+    deduped.push(candidate)
   }
 
-  return { deduped, conflicts }
+  return { deduped, conflicts, merges }
+}
+
+async function writeTextFile(filePath, text) {
+  await import('node:fs/promises').then(async ({ mkdir }) => mkdir(path.dirname(filePath), { recursive: true }))
+  await writeFile(filePath, text, 'utf8')
 }
 
 async function main() {
@@ -87,9 +135,10 @@ async function main() {
   const input = args.get('in')
   const output = args.get('out')
   const conflictsOutput = args.get('conflicts') || path.join(path.dirname(output || '.'), 'conflicts.jsonl')
+  const reportOutput = args.get('report') || path.join('data_local', 'reports', 'dedupe-conflicts.md')
 
   if (!input || !output) {
-    console.error('Usage: pnpm source:dedupe -- --in <candidate-works.jsonl> --out <works.deduped.jsonl> [--conflicts <conflicts.jsonl>]')
+    console.error('Usage: pnpm source:dedupe -- --in <candidate-works.jsonl> --out <works.deduped.jsonl> [--conflicts <conflicts.jsonl>] [--report <dedupe-conflicts.md>]')
     process.exitCode = 1
     return
   }
@@ -98,8 +147,10 @@ async function main() {
   const result = dedupeCandidates(candidates)
   await writeJsonl(output, result.deduped)
   await writeJsonl(conflictsOutput, result.conflicts)
+  await writeTextFile(reportOutput, createDedupeReport({ inputCount: candidates.length, ...result }))
 
-  console.log(`Deduped ${candidates.length} candidates -> ${result.deduped.length} records, ${result.conflicts.length} conflicts`)
+  console.log(`Deduped ${candidates.length} candidates -> ${result.deduped.length} records, ${result.conflicts.length} conflicts, ${result.merges.length} auto merges`)
+  console.log(`Wrote dedupe report -> ${reportOutput}`)
 }
 
 const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
