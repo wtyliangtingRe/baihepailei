@@ -40,6 +40,15 @@ test('candidate work cleaning preserves draft candidate fields', () => {
     firstPublishedLabel: '2015-04',
     externalIds: { bangumiSubjectId: '1001' },
     candidateSources: [{ source: 'bangumi', label: 'Bangumi', externalId: '1001', url: 'https://bgm.tv/subject/1001', note: 'Bangumi 标签搜索命中：百合' }],
+    workGroup: {
+      key: 'yagate-kimi-ni-naru',
+      title: '终将成为你',
+      relation: 'series_member',
+      orderLabel: 'manga',
+      source: 'manual',
+      confidence: 'candidate_hint',
+      note: 'review-only grouping hint',
+    },
     yuriCandidateScore: 0.5,
     isLiteVisible: false,
     isFullVisible: false,
@@ -58,6 +67,8 @@ test('candidate work cleaning preserves draft candidate fields', () => {
   assert.equal(doc.firstPublishedLabel, '2015-04')
   assert.equal(doc.externalIds.bangumiSubjectId, '1001')
   assert.equal(doc.candidateSources[0].source, 'bangumi')
+  assert.equal(doc.workGroup.title, '终将成为你')
+  assert.equal(doc.workGroup.confidence, 'candidate_hint')
   assert.equal(doc.yuriCandidateScore, 0.5)
   assert.equal(doc.isLiteVisible, false)
   assert.equal(doc.isFullVisible, false)

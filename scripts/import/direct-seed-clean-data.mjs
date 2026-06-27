@@ -455,6 +455,7 @@ export function cleanDoc(collection, input) {
     const creatorHint = findHeadingValue(summaryText, ['作者', '开发商', '发行商', '出版社', '其他创作者'])
     const candidateSources = cleanArrayRows(doc.candidateSources)
     const externalIds = cleanObject(doc.externalIds)
+    const workGroup = cleanObject(doc.workGroup)
     const sourceLinks = doc.sourceLinks || candidateSources
       .filter((source) => source.url)
       .map((source) => ({ label: source.label || source.source || 'source', url: source.url }))
@@ -494,6 +495,7 @@ export function cleanDoc(collection, input) {
       firstPublishedLabel: doc.firstPublishedLabel || undefined,
       externalIds,
       candidateSources,
+      workGroup,
       yuriCandidateScore: doc.yuriCandidateScore ?? undefined,
       isLiteVisible: doc.isLiteVisible ?? true,
       isFullVisible: doc.isFullVisible ?? true,
