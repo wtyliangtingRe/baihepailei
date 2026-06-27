@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
+import { execFile } from 'node:child_process'
 import path from 'node:path'
+import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
 
 import { writeJsonl, writeJsonFile } from '../lib/jsonl.mjs'
@@ -14,6 +16,10 @@ const API_BASE_URL = 'https://api.bgm.tv'
 const DEFAULT_TAGS = ['百合', '轻百合', 'GL']
 const DEFAULT_TYPES = [1, 2, 4]
 const DEFAULT_USER_AGENT = 'BaihepaileiSourceImport/0.1 (https://github.com/wtyliangtingRe/baihepailei)'
+const DEFAULT_CURL_CONNECT_TIMEOUT_SECONDS = 30
+const CURL_MAX_BUFFER_BYTES = 20 * 1024 * 1024
+
+const execFileAsync = promisify(execFile)
 
 function parseArgs(argv) {
   const args = new Map()
@@ -74,7 +80,65 @@ function requestHeaders({ userAgent, token }) {
   }
 }
 
-async function requestJson(url, options) {
+export function createCurlJsonArgs(
+  url,
+  { method = 'GET', headers = {}, body } = {},
+  { proxy = '', connectTimeoutSeconds = DEFAULT_CURL_CONNECT_TIMEOUT_SECONDS } = {},
+) {
+  const args = [
+    '--silent',
+    '--show-error',
+    '--fail',
+    '--location',
+    '--connect-timeout',
+    String(connectTimeoutSeconds),
+    '--request',
+    method,
+  ]
+
+  if (proxy) {
+    args.push('--proxy', proxy)
+  }
+
+  for (const [key, value] of Object.entries(headers || {})) {
+    if (value === undefined || value === null || value === '') continue
+    args.push('--header', `${key}: ${value}`)
+  }
+
+  if (body !== undefined) {
+    args.push('--data-binary', body)
+  }
+
+  args.push(String(url))
+  return args
+}
+
+function formatCurlError(error) {
+  const message = error?.message ? String(error.message) : String(error)
+  const stderr = error?.stderr ? String(error.stderr).trim().slice(0, 800) : ''
+  const stdout = error?.stdout ? String(error.stdout).trim().slice(0, 800) : ''
+  return [message, stderr, stdout].filter(Boolean).join('\n')
+}
+
+async function requestJsonWithCurl(url, options, { proxy }) {
+  const args = createCurlJsonArgs(url, options, { proxy })
+
+  try {
+    const { stdout } = await execFileAsync('curl', args, {
+      maxBuffer: CURL_MAX_BUFFER_BYTES,
+      windowsHide: true,
+    })
+    return JSON.parse(stdout)
+  } catch (error) {
+    throw new Error(`Bangumi curl request failed:\n${formatCurlError(error)}`)
+  }
+}
+
+async function requestJson(url, options, { proxy = '' } = {}) {
+  if (proxy) {
+    return requestJsonWithCurl(url, options, { proxy })
+  }
+
   const response = await fetch(url, options)
 
   if (!response.ok) {
@@ -85,7 +149,7 @@ async function requestJson(url, options) {
   return response.json()
 }
 
-export async function searchBangumiSubjects({ tag, type, limit, offset, sort, userAgent, token }) {
+export async function searchBangumiSubjects({ tag, type, limit, offset, sort, userAgent, token, proxy }) {
   const url = new URL('/v0/search/subjects', API_BASE_URL)
   url.searchParams.set('limit', String(limit))
   url.searchParams.set('offset', String(offset))
@@ -99,21 +163,29 @@ export async function searchBangumiSubjects({ tag, type, limit, offset, sort, us
     },
   }
 
-  const json = await requestJson(url, {
-    method: 'POST',
-    headers: requestHeaders({ userAgent, token }),
-    body: JSON.stringify(body),
-  })
+  const json = await requestJson(
+    url,
+    {
+      method: 'POST',
+      headers: requestHeaders({ userAgent, token }),
+      body: JSON.stringify(body),
+    },
+    { proxy },
+  )
 
   return Array.isArray(json?.data) ? json.data : []
 }
 
-export async function fetchBangumiSubject(subjectId, { userAgent, token }) {
+export async function fetchBangumiSubject(subjectId, { userAgent, token, proxy }) {
   const url = new URL(`/v0/subjects/${subjectId}`, API_BASE_URL)
-  return requestJson(url, {
-    method: 'GET',
-    headers: requestHeaders({ userAgent, token }),
-  })
+  return requestJson(
+    url,
+    {
+      method: 'GET',
+      headers: requestHeaders({ userAgent, token }),
+    },
+    { proxy },
+  )
 }
 
 export async function fetchBangumiTaggedSubjects({
@@ -127,6 +199,7 @@ export async function fetchBangumiTaggedSubjects({
   minTopTagCount = 5,
   userAgent = DEFAULT_USER_AGENT,
   token = process.env.BANGUMI_ACCESS_TOKEN || '',
+  proxy = process.env.BANGUMI_PROXY || '',
 } = {}) {
   const searched = []
 
@@ -134,7 +207,7 @@ export async function fetchBangumiTaggedSubjects({
     for (const type of types) {
       for (let page = 0; page < pages; page += 1) {
         const offset = page * limit
-        const subjects = await searchBangumiSubjects({ tag, type, limit, offset, sort, userAgent, token })
+        const subjects = await searchBangumiSubjects({ tag, type, limit, offset, sort, userAgent, token, proxy })
         searched.push(...subjects)
         await sleep(delayMs)
       }
@@ -145,7 +218,7 @@ export async function fetchBangumiTaggedSubjects({
 
   for (const subject of uniqueById(searched)) {
     const id = subject?.id ?? subject?.subject_id
-    const detail = await fetchBangumiSubject(id, { userAgent, token })
+    const detail = await fetchBangumiSubject(id, { userAgent, token, proxy })
     const annotated = annotateBangumiYuriSignal(detail)
 
     if (subjectPassesYuriTagThreshold(annotated, { minWeightedScore, minTopTagCount })) {
@@ -179,6 +252,11 @@ async function main() {
   const sort = args.get('sort') || 'rank'
   const userAgent = args.get('user-agent') || process.env.BANGUMI_USER_AGENT || DEFAULT_USER_AGENT
   const token = args.get('token') || process.env.BANGUMI_ACCESS_TOKEN || ''
+  const proxy = args.get('proxy') || process.env.BANGUMI_PROXY || ''
+
+  if (proxy) {
+    console.log('Using proxy for Bangumi requests.')
+  }
 
   const subjects = await fetchBangumiTaggedSubjects({
     tags,
@@ -191,6 +269,7 @@ async function main() {
     minTopTagCount,
     userAgent,
     token,
+    proxy,
   })
 
   const rawRecords = subjects.map((subject) => bangumiSubjectToRawSource(subject, { fetchedAt }))
@@ -205,6 +284,7 @@ async function main() {
     sort,
     minWeightedScore,
     minTopTagCount,
+    proxyUsed: Boolean(proxy),
     count: rawRecords.length,
     subjects: subjects.map((subject) => ({
       id: subject.id,
