@@ -36,8 +36,9 @@ export function sourceRecordToCandidateSource(record) {
 export function normalizeAliasList(values) {
   const seen = new Set()
   const aliases = []
+  const normalizedValues = Array.isArray(values) ? values.flat() : [values]
 
-  for (const value of values.flat().filter(Boolean)) {
+  for (const value of normalizedValues.filter(Boolean)) {
     const alias = normalizeText(value)
     const key = alias.toLowerCase()
 
