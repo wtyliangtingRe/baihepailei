@@ -119,6 +119,7 @@ export function mergeCandidate(base, next) {
     aliases: uniqueByJson([...(base.aliases || []), ...(next.aliases || [])]),
     externalIds: { ...(base.externalIds || {}), ...(next.externalIds || {}) },
     candidateSources: uniqueCandidateSources([...(base.candidateSources || []), ...(next.candidateSources || [])]),
+    externalCoverImages: uniqueByJson([...(base.externalCoverImages || []), ...(next.externalCoverImages || [])]),
   }
 }
 
