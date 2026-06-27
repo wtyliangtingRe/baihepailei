@@ -68,6 +68,7 @@ export function scoreItem(item, query) {
   const organizationType = normalizeText(item.organizationType)
   const evidenceType = normalizeText(item.evidenceType)
   const mediaGroup = normalizeText(item.mediaGroup)
+  const mediaGroupDisplay = normalizeText(mediaGroupLabel(item.mediaGroup))
   const mediaType = normalizeText(item.mediaType)
   const format = normalizeText(item.format)
   const firstPublishedLabel = normalizeText(item.firstPublishedLabel)
@@ -113,7 +114,7 @@ export function scoreItem(item, query) {
     if (organizationType.includes(term)) score += 24
     if (evidenceType.includes(term)) score += 24
     if (mediaGroup.includes(term)) score += 24
-    if (mediaGroupLabel(item.mediaGroup).toLowerCase().includes(term)) score += 24
+    if (mediaGroupDisplay.includes(term)) score += 24
     if (mediaType.includes(term)) score += 20
     if (format.includes(term)) score += 20
     if (firstPublishedLabel.includes(term)) score += 16
