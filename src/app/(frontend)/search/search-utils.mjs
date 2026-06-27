@@ -7,6 +7,15 @@ export const collectionLabels = {
   rules: '规则',
 }
 
+const mediaGroupLabels = {
+  anime: '动画',
+  manga: '漫画',
+  novel: '小说',
+  game: '游戏',
+  other: '其他',
+  unknown: '未知类型',
+}
+
 export function getCollectionLabel(collection) {
   return collectionLabels[collection] || collection
 }
@@ -15,6 +24,11 @@ export function displayRank(rank) {
   if (!rank || rank === 'unknown') return ''
   if (rank === 'AA') return 'S级'
   return `${rank}级`
+}
+
+export function mediaGroupLabel(value) {
+  if (!value) return ''
+  return mediaGroupLabels[value] || value
 }
 
 export function normalizeText(value) {
@@ -53,10 +67,17 @@ export function scoreItem(item, query) {
   const category = normalizeText(item.category)
   const organizationType = normalizeText(item.organizationType)
   const evidenceType = normalizeText(item.evidenceType)
+  const mediaGroup = normalizeText(item.mediaGroup)
+  const mediaGroupDisplay = normalizeText(mediaGroupLabel(item.mediaGroup))
+  const mediaType = normalizeText(item.mediaType)
+  const format = normalizeText(item.format)
+  const firstPublishedLabel = normalizeText(item.firstPublishedLabel)
   const typeLabel = normalizeText(item.typeLabel)
   const searchText = normalizeText(item.searchText)
 
   const aliases = normalizedValues(item.aliases)
+  const localizedTitles = normalizedValues(item.localizedTitles)
+  const localizedNames = normalizedValues(item.localizedNames)
   const creators = normalizedValues(item.creators)
   const organizations = normalizedValues(item.organizations)
   const relatedWorks = normalizedValues(item.relatedWorks)
@@ -77,6 +98,8 @@ export function scoreItem(item, query) {
     if (originalTitle.includes(term)) score += 60
 
     score += addExactOrPartialScore(aliases, term, 110, 55)
+    score += addExactOrPartialScore(localizedTitles, term, 115, 58)
+    score += addExactOrPartialScore(localizedNames, term, 105, 52)
     score += addExactOrPartialScore(creators, term, 80, 40)
     score += addExactOrPartialScore(organizations, term, 70, 35)
     score += addExactOrPartialScore(relatedWorks, term, 70, 35)
@@ -90,6 +113,11 @@ export function scoreItem(item, query) {
     if (category.includes(term)) score += 24
     if (organizationType.includes(term)) score += 24
     if (evidenceType.includes(term)) score += 24
+    if (mediaGroup.includes(term)) score += 24
+    if (mediaGroupDisplay.includes(term)) score += 24
+    if (mediaType.includes(term)) score += 20
+    if (format.includes(term)) score += 20
+    if (firstPublishedLabel.includes(term)) score += 16
     if (typeLabel.includes(term)) score += 20
     if (slug.includes(term)) score += 18
     if (legacy.includes(term)) score += 12
@@ -127,6 +155,7 @@ export function resultMeta(item) {
   const parts = [getCollectionLabel(item.collection) || item.typeLabel || item.collection]
   const rank = displayRank(item.rank)
   if (rank) parts.push(rank)
+  if (item.mediaGroup) parts.push(mediaGroupLabel(item.mediaGroup))
   if (item.organizationType) parts.push(item.organizationType)
   if (item.evidenceType) parts.push(item.evidenceType)
   if (item.category) parts.push(item.category)
@@ -136,7 +165,11 @@ export function resultMeta(item) {
 export function resultSummary(item) {
   const parts = [
     item.originalTitle,
+    ...(item.localizedTitles || []),
+    ...(item.localizedNames || []),
     ...(item.aliases || []),
+    item.mediaType,
+    item.firstPublishedLabel,
     ...(item.creators || []),
     ...(item.organizations || []),
     ...(item.relatedWorks || []),

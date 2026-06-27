@@ -26,6 +26,12 @@ export type SearchItem = {
   evidenceStrength?: string
   originalTitle?: string
   aliases?: string[]
+  localizedTitles?: string[]
+  localizedNames?: string[]
+  mediaGroup?: string
+  mediaType?: string
+  format?: string
+  firstPublishedLabel?: string
   creators?: string[]
   organizations?: string[]
   relatedWorks?: string[]

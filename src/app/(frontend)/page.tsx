@@ -8,7 +8,7 @@ const sections = [
     href: '/works',
     eyebrow: '作品',
     title: '作品',
-    description: '浏览作品条目、分级、创作者、机构和材料状态。',
+    description: '浏览轻量索引里的作品条目、分级、创作者、机构和材料状态。',
   },
   {
     kind: 'creators',
@@ -23,6 +23,13 @@ const sections = [
     eyebrow: '机构',
     title: '机构',
     description: '查看出版社、制作公司、平台、品牌、制作委员会等机构资料。',
+  },
+  {
+    kind: 'terms',
+    href: '/terms',
+    eyebrow: '名词解释',
+    title: '名词解释',
+    description: '查看术语、概念和搜索中常见的说明条目。',
   },
   {
     kind: 'rules',
