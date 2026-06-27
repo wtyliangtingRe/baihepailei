@@ -28,6 +28,12 @@ function cleanArray(value) {
   return Array.isArray(value) ? value.filter(Boolean) : []
 }
 
+function cleanObject(value) {
+  if (!value || typeof value !== 'object') return undefined
+  const entries = Object.entries(value).filter(([, item]) => item !== null && item !== undefined && item !== '')
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined
+}
+
 function cleanSlugPart(value) {
   return String(value ?? '')
     .normalize('NFKC')
@@ -93,6 +99,7 @@ export function toPayloadSeed(candidates) {
       externalIds: candidate.externalIds || {},
       candidateSources: cleanArray(candidate.candidateSources),
       externalCoverImages: cleanArray(candidate.externalCoverImages),
+      workGroup: cleanObject(candidate.workGroup),
       yuriCandidateScore: candidate.yuriCandidateScore ?? undefined,
       isLiteVisible: false,
       isFullVisible: false,

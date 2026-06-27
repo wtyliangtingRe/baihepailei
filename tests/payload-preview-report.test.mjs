@@ -25,6 +25,23 @@ const seed = {
         { source: 'bangumi', label: 'Bangumi cover common', size: 'common', url: 'https://example.invalid/common.jpg' },
         { source: 'bangumi', label: 'Bangumi cover large', size: 'large', url: 'https://example.invalid/large.jpg' },
       ],
+      workGroup: { key: 'bloom-into-you', title: '终将成为你', source: 'manual', confidence: 'reviewed' },
+      status: 'draft',
+      isLiteVisible: false,
+      isFullVisible: false,
+    },
+    {
+      title: '终将成为你 动画',
+      slug: 'bangumi-99999',
+      mediaGroup: 'anime',
+      mediaType: 'anime',
+      firstPublishedLabel: '2018-10-05',
+      localizedTitles: [],
+      candidateSources: [
+        { source: 'bangumi', label: 'Bangumi', externalId: '99999' },
+      ],
+      externalCoverImages: [],
+      workGroup: { key: 'bloom-into-you', title: '终将成为你', source: 'manual', confidence: 'reviewed' },
       status: 'draft',
       isLiteVisible: false,
       isFullVisible: false,
@@ -47,29 +64,34 @@ const seed = {
   ],
 }
 
-test('payload seed preview summary counts works, visibility, media, sources, and image metadata', () => {
+test('payload seed preview summary counts works, visibility, media, sources, image metadata, and work groups', () => {
   const summary = summarizePayloadSeed(seed)
 
-  assert.equal(summary.worksCount, 2)
-  assert.equal(summary.draftCount, 2)
-  assert.equal(summary.hiddenLiteCount, 2)
-  assert.equal(summary.hiddenFullCount, 2)
+  assert.equal(summary.worksCount, 3)
+  assert.equal(summary.draftCount, 3)
+  assert.equal(summary.hiddenLiteCount, 3)
+  assert.equal(summary.hiddenFullCount, 3)
   assert.equal(summary.localizedTitleCount, 2)
   assert.equal(summary.externalCoverImageCount, 2)
   assert.equal(summary.externalCoverWorkCount, 1)
-  assert.deepEqual(summary.mediaGroups, [['game', 1], ['manga', 1]])
-  assert.deepEqual(summary.mediaTypes, [['game', 1], ['manga', 1]])
-  assert.deepEqual(summary.sources, [['bangumi', 2]])
+  assert.equal(summary.multiWorkGroupCount, 1)
+  assert.deepEqual(summary.workGroups.map((group) => [group.title, group.count]), [['终将成为你', 2]])
+  assert.deepEqual(summary.mediaGroups, [['anime', 1], ['game', 1], ['manga', 1]])
+  assert.deepEqual(summary.mediaTypes, [['anime', 1], ['game', 1], ['manga', 1]])
+  assert.deepEqual(summary.sources, [['bangumi', 3]])
 })
 
-test('payload seed preview report includes overview, localized title preview, image metadata preview, and hidden draft state', () => {
+test('payload seed preview report includes overview, localized title preview, image metadata preview, work group preview, and hidden draft state', () => {
   const report = createPayloadSeedPreviewReport(seed, { inputPath: 'payload.json' })
 
   assert.match(report, /# Payload 候选导入预览/u)
-  assert.match(report, /作品数：2/u)
+  assert.match(report, /作品数：3/u)
   assert.match(report, /多译名条目数：2/u)
   assert.match(report, /外部封面候选数：2/u)
   assert.match(report, /带外部封面候选作品：1/u)
+  assert.match(report, /多条目候选系列分组：1/u)
+  assert.match(report, /候选系列分组/u)
+  assert.match(report, /终将成为你 \| 2/u)
   assert.match(report, /bangumi-73577/u)
   assert.match(report, /终将成为你/u)
   assert.match(report, /やがて君になる \(ja\/original\)/u)
