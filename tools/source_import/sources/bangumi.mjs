@@ -97,6 +97,21 @@ function detectGameSubtype(subject) {
   return { mediaType: 'game', format: 'unknown' }
 }
 
+function uniqueSearchSignalTags(searchSignals) {
+  const tags = []
+  const seen = new Set()
+
+  for (const signal of Array.isArray(searchSignals) ? searchSignals : []) {
+    const tag = normalizeText(signal?.tag || '')
+    if (!tag || seen.has(tag)) continue
+
+    seen.add(tag)
+    tags.push(tag)
+  }
+
+  return tags
+}
+
 export function bangumiSubjectUrl(subjectId) {
   return `${BANGUMI_SUBJECT_BASE_URL}/${subjectId}`
 }
@@ -184,10 +199,16 @@ export function bangumiSubjectToCandidateInput(subject) {
   const title = normalizeText(subject?.name_cn || subject?.name || '')
   const originalTitle = normalizeText(subject?.name || '')
   const yuriSignal = subject?._baihepailei?.yuriTagSignal || scoreBangumiYuriTags(subject)
+  const searchSignalTags = uniqueSearchSignalTags(subject?._baihepailei?.searchSignals)
   const aliases = [
     subject?.name_cn && subject?.name_cn !== title ? subject.name_cn : null,
     subject?.name && subject?.name !== title ? subject.name : null,
   ].filter(Boolean)
+  const sourceNote = yuriSignal.matchedTags.length > 0
+    ? `Bangumi 标签命中：${yuriSignal.matchedTags.map((tag) => `${tag.name}(${tag.count})`).join('、')}`
+    : searchSignalTags.length > 0
+      ? `Bangumi 标签搜索命中：${searchSignalTags.join('、')}`
+      : ''
 
   return {
     title,
@@ -206,11 +227,9 @@ export function bangumiSubjectToCandidateInput(subject) {
         externalId: id ? String(id) : '',
         url: id ? bangumiSubjectUrl(id) : '',
         fetchedAt: null,
-        note: yuriSignal.matchedTags.length > 0
-          ? `Bangumi 标签命中：${yuriSignal.matchedTags.map((tag) => `${tag.name}(${tag.count})`).join('、')}`
-          : '',
+        note: sourceNote,
       },
     ],
-    yuriCandidateScore: yuriSignal.candidateScore,
+    yuriCandidateScore: Math.max(yuriSignal.candidateScore, searchSignalTags.length > 0 ? 0.05 : 0),
   }
 }
