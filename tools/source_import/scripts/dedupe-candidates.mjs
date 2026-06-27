@@ -120,6 +120,7 @@ export function mergeCandidate(base, next) {
     externalIds: { ...(base.externalIds || {}), ...(next.externalIds || {}) },
     candidateSources: uniqueCandidateSources([...(base.candidateSources || []), ...(next.candidateSources || [])]),
     externalCoverImages: uniqueByJson([...(base.externalCoverImages || []), ...(next.externalCoverImages || [])]),
+    workGroup: base.workGroup || next.workGroup,
   }
 }
 
