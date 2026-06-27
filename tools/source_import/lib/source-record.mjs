@@ -112,6 +112,7 @@ export function createCandidateWork(input) {
     firstPublishedLabel: dateInfo.label,
     externalIds: input.externalIds || {},
     candidateSources: input.candidateSources || (sourceRecord ? [sourceRecordToCandidateSource(sourceRecord)] : []),
+    externalCoverImages: cleanArrayRows(input.externalCoverImages || []),
     yuriCandidateScore: input.yuriCandidateScore ?? null,
     isLiteVisible: input.isLiteVisible ?? false,
     isFullVisible: input.isFullVisible ?? false,
@@ -137,6 +138,7 @@ export function sourceRecordToCandidateWork(record) {
     firstPublishedLabel: raw.date || raw.firstPublishedLabel || record.date || record.firstPublishedLabel,
     externalIds: raw.externalIds || record.externalIds || {},
     sourceRecord: record,
+    externalCoverImages: raw.externalCoverImages || record.externalCoverImages || [],
     yuriCandidateScore: raw.yuriCandidateScore ?? record.yuriCandidateScore ?? null,
   })
 }
