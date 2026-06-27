@@ -4,6 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { readJsonl, writeJsonFile } from '../lib/jsonl.mjs'
+import { normalizeMediaGroup } from '../lib/media-groups.mjs'
 import { slugify, uniqueSlug } from '../lib/slug.mjs'
 
 function parseArgs(argv) {
@@ -71,6 +72,7 @@ export function toPayloadSeed(candidates) {
 
   const works = candidates.map((candidate) => {
     const slug = uniqueSlug(candidateSlugBase(candidate), seenSlugs)
+    const mediaType = candidate.mediaType || 'unknown'
 
     return {
       siteId: candidate.siteId || undefined,
@@ -81,7 +83,9 @@ export function toPayloadSeed(candidates) {
       evidenceStrength: 'unassessed',
       originalTitle: candidate.originalTitle || undefined,
       aliases: cleanArray(candidate.aliases),
-      mediaType: candidate.mediaType || 'unknown',
+      localizedTitles: cleanArray(candidate.localizedTitles),
+      mediaGroup: normalizeMediaGroup(candidate.mediaGroup, mediaType),
+      mediaType,
       format: candidate.format || 'unknown',
       firstPublishedAt: candidate.firstPublishedAt || undefined,
       firstPublishedPrecision: candidate.firstPublishedPrecision || 'unknown',
