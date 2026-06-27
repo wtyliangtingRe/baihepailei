@@ -2,6 +2,8 @@ import type { CollectionConfig } from 'payload'
 
 import { publishedOrSignedIn, trustedAndUp } from '@/access/roles'
 
+import { localizedNamesField } from './fields/localizedMetadata'
+
 export const Creators: CollectionConfig = {
   slug: 'creators',
   labels: {
@@ -63,6 +65,7 @@ export const Creators: CollectionConfig = {
         },
       ],
     },
+    localizedNamesField(),
     {
       name: 'profileImage',
       type: 'upload',

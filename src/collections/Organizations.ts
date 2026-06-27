@@ -2,6 +2,8 @@ import type { CollectionConfig } from 'payload'
 
 import { publishedOrSignedIn, trustedAndUp } from '@/access/roles'
 
+import { localizedNamesField } from './fields/localizedMetadata'
+
 export const Organizations: CollectionConfig = {
   slug: 'organizations',
   labels: {
@@ -79,6 +81,7 @@ export const Organizations: CollectionConfig = {
         },
       ],
     },
+    localizedNamesField(),
     {
       name: 'notes',
       type: 'richText',
