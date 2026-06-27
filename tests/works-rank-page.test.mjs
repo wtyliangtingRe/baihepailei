@@ -26,6 +26,23 @@ test('works page keeps rank order, grouped sections, and rank jump navigation', 
   assert.match(worksPage, /id=\{rankAnchor\(group\.rank\)\}/)
 })
 
+test('works page supports media group filters and quick links', () => {
+  assert.match(worksPage, /const mediaGroupOptions = \[/)
+  assert.match(worksPage, /name="media"/)
+  assert.match(worksPage, /normalizeMediaGroup\(firstParam\(params\.media\)\)/)
+  assert.match(worksPage, /filters\.media !== 'all'/)
+  assert.match(worksPage, /className="media-group-links"/)
+  assert.match(worksPage, /href=\{`\/works\?media=\$\{option\.value\}`\}/)
+})
+
+test('works page cards show media metadata and localized titles', () => {
+  assert.match(worksPage, /mediaGroupLabel\(item\.mediaGroup\)/)
+  assert.match(worksPage, /compactValues\(item\.localizedTitles\)/)
+  assert.match(worksPage, /item\.mediaType, item\.format, item\.firstPublishedLabel/)
+  assert.match(worksPage, /译名：/)
+  assert.match(worksPage, /基础信息：/)
+})
+
 test('works rank groups include return links to the rank navigation', () => {
   assert.match(worksPage, /className="rank-group-actions"/)
   assert.match(worksPage, /href="#works-rank-nav"/)
@@ -36,5 +53,6 @@ test('works rank navigation and grouped sections have supporting styles', () => 
   assert.match(styles, /\.rank-jump-list/)
   assert.match(styles, /\.rank-group\s*\{[\s\S]*scroll-margin-top:/)
   assert.match(styles, /\.rank-group-actions/)
+  assert.match(styles, /\.media-group-links/)
   assert.match(styles, /scroll-behavior: smooth/)
 })
