@@ -66,6 +66,10 @@ test('source record helper creates draft candidate works without ratings', () =>
       date: '2014-01-10',
       mediaType: 'anime',
       externalIds: { bangumiSubjectId: '12345' },
+      localizedTitles: [
+        { title: '桜Trick', language: 'ja', region: 'JP', kind: 'original', isPrimary: true },
+        { title: 'Sakura Trick', language: 'en', kind: 'romanized' },
+      ],
     },
   })
 
@@ -73,7 +77,10 @@ test('source record helper creates draft candidate works without ratings', () =>
 
   assert.equal(candidate.title, '樱 Trick')
   assert.equal(candidate.originalTitle, '桜Trick')
+  assert.equal(candidate.mediaGroup, 'anime')
   assert.equal(candidate.mediaType, 'anime')
+  assert.equal(candidate.localizedTitles.length, 2)
+  assert.equal(candidate.localizedTitles[0].title, '桜Trick')
   assert.equal(candidate.firstPublishedPrecision, 'day')
   assert.equal(candidate.rank, 'unknown')
   assert.equal(candidate.reviewStatus, 'pending')
@@ -128,12 +135,13 @@ test('Payload seed export keeps candidates as hidden drafts', () => {
     {
       title: '作品A',
       slug: 'work-a',
-      mediaType: 'manga',
-      format: 'manga_series',
+      mediaType: 'visual_novel',
+      format: 'visual_novel',
       firstPublishedAt: '2020-01-01',
       firstPublishedPrecision: 'year',
       firstPublishedLabel: '2020',
       aliases: [{ value: 'Work A' }],
+      localizedTitles: [{ title: '作品A 英文名', language: 'en', kind: 'official' }],
       candidateSources: [{ source: 'manual', label: 'Manual', externalId: '', url: '', fetchedAt: null, note: '' }],
     },
   ])
@@ -142,6 +150,8 @@ test('Payload seed export keeps candidates as hidden drafts', () => {
   assert.equal(seed.works[0].rank, 'unknown')
   assert.equal(seed.works[0].reviewStatus, 'pending')
   assert.equal(seed.works[0].evidenceStrength, 'unassessed')
+  assert.equal(seed.works[0].mediaGroup, 'game')
+  assert.equal(seed.works[0].localizedTitles[0].title, '作品A 英文名')
   assert.equal(seed.works[0].status, 'draft')
   assert.equal(seed.works[0].isLiteVisible, false)
   assert.equal(seed.works[0].isFullVisible, false)
