@@ -16,6 +16,62 @@ const evidenceStrengthOptions = [
   { label: '强', value: 'strong' },
 ]
 
+const mediaTypeOptions = [
+  { label: '动画', value: 'anime' },
+  { label: '漫画', value: 'manga' },
+  { label: '小说', value: 'novel' },
+  { label: '轻小说', value: 'light_novel' },
+  { label: '视觉小说', value: 'visual_novel' },
+  { label: '游戏', value: 'game' },
+  { label: '广播剧 / 音声', value: 'audio_drama' },
+  { label: '真人影视', value: 'live_action' },
+  { label: 'Webtoon', value: 'webtoon' },
+  { label: '同人作品', value: 'doujin' },
+  { label: '合集 / 选集', value: 'anthology' },
+  { label: '其他', value: 'other' },
+  { label: '未知', value: 'unknown' },
+]
+
+const workFormatOptions = [
+  { label: 'TV 动画', value: 'tv_anime' },
+  { label: '动画电影', value: 'anime_movie' },
+  { label: 'OVA', value: 'ova' },
+  { label: 'ONA / 网络动画', value: 'ona' },
+  { label: '漫画连载', value: 'manga_series' },
+  { label: '漫画短篇', value: 'manga_oneshot' },
+  { label: '小说系列', value: 'novel_series' },
+  { label: '轻小说系列', value: 'light_novel_series' },
+  { label: 'Web 连载', value: 'web_serial' },
+  { label: '视觉小说', value: 'visual_novel' },
+  { label: 'PC 游戏', value: 'pc_game' },
+  { label: '主机游戏', value: 'console_game' },
+  { label: '手机游戏', value: 'mobile_game' },
+  { label: '广播剧 / 音声', value: 'audio_drama' },
+  { label: '真人影视', value: 'live_action' },
+  { label: 'Webtoon 连载', value: 'webtoon_series' },
+  { label: '同人作品', value: 'doujin' },
+  { label: '合集 / 选集', value: 'anthology' },
+  { label: '其他', value: 'other' },
+  { label: '未知', value: 'unknown' },
+]
+
+const datePrecisionOptions = [
+  { label: '精确到日', value: 'day' },
+  { label: '精确到月', value: 'month' },
+  { label: '精确到年', value: 'year' },
+  { label: '未知', value: 'unknown' },
+]
+
+const candidateSourceOptions = [
+  { label: 'Bangumi', value: 'bangumi' },
+  { label: 'AniList', value: 'anilist' },
+  { label: 'VNDB', value: 'vndb' },
+  { label: 'Wikidata', value: 'wikidata' },
+  { label: 'Wikipedia', value: 'wikipedia' },
+  { label: '手动整理', value: 'manual' },
+  { label: '其他', value: 'other' },
+]
+
 const riskUnassessedOption = { label: '未评估', value: 'unassessed' }
 
 export const Works: CollectionConfig = {
@@ -25,7 +81,7 @@ export const Works: CollectionConfig = {
     plural: '作品',
   },
   admin: {
-    defaultColumns: ['title', 'rank', 'reviewStatus', 'evidenceStrength', 'isLiteVisible', 'status', 'updatedAt'],
+    defaultColumns: ['title', 'mediaType', 'rank', 'reviewStatus', 'evidenceStrength', 'isLiteVisible', 'status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'title',
   },
@@ -115,6 +171,116 @@ export const Works: CollectionConfig = {
           label: '别名',
         },
       ],
+    },
+    {
+      name: 'mediaType',
+      type: 'select',
+      label: '作品类型',
+      defaultValue: 'unknown',
+      required: true,
+      options: mediaTypeOptions,
+      admin: {
+        description: '用于区分动画、漫画、小说、游戏、视觉小说等候选作品底板类型。',
+      },
+    },
+    {
+      name: 'format',
+      type: 'select',
+      label: '作品形态',
+      defaultValue: 'unknown',
+      options: workFormatOptions,
+      admin: {
+        description: '比作品类型更细的形态，例如 TV 动画、漫画连载、视觉小说、手机游戏等。',
+      },
+    },
+    {
+      name: 'firstPublishedAt',
+      type: 'date',
+      label: '首次发表 / 播出 / 发售日期',
+      admin: {
+        description: '用于排序的机器日期。若只知道年份，可先填当年 1 月 1 日，并用日期精度和显示文本说明。',
+      },
+    },
+    {
+      name: 'firstPublishedPrecision',
+      type: 'select',
+      label: '首次日期精度',
+      defaultValue: 'unknown',
+      options: datePrecisionOptions,
+      admin: {
+        description: '避免把只知道年份或月份的外部数据误显示成精确日期。',
+      },
+    },
+    {
+      name: 'firstPublishedLabel',
+      type: 'text',
+      label: '首次日期显示文本',
+      admin: {
+        description: '前台可优先显示这个文本，例如 2015、2015-04、2018-10-05、待定。',
+      },
+    },
+    {
+      name: 'externalIds',
+      type: 'group',
+      label: '外部 ID',
+      admin: {
+        description: '用于候选导入、去重和跨来源对齐，不直接代表本站复核结论。',
+      },
+      fields: [
+        { name: 'bangumiSubjectId', type: 'text', label: 'Bangumi Subject ID' },
+        { name: 'anilistMediaId', type: 'text', label: 'AniList Media ID' },
+        { name: 'vndbId', type: 'text', label: 'VNDB ID' },
+        { name: 'wikidataQid', type: 'text', label: 'Wikidata QID' },
+        { name: 'malId', type: 'text', label: 'MyAnimeList ID' },
+        { name: 'officialUrl', type: 'text', label: '官网 URL' },
+      ],
+    },
+    {
+      name: 'candidateSources',
+      type: 'array',
+      label: '候选来源',
+      admin: {
+        description: '记录候选作品来自哪些外部来源。这里只保存来源链接和派生说明，不保存用户评论原文。',
+      },
+      fields: [
+        {
+          name: 'source',
+          type: 'select',
+          label: '来源',
+          defaultValue: 'other',
+          options: candidateSourceOptions,
+        },
+        { name: 'label', type: 'text', label: '来源名称' },
+        { name: 'externalId', type: 'text', label: '来源 ID' },
+        { name: 'url', type: 'text', label: '来源链接' },
+        { name: 'fetchedAt', type: 'date', label: '采集时间' },
+        { name: 'note', type: 'textarea', label: '来源备注' },
+      ],
+    },
+    {
+      name: 'candidateReasons',
+      type: 'array',
+      label: '入选候选理由',
+      admin: {
+        description: '例如 Bangumi 标签命中、AniList Yuri tag、Wikidata 类型匹配、旧站已有记录等。',
+      },
+      fields: [
+        {
+          name: 'value',
+          type: 'text',
+          label: '理由',
+        },
+      ],
+    },
+    {
+      name: 'yuriCandidateScore',
+      type: 'number',
+      label: '百合候选分',
+      min: 0,
+      max: 1,
+      admin: {
+        description: '0 到 1 的候选强度分，只用于底板导入和复核排序，不代表本站评级。',
+      },
     },
     {
       name: 'isLiteVisible',
