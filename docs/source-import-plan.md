@@ -50,6 +50,12 @@ Before adding a new source adapter, add or update its registry entry.
 
 All real fetched data should live under `data_local/`, which is ignored by Git.
 
+For local development, `data_local/` may be a junction that points to a larger non-SSD data drive, for example:
+
+```powershell
+cmd /c mklink /J data_local E:\data\baihepailei\data_local
+```
+
 ```text
 data_local/
   raw/
@@ -142,9 +148,47 @@ reviewStatus = pending
 evidenceStrength = unassessed
 status = draft
 hasEvidence = false
+isLiteVisible = false
+isFullVisible = false
 ```
 
 First imports should stay out of public frontend views until reviewed.
+
+### 5. Payload candidate import
+
+Candidate import-ready files can contain only `works`:
+
+```json
+{
+  "works": []
+}
+```
+
+Use `--collections works` to avoid requiring legacy clean seed collections such as rules, terms, and creators.
+
+Dry-run first:
+
+```powershell
+node scripts/import/direct-seed-clean-data.mjs --file "E:\data\baihepailei\data_local\import_ready\bangumi-yuri-tagged.payload.json" --collections works --dry-run
+```
+
+Real import requires a local Payload server and seed user credentials:
+
+```powershell
+$env:PAYLOAD_SEED_EMAIL="you@example.com"
+$env:PAYLOAD_SEED_PASSWORD="your-password"
+
+node scripts/import/direct-seed-clean-data.mjs --file "E:\data\baihepailei\data_local\import_ready\bangumi-yuri-tagged.payload.json" --url "http://localhost:3000" --collections works --update-existing
+```
+
+Existing work match priority for candidate imports:
+
+1. `siteId`
+2. external IDs such as `externalIds.bangumiSubjectId`, `externalIds.anilistMediaId`, `externalIds.vndbId`, `externalIds.wikidataQid`
+3. `slug`
+4. `title + mediaType + firstPublishedLabel`
+
+Imported candidates remain draft, hidden, pending review, and unrated unless the seed explicitly says otherwise.
 
 ## Source notes
 
@@ -172,8 +216,6 @@ Use mostly as seed lists and source links. Avoid copying long article text into 
 
 Suggested next PRs:
 
-1. Source import framework with JSONL helpers and CLI skeleton.
-2. Bangumi source adapter small sample.
-3. Normalization and dedupe report.
-4. Payload candidate seed export.
-5. Frontend display for media type and first publication date.
+1. Frontend display for media type and first publication date.
+2. Additional external adapters such as AniList, VNDB, and Wikidata.
+3. Review workflow improvements for candidate acceptance and publication.

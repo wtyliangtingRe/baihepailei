@@ -27,11 +27,50 @@ function cleanArray(value) {
   return Array.isArray(value) ? value.filter(Boolean) : []
 }
 
+function cleanSlugPart(value) {
+  return String(value ?? '')
+    .normalize('NFKC')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, '-')
+    .replace(/^-+|-+$/gu, '')
+}
+
+function externalIdSlug(candidate) {
+  const externalIds = candidate.externalIds || {}
+  const externalIdPairs = [
+    ['bangumi', externalIds.bangumiSubjectId],
+    ['anilist', externalIds.anilistMediaId],
+    ['vndb', externalIds.vndbId],
+    ['wikidata', externalIds.wikidataQid],
+    ['mal', externalIds.malId],
+  ]
+
+  for (const [source, value] of externalIdPairs) {
+    const part = cleanSlugPart(value)
+    if (part) return `${source}-${part}`
+  }
+
+  for (const source of cleanArray(candidate.candidateSources)) {
+    const sourceKey = cleanSlugPart(source.source || source.label)
+    const externalId = cleanSlugPart(source.externalId)
+    if (sourceKey && externalId) return `${sourceKey}-${externalId}`
+  }
+
+  return ''
+}
+
+export function candidateSlugBase(candidate) {
+  return externalIdSlug(candidate)
+    || candidate.slug
+    || slugify(candidate.title, { fallback: 'candidate-work' })
+}
+
 export function toPayloadSeed(candidates) {
   const seenSlugs = new Set()
 
   const works = candidates.map((candidate) => {
-    const slug = uniqueSlug(candidate.slug || slugify(candidate.title, { fallback: 'candidate-work' }), seenSlugs)
+    const slug = uniqueSlug(candidateSlugBase(candidate), seenSlugs)
 
     return {
       siteId: candidate.siteId || undefined,

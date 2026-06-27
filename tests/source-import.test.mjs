@@ -7,7 +7,8 @@ import { createRawSourceRecord, sourceRecordToCandidateWork } from '../tools/sou
 import { slugify, uniqueSlug } from '../tools/source_import/lib/slug.mjs'
 import { dedupeCandidates } from '../tools/source_import/scripts/dedupe-candidates.mjs'
 import { normalizeCandidateRecords } from '../tools/source_import/scripts/normalize-candidates.mjs'
-import { toPayloadSeed } from '../tools/source_import/scripts/to-payload-seed.mjs'
+import { candidateSlugBase, toPayloadSeed } from '../tools/source_import/scripts/to-payload-seed.mjs'
+
 
 test('JSONL helpers parse and stringify records', () => {
   const records = parseJsonl('{"a":1}\n\n{"b":2}\n')
@@ -105,6 +106,21 @@ test('normalize and dedupe candidates by external IDs', () => {
   assert.equal(result.deduped.length, 1)
   assert.equal(result.conflicts.length, 0)
   assert.equal(result.deduped[0].candidateSources.length, 2)
+})
+
+test('candidate slug base prefers stable external IDs over non-Latin titles', () => {
+  assert.equal(candidateSlugBase({
+    title: '終將成為妳',
+    externalIds: { bangumiSubjectId: '18313' },
+  }), 'bangumi-18313')
+})
+
+test('candidate slug base lets external IDs override generated legacy slugs', () => {
+  assert.equal(candidateSlugBase({
+    title: '終將成為妳',
+    slug: 'e-e-æ2-æ-æ-1-4æ-e3-43-4a',
+    externalIds: { bangumiSubjectId: '73577' },
+  }), 'bangumi-73577')
 })
 
 test('Payload seed export keeps candidates as hidden drafts', () => {
