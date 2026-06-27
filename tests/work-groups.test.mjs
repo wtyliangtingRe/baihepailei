@@ -28,6 +28,18 @@ test('candidate work group inference creates review-only grouping hints', () => 
   assert.equal(group.confidence, 'title_variant')
 })
 
+test('candidate work group inference can use prefixed alias hints', () => {
+  const group = inferCandidateWorkGroup({
+    title: '迷你百合',
+    aliases: [{ value: '迷你摇曳百合' }],
+  })
+
+  assert.equal(group.key, '摇曳百合')
+  assert.equal(group.title, '摇曳百合')
+  assert.equal(group.source, 'alias_heuristic')
+  assert.equal(group.confidence, 'title_variant')
+})
+
 test('explicit work group metadata is normalized and preserved', () => {
   const group = normalizeWorkGroup({
     key: 'Yuru Yuri',
