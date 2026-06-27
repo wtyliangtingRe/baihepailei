@@ -3,6 +3,15 @@ import { createRawSourceRecord } from '../lib/source-record.mjs'
 
 const BANGUMI_SUBJECT_BASE_URL = 'https://bgm.tv/subject'
 
+const BANGUMI_IMAGE_SIZE_HINTS = new Map([
+  ['grid', 100],
+  ['small', 200],
+  ['common', 400],
+  ['medium', 800],
+])
+const BANGUMI_IMAGE_SIZE_ORDER = ['common', 'large', 'medium', 'small', 'grid']
+const EXTERNAL_COVER_COPYRIGHT_NOTE = 'Bangumi external cover URL only. Do not mirror, upload, or publish as Baihepailei cover without copyright/source review.'
+
 const SUBJECT_TYPE_TO_MEDIA_TYPE = new Map([
   [1, 'book'],
   [2, 'anime'],
@@ -30,6 +39,11 @@ const YURI_TAG_RULES = [
 
 function normalizeText(value) {
   return String(value ?? '').normalize('NFKC').trim().replace(/\s+/gu, ' ')
+}
+
+function normalizeUrl(value) {
+  const url = String(value ?? '').trim()
+  return /^https?:\/\//iu.test(url) ? url : ''
 }
 
 function tagCount(tag) {
@@ -220,6 +234,34 @@ export function bangumiSubjectUrl(subjectId) {
   return `${BANGUMI_SUBJECT_BASE_URL}/${subjectId}`
 }
 
+export function bangumiSubjectExternalCoverImages(subject) {
+  const images = subject?.images && typeof subject.images === 'object' ? subject.images : {}
+  const seen = new Set()
+  const rows = []
+  const sizes = [
+    ...BANGUMI_IMAGE_SIZE_ORDER,
+    ...Object.keys(images).filter((key) => !BANGUMI_IMAGE_SIZE_ORDER.includes(key)),
+  ]
+
+  for (const size of sizes) {
+    const url = normalizeUrl(images[size])
+    if (!url || seen.has(url)) continue
+
+    seen.add(url)
+    rows.push({
+      source: 'bangumi',
+      label: `Bangumi cover ${size}`,
+      url,
+      size,
+      widthHint: BANGUMI_IMAGE_SIZE_HINTS.get(size) || undefined,
+      usage: 'candidate_reference',
+      copyrightNote: EXTERNAL_COVER_COPYRIGHT_NOTE,
+    })
+  }
+
+  return rows
+}
+
 export function mapBangumiSubjectType(subject) {
   const subjectType = Number(subject?.type)
   const broadType = SUBJECT_TYPE_TO_MEDIA_TYPE.get(subjectType) || 'unknown'
@@ -333,6 +375,7 @@ export function bangumiSubjectToCandidateInput(subject) {
         note: sourceNote,
       },
     ],
+    externalCoverImages: bangumiSubjectExternalCoverImages(subject),
     yuriCandidateScore: Math.max(yuriSignal.candidateScore, searchSignalTags.length > 0 ? 0.05 : 0),
   }
 }
