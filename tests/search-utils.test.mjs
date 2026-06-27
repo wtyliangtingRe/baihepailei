@@ -5,6 +5,7 @@ import {
   displayRank,
   filterAndRankItems,
   getCollectionLabel,
+  mediaGroupLabel,
   resultMeta,
   resultSummary,
   scoreItem,
@@ -21,6 +22,11 @@ const work = {
   rank: 'B',
   originalTitle: '桜Trick',
   aliases: ['樱trick', 'Sakura Trick'],
+  localizedTitles: ['Sakura Trick', '樱花 Trick'],
+  mediaGroup: 'anime',
+  mediaType: 'anime',
+  format: 'tv_anime',
+  firstPublishedLabel: '2014-01-10',
   creators: ['タチ'],
   tags: ['百合'],
   warnings: ['争议标签'],
@@ -36,6 +42,7 @@ const creator = {
   slug: 'tachi',
   url: '/creators/tachi',
   aliases: ['Tachi'],
+  localizedNames: ['Tachi'],
   searchText: '创作者 作者',
 }
 
@@ -66,6 +73,12 @@ test('displayRank maps legacy AA rank to S for frontend display', () => {
   assert.equal(displayRank('unknown'), '')
 })
 
+test('mediaGroupLabel maps media groups to Chinese display labels', () => {
+  assert.equal(mediaGroupLabel('anime'), '动画')
+  assert.equal(mediaGroupLabel('manga'), '漫画')
+  assert.equal(mediaGroupLabel('unknown'), '未知类型')
+})
+
 test('scoreItem gives title and alias matches a stronger score than body-only matches', () => {
   const titleScore = scoreItem(work, '樱trick')
   const bodyScore = scoreItem(work, '校园')
@@ -79,6 +92,12 @@ test('scoreItem matches creator, tag, warning, and related fields', () => {
   assert.ok(scoreItem(work, '百合') > 0)
   assert.ok(scoreItem(work, '争议') > 0)
   assert.ok(scoreItem(term, '性别表达') > 0)
+})
+
+test('scoreItem matches localized titles and media metadata', () => {
+  assert.ok(scoreItem(work, '樱花') > 0)
+  assert.ok(scoreItem(work, '动画') > 0)
+  assert.ok(scoreItem(work, '2014') > 0)
 })
 
 test('filterAndRankItems filters collections and ranks stronger matches first', () => {
@@ -105,9 +124,12 @@ test('filterAndRankItems limits empty-query browse results to 30 items', () => {
 test('resultMeta and resultSummary produce compact display strings without legacy XWiki pages', () => {
   const summary = resultSummary(work)
 
-  assert.equal(resultMeta(work), '作品 · B级')
-  assert.equal(resultMeta({ ...work, rank: 'AA' }), '作品 · S级')
+  assert.equal(resultMeta(work), '作品 · B级 · 动画')
+  assert.equal(resultMeta({ ...work, rank: 'AA' }), '作品 · S级 · 动画')
   assert.match(summary, /桜Trick/)
+  assert.match(summary, /樱花 Trick/)
+  assert.match(summary, /anime/)
+  assert.match(summary, /2014-01-10/)
   assert.match(summary, /タチ/)
   assert.doesNotMatch(summary, /Main\.作品/)
 })
