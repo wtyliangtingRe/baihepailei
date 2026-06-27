@@ -1,7 +1,7 @@
 param(
   [string]$Out = "data_local/raw/bangumi/bangumi-yuri-tagged.jsonl",
   [string]$Report = "data_local/reports/bangumi-yuri-tagged-summary.json",
-  [string]$Tags = "百合,轻百合,GL",
+  [string]$Tags = "",
   [string]$Types = "1,2,4",
   [int]$Limit = 10,
   [int]$Pages = 1,
@@ -15,7 +15,22 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$TagList = $Tags -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+function Join-Chars([int[]]$Codes) {
+  return -join ($Codes | ForEach-Object { [char]$_ })
+}
+
+$TagBaihe = Join-Chars @(0x767E, 0x5408)
+$TagLightSimplified = Join-Chars @(0x8F7B, 0x767E, 0x5408)
+$TagLightTraditional = Join-Chars @(0x8F15, 0x767E, 0x5408)
+$TagGirlsLoveJa = Join-Chars @(0x30AC, 0x30FC, 0x30EB, 0x30BA, 0x30E9, 0x30D6)
+$TagGirlsLoveJaShort = Join-Chars @(0x30AC, 0x30EB, 0x30E9, 0x30D6)
+
+if ($Tags.Trim().Length -eq 0) {
+  $TagList = @($TagBaihe, $TagLightSimplified, "GL")
+} else {
+  $TagList = $Tags -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+}
+
 $TypeList = $Types -split "," | ForEach-Object { [int]$_.Trim() }
 
 function New-Headers {
@@ -48,12 +63,12 @@ function Get-TagCount($Tag) {
 function Get-YuriRule($Name) {
   $normalized = ([string]$Name).Normalize([Text.NormalizationForm]::FormKC).Trim()
 
-  if ($normalized -match "^(轻|輕)百合$") {
-    return @{ label = "轻百合"; weight = 0.75 }
+  if ($normalized -eq $TagLightSimplified -or $normalized -eq $TagLightTraditional) {
+    return @{ label = $TagLightSimplified; weight = 0.75 }
   }
 
-  if ($normalized -eq "百合") {
-    return @{ label = "百合"; weight = 1.0 }
+  if ($normalized -eq $TagBaihe) {
+    return @{ label = $TagBaihe; weight = 1.0 }
   }
 
   if ($normalized -match "^(?i:gl)$") {
@@ -64,8 +79,8 @@ function Get-YuriRule($Name) {
     return @{ label = "Yuri"; weight = 0.9 }
   }
 
-  if ($normalized -eq "ガールズラブ" -or $normalized -eq "ガルラブ") {
-    return @{ label = "ガールズラブ"; weight = 1.0 }
+  if ($normalized -eq $TagGirlsLoveJa -or $normalized -eq $TagGirlsLoveJaShort) {
+    return @{ label = $TagGirlsLoveJa; weight = 1.0 }
   }
 
   return $null
