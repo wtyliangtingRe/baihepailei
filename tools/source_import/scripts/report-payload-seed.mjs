@@ -74,6 +74,15 @@ function sourcePreview(work) {
     .join('；')
 }
 
+function imageMetadataPreview(work) {
+  const images = Array.isArray(work.externalCoverImages) ? work.externalCoverImages : []
+  if (images.length === 0) return ''
+
+  const first = images[0]
+  const label = cleanText(first?.label || first?.size || first?.source || 'image')
+  return images.length === 1 ? label : `${label} +${images.length - 1}`
+}
+
 function hiddenDraftState(work) {
   const flags = []
   flags.push(work.status || 'no-status')
@@ -112,6 +121,8 @@ export function summarizePayloadSeed(seed) {
     hiddenLiteCount: works.filter((work) => work.isLiteVisible === false).length,
     hiddenFullCount: works.filter((work) => work.isFullVisible === false).length,
     localizedTitleCount: works.reduce((sum, work) => sum + (Array.isArray(work.localizedTitles) ? work.localizedTitles.length : 0), 0),
+    externalCoverImageCount: works.reduce((sum, work) => sum + (Array.isArray(work.externalCoverImages) ? work.externalCoverImages.length : 0), 0),
+    externalCoverWorkCount: works.filter((work) => Array.isArray(work.externalCoverImages) && work.externalCoverImages.length > 0).length,
     mediaGroups: countBy(works.map((work) => work.mediaGroup || 'unknown')),
     mediaTypes: countBy(works.map((work) => work.mediaType || 'unknown')),
     statuses: countBy(works.map((work) => work.status || 'unknown')),
@@ -136,6 +147,8 @@ export function createPayloadSeedPreviewReport(seed, { inputPath = '' } = {}) {
     `- Lite 隐藏：${summary.hiddenLiteCount}`,
     `- Full 隐藏：${summary.hiddenFullCount}`,
     `- 多译名条目数：${summary.localizedTitleCount}`,
+    `- 外部封面候选数：${summary.externalCoverImageCount}`,
+    `- 带外部封面候选作品：${summary.externalCoverWorkCount}`,
     '',
     markdownCountTable('作品大类', summary.mediaGroups),
     markdownCountTable('作品类型', summary.mediaTypes),
@@ -143,9 +156,9 @@ export function createPayloadSeedPreviewReport(seed, { inputPath = '' } = {}) {
     markdownCountTable('来源', summary.sources),
     '## 作品候选清单',
     '',
-    '| # | Slug | 标题 | 大类 / 类型 | 首次日期 | 多译名预览 | 来源 | 状态 |',
-    '| ---: | --- | --- | --- | --- | --- | --- | --- |',
-    ...works.map((work, index) => `| ${index + 1} | ${escapeMarkdownCell(work.slug)} | ${escapeMarkdownCell(work.title)} | ${escapeMarkdownCell([work.mediaGroup, work.mediaType].filter(Boolean).join(' / '))} | ${escapeMarkdownCell(work.firstPublishedLabel || '')} | ${escapeMarkdownCell(localizedTitlePreview(work))} | ${escapeMarkdownCell(sourcePreview(work))} | ${escapeMarkdownCell(hiddenDraftState(work))} |`),
+    '| # | Slug | 标题 | 大类 / 类型 | 首次日期 | 多译名预览 | 来源 | 外部封面 | 状态 |',
+    '| ---: | --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...works.map((work, index) => `| ${index + 1} | ${escapeMarkdownCell(work.slug)} | ${escapeMarkdownCell(work.title)} | ${escapeMarkdownCell([work.mediaGroup, work.mediaType].filter(Boolean).join(' / '))} | ${escapeMarkdownCell(work.firstPublishedLabel || '')} | ${escapeMarkdownCell(localizedTitlePreview(work))} | ${escapeMarkdownCell(sourcePreview(work))} | ${escapeMarkdownCell(imageMetadataPreview(work))} | ${escapeMarkdownCell(hiddenDraftState(work))} |`),
     '',
     '## 导入前检查建议',
     '',
@@ -153,6 +166,7 @@ export function createPayloadSeedPreviewReport(seed, { inputPath = '' } = {}) {
     '- 确认 `isLiteVisible` 与 `isFullVisible` 都是隐藏状态。',
     '- 优先检查同名、同译名、同来源 ID 的候选是否有重复。',
     '- 多译名来自外部来源时只作为候选元数据，导入后仍建议人工复核。',
+    '- 外部封面只作为候选 URL 元数据，不代表已下载、已上传或已公开展示。',
     '',
   ]
 
