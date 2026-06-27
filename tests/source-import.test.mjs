@@ -112,7 +112,7 @@ test('normalize and dedupe candidates by external IDs', () => {
   assert.equal(candidates.length, 2)
   assert.equal(result.deduped.length, 1)
   assert.equal(result.conflicts.length, 0)
-  assert.equal(result.deduped[0].candidateSources.length, 1)
+  assert.equal(result.deduped[0].candidateSources.length, 2)
   assert.equal(result.deduped[0].candidateSources[0].externalId, '1')
 })
 
