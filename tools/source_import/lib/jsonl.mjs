@@ -1,10 +1,16 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
+const UTF8_BOM = /^\uFEFF/u
+
+function stripBom(line) {
+  return line.replace(UTF8_BOM, '')
+}
+
 export function parseJsonl(text, { sourcePath = '<inline>' } = {}) {
   return text
     .split(/\r?\n/u)
-    .map((line, index) => ({ line, lineNumber: index + 1 }))
+    .map((line, index) => ({ line: index === 0 ? stripBom(line) : line, lineNumber: index + 1 }))
     .filter(({ line }) => line.trim().length > 0)
     .map(({ line, lineNumber }) => {
       try {
