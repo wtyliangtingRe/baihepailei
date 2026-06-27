@@ -14,7 +14,14 @@ const mediaGroupOptions = [
   { label: '未知', value: 'unknown' },
 ]
 
-const mediaGroupLabels = Object.fromEntries(mediaGroupOptions.map((option) => [option.value, option.label]))
+const mediaGroupLabels: Record<string, string> = {
+  anime: '动画',
+  manga: '漫画',
+  novel: '小说',
+  game: '游戏',
+  other: '其他',
+  unknown: '未知类型',
+}
 
 const rankDescriptions: Record<string, string> = {
   AA: '最高优先级关注项。前台统一显示为 S 级，通常需要优先阅读正文和材料。',
@@ -65,7 +72,7 @@ function normalizeMediaGroup(value: string) {
 }
 
 function mediaGroupLabel(value?: string) {
-  if (!value || value === 'unknown') return value === 'unknown' ? '未知类型' : ''
+  if (!value) return ''
   return mediaGroupLabels[value] || value
 }
 
