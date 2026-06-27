@@ -9,7 +9,7 @@ export const Tags: CollectionConfig = {
     plural: '标签',
   },
   admin: {
-    defaultColumns: ['name', 'slug', 'category', 'updatedAt'],
+    defaultColumns: ['name', 'siteId', 'slug', 'category', 'updatedAt'],
     group: '内容',
     useAsTitle: 'name',
   },
@@ -35,6 +35,15 @@ export const Tags: CollectionConfig = {
       unique: true,
       admin: {
         description: '用于 URL 和导入匹配，例如 magical-girl。',
+      },
+    },
+    {
+      name: 'siteId',
+      type: 'text',
+      label: '站内 ID',
+      unique: true,
+      admin: {
+        description: '本站内部稳定唯一标识，用于迁移、导入、跨来源合并和人工追踪。',
       },
     },
     {
