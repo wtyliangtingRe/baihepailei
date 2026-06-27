@@ -18,6 +18,7 @@ function candidate(overrides) {
     firstPublishedLabel: '2020',
     externalIds: {},
     candidateSources: [],
+    externalCoverImages: [],
     ...overrides,
   }
 }
@@ -127,14 +128,25 @@ test('dedupe keeps exact original title version variants as review items', () =>
 
 test('dedupe auto-merges exact external IDs and records merge metadata', () => {
   const result = dedupeCandidates([
-    candidate({ title: '作品A', externalIds: { bangumiSubjectId: '1' }, candidateSources: [{ source: 'bangumi', externalId: '1' }] }),
-    candidate({ title: '作品A', externalIds: { bangumiSubjectId: '1' }, candidateSources: [{ source: 'manual', externalId: 'manual-a' }] }),
+    candidate({
+      title: '作品A',
+      externalIds: { bangumiSubjectId: '1' },
+      candidateSources: [{ source: 'bangumi', externalId: '1' }],
+      externalCoverImages: [{ source: 'bangumi', url: 'https://lain.bgm.tv/cover-a.jpg', size: 'common' }],
+    }),
+    candidate({
+      title: '作品A',
+      externalIds: { bangumiSubjectId: '1' },
+      candidateSources: [{ source: 'manual', externalId: 'manual-a' }],
+      externalCoverImages: [{ source: 'bangumi', url: 'https://lain.bgm.tv/cover-b.jpg', size: 'large' }],
+    }),
   ])
 
   assert.equal(result.deduped.length, 1)
   assert.equal(result.conflicts.length, 0)
   assert.equal(result.merges.length, 1)
   assert.equal(result.deduped[0].candidateSources.length, 2)
+  assert.equal(result.deduped[0].externalCoverImages.length, 2)
 })
 
 test('dedupe report includes summary, merge, and review sections', () => {
