@@ -8,6 +8,22 @@ import { writeJsonFile } from '../lib/jsonl.mjs'
 
 const DEFAULT_TOP_LIMIT = 80
 const SOURCE_LABEL = 'Bangumi selected entity preview'
+const VALID_ORGANIZATION_TYPES = new Set([
+  'publisher',
+  'production_company',
+  'animation_studio',
+  'game_company',
+  'distributor',
+  'circle',
+  'brand',
+  'platform',
+  'committee',
+  'other',
+])
+const PUBLISHER_NAME_PATTERN = /出版社|書店|书店|小学館|學館|学館|集英社|白泉社|双葉社|徳間書店|一迅社|芳文社|KADOKAWA|角川/iu
+const GAME_COMPANY_NAME_PATTERN = /ゲーム|游戏|遊戲|网易|網易|Cygames|ブシロード/iu
+const BROADCASTER_NAME_PATTERN = /テレビ|放送|TV|TBS|MBS|BS11|AT-X|TOKYO MX|WOWOW|ABEMA|youtube|bilibili/iu
+const STUDIO_NAME_PATTERN = /スタジオ|studio|動画工房|CloverWorks|SHAFT|サンライズ|AIC|AXsiZ|SILVER LINK|J\.C\.STAFF|P\.A\.WORKS/iu
 
 function parseArgs(argv) {
   const args = new Map()
@@ -44,6 +60,13 @@ function roleText(row) {
   return row.roles.map((role) => `${role.role}:${role.count}`).join('; ')
 }
 
+function roleCount(row, roleName) {
+  if (!Array.isArray(row.roles)) return 0
+  return row.roles
+    .filter((role) => role.role === roleName)
+    .reduce((sum, role) => sum + Number(role.count || 0), 0)
+}
+
 function sampleWorkText(row) {
   if (!Array.isArray(row.sampleWorks) || row.sampleWorks.length === 0) return ''
   return row.sampleWorks
@@ -53,7 +76,32 @@ function sampleWorkText(row) {
     .join('; ')
 }
 
-function notesFor(row) {
+function richTextFromPlainText(value) {
+  const lines = String(value || '').split('\n')
+  const children = lines.map((line) => ({
+    type: 'paragraph',
+    version: 1,
+    direction: null,
+    format: '',
+    indent: 0,
+    children: line
+      ? [{ type: 'text', version: 1, text: line, detail: 0, format: 0, mode: 'normal', style: '' }]
+      : [],
+  }))
+
+  return {
+    root: {
+      type: 'root',
+      version: 1,
+      direction: null,
+      format: '',
+      indent: 0,
+      children,
+    },
+  }
+}
+
+function plainNotesFor(row) {
   return [
     SOURCE_LABEL,
     `Source key: ${cleanText(row.sourceKey)}`,
@@ -64,23 +112,23 @@ function notesFor(row) {
   ].filter(Boolean).join('\n')
 }
 
-function sourceLinksFor(row) {
+function sourceLinksFor() {
   return [{
     label: SOURCE_LABEL,
     url: '',
-    note: `sourceKey=${cleanText(row.sourceKey)}; works=${Number(row.worksCount || 0)}; hints=${Number(row.hintCount || 0)}`,
   }]
 }
 
 function commonFields(row) {
+  const notesText = plainNotesFor(row)
   return {
     siteId: cleanText(row.sourceKey),
     name: cleanText(row.name),
     slug: cleanText(row.slug),
     aliases: [],
     localizedNames: [],
-    notes: notesFor(row),
-    searchText: [row.name, row.slug, roleText(row), sampleWorkText(row)].map(cleanText).filter(Boolean).join('\n'),
+    notes: richTextFromPlainText(notesText),
+    searchText: [row.name, row.slug, roleText(row), sampleWorkText(row), notesText].map(cleanText).filter(Boolean).join('\n'),
     isLiteVisible: false,
     isFullVisible: false,
     status: 'draft',
@@ -94,20 +142,41 @@ function creatorSeedRow(row) {
   }
 }
 
-function organizationType(row) {
-  const roles = Array.isArray(row.roles) ? row.roles.map((role) => role.role) : []
-  if (roles.includes('animation_studio')) return 'studio'
-  if (roles.includes('publisher')) return 'publisher'
-  if (roles.includes('game_developer')) return 'company'
-  if (roles.includes('broadcaster')) return 'broadcaster'
-  if (roles.includes('music_label')) return 'music_label'
+export function organizationType(row) {
+  const name = cleanText(row.name)
+  const animationStudioCount = roleCount(row, 'animation_studio')
+  const broadcasterCount = roleCount(row, 'broadcaster')
+  const musicLabelCount = roleCount(row, 'music_label')
+  const distributorCount = roleCount(row, 'distributor')
+  const publisherCount = roleCount(row, 'publisher')
+  const platformCount = roleCount(row, 'streaming_platform')
+  const productionCompanyCount = roleCount(row, 'production_company')
+  const gameCompanyCount = roleCount(row, 'game_developer')
+  const committeeCount = roleCount(row, 'committee')
+  const committeeMemberCount = roleCount(row, 'committee_member')
+
+  if (PUBLISHER_NAME_PATTERN.test(name) || publisherCount > 0) return 'publisher'
+  if (GAME_COMPANY_NAME_PATTERN.test(name) || gameCompanyCount > 0) return 'game_company'
+  if (platformCount > 0) return 'platform'
+  if (distributorCount >= 2 && distributorCount >= animationStudioCount) return 'distributor'
+  if (BROADCASTER_NAME_PATTERN.test(name) || broadcasterCount > 0) return 'other'
+  if (musicLabelCount > 0 && animationStudioCount === 0) return 'other'
+  if (animationStudioCount >= 3 || (animationStudioCount > 0 && STUDIO_NAME_PATTERN.test(name))) return 'animation_studio'
+  if (productionCompanyCount > 0) return 'production_company'
+  if (/委員会|委员会|製作|制作|Project|PROJECT/u.test(name) && committeeCount + committeeMemberCount > 0) return 'committee'
+
   return 'other'
 }
 
 function organizationSeedRow(row) {
+  const type = organizationType(row)
+  if (!VALID_ORGANIZATION_TYPES.has(type)) {
+    throw new Error(`Invalid organization type generated for ${row.name}: ${type}`)
+  }
+
   return {
     ...commonFields(row),
-    type: organizationType(row),
+    type,
     sourceLinks: sourceLinksFor(row),
   }
 }
@@ -136,6 +205,14 @@ export function buildBangumiPayloadEntitySeed(seedPreview) {
   }
 }
 
+function richTextPreview(value) {
+  return value?.root?.children
+    ?.map((paragraph) => paragraph.children?.map((child) => child.text).join('') || '')
+    .filter(Boolean)
+    .slice(0, 3)
+    .join('；') || ''
+}
+
 function seedTable(title, rows, limit = DEFAULT_TOP_LIMIT) {
   const limited = rows.slice(0, limit)
   if (limited.length === 0) return `## ${title}\n\n暂无。\n`
@@ -144,7 +221,7 @@ function seedTable(title, rows, limit = DEFAULT_TOP_LIMIT) {
     '',
     '| 名称 | Slug | 类型/Rank | 可见性 | 状态 | Notes 摘要 |',
     '| --- | --- | --- | --- | --- | --- |',
-    ...limited.map((row) => `| ${escapeMarkdownCell(row.name)} | ${escapeMarkdownCell(row.slug)} | ${escapeMarkdownCell(row.type || row.rank)} | Lite:${row.isLiteVisible ? 'show' : 'hide'} / Full:${row.isFullVisible ? 'show' : 'hide'} | ${escapeMarkdownCell(row.status)} | ${escapeMarkdownCell(String(row.notes || '').split('\n').slice(0, 3).join('；'))} |`),
+    ...limited.map((row) => `| ${escapeMarkdownCell(row.name)} | ${escapeMarkdownCell(row.slug)} | ${escapeMarkdownCell(row.type || row.rank)} | Lite:${row.isLiteVisible ? 'show' : 'hide'} / Full:${row.isFullVisible ? 'show' : 'hide'} | ${escapeMarkdownCell(row.status)} | ${escapeMarkdownCell(richTextPreview(row.notes))} |`),
     '',
   ].join('\n')
 }
