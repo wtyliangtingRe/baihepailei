@@ -15,10 +15,51 @@ import {
 } from '../tools/source_import/sources/bangumi.mjs'
 import { normalizeBangumiSubjects } from '../tools/source_import/scripts/normalize-bangumi-subjects.mjs'
 
-const fixtureText = `{"id":1001,"type":2,"name":"Sakura Trick","name_cn":"樱 Trick","date":"2014-01-10","summary":"这是 Bangumi 简介。\n\n第二段用于后台候选复核。","images":{"common":"https://lain.bgm.tv/r/400/pic/cover/l/sample.jpg","large":"https://lain.bgm.tv/pic/cover/l/sample.jpg"},"infobox":[{"key":"话数","value":"12"},{"key":"别名","value":[{"v":"樱花 Trick"},{"v":"桜Trick"}]},{"key":"監督","value":"大沼心"},{"key":"シリーズ構成","value":"高山カツヒコ"},{"key":"脚本","value":[{"v":"高山カツヒコ"},{"v":"綾奈ゆにこ"}]},{"key":"製作","value":"citrus製作委員会（一迅社、bilibili、Crunchyroll、ランティス）"},{"key":"アニメーション制作","value":"パッショーネ"},{"key":"放送局","value":"AT-X / TOKYO MX"}],"tags":[{"name":"百合","count":120},{"name":"校园","count":50}]}
-{"id":1002,"type":1,"name":"Yagate Kimi ni Naru","name_cn":"终将成为你","date":"2015","infobox":[{"key":"类型","value":"漫画"},{"key":"英文名","value":"Bloom Into You"}],"tags":[{"name":"百合","count":200},{"name":"漫画","count":100}]}
-{"id":1003,"type":4,"name":"Sample Visual Novel","name_cn":"示例视觉小说","date":"2020-05","infobox":[{"key":"游戏类型","value":"视觉小说"}],"tags":[{"name":"visual novel","count":20}]}
-`
+const fixtureRecords = [
+  {
+    id: 1001,
+    type: 2,
+    name: 'Sakura Trick',
+    name_cn: '樱 Trick',
+    date: '2014-01-10',
+    summary: '这是 Bangumi 简介。\n\n第二段用于后台候选复核。',
+    images: {
+      common: 'https://lain.bgm.tv/r/400/pic/cover/l/sample.jpg',
+      large: 'https://lain.bgm.tv/pic/cover/l/sample.jpg',
+    },
+    infobox: [
+      { key: '话数', value: '12' },
+      { key: '别名', value: [{ v: '樱花 Trick' }, { v: '桜Trick' }] },
+      { key: '監督', value: '大沼心' },
+      { key: 'シリーズ構成', value: '高山カツヒコ' },
+      { key: '脚本', value: [{ v: '高山カツヒコ' }, { v: '綾奈ゆにこ' }] },
+      { key: '製作', value: 'citrus製作委員会（一迅社、bilibili、Crunchyroll、ランティス）' },
+      { key: 'アニメーション制作', value: 'パッショーネ' },
+      { key: '放送局', value: 'AT-X / TOKYO MX' },
+    ],
+    tags: [{ name: '百合', count: 120 }, { name: '校园', count: 50 }],
+  },
+  {
+    id: 1002,
+    type: 1,
+    name: 'Yagate Kimi ni Naru',
+    name_cn: '终将成为你',
+    date: '2015',
+    infobox: [{ key: '类型', value: '漫画' }, { key: '英文名', value: 'Bloom Into You' }],
+    tags: [{ name: '百合', count: 200 }, { name: '漫画', count: 100 }],
+  },
+  {
+    id: 1003,
+    type: 4,
+    name: 'Sample Visual Novel',
+    name_cn: '示例视觉小说',
+    date: '2020-05',
+    infobox: [{ key: '游戏类型', value: '视觉小说' }],
+    tags: [{ name: 'visual novel', count: 20 }],
+  },
+]
+
+const fixtureText = `${fixtureRecords.map((record) => JSON.stringify(record)).join('\n')}\n`
 
 test('Bangumi subject URL helper builds stable subject links', () => {
   assert.equal(bangumiSubjectUrl(1001), 'https://bgm.tv/subject/1001')
