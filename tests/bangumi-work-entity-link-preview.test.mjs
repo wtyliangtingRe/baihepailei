@@ -5,6 +5,7 @@ import {
   buildBangumiWorkEntityLinkPreview,
   createBangumiWorkEntityLinkPreviewReport,
   extractBangumiCreditHints,
+  workRows,
 } from '../tools/source_import/scripts/build-bangumi-work-entity-link-preview.mjs'
 
 function work(title, evidenceNote) {
@@ -38,6 +39,18 @@ const worksSeed = {
   ],
 }
 
+const candidateArraySeed = [
+  {
+    title: 'Work C',
+    slug: 'work-c',
+    creatorCreditHints: [
+      { name: 'Creator A', role: 'director', originalRole: 'director', source: 'bangumi' },
+      { name: '12)', role: 'script', originalRole: 'script', source: 'bangumi' },
+    ],
+    organizationCreditHints: [{ name: 'Studio A', role: 'animation_studio', originalRole: 'studio', source: 'bangumi' }],
+  },
+]
+
 const entitySeed = {
   creators: [
     { name: 'Creator A', slug: 'creator-a', siteId: 'creator-a', status: 'draft', isLiteVisible: false, isFullVisible: false },
@@ -57,6 +70,19 @@ test('extractBangumiCreditHints parses creator and organization sections from ev
   assert.equal(hints.organizations[0].name, 'Studio A')
 })
 
+test('extractBangumiCreditHints accepts direct hint arrays and filters footnote-only names', () => {
+  const hints = extractBangumiCreditHints(candidateArraySeed[0])
+
+  assert.deepEqual(hints.creators.map((hint) => hint.name), ['Creator A'])
+  assert.equal(hints.organizations.length, 1)
+  assert.equal(hints.organizations[0].name, 'Studio A')
+})
+
+test('workRows accepts payload seed objects and top-level candidate arrays', () => {
+  assert.equal(workRows(worksSeed).length, 2)
+  assert.equal(workRows(candidateArraySeed).length, 1)
+})
+
 test('work entity link preview matches imported draft entities and keeps unmatched hints', () => {
   const preview = buildBangumiWorkEntityLinkPreview(worksSeed, entitySeed)
 
@@ -73,6 +99,15 @@ test('work entity link preview matches imported draft entities and keeps unmatch
   assert.equal(preview.works[1].creators.length, 1)
 })
 
+test('work entity link preview supports top-level normalized candidate arrays', () => {
+  const preview = buildBangumiWorkEntityLinkPreview(candidateArraySeed, entitySeed)
+
+  assert.equal(preview.meta.worksSourceShape, 'array')
+  assert.equal(preview.meta.worksTotal, 1)
+  assert.equal(preview.meta.creatorLinksTotal, 1)
+  assert.equal(preview.meta.organizationLinksTotal, 1)
+})
+
 test('work entity link preview report includes safety summary', () => {
   const preview = buildBangumiWorkEntityLinkPreview(worksSeed, entitySeed)
   const report = createBangumiWorkEntityLinkPreviewReport(preview, { worksInputPath: 'works.json', entitiesInputPath: 'entities.json' })
@@ -81,4 +116,5 @@ test('work entity link preview report includes safety summary', () => {
   assert.match(report, /不调用 Payload API/u)
   assert.match(report, /Creator A\(writer\)/u)
   assert.match(report, /Missing Person\(director\)/u)
+  assert.match(report, /过滤纯脚注编号/u)
 })
