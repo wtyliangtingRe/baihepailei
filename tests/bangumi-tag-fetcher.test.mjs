@@ -6,7 +6,9 @@ import path from 'node:path'
 
 import {
   bangumiRawSourceRecordSubjectId,
+  createBangumiSearchRequestBody,
   createCurlJsonArgs,
+  normalizeBangumiKeywordMode,
   readBangumiResumeState,
 } from '../tools/source_import/scripts/fetch-bangumi-tagged-subjects.mjs'
 import {
@@ -110,6 +112,43 @@ test('Bangumi fetcher builds curl args with a scoped proxy', () => {
   assert.match(args.join('\n'), /--proxy\nsocks5h:\/\/127\.0\.0\.1:10808/u)
   assert.match(args.join('\n'), /--data-binary\n\{"keyword":"百合"\}/u)
   assert.equal(args.at(-1), 'https://api.bgm.tv/v0/search/subjects?limit=5&offset=0')
+})
+
+test('Bangumi search body keeps tag keyword mode as the default behavior', () => {
+  assert.deepEqual(createBangumiSearchRequestBody({ tag: '百合', type: 2, sort: 'rank' }), {
+    keyword: '百合',
+    sort: 'rank',
+    filter: {
+      tag: ['百合'],
+      type: [2],
+    },
+  })
+})
+
+test('Bangumi search body can probe empty and omitted keyword modes', () => {
+  assert.deepEqual(createBangumiSearchRequestBody({ tag: '百合', type: 2, sort: 'rank', keywordMode: 'empty' }), {
+    keyword: '',
+    sort: 'rank',
+    filter: {
+      tag: ['百合'],
+      type: [2],
+    },
+  })
+
+  assert.deepEqual(createBangumiSearchRequestBody({ tag: '百合', type: 2, sort: 'rank', keywordMode: 'none' }), {
+    sort: 'rank',
+    filter: {
+      tag: ['百合'],
+      type: [2],
+    },
+  })
+})
+
+test('Bangumi keyword mode normalizer falls back to tag mode', () => {
+  assert.equal(normalizeBangumiKeywordMode('empty'), 'empty')
+  assert.equal(normalizeBangumiKeywordMode('none'), 'none')
+  assert.equal(normalizeBangumiKeywordMode('TAG'), 'tag')
+  assert.equal(normalizeBangumiKeywordMode('invalid'), 'tag')
 })
 
 test('Bangumi resume ids prefer sourceRecordId and fall back to raw subject ids', () => {
