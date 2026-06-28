@@ -11,6 +11,8 @@ const DEFAULT_WORKS_INPUT = path.join('data_local', 'payload', 'bangumi-yuri-ani
 const DEFAULT_ENTITIES_INPUT = path.join('data_local', 'payload', 'bangumi-payload-entity-seed-preview.json')
 const DEFAULT_OUTPUT = path.join('data_local', 'payload', 'bangumi-work-entity-link-preview.json')
 const DEFAULT_REPORT = path.join('data_local', 'reports', 'bangumi-work-entity-link-preview.md')
+const FOOTNOTE_ONLY_NAME_PATTERN = /^\d+(?:\s*[-–]\s*\d+)?[）)]?$/u
+const REPORT_UTF8_BOM = '\uFEFF'
 
 function parseArgs(argv) {
   const args = new Map()
@@ -31,6 +33,12 @@ function cleanText(value) {
     .replace(/\r?\n/gu, ' ')
     .replace(/\s+/gu, ' ')
     .trim()
+}
+
+function cleanHintName(value) {
+  const name = cleanText(value)
+  if (!name || FOOTNOTE_ONLY_NAME_PATTERN.test(name)) return ''
+  return name
 }
 
 function normalizeName(value) {
@@ -71,7 +79,7 @@ function workIdentity(work) {
 
 function parseHintLine(line) {
   const parts = cleanText(line).replace(/^-\s*/u, '').split(/\s+\|\s+/u)
-  const name = cleanText(parts.shift())
+  const name = cleanHintName(parts.shift())
   if (!name) return null
 
   const fields = new Map()
@@ -92,7 +100,7 @@ function parseHintLine(line) {
 }
 
 function normalizeDirectHint(hint) {
-  const name = cleanText(typeof hint === 'string' ? hint : hint?.name)
+  const name = cleanHintName(typeof hint === 'string' ? hint : hint?.name)
   if (!name) return null
 
   const role = cleanText(typeof hint === 'object' ? hint?.role : '') || 'other'
@@ -476,6 +484,8 @@ export function createBangumiWorkEntityLinkPreviewReport(preview, { worksInputPa
     '- 不创建、不更新、不 PATCH works。',
     '- 只输出将来可能写入 works relationship 的候选关系。',
     '- 支持读取 Payload works seed，也支持读取 normalized Bangumi candidate JSON。',
+    '- 会过滤纯脚注编号式 Bangumi credit hint，例如 `7`、`12)`。',
+    '- Markdown 报告使用 UTF-8 with BOM，便于 Windows PowerShell 直接读取。',
     '- 输出位于 `data_local` 时不要提交。',
     '',
   ].filter((line) => line !== '').join('\n')
@@ -511,7 +521,7 @@ async function main() {
   console.log(`Wrote Bangumi work/entity link preview -> ${resolvedOutput}`)
 
   await mkdir(path.dirname(resolvedReportOutput), { recursive: true })
-  await writeFile(resolvedReportOutput, `${report}\n`, 'utf8')
+  await writeFile(resolvedReportOutput, `${REPORT_UTF8_BOM}${report}\n`, 'utf8')
   console.log(`Wrote Bangumi work/entity link report -> ${resolvedReportOutput}`)
 }
 
