@@ -91,6 +91,36 @@ test('source record helper creates draft candidate works without ratings', () =>
   assert.equal(candidate.candidateSources[0].source, 'bangumi')
 })
 
+test('source record helper cleans obvious Bangumi hint name artifacts', () => {
+  const record = createRawSourceRecord({
+    source: 'bangumi',
+    sourceRecordId: '12345',
+    sourceUrl: 'https://bgm.tv/subject/12345',
+    raw: {
+      name_cn: '候选作品',
+      mediaType: 'anime',
+      creatorCreditHints: [
+        { name: '7', role: 'script', originalRole: '脚本', source: 'bangumi' },
+        { name: '12)', role: 'script', originalRole: '脚本', source: 'bangumi' },
+        { name: 'KADOKAWA刊)', role: 'original_creator', originalRole: '原作', source: 'bangumi' },
+        { name: '协力:野上武志', role: 'character_original_design', originalRole: '人物原案', source: 'bangumi', note: 'Bangumi infobox: 人物原案' },
+        { name: 'Koi(芳文社「まんがタイムきららMAX」連載)', role: 'original_creator', originalRole: '原作', source: 'bangumi' },
+        { name: 'Cygames', role: 'original_creator', originalRole: '原作', source: 'bangumi' },
+      ],
+      organizationCreditHints: [
+        { name: 'TOKYO MX', role: 'broadcaster', originalRole: '播放电视台', source: 'bangumi' },
+        { name: '動画人物設定:茶之原拓也', role: 'committee_member', originalRole: '製作', source: 'bangumi' },
+      ],
+    },
+  })
+
+  const candidate = sourceRecordToCandidateWork(record)
+
+  assert.deepEqual(candidate.creatorCreditHints.map((row) => row.name), ['野上武志', 'Koi', 'Cygames'])
+  assert.match(candidate.creatorCreditHints[0].note, /cleaned Bangumi hint name/u)
+  assert.deepEqual(candidate.organizationCreditHints.map((row) => row.name), ['TOKYO MX', '動画人物設定:茶之原拓也'])
+})
+
 test('normalize and dedupe candidates by external IDs', () => {
   const records = [
     createRawSourceRecord({

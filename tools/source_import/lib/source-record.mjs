@@ -11,6 +11,24 @@ const DEFAULT_WORK_STATUS = {
   hasEvidence: false,
 }
 
+const CREDIT_NAME_PREFIX_PATTERNS = [
+  /^协力[:：]\s*/u,
+  /^協力[:：]\s*/u,
+  /^原案协力[:：]\s*/u,
+  /^原案協力[:：]\s*/u,
+  /^故事原案[:：]\s*/u,
+  /^动画人物设定[:：]\s*/u,
+  /^動畫人物設定[:：]\s*/u,
+  /^人物设定[:：]\s*/u,
+  /^人物設定[:：]\s*/u,
+  /^角色设计[:：]\s*/u,
+  /^角色設計[:：]\s*/u,
+  /^キャラクターデザイン[:：]\s*/u,
+]
+const CREDIT_PUBLICATION_CONTEXT_PATTERN = /[（(][^（）()]*(?:刊|連載|连载|掲載|コミック|COMIC|まんが|漫画|月刊|芳文社|KADOKAWA|一迅社|SBクリエイティブ|マッグガーデン)[^（）()]*[）)]?/giu
+const CREDIT_PUBLICATION_FRAGMENT_PATTERN = /^[\p{Letter}\p{Script=Han}ー・\s]+刊[）)]?$/u
+const CREDIT_FOOTNOTE_PATTERN = /^\d+(?:\s*-\s*\d+)?[）)]?$/u
+
 export function createRawSourceRecord({ source, sourceRecordId, sourceUrl, fetchedAt, raw }) {
   if (!source) throw new Error('source is required')
   if (!sourceRecordId) throw new Error('sourceRecordId is required')
@@ -60,6 +78,58 @@ function cleanArrayRows(rows) {
 function cleanText(value) {
   const text = String(value || '').trim()
   return text || undefined
+}
+
+function cleanCreditHintName(value) {
+  let name = normalizeText(value)
+  if (!name) return ''
+
+  for (const pattern of CREDIT_NAME_PREFIX_PATTERNS) {
+    name = name.replace(pattern, '')
+  }
+
+  name = name
+    .replace(CREDIT_PUBLICATION_CONTEXT_PATTERN, '')
+    .replace(/^[（(]+|[）)]+$/gu, '')
+    .replace(/\s+/gu, ' ')
+    .trim()
+
+  if (!name) return ''
+  if (CREDIT_FOOTNOTE_PATTERN.test(name)) return ''
+  if (CREDIT_PUBLICATION_FRAGMENT_PATTERN.test(name)) return ''
+
+  return name
+}
+
+export function normalizeCreditHintRows(rows) {
+  const seen = new Set()
+  const output = []
+
+  for (const row of cleanArrayRows(rows)) {
+    const originalName = normalizeText(typeof row === 'string' ? row : row?.name)
+    const name = cleanCreditHintName(originalName)
+    if (!name) continue
+
+    const role = typeof row === 'object' ? row.role || 'other' : 'other'
+    const originalRole = typeof row === 'object' ? row.originalRole || undefined : undefined
+    const key = [name.toLowerCase(), role, originalRole || ''].join('|')
+    if (seen.has(key)) continue
+
+    seen.add(key)
+    const note = typeof row === 'object' ? row.note || undefined : undefined
+    output.push({
+      ...(typeof row === 'object' ? row : {}),
+      name,
+      role,
+      originalRole,
+      source: typeof row === 'object' ? row.source || undefined : undefined,
+      note: originalName && originalName !== name
+        ? [note, `cleaned Bangumi hint name from: ${originalName}`].filter(Boolean).join('; ')
+        : note,
+    })
+  }
+
+  return output
 }
 
 function normalizeLocalizedTitleRows(rows) {
@@ -122,8 +192,8 @@ export function createCandidateWork(input) {
     externalCoverImages: cleanArrayRows(input.externalCoverImages || []),
     workGroup: normalizeWorkGroup(input.workGroup) || inferCandidateWorkGroup(candidateForGrouping),
     summaryText: cleanText(input.summaryText || input.summaryPlainText),
-    creatorCreditHints: cleanArrayRows(input.creatorCreditHints || []),
-    organizationCreditHints: cleanArrayRows(input.organizationCreditHints || []),
+    creatorCreditHints: normalizeCreditHintRows(input.creatorCreditHints || []),
+    organizationCreditHints: normalizeCreditHintRows(input.organizationCreditHints || []),
     yuriCandidateScore: input.yuriCandidateScore ?? null,
     isLiteVisible: input.isLiteVisible ?? false,
     isFullVisible: input.isFullVisible ?? false,
