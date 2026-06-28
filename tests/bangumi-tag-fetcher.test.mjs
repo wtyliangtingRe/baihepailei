@@ -8,8 +8,11 @@ import {
   bangumiRawSourceRecordSubjectId,
   createBangumiSearchRequestBody,
   createCurlJsonArgs,
+  nextBangumiEmptyPageStreak,
   normalizeBangumiKeywordMode,
+  normalizeBangumiStopAfterEmptyPages,
   readBangumiResumeState,
+  shouldStopBangumiSearchAfterEmptyPages,
 } from '../tools/source_import/scripts/fetch-bangumi-tagged-subjects.mjs'
 import {
   annotateBangumiYuriSignal,
@@ -149,6 +152,19 @@ test('Bangumi keyword mode normalizer falls back to tag mode', () => {
   assert.equal(normalizeBangumiKeywordMode('none'), 'none')
   assert.equal(normalizeBangumiKeywordMode('TAG'), 'tag')
   assert.equal(normalizeBangumiKeywordMode('invalid'), 'tag')
+})
+
+test('Bangumi empty-page stop helpers normalize and track search streaks', () => {
+  assert.equal(normalizeBangumiStopAfterEmptyPages('2'), 2)
+  assert.equal(normalizeBangumiStopAfterEmptyPages('2.8'), 2)
+  assert.equal(normalizeBangumiStopAfterEmptyPages('0'), 0)
+  assert.equal(normalizeBangumiStopAfterEmptyPages('invalid'), 0)
+
+  assert.equal(nextBangumiEmptyPageStreak(20, 2), 0)
+  assert.equal(nextBangumiEmptyPageStreak(0, 2), 3)
+  assert.equal(shouldStopBangumiSearchAfterEmptyPages({ emptyPageStreak: 1, stopAfterEmptyPages: 2 }), false)
+  assert.equal(shouldStopBangumiSearchAfterEmptyPages({ emptyPageStreak: 2, stopAfterEmptyPages: 2 }), true)
+  assert.equal(shouldStopBangumiSearchAfterEmptyPages({ emptyPageStreak: 20, stopAfterEmptyPages: 0 }), false)
 })
 
 test('Bangumi resume ids prefer sourceRecordId and fall back to raw subject ids', () => {
