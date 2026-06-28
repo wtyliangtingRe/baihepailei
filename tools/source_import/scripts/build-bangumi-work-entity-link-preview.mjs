@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { writeJsonFile } from '../lib/jsonl.mjs'
 
 const DEFAULT_TOP_LIMIT = 80
-const DEFAULT_WORKS_INPUT = path.join('data_local', 'payload', 'bangumi-payload-seed-preview.json')
+const DEFAULT_WORKS_INPUT = path.join('data_local', 'payload', 'bangumi-yuri-anime-candidates.json')
 const DEFAULT_ENTITIES_INPUT = path.join('data_local', 'payload', 'bangumi-payload-entity-seed-preview.json')
 const DEFAULT_OUTPUT = path.join('data_local', 'payload', 'bangumi-work-entity-link-preview.json')
 const DEFAULT_REPORT = path.join('data_local', 'reports', 'bangumi-work-entity-link-preview.md')
@@ -46,17 +46,26 @@ function numberArg(args, key, fallback) {
   return Number.isFinite(value) && value >= 0 ? value : fallback
 }
 
-function rows(value, key) {
+function collectionRows(value, key) {
   return Array.isArray(value?.[key]) ? value[key] : []
+}
+
+export function workRows(value) {
+  if (Array.isArray(value)) return value
+  if (Array.isArray(value?.works)) return value.works
+  if (Array.isArray(value?.candidates)) return value.candidates
+  if (Array.isArray(value?.items)) return value.items
+  if (Array.isArray(value?.records)) return value.records
+  return []
 }
 
 function workIdentity(work) {
   return {
     siteId: cleanText(work?.siteId),
     slug: cleanText(work?.slug),
-    title: cleanText(work?.title),
-    originalTitle: cleanText(work?.originalTitle),
-    bangumiSubjectId: cleanText(work?.externalIds?.bangumiSubjectId),
+    title: cleanText(work?.title || work?.name_cn || work?.name),
+    originalTitle: cleanText(work?.originalTitle || work?.name),
+    bangumiSubjectId: cleanText(work?.externalIds?.bangumiSubjectId || work?.bangumiSubjectId || work?.id),
   }
 }
 
@@ -82,11 +91,50 @@ function parseHintLine(line) {
   }
 }
 
+function normalizeDirectHint(hint) {
+  const name = cleanText(typeof hint === 'string' ? hint : hint?.name)
+  if (!name) return null
+
+  const role = cleanText(typeof hint === 'object' ? hint?.role : '') || 'other'
+  const originalRole = cleanText(typeof hint === 'object' ? hint?.originalRole : '')
+  const source = cleanText(typeof hint === 'object' ? hint?.source : '') || 'bangumi'
+  const note = cleanText(typeof hint === 'object' ? hint?.note : '')
+  const rawLine = [
+    `- ${name}`,
+    `role=${role}`,
+    originalRole ? `originalRole=${originalRole}` : '',
+    source ? `source=${source}` : '',
+    note ? `note=${note}` : '',
+  ].filter(Boolean).join(' | ')
+
+  return { name, role, originalRole, source, note, rawLine }
+}
+
+function directHints(work, fieldName) {
+  return (Array.isArray(work?.[fieldName]) ? work[fieldName] : [])
+    .map(normalizeDirectHint)
+    .filter(Boolean)
+}
+
+function uniqueHints(hints) {
+  const seen = new Set()
+  const output = []
+
+  for (const hint of hints) {
+    const key = [hint.name, hint.role, hint.originalRole, hint.source, hint.note].map(normalizeName).join('|')
+    if (seen.has(key)) continue
+    seen.add(key)
+    output.push(hint)
+  }
+
+  return output
+}
+
 export function extractBangumiCreditHints(work) {
   const evidenceNote = typeof work?.evidenceNote === 'string' ? work.evidenceNote : ''
   const result = {
-    creators: [],
-    organizations: [],
+    creators: directHints(work, 'creatorCreditHints'),
+    organizations: directHints(work, 'organizationCreditHints'),
   }
   let currentSection = ''
 
@@ -104,7 +152,10 @@ export function extractBangumiCreditHints(work) {
     if (hint) result[currentSection].push(hint)
   }
 
-  return result
+  return {
+    creators: uniqueHints(result.creators),
+    organizations: uniqueHints(result.organizations),
+  }
 }
 
 function normalizeEntity(row, collection) {
@@ -121,7 +172,7 @@ function normalizeEntity(row, collection) {
 
 function buildEntityIndex(entitySeed, collection) {
   const byName = new Map()
-  const entities = rows(entitySeed, collection).map((row) => normalizeEntity(row, collection)).filter((row) => row.name)
+  const entities = collectionRows(entitySeed, collection).map((row) => normalizeEntity(row, collection)).filter((row) => row.name)
 
   for (const entity of entities) {
     const key = normalizeName(entity.name)
@@ -253,8 +304,17 @@ function duplicateEntityIds(entities) {
     .sort((a, b) => a.value.localeCompare(b.value))
 }
 
+function sourceShape(seed) {
+  if (Array.isArray(seed)) return 'array'
+  if (Array.isArray(seed?.works)) return 'works'
+  if (Array.isArray(seed?.candidates)) return 'candidates'
+  if (Array.isArray(seed?.items)) return 'items'
+  if (Array.isArray(seed?.records)) return 'records'
+  return 'unknown'
+}
+
 export function buildBangumiWorkEntityLinkPreview(worksSeed, entitySeed) {
-  const works = rows(worksSeed, 'works')
+  const works = workRows(worksSeed)
   const creatorIndex = buildEntityIndex(entitySeed, 'creators')
   const organizationIndex = buildEntityIndex(entitySeed, 'organizations')
   const previewWorks = []
@@ -300,6 +360,7 @@ export function buildBangumiWorkEntityLinkPreview(worksSeed, entitySeed) {
       source: 'bangumi-work-entity-link-preview',
       mode: 'preview-only-no-payload-write',
       generatedAt: new Date().toISOString(),
+      worksSourceShape: sourceShape(worksSeed),
       worksTotal: works.length,
       creatorsTotal: creatorIndex.entities.length,
       organizationsTotal: organizationIndex.entities.length,
@@ -385,6 +446,7 @@ export function createBangumiWorkEntityLinkPreviewReport(preview, { worksInputPa
     '## 总览',
     '',
     `- 模式：${meta.mode}`,
+    `- Works 输入形状：${meta.worksSourceShape}`,
     `- 总 works 数：${meta.worksTotal}`,
     `- entity creators 数：${meta.creatorsTotal}`,
     `- entity organizations 数：${meta.organizationsTotal}`,
@@ -413,6 +475,7 @@ export function createBangumiWorkEntityLinkPreviewReport(preview, { worksInputPa
     '- 这只是本地关系预览，不调用 Payload API。',
     '- 不创建、不更新、不 PATCH works。',
     '- 只输出将来可能写入 works relationship 的候选关系。',
+    '- 支持读取 Payload works seed，也支持读取 normalized Bangumi candidate JSON。',
     '- 输出位于 `data_local` 时不要提交。',
     '',
   ].filter((line) => line !== '').join('\n')
