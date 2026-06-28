@@ -100,7 +100,7 @@ test('dedupe keeps same-title different-media matches as review items', () => {
   assert.equal(result.conflicts[0].confidence, 'same_title_different_media')
 })
 
-test('dedupe keeps exact original title version variants as review items', () => {
+test('dedupe keeps distinct Bangumi anime version variants as review items', () => {
   const result = dedupeCandidates([
     candidate({
       title: '百合星人奈绪子 OVA',
@@ -123,7 +123,8 @@ test('dedupe keeps exact original title version variants as review items', () =>
   assert.equal(result.deduped.length, 2)
   assert.equal(result.merges.length, 0)
   assert.equal(result.conflicts.length, 1)
-  assert.equal(result.conflicts[0].confidence, 'same_original_title_version_variant')
+  assert.equal(result.conflicts[0].confidence, 'same_original_title_distinct_bangumi_subject')
+  assert.equal(reviewPriority(result.conflicts[0]), 'distinct_bangumi_subject_review')
 })
 
 test('dedupe auto-merges exact external IDs and records merge metadata', () => {
