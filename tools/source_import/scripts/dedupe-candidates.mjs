@@ -115,11 +115,14 @@ export function mergeCandidate(base, next) {
     firstPublishedAt: mergeScalar(base.firstPublishedAt, next.firstPublishedAt),
     firstPublishedPrecision: mergeScalar(base.firstPublishedPrecision, next.firstPublishedPrecision),
     firstPublishedLabel: mergeScalar(base.firstPublishedLabel, next.firstPublishedLabel),
+    summaryText: mergeScalar(base.summaryText, next.summaryText),
     yuriCandidateScore: Math.max(Number(base.yuriCandidateScore || 0), Number(next.yuriCandidateScore || 0)),
     aliases: uniqueByJson([...(base.aliases || []), ...(next.aliases || [])]),
     externalIds: { ...(base.externalIds || {}), ...(next.externalIds || {}) },
     candidateSources: uniqueCandidateSources([...(base.candidateSources || []), ...(next.candidateSources || [])]),
     externalCoverImages: uniqueByJson([...(base.externalCoverImages || []), ...(next.externalCoverImages || [])]),
+    creatorCreditHints: uniqueByJson([...(base.creatorCreditHints || []), ...(next.creatorCreditHints || [])]),
+    organizationCreditHints: uniqueByJson([...(base.organizationCreditHints || []), ...(next.organizationCreditHints || [])]),
     workGroup: base.workGroup || next.workGroup,
   }
 }

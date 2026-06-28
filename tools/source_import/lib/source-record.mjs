@@ -57,6 +57,11 @@ function cleanArrayRows(rows) {
   return Array.isArray(rows) ? rows.filter(Boolean) : []
 }
 
+function cleanText(value) {
+  const text = String(value || '').trim()
+  return text || undefined
+}
+
 function normalizeLocalizedTitleRows(rows) {
   const seen = new Set()
   const output = []
@@ -116,6 +121,9 @@ export function createCandidateWork(input) {
     candidateSources: input.candidateSources || (sourceRecord ? [sourceRecordToCandidateSource(sourceRecord)] : []),
     externalCoverImages: cleanArrayRows(input.externalCoverImages || []),
     workGroup: normalizeWorkGroup(input.workGroup) || inferCandidateWorkGroup(candidateForGrouping),
+    summaryText: cleanText(input.summaryText || input.summaryPlainText),
+    creatorCreditHints: cleanArrayRows(input.creatorCreditHints || []),
+    organizationCreditHints: cleanArrayRows(input.organizationCreditHints || []),
     yuriCandidateScore: input.yuriCandidateScore ?? null,
     isLiteVisible: input.isLiteVisible ?? false,
     isFullVisible: input.isFullVisible ?? false,
@@ -143,6 +151,9 @@ export function sourceRecordToCandidateWork(record) {
     sourceRecord: record,
     externalCoverImages: raw.externalCoverImages || record.externalCoverImages || [],
     workGroup: raw.workGroup || record.workGroup,
+    summaryText: raw.summaryText || record.summaryText,
+    creatorCreditHints: raw.creatorCreditHints || record.creatorCreditHints,
+    organizationCreditHints: raw.organizationCreditHints || record.organizationCreditHints,
     yuriCandidateScore: raw.yuriCandidateScore ?? record.yuriCandidateScore ?? null,
   })
 }
