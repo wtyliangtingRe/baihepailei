@@ -156,6 +156,8 @@ test('candidate comparison keeps strong fuzzy sequel-like titles for review', ()
       title: '少女与战车 最终章 第6话',
       originalTitle: 'ガールズ&パンツァー 最終章 第6話',
       mediaType: 'anime',
+      firstPublishedAt: null,
+      firstPublishedLabel: null,
     }),
     candidate({
       title: '少女与战车 最终章 第5话',
