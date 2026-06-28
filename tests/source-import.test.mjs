@@ -134,9 +134,14 @@ test('source record helper cleans trailing note, footnote, and role prefixes fro
         { name: '綾奈ゆにこ(1', role: 'script', originalRole: '脚本', source: 'bangumi' },
         { name: '吉田玲子(1-2', role: 'script', originalRole: '脚本', source: 'bangumi' },
         { name: '赤尾でこ(三重野瞳', role: 'series_composition', originalRole: '系列构成', source: 'bangumi' },
+        { name: '赤尾でこ(三重野瞳)', role: 'series_composition', originalRole: '系列构成', source: 'bangumi' },
+        { name: '赤尾でこ[三重野瞳]', role: 'series_composition', originalRole: '系列构成', source: 'bangumi' },
         { name: '虚淵玄 (Nitro+', role: 'script', originalRole: '脚本', source: 'bangumi' },
+        { name: '虚淵玄 (Nitro+)', role: 'script', originalRole: '脚本', source: 'bangumi' },
         { name: '天野こずえ「ARIA」', role: 'original_creator', originalRole: '原作', source: 'bangumi' },
         { name: 'Magica Quartet (新房昭之・虚淵玄・蒼樹うめ・SHAFT', role: 'original_creator', originalRole: '原作', source: 'bangumi' },
+        { name: 'Magica Quartet (新房昭之・虚淵玄・蒼樹うめ・SHAFT)', role: 'original_creator', originalRole: '原作', source: 'bangumi' },
+        { name: 'はいむらきよたか(灰村キヨタカ)', role: 'character_original_design', originalRole: '人物原案', source: 'bangumi' },
         { name: 'ひと和×Craft Egg', role: 'character_original_design', originalRole: '人物原案', source: 'bangumi' },
       ],
       organizationCreditHints: [
@@ -156,6 +161,7 @@ test('source record helper cleans trailing note, footnote, and role prefixes fro
     '虚淵玄',
     '天野こずえ',
     'Magica Quartet',
+    'はいむらきよたか',
     'ひと和×Craft Egg',
   ])
   assert.deepEqual(candidate.organizationCreditHints.map((row) => row.name), ['Aniplex', 'KADOKAWA'])
