@@ -1,4 +1,5 @@
 import {
+  normalizeTitleForMatch,
   normalizedDisplayTitle,
   normalizedOriginalTitle,
   normalizedTitleSet,
@@ -8,6 +9,8 @@ import {
 
 const VERSION_VARIANT_PATTERN = /(ova|ona|oad|movie|season\s*\d+|s\d+|part\s*\d+|第[一二三四五六七八九十0-9]+季|第[一二三四五六七八九十0-9]+期|剧场版|劇場版|映画|特别篇|特別篇|special|sp|番外|外传|外傳|总集篇|總集篇|recap|remake|reboot|再編集|edition|version)/iu
 const FUZZY_TITLE_REVIEW_THRESHOLD = 0.86
+const SEQUENCE_FUZZY_TITLE_REVIEW_THRESHOLD = 0.8
+const SEQUENCE_MARKER_PATTERN = /(season\s*\d+|s\d+|part\s*\d+|第[一二三四五六七八九十0-9]+(?:季|期|章|话|話|部)|[0-9]+(?:st|nd|rd|th)?(?:season|chapter|episode))/giu
 
 function clean(value) {
   return String(value ?? '').trim()
@@ -91,6 +94,29 @@ export function sharedNormalizedTitles(a, b) {
   return [...left].filter((title) => right.has(title))
 }
 
+function sequenceBase(value) {
+  return normalizeTitleForMatch(value).replace(SEQUENCE_MARKER_PATTERN, '')
+}
+
+function hasMatchingSequenceBase(a, b) {
+  for (const left of titleValues(a)) {
+    for (const right of titleValues(b)) {
+      const leftTitle = normalizeTitleForMatch(left)
+      const rightTitle = normalizeTitleForMatch(right)
+      const leftBase = sequenceBase(left)
+      const rightBase = sequenceBase(right)
+      const leftHadSequenceMarker = leftBase !== leftTitle
+      const rightHadSequenceMarker = rightBase !== rightTitle
+
+      if (leftBase && leftBase === rightBase && leftHadSequenceMarker && rightHadSequenceMarker) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
 function strongestTitleSimilarity(a, b) {
   let best = 0
 
@@ -166,8 +192,12 @@ export function compareWorkCandidates(candidate, existing) {
   }
 
   const similarity = strongestTitleSimilarity(candidate, existing)
-  if (similarity >= FUZZY_TITLE_REVIEW_THRESHOLD && mediaCompatible && (distance === null || distance <= 1)) {
+  const strongFuzzyMatch = similarity >= FUZZY_TITLE_REVIEW_THRESHOLD
+  const sequenceFuzzyMatch = similarity >= SEQUENCE_FUZZY_TITLE_REVIEW_THRESHOLD && hasMatchingSequenceBase(candidate, existing)
+
+  if ((strongFuzzyMatch || sequenceFuzzyMatch) && mediaCompatible && (distance === null || distance <= 1)) {
     signals.push(`similar title score: ${similarity.toFixed(2)}`)
+    if (sequenceFuzzyMatch && !strongFuzzyMatch) signals.push('matching sequence title base')
     signals.push(`candidate title key: ${normalizedDisplayTitle(candidate)}`)
     signals.push(`existing title key: ${normalizedDisplayTitle(existing)}`)
     signals.push(distance === null ? 'date year unavailable' : `first published year distance: ${distance}`)
