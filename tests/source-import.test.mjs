@@ -118,7 +118,53 @@ test('source record helper cleans obvious Bangumi hint name artifacts', () => {
 
   assert.deepEqual(candidate.creatorCreditHints.map((row) => row.name), ['野上武志', 'Koi', 'Cygames'])
   assert.match(candidate.creatorCreditHints[0].note, /cleaned Bangumi hint name/u)
-  assert.deepEqual(candidate.organizationCreditHints.map((row) => row.name), ['TOKYO MX', '動画人物設定:茶之原拓也'])
+  assert.deepEqual(candidate.organizationCreditHints.map((row) => row.name), ['TOKYO MX', '茶之原拓也'])
+})
+
+test('source record helper cleans trailing note, footnote, and role prefixes from hints', () => {
+  const record = createRawSourceRecord({
+    source: 'bangumi',
+    sourceRecordId: '67890',
+    sourceUrl: 'https://bgm.tv/subject/67890',
+    raw: {
+      name_cn: '候选作品二',
+      mediaType: 'anime',
+      creatorCreditHints: [
+        { name: '漫画:弐尉マルコ', role: 'original_creator', originalRole: '原作', source: 'bangumi' },
+        { name: '綾奈ゆにこ(1', role: 'script', originalRole: '脚本', source: 'bangumi' },
+        { name: '吉田玲子(1-2', role: 'script', originalRole: '脚本', source: 'bangumi' },
+        { name: '赤尾でこ(三重野瞳', role: 'series_composition', originalRole: '系列构成', source: 'bangumi' },
+        { name: '赤尾でこ(三重野瞳)', role: 'series_composition', originalRole: '系列构成', source: 'bangumi' },
+        { name: '赤尾でこ[三重野瞳]', role: 'series_composition', originalRole: '系列构成', source: 'bangumi' },
+        { name: '虚淵玄 (Nitro+', role: 'script', originalRole: '脚本', source: 'bangumi' },
+        { name: '虚淵玄 (Nitro+)', role: 'script', originalRole: '脚本', source: 'bangumi' },
+        { name: '天野こずえ「ARIA」', role: 'original_creator', originalRole: '原作', source: 'bangumi' },
+        { name: 'Magica Quartet (新房昭之・虚淵玄・蒼樹うめ・SHAFT', role: 'original_creator', originalRole: '原作', source: 'bangumi' },
+        { name: 'Magica Quartet (新房昭之・虚淵玄・蒼樹うめ・SHAFT)', role: 'original_creator', originalRole: '原作', source: 'bangumi' },
+        { name: 'はいむらきよたか(灰村キヨタカ)', role: 'character_original_design', originalRole: '人物原案', source: 'bangumi' },
+        { name: 'ひと和×Craft Egg', role: 'character_original_design', originalRole: '人物原案', source: 'bangumi' },
+      ],
+      organizationCreditHints: [
+        { name: '製作协力:Aniplex', role: 'committee', originalRole: '製作', source: 'bangumi' },
+        { name: '制作協力:KADOKAWA', role: 'committee_member', originalRole: '製作', source: 'bangumi' },
+      ],
+    },
+  })
+
+  const candidate = sourceRecordToCandidateWork(record)
+
+  assert.deepEqual(candidate.creatorCreditHints.map((row) => row.name), [
+    '弐尉マルコ',
+    '綾奈ゆにこ',
+    '吉田玲子',
+    '赤尾でこ',
+    '虚淵玄',
+    '天野こずえ',
+    'Magica Quartet',
+    'はいむらきよたか',
+    'ひと和×Craft Egg',
+  ])
+  assert.deepEqual(candidate.organizationCreditHints.map((row) => row.name), ['Aniplex', 'KADOKAWA'])
 })
 
 test('normalize and dedupe candidates by external IDs', () => {
