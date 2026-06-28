@@ -37,8 +37,43 @@ const YURI_TAG_RULES = [
   { label: 'ガールズラブ', pattern: /^(ガールズラブ|ガルラブ)$/iu, weight: 1, priority: 10 },
 ]
 
+const CREATOR_CREDIT_INFBOX_RULES = [
+  { role: 'original_creator', keys: ['原作'] },
+  { role: 'original_concept', keys: ['原案'] },
+  { role: 'director', keys: ['監督', '监督', '导演'] },
+  { role: 'chief_director', keys: ['総監督', '总监督', '總監督'] },
+  { role: 'series_director', keys: ['シリーズディレクター', '系列监督', '系列監督'] },
+  { role: 'series_composition', keys: ['シリーズ構成', '系列构成', '系列構成'] },
+  { role: 'script', keys: ['脚本'] },
+  { role: 'character_original_design', keys: ['キャラクター原案', '角色原案', '人物原案'] },
+  { role: 'character_design', keys: ['キャラクターデザイン', '角色设计', '角色設計', '人物设定', '人物設定'] },
+  { role: 'producer', keys: ['プロデューサー', '制作人', '製作人'] },
+]
+
+const ORGANIZATION_CREDIT_INFBOX_RULES = [
+  { role: 'committee', keys: ['製作', '製作委員会', '製作委員會', '制作委员会', '制作委員会'] },
+  { role: 'animation_studio', keys: ['アニメーション制作', '动画制作', '動畫制作', '制作'] },
+  { role: 'production_company', keys: ['制作公司', '製作会社', '制作会社'] },
+  { role: 'publisher', keys: ['出版社'] },
+  { role: 'distributor', keys: ['发行', '发行商', '發行', '發行商', '配給', '配给'] },
+  { role: 'streaming_platform', keys: ['网络播放', '網絡播放', '网络配信', '配信', '配信平台'] },
+  { role: 'broadcaster', keys: ['放送局', '电视台', '電視台', '放送', '播放电视台'] },
+  { role: 'music_label', keys: ['音楽制作', '音乐制作', '音樂制作'] },
+]
+
 function normalizeText(value) {
   return String(value ?? '').normalize('NFKC').trim().replace(/\s+/gu, ' ')
+}
+
+function normalizeLongText(value) {
+  return String(value ?? '')
+    .normalize('NFKC')
+    .replace(/\r\n?/gu, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .join('\n')
+    .replace(/\n{3,}/gu, '\n\n')
+    .trim()
 }
 
 function normalizeUrl(value) {
@@ -51,26 +86,42 @@ function tagCount(tag) {
   return Number.isFinite(count) && count > 0 ? count : 0
 }
 
-function rawInfoboxValues(subject, keys) {
+function infoboxItemValues(item) {
+  if (typeof item?.value === 'string') return [item.value]
+  if (Array.isArray(item?.value)) {
+    return item.value.map((value) => (typeof value === 'string' ? value : value?.v || value?.name || ''))
+  }
+  return []
+}
+
+function rawInfoboxEntries(subject, keys) {
   const infobox = Array.isArray(subject?.infobox) ? subject.infobox : []
   const keySet = new Set(keys)
-  const values = []
+  const entries = []
 
   for (const item of infobox) {
     if (!item || !keySet.has(item.key)) continue
 
-    if (typeof item.value === 'string') {
-      values.push(item.value)
-      continue
-    }
-
-    if (Array.isArray(item.value)) {
-      values.push(...item.value.map((value) => (typeof value === 'string' ? value : value?.v || value?.name || '')))
+    for (const value of infoboxItemValues(item)) {
+      const normalizedValue = normalizeText(value)
+      if (!normalizedValue) continue
+      entries.push({ key: item.key, value: normalizedValue })
     }
   }
 
-  return values
-    .flatMap((value) => String(value || '').split(/\s*\/\s*|\s*、\s*|\s*;\s*|\s*；\s*/gu))
+  return entries
+}
+
+function splitCreditNames(value) {
+  return String(value || '')
+    .split(/\s*\/\s*|\s*、\s*|\s*;\s*|\s*；\s*|\s*,\s*|\s*，\s*/gu)
+    .map(normalizeText)
+    .filter(Boolean)
+}
+
+function rawInfoboxValues(subject, keys) {
+  return rawInfoboxEntries(subject, keys)
+    .flatMap((entry) => splitCreditNames(entry.value))
     .map(normalizeText)
     .filter(Boolean)
 }
@@ -89,6 +140,21 @@ function uniqueValues(values) {
 
     seen.add(key)
     output.push(value)
+  }
+
+  return output
+}
+
+function uniqueRows(rows, keyBuilder) {
+  const seen = new Set()
+  const output = []
+
+  for (const row of rows.filter(Boolean)) {
+    const key = keyBuilder(row)
+    if (!key || seen.has(key)) continue
+
+    seen.add(key)
+    output.push(row)
   }
 
   return output
@@ -228,6 +294,87 @@ function uniqueSearchSignalTags(searchSignals) {
   }
 
   return tags
+}
+
+function creditNote(key) {
+  return `Bangumi infobox: ${key}`
+}
+
+export function bangumiSubjectSummaryText(subject) {
+  return normalizeLongText(subject?.summary || subject?.description || '')
+}
+
+export function bangumiSubjectCreatorCreditHints(subject) {
+  const rows = []
+
+  for (const rule of CREATOR_CREDIT_INFBOX_RULES) {
+    for (const entry of rawInfoboxEntries(subject, rule.keys)) {
+      for (const name of splitCreditNames(entry.value)) {
+        rows.push({
+          name,
+          role: rule.role,
+          originalRole: entry.key,
+          source: 'bangumi',
+          note: creditNote(entry.key),
+        })
+      }
+    }
+  }
+
+  return uniqueRows(rows, (row) => [row.name.toLowerCase(), row.role, row.originalRole].join('|'))
+}
+
+function expandOrganizationEntry(entry, role) {
+  const value = normalizeText(entry.value)
+  const match = value.match(/^(.+?)[（(](.+)[）)]$/u)
+
+  if (role === 'committee' && match) {
+    const committeeName = normalizeText(match[1])
+    const members = splitCreditNames(match[2])
+    const rows = []
+
+    if (committeeName) {
+      rows.push({
+        name: committeeName,
+        role: 'committee',
+        originalRole: entry.key,
+        source: 'bangumi',
+        note: creditNote(entry.key),
+      })
+    }
+
+    for (const member of members) {
+      rows.push({
+        name: member,
+        role: 'committee_member',
+        originalRole: entry.key,
+        source: 'bangumi',
+        note: committeeName ? `Bangumi infobox: ${entry.key}; member of ${committeeName}` : creditNote(entry.key),
+      })
+    }
+
+    return rows
+  }
+
+  return splitCreditNames(value).map((name) => ({
+    name,
+    role,
+    originalRole: entry.key,
+    source: 'bangumi',
+    note: creditNote(entry.key),
+  }))
+}
+
+export function bangumiSubjectOrganizationCreditHints(subject) {
+  const rows = []
+
+  for (const rule of ORGANIZATION_CREDIT_INFBOX_RULES) {
+    for (const entry of rawInfoboxEntries(subject, rule.keys)) {
+      rows.push(...expandOrganizationEntry(entry, rule.role))
+    }
+  }
+
+  return uniqueRows(rows, (row) => [row.name.toLowerCase(), row.role, row.originalRole].join('|'))
 }
 
 export function bangumiSubjectUrl(subjectId) {
@@ -376,6 +523,9 @@ export function bangumiSubjectToCandidateInput(subject) {
       },
     ],
     externalCoverImages: bangumiSubjectExternalCoverImages(subject),
+    summaryText: bangumiSubjectSummaryText(subject),
+    creatorCreditHints: bangumiSubjectCreatorCreditHints(subject),
+    organizationCreditHints: bangumiSubjectOrganizationCreditHints(subject),
     yuriCandidateScore: Math.max(yuriSignal.candidateScore, searchSignalTags.length > 0 ? 0.05 : 0),
   }
 }
