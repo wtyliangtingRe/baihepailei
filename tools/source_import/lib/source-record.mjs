@@ -40,6 +40,8 @@ const CREDIT_PUBLICATION_CONTEXT_PATTERN = /[（(][^（）()]*(?:刊|連載|连�
 const CREDIT_PUBLICATION_FRAGMENT_PATTERN = /^[\p{Letter}\p{Script=Han}ー・\s]+刊[）)]?$/u
 const CREDIT_FOOTNOTE_PATTERN = /^\d+(?:\s*-\s*\d+)?[）)]?$/u
 const CREDIT_TRAILING_FOOTNOTE_CONTEXT_PATTERN = /[（(]\s*\d+(?:\s*-\s*\d+)?\s*[）)]?$/u
+const CREDIT_TRAILING_PAREN_CONTEXT_PATTERN = /^(.+?)\s*[（(][^（）()]+[）)]$/u
+const CREDIT_TRAILING_BRACKET_CONTEXT_PATTERN = /^(.+?)\s*[［\[][^[\]［］]+[］\]]$/u
 const CREDIT_TRAILING_UNCLOSED_CONTEXT_PATTERN = /\s*[（(][^（）()]+$/u
 const CREDIT_TRAILING_TITLE_CONTEXT_PATTERN = /^(.+?)[「『《][^」』》]+[」』》]$/u
 
@@ -105,6 +107,8 @@ function cleanCreditHintName(value) {
   name = name
     .replace(CREDIT_PUBLICATION_CONTEXT_PATTERN, '')
     .replace(CREDIT_TRAILING_FOOTNOTE_CONTEXT_PATTERN, '')
+    .replace(CREDIT_TRAILING_PAREN_CONTEXT_PATTERN, '$1')
+    .replace(CREDIT_TRAILING_BRACKET_CONTEXT_PATTERN, '$1')
     .replace(CREDIT_TRAILING_UNCLOSED_CONTEXT_PATTERN, '')
     .replace(CREDIT_TRAILING_TITLE_CONTEXT_PATTERN, '$1')
     .replace(/^[（(]+|[）)]+$/gu, '')
