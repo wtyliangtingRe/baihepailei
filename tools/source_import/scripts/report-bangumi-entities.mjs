@@ -14,8 +14,9 @@ const STRONG_ORGANIZATION_ROLES = new Set([
   'music_label',
   'streaming_platform',
 ])
-const ORGANIZATION_NAME_MARKER_PATTERN = /社|会社|テレビ|放送|映像|動画|出版|新聞|スタジオ|アニメーション|フィルム|ワークス|ピクチャーズ|ミュージック|レコード|ビジュアル|メディア|エンタ|リンク|キャニオン|コロムビア|ランティス|ムービック|ブシロード|ジェンコ|KADOKAWA|Aniplex|Cygames|TOKYO|MX|AT-X|TBS|MBS|BS|ABC|NBC|SHAFT|SILVER LINK|J\.C\.STAFF|P\.A\.WORKS/iu
+const ORGANIZATION_NAME_MARKER_PATTERN = /社|会社|書店|书店|学館|學館|小学館|館|出版|出版社|游戏|遊戲|ゲーム|ゲームス|舎|テレビ|放送|映像|動画|新聞|スタジオ|アニメーション|フィルム|ワークス|ピクチャーズ|ミュージック|レコード|ビジュアル|メディア|エンタ|リンク|キャニオン|コロムビア|ランティス|ムービック|ブシロード|ジェンコ|网易|網易|KADOKAWA|Aniplex|Cygames|TOKYO|MX|AT-X|TBS|MBS|BS|ABC|NBC|SHAFT|SILVER LINK|J\.C\.STAFF|P\.A\.WORKS/iu
 const JAPANESE_PERSON_NAME_PATTERN = /^[\p{Script=Han}々〆ヵヶ]{3,5}$/u
+const PREFIX_SEPARATOR_PATTERN = /[:：]/u
 
 function parseArgs(argv) {
   const args = new Map()
@@ -121,6 +122,7 @@ function reviewFlags(item, sharedNames) {
   const flags = []
   if (/[、,，;；/／&＆+＋×・]/u.test(item.name)) flags.push('compound_name')
   if (/[「」『』《》（）()［\]]/u.test(item.name)) flags.push('has_bracket_or_quote')
+  if (PREFIX_SEPARATOR_PATTERN.test(item.name)) flags.push('has_prefix_separator')
   if (sharedNames.has(normalizedName(item.name))) flags.push('appears_in_both_lists')
   if (item.kind === 'creator' && /委員会|委员会|製作|制作|Project|Studio|会社|社$/u.test(item.name)) flags.push('creator_name_looks_like_group')
   if (organizationNameMayBePerson(item)) flags.push('organization_name_may_be_person')
@@ -241,7 +243,7 @@ export function createBangumiEntityReviewReport(review, { inputPath = '', topLim
     markdownCandidateTable('需要人工复核的高频候选', flagged, topLimit),
     '## 后续建议',
     '',
-    '- 优先人工检查 `compound_name`、`appears_in_both_lists`、`creator_name_looks_like_group` 和 `organization_name_may_be_person`。',
+    '- 优先人工检查 `compound_name`、`has_prefix_separator`、`appears_in_both_lists`、`creator_name_looks_like_group` 和 `organization_name_may_be_person`。',
     '- 这份输出只是审查清单，不应直接导入 Payload。',
     '- 生成的 JSON/Markdown 属于 `data_local` 本地派生产物，不要提交。',
     '',
