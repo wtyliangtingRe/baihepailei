@@ -213,3 +213,27 @@ test('Payload seed export keeps candidates as hidden drafts', () => {
   assert.equal(seed.works[0].isLiteVisible, false)
   assert.equal(seed.works[0].isFullVisible, false)
 })
+
+test('Payload seed export carries Bangumi enrichment hints into review notes', () => {
+  const seed = toPayloadSeed([
+    {
+      title: '樱 Trick',
+      slug: 'sakura-trick',
+      mediaType: 'anime',
+      summaryText: '这是 Bangumi 简介。',
+      creatorCreditHints: [
+        { name: '大沼心', role: 'director', originalRole: '監督', source: 'bangumi', note: 'Bangumi infobox: 監督' },
+      ],
+      organizationCreditHints: [
+        { name: 'citrus製作委員会', role: 'committee', originalRole: '製作', source: 'bangumi' },
+        { name: '一迅社', role: 'committee_member', originalRole: '製作', source: 'bangumi' },
+      ],
+    },
+  ])
+
+  assert.match(seed.works[0].evidenceNote, /Bangumi 简介候选/u)
+  assert.match(seed.works[0].evidenceNote, /这是 Bangumi 简介/u)
+  assert.match(seed.works[0].evidenceNote, /大沼心/u)
+  assert.match(seed.works[0].evidenceNote, /citrus製作委員会/u)
+  assert.match(seed.works[0].evidenceNote, /一迅社/u)
+})
