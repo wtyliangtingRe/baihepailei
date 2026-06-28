@@ -53,6 +53,7 @@ test('candidate work cleaning preserves draft candidate fields', () => {
     isLiteVisible: false,
     isFullVisible: false,
     hasEvidence: false,
+    evidenceNote: 'Bangumi 简介候选：测试简介。',
     status: 'draft',
   })
 
@@ -72,10 +73,12 @@ test('candidate work cleaning preserves draft candidate fields', () => {
   assert.equal(doc.yuriCandidateScore, 0.5)
   assert.equal(doc.isLiteVisible, false)
   assert.equal(doc.isFullVisible, false)
+  assert.equal(doc.evidenceNote, 'Bangumi 简介候选：测试简介。')
   assert.equal(doc.status, 'draft')
   assert.match(doc.searchText, /Bangumi/u)
   assert.match(doc.searchText, /終將成為妳/u)
   assert.match(doc.searchText, /Bloom Into You/u)
+  assert.match(doc.searchText, /测试简介/u)
 })
 
 test('candidate work lookup plan uses stable match priority', () => {

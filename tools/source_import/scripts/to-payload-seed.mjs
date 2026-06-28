@@ -34,6 +34,10 @@ function cleanObject(value) {
   return entries.length > 0 ? Object.fromEntries(entries) : undefined
 }
 
+function cleanText(value) {
+  return String(value || '').trim()
+}
+
 function cleanSlugPart(value) {
   return String(value ?? '')
     .normalize('NFKC')
@@ -67,6 +71,48 @@ function externalIdSlug(candidate) {
   return ''
 }
 
+function creditHintLine(hint) {
+  const name = cleanText(hint?.name)
+  if (!name) return ''
+
+  const role = cleanText(hint?.role) || 'other'
+  const originalRole = cleanText(hint?.originalRole)
+  const note = cleanText(hint?.note)
+  const source = cleanText(hint?.source)
+  return [
+    `- ${name}`,
+    `role=${role}`,
+    originalRole ? `originalRole=${originalRole}` : '',
+    source ? `source=${source}` : '',
+    note ? `note=${note}` : '',
+  ].filter(Boolean).join(' | ')
+}
+
+function candidateEnrichmentNote(candidate) {
+  const sections = []
+  const summaryText = cleanText(candidate.summaryText || candidate.summaryPlainText)
+  const creatorHints = cleanArray(candidate.creatorCreditHints).map(creditHintLine).filter(Boolean)
+  const organizationHints = cleanArray(candidate.organizationCreditHints).map(creditHintLine).filter(Boolean)
+
+  if (summaryText) {
+    sections.push(`## Bangumi 简介候选\n${summaryText}`)
+  }
+
+  if (creatorHints.length > 0) {
+    sections.push(`## Bangumi 创作者职位候选\n${creatorHints.join('\n')}`)
+  }
+
+  if (organizationHints.length > 0) {
+    sections.push(`## Bangumi 机构/制作候选\n${organizationHints.join('\n')}`)
+  }
+
+  return sections.join('\n\n')
+}
+
+function mergeNotes(...notes) {
+  return notes.map(cleanText).filter(Boolean).join('\n\n') || undefined
+}
+
 export function candidateSlugBase(candidate) {
   return externalIdSlug(candidate)
     || candidate.slug
@@ -79,6 +125,7 @@ export function toPayloadSeed(candidates) {
   const works = candidates.map((candidate) => {
     const slug = uniqueSlug(candidateSlugBase(candidate), seenSlugs)
     const mediaType = candidate.mediaType || 'unknown'
+    const evidenceNote = mergeNotes(candidate.evidenceNote, candidateEnrichmentNote(candidate))
 
     return {
       siteId: candidate.siteId || undefined,
@@ -104,6 +151,7 @@ export function toPayloadSeed(candidates) {
       isLiteVisible: false,
       isFullVisible: false,
       hasEvidence: false,
+      evidenceNote,
       status: 'draft',
     }
   })

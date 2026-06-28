@@ -444,6 +444,7 @@ export function cleanDoc(collection, input) {
   if (collection === 'works') {
     const summaryText = richTextToPlainText(doc.summary)
     const analysisText = richTextToPlainText(doc.analysis)
+    const evidenceNote = doc.evidenceNote || ''
     const originalTitle = doc.originalTitle || findHeadingValue(summaryText, ['原名'])
     const existingAliases = arrayRowsToValues(doc.aliases)
     const aliasesFromSummary = splitAliasText(findHeadingValue(summaryText, ['其他名称', '别名']))
@@ -474,6 +475,7 @@ export function cleanDoc(collection, input) {
       doc.legacyXWikiPage,
       summaryText,
       analysisText,
+      evidenceNote,
       candidateSourceText(candidateSources),
     ])
 
@@ -504,6 +506,7 @@ export function cleanDoc(collection, input) {
       analysis: doc.analysis,
       searchText,
       sourceLinks,
+      evidenceNote,
       legacyXWikiPage: doc.legacyXWikiPage,
       status: doc.status || 'draft',
     }
