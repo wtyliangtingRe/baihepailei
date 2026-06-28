@@ -150,6 +150,47 @@ test('dedupe auto-merges exact external IDs and records merge metadata', () => {
   assert.equal(result.deduped[0].externalCoverImages.length, 2)
 })
 
+test('candidate comparison keeps strong fuzzy sequel-like titles for review', () => {
+  const result = compareWorkCandidates(
+    candidate({
+      title: '少女与战车 最终章 第6话',
+      originalTitle: 'ガールズ&パンツァー 最終章 第6話',
+      mediaType: 'anime',
+    }),
+    candidate({
+      title: '少女与战车 最终章 第5话',
+      originalTitle: 'ガールズ&パンツァー 最終章 第5話',
+      mediaType: 'anime',
+      firstPublishedAt: '2026-10-09',
+      firstPublishedLabel: '2026-10-09',
+    }),
+  )
+
+  assert.equal(result.action, 'conflict')
+  assert.equal(result.confidence, 'similar_title_date')
+})
+
+test('candidate comparison ignores weaker unrelated same-year fuzzy title overlap', () => {
+  const result = compareWorkCandidates(
+    candidate({
+      title: '恶女不才,请多关照 ~雏宫蝶鼠换身传~',
+      originalTitle: 'ふつつかな悪女ではございますが ~雛宮蝶鼠とりかえ伝~',
+      mediaType: 'anime',
+      firstPublishedAt: '2026-07-12',
+      firstPublishedLabel: '2026-07-12',
+    }),
+    candidate({
+      title: '感谢对战。 ~大小姐才不玩格斗游戏~',
+      originalTitle: '対ありでした。 ~お嬢さまは格闘ゲームなんてしない~',
+      mediaType: 'anime',
+      firstPublishedAt: '2026-07-07',
+      firstPublishedLabel: '2026-07-07',
+    }),
+  )
+
+  assert.equal(result.action, 'new')
+})
+
 test('review priority maps conflict confidence to review buckets', () => {
   assert.equal(reviewPriority({ confidence: 'same_original_title_distinct_bangumi_subject' }), 'distinct_bangumi_subject_review')
   assert.equal(reviewPriority({ confidence: 'same_original_title_version_variant' }), 'version_or_edition_review')
