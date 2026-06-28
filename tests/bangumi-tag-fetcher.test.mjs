@@ -10,8 +10,11 @@ import {
   createCurlJsonArgs,
   nextBangumiEmptyPageStreak,
   normalizeBangumiKeywordMode,
+  normalizeBangumiRetryCount,
+  normalizeBangumiRetryDelayMs,
   normalizeBangumiStopAfterEmptyPages,
   readBangumiResumeState,
+  shouldRetryBangumiRequest,
   shouldStopBangumiSearchAfterEmptyPages,
 } from '../tools/source_import/scripts/fetch-bangumi-tagged-subjects.mjs'
 import {
@@ -165,6 +168,22 @@ test('Bangumi empty-page stop helpers normalize and track search streaks', () =>
   assert.equal(shouldStopBangumiSearchAfterEmptyPages({ emptyPageStreak: 1, stopAfterEmptyPages: 2 }), false)
   assert.equal(shouldStopBangumiSearchAfterEmptyPages({ emptyPageStreak: 2, stopAfterEmptyPages: 2 }), true)
   assert.equal(shouldStopBangumiSearchAfterEmptyPages({ emptyPageStreak: 20, stopAfterEmptyPages: 0 }), false)
+})
+
+test('Bangumi retry helpers normalize and decide retry attempts', () => {
+  assert.equal(normalizeBangumiRetryCount('3'), 3)
+  assert.equal(normalizeBangumiRetryCount('3.8'), 3)
+  assert.equal(normalizeBangumiRetryCount('0'), 0)
+  assert.equal(normalizeBangumiRetryCount('invalid', 2), 2)
+
+  assert.equal(normalizeBangumiRetryDelayMs('1500'), 1500)
+  assert.equal(normalizeBangumiRetryDelayMs('0'), 0)
+  assert.equal(normalizeBangumiRetryDelayMs('invalid', 900), 900)
+
+  assert.equal(shouldRetryBangumiRequest({ attempt: 0, retries: 2 }), true)
+  assert.equal(shouldRetryBangumiRequest({ attempt: 1, retries: 2 }), true)
+  assert.equal(shouldRetryBangumiRequest({ attempt: 2, retries: 2 }), false)
+  assert.equal(shouldRetryBangumiRequest({ attempt: 0, retries: 0 }), false)
 })
 
 test('Bangumi resume ids prefer sourceRecordId and fall back to raw subject ids', () => {

@@ -21,6 +21,8 @@ const DEFAULT_CURL_CONNECT_TIMEOUT_SECONDS = 30
 const CURL_MAX_BUFFER_BYTES = 20 * 1024 * 1024
 const DEFAULT_KEYWORD_MODE = 'tag'
 const KEYWORD_MODES = new Set(['tag', 'empty', 'none'])
+const DEFAULT_RETRIES = 2
+const DEFAULT_RETRY_DELAY_MS = 1000
 
 const execFileAsync = promisify(execFile)
 
@@ -77,6 +79,18 @@ export function normalizeBangumiStopAfterEmptyPages(value, fallback = 0) {
   return Math.floor(number)
 }
 
+export function normalizeBangumiRetryCount(value, fallback = DEFAULT_RETRIES) {
+  const number = Number(value)
+  if (!Number.isFinite(number) || number < 0) return fallback
+  return Math.floor(number)
+}
+
+export function normalizeBangumiRetryDelayMs(value, fallback = DEFAULT_RETRY_DELAY_MS) {
+  const number = Number(value)
+  if (!Number.isFinite(number) || number < 0) return fallback
+  return Math.floor(number)
+}
+
 export function nextBangumiEmptyPageStreak(returned, currentStreak = 0) {
   return Number(returned) > 0 ? 0 : currentStreak + 1
 }
@@ -84,6 +98,11 @@ export function nextBangumiEmptyPageStreak(returned, currentStreak = 0) {
 export function shouldStopBangumiSearchAfterEmptyPages({ emptyPageStreak, stopAfterEmptyPages }) {
   const threshold = normalizeBangumiStopAfterEmptyPages(stopAfterEmptyPages)
   return threshold > 0 && emptyPageStreak >= threshold
+}
+
+export function shouldRetryBangumiRequest({ attempt, retries }) {
+  const normalizedRetries = normalizeBangumiRetryCount(retries)
+  return Number(attempt) < normalizedRetries
 }
 
 function sleep(ms) {
@@ -257,7 +276,7 @@ async function requestJsonWithCurl(url, options, { proxy }) {
   }
 }
 
-async function requestJson(url, options, { proxy = '' } = {}) {
+async function requestJsonOnce(url, options, { proxy = '' } = {}) {
   if (proxy) {
     return requestJsonWithCurl(url, options, { proxy })
   }
@@ -270,6 +289,23 @@ async function requestJson(url, options, { proxy = '' } = {}) {
   }
 
   return response.json()
+}
+
+async function requestJson(url, options, { proxy = '', retries = DEFAULT_RETRIES, retryDelayMs = DEFAULT_RETRY_DELAY_MS } = {}) {
+  const normalizedRetries = normalizeBangumiRetryCount(retries)
+  const normalizedRetryDelayMs = normalizeBangumiRetryDelayMs(retryDelayMs)
+
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await requestJsonOnce(url, options, { proxy })
+    } catch (error) {
+      if (!shouldRetryBangumiRequest({ attempt, retries: normalizedRetries })) {
+        throw error
+      }
+
+      await sleep(normalizedRetryDelayMs)
+    }
+  }
 }
 
 export function createBangumiSearchRequestBody({ tag, type, sort, keywordMode = DEFAULT_KEYWORD_MODE }) {
@@ -291,7 +327,19 @@ export function createBangumiSearchRequestBody({ tag, type, sort, keywordMode = 
   return body
 }
 
-export async function searchBangumiSubjects({ tag, type, limit, offset, sort, keywordMode = DEFAULT_KEYWORD_MODE, userAgent, token, proxy }) {
+export async function searchBangumiSubjects({
+  tag,
+  type,
+  limit,
+  offset,
+  sort,
+  keywordMode = DEFAULT_KEYWORD_MODE,
+  userAgent,
+  token,
+  proxy,
+  retries = DEFAULT_RETRIES,
+  retryDelayMs = DEFAULT_RETRY_DELAY_MS,
+}) {
   const url = new URL('/v0/search/subjects', API_BASE_URL)
   url.searchParams.set('limit', String(limit))
   url.searchParams.set('offset', String(offset))
@@ -305,13 +353,19 @@ export async function searchBangumiSubjects({ tag, type, limit, offset, sort, ke
       headers: requestHeaders({ userAgent, token }),
       body: JSON.stringify(body),
     },
-    { proxy },
+    { proxy, retries, retryDelayMs },
   )
 
   return Array.isArray(json?.data) ? json.data : []
 }
 
-export async function fetchBangumiSubject(subjectId, { userAgent, token, proxy }) {
+export async function fetchBangumiSubject(subjectId, {
+  userAgent,
+  token,
+  proxy,
+  retries = DEFAULT_RETRIES,
+  retryDelayMs = DEFAULT_RETRY_DELAY_MS,
+}) {
   const url = new URL(`/v0/subjects/${subjectId}`, API_BASE_URL)
   return requestJson(
     url,
@@ -319,7 +373,7 @@ export async function fetchBangumiSubject(subjectId, { userAgent, token, proxy }
       method: 'GET',
       headers: requestHeaders({ userAgent, token }),
     },
-    { proxy },
+    { proxy, retries, retryDelayMs },
   )
 }
 
@@ -332,12 +386,16 @@ export async function searchBangumiTaggedSubjectCandidates({
   keywordMode = DEFAULT_KEYWORD_MODE,
   stopAfterEmptyPages = 0,
   delayMs = 900,
+  retries = DEFAULT_RETRIES,
+  retryDelayMs = DEFAULT_RETRY_DELAY_MS,
   userAgent = DEFAULT_USER_AGENT,
   token = process.env.BANGUMI_ACCESS_TOKEN || '',
   proxy = process.env.BANGUMI_PROXY || '',
 } = {}) {
   const normalizedKeywordMode = normalizeBangumiKeywordMode(keywordMode)
   const normalizedStopAfterEmptyPages = normalizeBangumiStopAfterEmptyPages(stopAfterEmptyPages)
+  const normalizedRetries = normalizeBangumiRetryCount(retries)
+  const normalizedRetryDelayMs = normalizeBangumiRetryDelayMs(retryDelayMs)
   const searched = []
   const searchBatches = []
 
@@ -347,7 +405,19 @@ export async function searchBangumiTaggedSubjectCandidates({
 
       for (let page = 0; page < pages; page += 1) {
         const offset = page * limit
-        const subjects = await searchBangumiSubjects({ tag, type, limit, offset, sort, keywordMode: normalizedKeywordMode, userAgent, token, proxy })
+        const subjects = await searchBangumiSubjects({
+          tag,
+          type,
+          limit,
+          offset,
+          sort,
+          keywordMode: normalizedKeywordMode,
+          userAgent,
+          token,
+          proxy,
+          retries: normalizedRetries,
+          retryDelayMs: normalizedRetryDelayMs,
+        })
         emptyPageStreak = nextBangumiEmptyPageStreak(subjects.length, emptyPageStreak)
         const stoppedAfterThisBatch = shouldStopBangumiSearchAfterEmptyPages({
           emptyPageStreak,
@@ -390,6 +460,8 @@ export async function fetchBangumiTaggedSubjects({
   keywordMode = DEFAULT_KEYWORD_MODE,
   stopAfterEmptyPages = 0,
   delayMs = 900,
+  retries = DEFAULT_RETRIES,
+  retryDelayMs = DEFAULT_RETRY_DELAY_MS,
   minWeightedScore = 5,
   minTopTagCount = 5,
   userAgent = DEFAULT_USER_AGENT,
@@ -405,16 +477,26 @@ export async function fetchBangumiTaggedSubjects({
     keywordMode,
     stopAfterEmptyPages,
     delayMs,
+    retries,
+    retryDelayMs,
     userAgent,
     token,
     proxy,
   })
 
   const detailed = []
+  const normalizedRetries = normalizeBangumiRetryCount(retries)
+  const normalizedRetryDelayMs = normalizeBangumiRetryDelayMs(retryDelayMs)
 
   for (const subject of uniqueSubjects) {
     const id = subject?.id ?? subject?.subject_id
-    const detail = await fetchBangumiSubject(id, { userAgent, token, proxy })
+    const detail = await fetchBangumiSubject(id, {
+      userAgent,
+      token,
+      proxy,
+      retries: normalizedRetries,
+      retryDelayMs: normalizedRetryDelayMs,
+    })
     const annotated = annotateBangumiYuriSignal(detail)
 
     if (subjectPassesYuriTagThreshold(annotated, { minWeightedScore, minTopTagCount })) {
@@ -446,6 +528,8 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
   keywordMode = DEFAULT_KEYWORD_MODE,
   stopAfterEmptyPages = 0,
   delayMs = 900,
+  retries = DEFAULT_RETRIES,
+  retryDelayMs = DEFAULT_RETRY_DELAY_MS,
   minWeightedScore = 5,
   minTopTagCount = 5,
   userAgent = DEFAULT_USER_AGENT,
@@ -456,6 +540,8 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
 
   const normalizedKeywordMode = normalizeBangumiKeywordMode(keywordMode)
   const normalizedStopAfterEmptyPages = normalizeBangumiStopAfterEmptyPages(stopAfterEmptyPages)
+  const normalizedRetries = normalizeBangumiRetryCount(retries)
+  const normalizedRetryDelayMs = normalizeBangumiRetryDelayMs(retryDelayMs)
   const resumeState = !searchOnly && resume
     ? await readBangumiResumeState(output)
     : {
@@ -472,6 +558,8 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
     keywordMode: normalizedKeywordMode,
     stopAfterEmptyPages: normalizedStopAfterEmptyPages,
     delayMs,
+    retries: normalizedRetries,
+    retryDelayMs: normalizedRetryDelayMs,
     userAgent,
     token,
     proxy,
@@ -490,6 +578,8 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
         keywordMode: normalizedKeywordMode,
         stopAfterEmptyPages: normalizedStopAfterEmptyPages,
         searchOnly,
+        retries: normalizedRetries,
+        retryDelayMs: normalizedRetryDelayMs,
         minWeightedScore,
         minTopTagCount,
         proxyUsed: Boolean(proxy),
@@ -531,7 +621,13 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
     }
 
     try {
-      const detail = await fetchBangumiSubject(id, { userAgent, token, proxy })
+      const detail = await fetchBangumiSubject(id, {
+        userAgent,
+        token,
+        proxy,
+        retries: normalizedRetries,
+        retryDelayMs: normalizedRetryDelayMs,
+      })
       const annotated = annotateBangumiYuriSignal(detail)
 
       if (subjectPassesYuriTagThreshold(annotated, { minWeightedScore, minTopTagCount })) {
@@ -569,6 +665,8 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
       keywordMode: normalizedKeywordMode,
       stopAfterEmptyPages: normalizedStopAfterEmptyPages,
       searchOnly,
+      retries: normalizedRetries,
+      retryDelayMs: normalizedRetryDelayMs,
       minWeightedScore,
       minTopTagCount,
       proxyUsed: Boolean(proxy),
@@ -605,6 +703,8 @@ async function main() {
   const sort = args.get('sort') || 'rank'
   const keywordMode = normalizeBangumiKeywordMode(args.get('keyword-mode') || process.env.BANGUMI_KEYWORD_MODE || DEFAULT_KEYWORD_MODE)
   const stopAfterEmptyPages = normalizeBangumiStopAfterEmptyPages(args.get('stop-after-empty-pages') || process.env.BANGUMI_STOP_AFTER_EMPTY_PAGES || 0)
+  const retries = normalizeBangumiRetryCount(args.get('retries') || process.env.BANGUMI_RETRIES || DEFAULT_RETRIES)
+  const retryDelayMs = normalizeBangumiRetryDelayMs(args.get('retry-delay-ms') || process.env.BANGUMI_RETRY_DELAY_MS || DEFAULT_RETRY_DELAY_MS)
   const userAgent = args.get('user-agent') || process.env.BANGUMI_USER_AGENT || DEFAULT_USER_AGENT
   const token = args.get('token') || process.env.BANGUMI_ACCESS_TOKEN || ''
   const proxy = args.get('proxy') || process.env.BANGUMI_PROXY || ''
@@ -631,6 +731,10 @@ async function main() {
     console.log(`Stopping each Bangumi tag/type search after ${stopAfterEmptyPages} consecutive empty page(s).`)
   }
 
+  if (retries > 0) {
+    console.log(`Retrying failed Bangumi requests up to ${retries} time(s) with ${retryDelayMs}ms delay.`)
+  }
+
   const { report } = await fetchBangumiTaggedSubjectsToJsonl({
     output,
     fetchedAt,
@@ -644,6 +748,8 @@ async function main() {
     keywordMode,
     stopAfterEmptyPages,
     delayMs,
+    retries,
+    retryDelayMs,
     minWeightedScore,
     minTopTagCount,
     userAgent,
