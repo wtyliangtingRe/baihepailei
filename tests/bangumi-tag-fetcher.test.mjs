@@ -1,8 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 
 import {
+  bangumiRawSourceRecordSubjectId,
   createCurlJsonArgs,
+  readBangumiResumeState,
 } from '../tools/source_import/scripts/fetch-bangumi-tagged-subjects.mjs'
 import {
   annotateBangumiYuriSignal,
@@ -105,4 +110,46 @@ test('Bangumi fetcher builds curl args with a scoped proxy', () => {
   assert.match(args.join('\n'), /--proxy\nsocks5h:\/\/127\.0\.0\.1:10808/u)
   assert.match(args.join('\n'), /--data-binary\n\{"keyword":"百合"\}/u)
   assert.equal(args.at(-1), 'https://api.bgm.tv/v0/search/subjects?limit=5&offset=0')
+})
+
+test('Bangumi resume ids prefer sourceRecordId and fall back to raw subject ids', () => {
+  assert.equal(bangumiRawSourceRecordSubjectId({ source: 'bangumi', sourceRecordId: 101 }), '101')
+  assert.equal(bangumiRawSourceRecordSubjectId({ source: 'bangumi', raw: { subject_id: 102 } }), '102')
+  assert.equal(bangumiRawSourceRecordSubjectId({ source: 'other', sourceRecordId: 103 }), '')
+})
+
+test('Bangumi fetcher reads resume ids from existing raw JSONL', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'bangumi-resume-'))
+
+  try {
+    const file = path.join(dir, 'existing.jsonl')
+    await writeFile(
+      file,
+      [
+        JSON.stringify({ source: 'bangumi', sourceRecordId: 201, raw: { id: 201, name: 'Existing A' } }),
+        JSON.stringify({ source: 'bangumi', raw: { subject_id: 202, name: 'Existing B' } }),
+      ].join('\n') + '\n',
+      'utf8',
+    )
+
+    const state = await readBangumiResumeState(file)
+
+    assert.equal(state.records.length, 2)
+    assert.deepEqual([...state.ids].sort(), ['201', '202'])
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})
+
+test('Bangumi fetch resume state starts empty when output is missing', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'bangumi-resume-missing-'))
+
+  try {
+    const state = await readBangumiResumeState(path.join(dir, 'missing.jsonl'))
+
+    assert.equal(state.records.length, 0)
+    assert.equal(state.ids.size, 0)
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
 })

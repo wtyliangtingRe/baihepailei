@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
 import { execFile } from 'node:child_process'
+import { appendFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
 
-import { writeJsonl, writeJsonFile } from '../lib/jsonl.mjs'
+import { readJsonl, writeJsonl, writeJsonFile } from '../lib/jsonl.mjs'
 import {
   annotateBangumiYuriSignal,
   bangumiSubjectToRawSource,
@@ -52,6 +53,17 @@ function parseNumberCsv(value, fallback) {
     .filter((item) => Number.isFinite(item))
 }
 
+function parseBoolean(value, fallback = false) {
+  if (value === undefined || value === null || value === '') return fallback
+  if (typeof value === 'boolean') return value
+
+  const normalized = String(value).trim().toLowerCase()
+  if (['1', 'true', 'yes', 'y', 'on'].includes(normalized)) return true
+  if (['0', 'false', 'no', 'n', 'off'].includes(normalized)) return false
+
+  return fallback
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -69,6 +81,68 @@ function uniqueById(subjects) {
   }
 
   return result
+}
+
+function subjectId(subject) {
+  const id = subject?.id ?? subject?.subject_id
+  return id === undefined || id === null || id === '' ? '' : String(id)
+}
+
+export function bangumiRawSourceRecordSubjectId(record) {
+  if (record?.source && record.source !== 'bangumi') return ''
+
+  const id = record?.sourceRecordId ?? record?.raw?.id ?? record?.raw?.subject_id
+  return id === undefined || id === null || id === '' ? '' : String(id)
+}
+
+function bangumiRawSourceRecordSummary(record) {
+  const raw = record?.raw || {}
+  return {
+    id: bangumiRawSourceRecordSubjectId(record),
+    name: raw.name,
+    name_cn: raw.name_cn,
+    type: raw.type,
+    date: raw.date,
+    yuriTagSignal: raw._baihepailei?.yuriTagSignal,
+  }
+}
+
+function bangumiSearchSubjectSummary(subject) {
+  return {
+    id: subjectId(subject),
+    name: subject?.name,
+    name_cn: subject?.name_cn,
+    type: subject?.type,
+    date: subject?.date,
+  }
+}
+
+export function existingBangumiSubjectIds(records) {
+  return new Set(records.map(bangumiRawSourceRecordSubjectId).filter(Boolean))
+}
+
+export async function readBangumiResumeState(output) {
+  try {
+    const records = await readJsonl(output)
+    return {
+      records,
+      ids: existingBangumiSubjectIds(records),
+    }
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      return {
+        records: [],
+        ids: new Set(),
+      }
+    }
+
+    throw error
+  }
+}
+
+async function appendJsonlRecord(filePath, record) {
+  await mkdir(path.dirname(filePath), { recursive: true })
+  await appendFile(filePath, `${JSON.stringify(record)}\n`, 'utf8')
 }
 
 function requestHeaders({ userAgent, token }) {
@@ -188,15 +262,13 @@ export async function fetchBangumiSubject(subjectId, { userAgent, token, proxy }
   )
 }
 
-export async function fetchBangumiTaggedSubjects({
+export async function searchBangumiTaggedSubjectCandidates({
   tags = DEFAULT_TAGS,
   types = DEFAULT_TYPES,
   limit = 20,
   pages = 1,
   sort = 'rank',
   delayMs = 900,
-  minWeightedScore = 5,
-  minTopTagCount = 5,
   userAgent = DEFAULT_USER_AGENT,
   token = process.env.BANGUMI_ACCESS_TOKEN || '',
   proxy = process.env.BANGUMI_PROXY || '',
@@ -214,9 +286,40 @@ export async function fetchBangumiTaggedSubjects({
     }
   }
 
+  return {
+    searched,
+    uniqueSubjects: uniqueById(searched),
+  }
+}
+
+export async function fetchBangumiTaggedSubjects({
+  tags = DEFAULT_TAGS,
+  types = DEFAULT_TYPES,
+  limit = 20,
+  pages = 1,
+  sort = 'rank',
+  delayMs = 900,
+  minWeightedScore = 5,
+  minTopTagCount = 5,
+  userAgent = DEFAULT_USER_AGENT,
+  token = process.env.BANGUMI_ACCESS_TOKEN || '',
+  proxy = process.env.BANGUMI_PROXY || '',
+} = {}) {
+  const { uniqueSubjects } = await searchBangumiTaggedSubjectCandidates({
+    tags,
+    types,
+    limit,
+    pages,
+    sort,
+    delayMs,
+    userAgent,
+    token,
+    proxy,
+  })
+
   const detailed = []
 
-  for (const subject of uniqueById(searched)) {
+  for (const subject of uniqueSubjects) {
     const id = subject?.id ?? subject?.subject_id
     const detail = await fetchBangumiSubject(id, { userAgent, token, proxy })
     const annotated = annotateBangumiYuriSignal(detail)
@@ -237,6 +340,118 @@ export async function fetchBangumiTaggedSubjects({
   return detailed
 }
 
+export async function fetchBangumiTaggedSubjectsToJsonl({
+  output,
+  fetchedAt = new Date().toISOString(),
+  resume = false,
+  tags = DEFAULT_TAGS,
+  types = DEFAULT_TYPES,
+  limit = 20,
+  pages = 1,
+  sort = 'rank',
+  delayMs = 900,
+  minWeightedScore = 5,
+  minTopTagCount = 5,
+  userAgent = DEFAULT_USER_AGENT,
+  token = process.env.BANGUMI_ACCESS_TOKEN || '',
+  proxy = process.env.BANGUMI_PROXY || '',
+} = {}) {
+  if (!output) throw new Error('Bangumi fetch output path is required')
+
+  const resumeState = resume
+    ? await readBangumiResumeState(output)
+    : {
+        records: [],
+        ids: new Set(),
+      }
+
+  const { searched, uniqueSubjects } = await searchBangumiTaggedSubjectCandidates({
+    tags,
+    types,
+    limit,
+    pages,
+    sort,
+    delayMs,
+    userAgent,
+    token,
+    proxy,
+  })
+
+  if (!resume) {
+    await writeJsonl(output, [])
+  }
+
+  const existingIds = new Set(resumeState.ids)
+  const fetchedRecords = []
+  const skippedSubjects = []
+  const failedSubjects = []
+  const rejectedSubjects = []
+
+  for (const subject of uniqueSubjects) {
+    const id = subjectId(subject)
+    if (!id) continue
+
+    if (resume && existingIds.has(id)) {
+      skippedSubjects.push(bangumiSearchSubjectSummary(subject))
+      continue
+    }
+
+    try {
+      const detail = await fetchBangumiSubject(id, { userAgent, token, proxy })
+      const annotated = annotateBangumiYuriSignal(detail)
+
+      if (subjectPassesYuriTagThreshold(annotated, { minWeightedScore, minTopTagCount })) {
+        const record = bangumiSubjectToRawSource(annotated, { fetchedAt })
+        await appendJsonlRecord(output, record)
+        fetchedRecords.push(record)
+        existingIds.add(id)
+      } else {
+        rejectedSubjects.push({
+          ...bangumiSearchSubjectSummary(annotated),
+          yuriTagSignal: annotated?._baihepailei?.yuriTagSignal,
+        })
+      }
+    } catch (error) {
+      failedSubjects.push({
+        ...bangumiSearchSubjectSummary(subject),
+        error: error?.message ? String(error.message).slice(0, 800) : String(error).slice(0, 800),
+      })
+    }
+
+    await sleep(delayMs)
+  }
+
+  const outputRecords = resume ? [...resumeState.records, ...fetchedRecords] : fetchedRecords
+
+  return {
+    records: outputRecords,
+    report: {
+      fetchedAt,
+      tags,
+      types,
+      limit,
+      pages,
+      sort,
+      minWeightedScore,
+      minTopTagCount,
+      proxyUsed: Boolean(proxy),
+      resume,
+      existingCount: resumeState.records.length,
+      searched: searched.length,
+      uniqueSearched: uniqueSubjects.length,
+      fetched: fetchedRecords.length,
+      skipped: skippedSubjects.length,
+      failed: failedSubjects.length,
+      rejectedBelowThreshold: rejectedSubjects.length,
+      count: outputRecords.length,
+      subjects: outputRecords.map(bangumiRawSourceRecordSummary),
+      skippedSubjects,
+      failedSubjects,
+      rejectedSubjects,
+    },
+  }
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   const output = args.get('out') || 'data_local/raw/bangumi/bangumi-yuri-tagged.jsonl'
@@ -253,12 +468,20 @@ async function main() {
   const userAgent = args.get('user-agent') || process.env.BANGUMI_USER_AGENT || DEFAULT_USER_AGENT
   const token = args.get('token') || process.env.BANGUMI_ACCESS_TOKEN || ''
   const proxy = args.get('proxy') || process.env.BANGUMI_PROXY || ''
+  const resume = parseBoolean(args.get('resume'), false)
 
   if (proxy) {
     console.log('Using proxy for Bangumi requests.')
   }
 
-  const subjects = await fetchBangumiTaggedSubjects({
+  if (resume) {
+    console.log(`Resuming Bangumi fetch output from ${output}.`)
+  }
+
+  const { report } = await fetchBangumiTaggedSubjectsToJsonl({
+    output,
+    fetchedAt,
+    resume,
     tags,
     types,
     limit,
@@ -272,31 +495,10 @@ async function main() {
     proxy,
   })
 
-  const rawRecords = subjects.map((subject) => bangumiSubjectToRawSource(subject, { fetchedAt }))
-  await writeJsonl(output, rawRecords)
+  await writeJsonFile(reportOutput, report)
 
-  await writeJsonFile(reportOutput, {
-    fetchedAt,
-    tags,
-    types,
-    limit,
-    pages,
-    sort,
-    minWeightedScore,
-    minTopTagCount,
-    proxyUsed: Boolean(proxy),
-    count: rawRecords.length,
-    subjects: subjects.map((subject) => ({
-      id: subject.id,
-      name: subject.name,
-      name_cn: subject.name_cn,
-      type: subject.type,
-      date: subject.date,
-      yuriTagSignal: subject._baihepailei?.yuriTagSignal,
-    })),
-  })
-
-  console.log(`Fetched ${rawRecords.length} Bangumi yuri-tagged subjects -> ${output}`)
+  console.log(`Fetched ${report.fetched} new Bangumi yuri-tagged subjects -> ${output}`)
+  console.log(`Output contains ${report.count} total records; skipped ${report.skipped}; failed ${report.failed}.`)
   console.log(`Wrote summary -> ${reportOutput}`)
 }
 
