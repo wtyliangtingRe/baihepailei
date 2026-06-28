@@ -365,10 +365,6 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
         ids: new Set(),
       }
 
-  if (!resume) {
-    await writeJsonl(output, [])
-  }
-
   const { searched, uniqueSubjects } = await searchBangumiTaggedSubjectCandidates({
     tags,
     types,
@@ -380,6 +376,10 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
     token,
     proxy,
   })
+
+  if (!resume) {
+    await writeJsonl(output, [])
+  }
 
   const existingIds = new Set(resumeState.ids)
   const fetchedRecords = []
