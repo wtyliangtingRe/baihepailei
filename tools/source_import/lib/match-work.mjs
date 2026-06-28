@@ -34,6 +34,34 @@ export function matchingExternalIds(a, b) {
     .map(([key, value]) => ({ key, value }))
 }
 
+function candidateSourceEntries(candidate) {
+  return (candidate?.candidateSources || [])
+    .filter(Boolean)
+    .map((source) => ({
+      source: cleanLower(source?.source || source?.label),
+      externalId: cleanLower(source?.externalId),
+    }))
+}
+
+export function bangumiSubjectId(candidate) {
+  const externalIds = candidate?.externalIds || {}
+  const directId = externalIds.bangumiSubjectId ?? externalIds.bangumi ?? externalIds.bangumiId
+  if (meaningful(directId)) return cleanLower(directId)
+
+  const source = candidateSourceEntries(candidate).find((entry) => entry.source === 'bangumi' && meaningful(entry.externalId))
+  return source?.externalId || ''
+}
+
+export function hasDistinctBangumiSubjectIds(a, b) {
+  const left = bangumiSubjectId(a)
+  const right = bangumiSubjectId(b)
+  return Boolean(left && right && left !== right)
+}
+
+function bothAnimeCandidates(a, b) {
+  return a?.mediaType === 'anime' && b?.mediaType === 'anime'
+}
+
 export function firstPublishedYear(candidate) {
   const value = candidate?.firstPublishedAt || candidate?.firstPublishedLabel || ''
   const match = String(value).match(/(\d{4})/u)
@@ -104,6 +132,11 @@ export function compareWorkCandidates(candidate, existing) {
   if (candidateOriginal && candidateOriginal === existingOriginal && sameMediaType(candidate, existing)) {
     signals.push(`same normalized originalTitle: ${candidateOriginal}`)
     signals.push(`compatible mediaType: ${candidate.mediaType || 'unknown'} / ${existing.mediaType || 'unknown'}`)
+
+    if (bothAnimeCandidates(candidate, existing) && hasDistinctBangumiSubjectIds(candidate, existing)) {
+      signals.push(`different Bangumi subjectIds: ${bangumiSubjectId(candidate)} / ${bangumiSubjectId(existing)}`)
+      return { action: 'conflict', confidence: 'same_original_title_distinct_bangumi_subject', signals }
+    }
 
     if (exactOriginalTitleNeedsReview(candidate, existing)) {
       const distance = yearDistance(candidate, existing)

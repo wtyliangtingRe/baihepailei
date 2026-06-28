@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 
 import { parseDateWithPrecision } from '../tools/source_import/lib/date-precision.mjs'
 import { parseJsonl, stringifyJsonl } from '../tools/source_import/lib/jsonl.mjs'
+import { compareWorkCandidates } from '../tools/source_import/lib/match-work.mjs'
 import { createRawSourceRecord, sourceRecordToCandidateWork } from '../tools/source_import/lib/source-record.mjs'
 import { slugify, uniqueSlug } from '../tools/source_import/lib/slug.mjs'
 import { dedupeCandidates, uniqueCandidateSources } from '../tools/source_import/scripts/dedupe-candidates.mjs'
@@ -114,6 +115,34 @@ test('normalize and dedupe candidates by external IDs', () => {
   assert.equal(result.conflicts.length, 0)
   assert.equal(result.deduped[0].candidateSources.length, 1)
   assert.equal(result.deduped[0].candidateSources[0].externalId, '1')
+})
+
+test('dedupe keeps distinct Bangumi anime subjects with the same original title for review', () => {
+  const existing = {
+    title: '小魔女学园',
+    originalTitle: 'リトルウィッチアカデミア',
+    mediaType: 'anime',
+    firstPublishedAt: '2017-01-08',
+    externalIds: { bangumiSubjectId: '185792' },
+    candidateSources: [{ source: 'bangumi', label: 'Bangumi', externalId: '185792' }],
+  }
+  const candidate = {
+    title: '小魔女学园',
+    originalTitle: 'リトルウィッチアカデミア',
+    mediaType: 'anime',
+    firstPublishedAt: '2013-03-02',
+    externalIds: { bangumiSubjectId: '54675' },
+    candidateSources: [{ source: 'bangumi', label: 'Bangumi', externalId: '54675' }],
+  }
+
+  const match = compareWorkCandidates(candidate, existing)
+  assert.equal(match.action, 'conflict')
+  assert.equal(match.confidence, 'same_original_title_distinct_bangumi_subject')
+
+  const result = dedupeCandidates([existing, candidate])
+  assert.equal(result.deduped.length, 2)
+  assert.equal(result.merges.length, 0)
+  assert.equal(result.conflicts.length, 1)
 })
 
 test('candidate source link dedupe ignores fetchedAt and merges notes', () => {
