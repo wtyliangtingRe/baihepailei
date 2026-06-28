@@ -19,6 +19,8 @@ const DEFAULT_TYPES = [1, 2, 4]
 const DEFAULT_USER_AGENT = 'BaihepaileiSourceImport/0.1 (https://github.com/wtyliangtingRe/baihepailei)'
 const DEFAULT_CURL_CONNECT_TIMEOUT_SECONDS = 30
 const CURL_MAX_BUFFER_BYTES = 20 * 1024 * 1024
+const DEFAULT_KEYWORD_MODE = 'tag'
+const KEYWORD_MODES = new Set(['tag', 'empty', 'none'])
 
 const execFileAsync = promisify(execFile)
 
@@ -62,6 +64,11 @@ function parseBoolean(value, fallback = false) {
   if (['0', 'false', 'no', 'n', 'off'].includes(normalized)) return false
 
   return fallback
+}
+
+export function normalizeBangumiKeywordMode(value, fallback = DEFAULT_KEYWORD_MODE) {
+  const normalized = String(value || '').trim().toLowerCase()
+  return KEYWORD_MODES.has(normalized) ? normalized : fallback
 }
 
 function sleep(ms) {
@@ -114,6 +121,20 @@ function bangumiSearchSubjectSummary(subject) {
     name_cn: subject?.name_cn,
     type: subject?.type,
     date: subject?.date,
+  }
+}
+
+function bangumiSearchBatchSummary({ tag, type, page, offset, limit, sort, keywordMode, subjects }) {
+  return {
+    tag,
+    type,
+    page,
+    offset,
+    limit,
+    sort,
+    keywordMode,
+    returned: subjects.length,
+    subjectIds: subjects.map(subjectId).filter(Boolean),
   }
 }
 
@@ -223,19 +244,31 @@ async function requestJson(url, options, { proxy = '' } = {}) {
   return response.json()
 }
 
-export async function searchBangumiSubjects({ tag, type, limit, offset, sort, userAgent, token, proxy }) {
-  const url = new URL('/v0/search/subjects', API_BASE_URL)
-  url.searchParams.set('limit', String(limit))
-  url.searchParams.set('offset', String(offset))
-
+export function createBangumiSearchRequestBody({ tag, type, sort, keywordMode = DEFAULT_KEYWORD_MODE }) {
+  const normalizedKeywordMode = normalizeBangumiKeywordMode(keywordMode)
   const body = {
-    keyword: tag,
     sort,
     filter: {
       tag: [tag],
       type: [type],
     },
   }
+
+  if (normalizedKeywordMode === 'tag') {
+    body.keyword = tag
+  } else if (normalizedKeywordMode === 'empty') {
+    body.keyword = ''
+  }
+
+  return body
+}
+
+export async function searchBangumiSubjects({ tag, type, limit, offset, sort, keywordMode = DEFAULT_KEYWORD_MODE, userAgent, token, proxy }) {
+  const url = new URL('/v0/search/subjects', API_BASE_URL)
+  url.searchParams.set('limit', String(limit))
+  url.searchParams.set('offset', String(offset))
+
+  const body = createBangumiSearchRequestBody({ tag, type, sort, keywordMode })
 
   const json = await requestJson(
     url,
@@ -268,19 +301,23 @@ export async function searchBangumiTaggedSubjectCandidates({
   limit = 20,
   pages = 1,
   sort = 'rank',
+  keywordMode = DEFAULT_KEYWORD_MODE,
   delayMs = 900,
   userAgent = DEFAULT_USER_AGENT,
   token = process.env.BANGUMI_ACCESS_TOKEN || '',
   proxy = process.env.BANGUMI_PROXY || '',
 } = {}) {
+  const normalizedKeywordMode = normalizeBangumiKeywordMode(keywordMode)
   const searched = []
+  const searchBatches = []
 
   for (const tag of tags) {
     for (const type of types) {
       for (let page = 0; page < pages; page += 1) {
         const offset = page * limit
-        const subjects = await searchBangumiSubjects({ tag, type, limit, offset, sort, userAgent, token, proxy })
+        const subjects = await searchBangumiSubjects({ tag, type, limit, offset, sort, keywordMode: normalizedKeywordMode, userAgent, token, proxy })
         searched.push(...subjects)
+        searchBatches.push(bangumiSearchBatchSummary({ tag, type, page, offset, limit, sort, keywordMode: normalizedKeywordMode, subjects }))
         await sleep(delayMs)
       }
     }
@@ -289,6 +326,7 @@ export async function searchBangumiTaggedSubjectCandidates({
   return {
     searched,
     uniqueSubjects: uniqueById(searched),
+    searchBatches,
   }
 }
 
@@ -298,6 +336,7 @@ export async function fetchBangumiTaggedSubjects({
   limit = 20,
   pages = 1,
   sort = 'rank',
+  keywordMode = DEFAULT_KEYWORD_MODE,
   delayMs = 900,
   minWeightedScore = 5,
   minTopTagCount = 5,
@@ -311,6 +350,7 @@ export async function fetchBangumiTaggedSubjects({
     limit,
     pages,
     sort,
+    keywordMode,
     delayMs,
     userAgent,
     token,
@@ -349,6 +389,7 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
   limit = 20,
   pages = 1,
   sort = 'rank',
+  keywordMode = DEFAULT_KEYWORD_MODE,
   delayMs = 900,
   minWeightedScore = 5,
   minTopTagCount = 5,
@@ -358,6 +399,7 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
 } = {}) {
   if (!output) throw new Error('Bangumi fetch output path is required')
 
+  const normalizedKeywordMode = normalizeBangumiKeywordMode(keywordMode)
   const resumeState = resume
     ? await readBangumiResumeState(output)
     : {
@@ -365,12 +407,13 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
         ids: new Set(),
       }
 
-  const { searched, uniqueSubjects } = await searchBangumiTaggedSubjectCandidates({
+  const { searched, uniqueSubjects, searchBatches } = await searchBangumiTaggedSubjectCandidates({
     tags,
     types,
     limit,
     pages,
     sort,
+    keywordMode: normalizedKeywordMode,
     delayMs,
     userAgent,
     token,
@@ -432,6 +475,7 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
       limit,
       pages,
       sort,
+      keywordMode: normalizedKeywordMode,
       minWeightedScore,
       minTopTagCount,
       proxyUsed: Boolean(proxy),
@@ -439,6 +483,7 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
       existingCount: resumeState.records.length,
       searched: searched.length,
       uniqueSearched: uniqueSubjects.length,
+      searchBatches,
       fetched: fetchedRecords.length,
       skipped: skippedSubjects.length,
       failed: failedSubjects.length,
@@ -465,6 +510,7 @@ async function main() {
   const minWeightedScore = Number(args.get('min-weighted-score') || 5)
   const minTopTagCount = Number(args.get('min-top-tag-count') || 5)
   const sort = args.get('sort') || 'rank'
+  const keywordMode = normalizeBangumiKeywordMode(args.get('keyword-mode') || process.env.BANGUMI_KEYWORD_MODE || DEFAULT_KEYWORD_MODE)
   const userAgent = args.get('user-agent') || process.env.BANGUMI_USER_AGENT || DEFAULT_USER_AGENT
   const token = args.get('token') || process.env.BANGUMI_ACCESS_TOKEN || ''
   const proxy = args.get('proxy') || process.env.BANGUMI_PROXY || ''
@@ -478,6 +524,10 @@ async function main() {
     console.log(`Resuming Bangumi fetch output from ${output}.`)
   }
 
+  if (keywordMode !== DEFAULT_KEYWORD_MODE) {
+    console.log(`Using Bangumi keyword mode: ${keywordMode}.`)
+  }
+
   const { report } = await fetchBangumiTaggedSubjectsToJsonl({
     output,
     fetchedAt,
@@ -487,6 +537,7 @@ async function main() {
     limit,
     pages,
     sort,
+    keywordMode,
     delayMs,
     minWeightedScore,
     minTopTagCount,
