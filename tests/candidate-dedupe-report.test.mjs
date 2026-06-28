@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { createDedupeReport } from '../tools/source_import/lib/dedupe-report.mjs'
+import { createDedupeReport, reviewPriority } from '../tools/source_import/lib/dedupe-report.mjs'
 import { compareWorkCandidates } from '../tools/source_import/lib/match-work.mjs'
 import { normalizeTitleForMatch } from '../tools/source_import/lib/title-normalize.mjs'
 import { dedupeCandidates } from '../tools/source_import/scripts/dedupe-candidates.mjs'
@@ -100,7 +100,7 @@ test('dedupe keeps same-title different-media matches as review items', () => {
   assert.equal(result.conflicts[0].confidence, 'same_title_different_media')
 })
 
-test('dedupe keeps exact original title version variants as review items', () => {
+test('dedupe keeps distinct Bangumi anime version variants as review items', () => {
   const result = dedupeCandidates([
     candidate({
       title: '百合星人奈绪子 OVA',
@@ -123,7 +123,8 @@ test('dedupe keeps exact original title version variants as review items', () =>
   assert.equal(result.deduped.length, 2)
   assert.equal(result.merges.length, 0)
   assert.equal(result.conflicts.length, 1)
-  assert.equal(result.conflicts[0].confidence, 'same_original_title_version_variant')
+  assert.equal(result.conflicts[0].confidence, 'same_original_title_distinct_bangumi_subject')
+  assert.equal(reviewPriority(result.conflicts[0]), 'distinct_bangumi_subject_review')
 })
 
 test('dedupe auto-merges exact external IDs and records merge metadata', () => {
@@ -149,7 +150,15 @@ test('dedupe auto-merges exact external IDs and records merge metadata', () => {
   assert.equal(result.deduped[0].externalCoverImages.length, 2)
 })
 
-test('dedupe report includes summary, merge, and review sections', () => {
+test('review priority maps conflict confidence to review buckets', () => {
+  assert.equal(reviewPriority({ confidence: 'same_original_title_distinct_bangumi_subject' }), 'distinct_bangumi_subject_review')
+  assert.equal(reviewPriority({ confidence: 'same_original_title_version_variant' }), 'version_or_edition_review')
+  assert.equal(reviewPriority({ confidence: 'same_title_different_media' }), 'cross_media_review')
+  assert.equal(reviewPriority({ confidence: 'possible_same_title_date' }), 'same_title_date_review')
+  assert.equal(reviewPriority({ confidence: 'similar_title_date' }), 'similar_title_date_review')
+})
+
+test('dedupe report includes summary, merge, review, and conflict summary sections', () => {
   const result = dedupeCandidates([
     candidate({ title: '作品A', externalIds: { bangumiSubjectId: '1' } }),
     candidate({ title: '作品A', externalIds: { bangumiSubjectId: '1' } }),
@@ -161,5 +170,9 @@ test('dedupe report includes summary, merge, and review sections', () => {
   assert.match(report, /# Dedupe report/u)
   assert.match(report, /Auto merges: 1/u)
   assert.match(report, /Review items: 1/u)
+  assert.match(report, /## Review confidence counts/u)
+  assert.match(report, /## Review priority buckets/u)
+  assert.match(report, /same_title_date_review/u)
+  assert.match(report, /Review bucket: same_title_date_review/u)
   assert.match(report, /possible_same_title_date/u)
 })
