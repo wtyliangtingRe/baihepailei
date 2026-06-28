@@ -68,6 +68,34 @@ test('Bangumi entity review marks compound and group-looking creator names', () 
   assert.ok(groupLooking.reviewFlags.includes('creator_name_looks_like_group'))
 })
 
+test('Bangumi entity review keeps obvious organizations out of person-like flags', () => {
+  const review = buildBangumiEntityReview([
+    {
+      title: '作品C',
+      slug: 'bangumi-3',
+      organizationCreditHints: [
+        { name: 'ランティス', role: 'music_label', originalRole: '音乐制作', source: 'bangumi' },
+        { name: 'ムービック', role: 'committee_member', originalRole: '製作', source: 'bangumi' },
+        { name: 'テレビ東京', role: 'broadcaster', originalRole: '播放电视台', source: 'bangumi' },
+        { name: '芳文社', role: 'committee_member', originalRole: '製作', source: 'bangumi' },
+        { name: '一迅社', role: 'committee_member', originalRole: '製作', source: 'bangumi' },
+        { name: '武智恒雄', role: 'committee', originalRole: '製作', source: 'bangumi' },
+        { name: '篠崎文彦', role: 'committee', originalRole: '製作', source: 'bangumi' },
+      ],
+    },
+  ])
+
+  for (const name of ['ランティス', 'ムービック', 'テレビ東京', '芳文社', '一迅社']) {
+    const item = review.organizations.find((candidate) => candidate.name === name)
+    assert.ok(!item.reviewFlags.includes('organization_name_may_be_person'), name)
+  }
+
+  for (const name of ['武智恒雄', '篠崎文彦']) {
+    const item = review.organizations.find((candidate) => candidate.name === name)
+    assert.ok(item.reviewFlags.includes('organization_name_may_be_person'), name)
+  }
+})
+
 test('Bangumi entity review report renders key sections', () => {
   const review = buildBangumiEntityReview(works)
   const report = createBangumiEntityReviewReport(review, { inputPath: 'input.jsonl', topLimit: 10 })
