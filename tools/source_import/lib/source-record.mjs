@@ -14,20 +14,34 @@ const DEFAULT_WORK_STATUS = {
 const CREDIT_NAME_PREFIX_PATTERNS = [
   /^协力[:：]\s*/u,
   /^協力[:：]\s*/u,
+  /^製作协力[:：]\s*/u,
+  /^製作協力[:：]\s*/u,
+  /^制作协力[:：]\s*/u,
+  /^制作協力[:：]\s*/u,
   /^原案协力[:：]\s*/u,
   /^原案協力[:：]\s*/u,
   /^故事原案[:：]\s*/u,
+  /^漫画[:：]\s*/u,
+  /^漫畫[:：]\s*/u,
+  /^漫画版[:：]\s*/u,
+  /^漫畫版[:：]\s*/u,
+  /^原著[:：]\s*/u,
   /^动画人物设定[:：]\s*/u,
   /^動畫人物設定[:：]\s*/u,
+  /^動画人物設定[:：]\s*/u,
   /^人物设定[:：]\s*/u,
   /^人物設定[:：]\s*/u,
   /^角色设计[:：]\s*/u,
   /^角色設計[:：]\s*/u,
   /^キャラクターデザイン[:：]\s*/u,
+  /^キャラクター原案[:：]\s*/u,
 ]
 const CREDIT_PUBLICATION_CONTEXT_PATTERN = /[（(][^（）()]*(?:刊|連載|连载|掲載|コミック|COMIC|まんが|漫画|月刊|芳文社|KADOKAWA|一迅社|SBクリエイティブ|マッグガーデン)[^（）()]*[）)]?/giu
 const CREDIT_PUBLICATION_FRAGMENT_PATTERN = /^[\p{Letter}\p{Script=Han}ー・\s]+刊[）)]?$/u
 const CREDIT_FOOTNOTE_PATTERN = /^\d+(?:\s*-\s*\d+)?[）)]?$/u
+const CREDIT_TRAILING_FOOTNOTE_CONTEXT_PATTERN = /[（(]\s*\d+(?:\s*-\s*\d+)?\s*[）)]?$/u
+const CREDIT_TRAILING_UNCLOSED_CONTEXT_PATTERN = /\s*[（(][^（）()]+$/u
+const CREDIT_TRAILING_TITLE_CONTEXT_PATTERN = /^(.+?)[「『《][^」』》]+[」』》]$/u
 
 export function createRawSourceRecord({ source, sourceRecordId, sourceUrl, fetchedAt, raw }) {
   if (!source) throw new Error('source is required')
@@ -90,6 +104,9 @@ function cleanCreditHintName(value) {
 
   name = name
     .replace(CREDIT_PUBLICATION_CONTEXT_PATTERN, '')
+    .replace(CREDIT_TRAILING_FOOTNOTE_CONTEXT_PATTERN, '')
+    .replace(CREDIT_TRAILING_UNCLOSED_CONTEXT_PATTERN, '')
+    .replace(CREDIT_TRAILING_TITLE_CONTEXT_PATTERN, '$1')
     .replace(/^[（(]+|[）)]+$/gu, '')
     .replace(/\s+/gu, ' ')
     .trim()
