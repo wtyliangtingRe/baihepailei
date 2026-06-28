@@ -74,6 +74,39 @@ const candidateSourceOptions = [
   { label: '其他', value: 'other' },
 ]
 
+const creatorCreditRoleOptions = [
+  { label: '原作', value: 'original_creator' },
+  { label: '原案', value: 'original_concept' },
+  { label: '监督', value: 'director' },
+  { label: '总监督', value: 'chief_director' },
+  { label: '系列监督', value: 'series_director' },
+  { label: '系列构成', value: 'series_composition' },
+  { label: '脚本', value: 'script' },
+  { label: '角色原案', value: 'character_original_design' },
+  { label: '角色设计', value: 'character_design' },
+  { label: '制作人', value: 'producer' },
+  { label: '其他', value: 'other' },
+]
+
+const organizationRoleOptions = [
+  { label: '出版社', value: 'publisher' },
+  { label: '制作公司', value: 'production_company' },
+  { label: '动画制作', value: 'animation_studio' },
+  { label: '游戏开发', value: 'game_developer' },
+  { label: '发行商', value: 'distributor' },
+  { label: '社团', value: 'circle' },
+  { label: '品牌', value: 'brand' },
+  { label: '平台', value: 'platform' },
+  { label: '网络播放平台', value: 'streaming_platform' },
+  { label: '电视台 / 播出方', value: 'broadcaster' },
+  { label: '制作委员会', value: 'committee' },
+  { label: '制作委员会成员', value: 'committee_member' },
+  { label: '音乐厂牌', value: 'music_label' },
+  { label: '出资方', value: 'investor' },
+  { label: '版权方', value: 'rights_holder' },
+  { label: '其他', value: 'other' },
+]
+
 const riskUnassessedOption = { label: '未评估', value: 'unassessed' }
 
 export const Works: CollectionConfig = {
@@ -413,11 +446,56 @@ export const Works: CollectionConfig = {
       hasMany: true,
     },
     {
+      name: 'creatorCredits',
+      type: 'array',
+      label: '关键创作者职位',
+      admin: {
+        description: '记录会影响剧情、设定或表达方向的关键动画职位，例如监督、总监督、系列构成、脚本、原作等。',
+      },
+      fields: [
+        {
+          name: 'creator',
+          type: 'relationship',
+          label: '创作者',
+          relationTo: 'creators' as CollectionSlug,
+          required: true,
+        },
+        {
+          name: 'role',
+          type: 'select',
+          label: '职位',
+          defaultValue: 'other',
+          required: true,
+          options: creatorCreditRoleOptions,
+        },
+        {
+          name: 'originalRole',
+          type: 'text',
+          label: '原始职位名',
+          admin: {
+            description: '保留来源里的原文职位，例如 監督、総監督、シリーズ構成、脚本。',
+          },
+        },
+        {
+          name: 'source',
+          type: 'select',
+          label: '来源',
+          defaultValue: 'manual',
+          options: candidateSourceOptions,
+        },
+        {
+          name: 'note',
+          type: 'text',
+          label: '备注',
+        },
+      ],
+    },
+    {
       name: 'organizations',
       type: 'array',
       label: '相关机构',
       admin: {
-        description: '出版社、制作公司、发行商、平台、制作委员会等机构关系。',
+        description: '出版社、制作公司、发行商、平台、制作委员会、委员会成员、电视台、音乐厂牌等机构关系。',
       },
       fields: [
         {
@@ -433,26 +511,29 @@ export const Works: CollectionConfig = {
           label: '机构角色',
           defaultValue: 'other',
           required: true,
-          options: [
-            { label: '出版社', value: 'publisher' },
-            { label: '制作公司', value: 'production_company' },
-            { label: '动画制作', value: 'animation_studio' },
-            { label: '游戏开发', value: 'game_developer' },
-            { label: '发行商', value: 'distributor' },
-            { label: '社团', value: 'circle' },
-            { label: '品牌', value: 'brand' },
-            { label: '平台', value: 'platform' },
-            { label: '制作委员会', value: 'committee' },
-            { label: '版权方', value: 'rights_holder' },
-            { label: '其他', value: 'other' },
-          ],
+          options: organizationRoleOptions,
+        },
+        {
+          name: 'originalRole',
+          type: 'text',
+          label: '原始角色名',
+          admin: {
+            description: '保留来源里的原文角色，例如 製作、制作、放送、音楽制作、制作委员会成员等。',
+          },
+        },
+        {
+          name: 'source',
+          type: 'select',
+          label: '来源',
+          defaultValue: 'manual',
+          options: candidateSourceOptions,
         },
         {
           name: 'note',
           type: 'text',
           label: '备注',
           admin: {
-            description: '可记录具体名义、系列品牌或迁移备注。',
+            description: '可记录具体名义、系列品牌、委员会成员说明或迁移备注。',
           },
         },
       ],
