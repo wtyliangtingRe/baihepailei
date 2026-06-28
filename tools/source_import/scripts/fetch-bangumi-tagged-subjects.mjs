@@ -71,6 +71,21 @@ export function normalizeBangumiKeywordMode(value, fallback = DEFAULT_KEYWORD_MO
   return KEYWORD_MODES.has(normalized) ? normalized : fallback
 }
 
+export function normalizeBangumiStopAfterEmptyPages(value, fallback = 0) {
+  const number = Number(value)
+  if (!Number.isFinite(number) || number < 1) return fallback
+  return Math.floor(number)
+}
+
+export function nextBangumiEmptyPageStreak(returned, currentStreak = 0) {
+  return Number(returned) > 0 ? 0 : currentStreak + 1
+}
+
+export function shouldStopBangumiSearchAfterEmptyPages({ emptyPageStreak, stopAfterEmptyPages }) {
+  const threshold = normalizeBangumiStopAfterEmptyPages(stopAfterEmptyPages)
+  return threshold > 0 && emptyPageStreak >= threshold
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -124,7 +139,18 @@ function bangumiSearchSubjectSummary(subject) {
   }
 }
 
-function bangumiSearchBatchSummary({ tag, type, page, offset, limit, sort, keywordMode, subjects }) {
+function bangumiSearchBatchSummary({
+  tag,
+  type,
+  page,
+  offset,
+  limit,
+  sort,
+  keywordMode,
+  subjects,
+  emptyPageStreak = 0,
+  stoppedAfterThisBatch = false,
+}) {
   return {
     tag,
     type,
@@ -134,6 +160,8 @@ function bangumiSearchBatchSummary({ tag, type, page, offset, limit, sort, keywo
     sort,
     keywordMode,
     returned: subjects.length,
+    emptyPageStreak,
+    stoppedAfterThisBatch,
     subjectIds: subjects.map(subjectId).filter(Boolean),
   }
 }
@@ -302,22 +330,45 @@ export async function searchBangumiTaggedSubjectCandidates({
   pages = 1,
   sort = 'rank',
   keywordMode = DEFAULT_KEYWORD_MODE,
+  stopAfterEmptyPages = 0,
   delayMs = 900,
   userAgent = DEFAULT_USER_AGENT,
   token = process.env.BANGUMI_ACCESS_TOKEN || '',
   proxy = process.env.BANGUMI_PROXY || '',
 } = {}) {
   const normalizedKeywordMode = normalizeBangumiKeywordMode(keywordMode)
+  const normalizedStopAfterEmptyPages = normalizeBangumiStopAfterEmptyPages(stopAfterEmptyPages)
   const searched = []
   const searchBatches = []
 
   for (const tag of tags) {
     for (const type of types) {
+      let emptyPageStreak = 0
+
       for (let page = 0; page < pages; page += 1) {
         const offset = page * limit
         const subjects = await searchBangumiSubjects({ tag, type, limit, offset, sort, keywordMode: normalizedKeywordMode, userAgent, token, proxy })
+        emptyPageStreak = nextBangumiEmptyPageStreak(subjects.length, emptyPageStreak)
+        const stoppedAfterThisBatch = shouldStopBangumiSearchAfterEmptyPages({
+          emptyPageStreak,
+          stopAfterEmptyPages: normalizedStopAfterEmptyPages,
+        })
+
         searched.push(...subjects)
-        searchBatches.push(bangumiSearchBatchSummary({ tag, type, page, offset, limit, sort, keywordMode: normalizedKeywordMode, subjects }))
+        searchBatches.push(bangumiSearchBatchSummary({
+          tag,
+          type,
+          page,
+          offset,
+          limit,
+          sort,
+          keywordMode: normalizedKeywordMode,
+          subjects,
+          emptyPageStreak,
+          stoppedAfterThisBatch,
+        }))
+
+        if (stoppedAfterThisBatch) break
         await sleep(delayMs)
       }
     }
@@ -337,6 +388,7 @@ export async function fetchBangumiTaggedSubjects({
   pages = 1,
   sort = 'rank',
   keywordMode = DEFAULT_KEYWORD_MODE,
+  stopAfterEmptyPages = 0,
   delayMs = 900,
   minWeightedScore = 5,
   minTopTagCount = 5,
@@ -351,6 +403,7 @@ export async function fetchBangumiTaggedSubjects({
     pages,
     sort,
     keywordMode,
+    stopAfterEmptyPages,
     delayMs,
     userAgent,
     token,
@@ -384,12 +437,14 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
   output,
   fetchedAt = new Date().toISOString(),
   resume = false,
+  searchOnly = false,
   tags = DEFAULT_TAGS,
   types = DEFAULT_TYPES,
   limit = 20,
   pages = 1,
   sort = 'rank',
   keywordMode = DEFAULT_KEYWORD_MODE,
+  stopAfterEmptyPages = 0,
   delayMs = 900,
   minWeightedScore = 5,
   minTopTagCount = 5,
@@ -397,10 +452,11 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
   token = process.env.BANGUMI_ACCESS_TOKEN || '',
   proxy = process.env.BANGUMI_PROXY || '',
 } = {}) {
-  if (!output) throw new Error('Bangumi fetch output path is required')
+  if (!output && !searchOnly) throw new Error('Bangumi fetch output path is required')
 
   const normalizedKeywordMode = normalizeBangumiKeywordMode(keywordMode)
-  const resumeState = resume
+  const normalizedStopAfterEmptyPages = normalizeBangumiStopAfterEmptyPages(stopAfterEmptyPages)
+  const resumeState = !searchOnly && resume
     ? await readBangumiResumeState(output)
     : {
         records: [],
@@ -414,11 +470,46 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
     pages,
     sort,
     keywordMode: normalizedKeywordMode,
+    stopAfterEmptyPages: normalizedStopAfterEmptyPages,
     delayMs,
     userAgent,
     token,
     proxy,
   })
+
+  if (searchOnly) {
+    return {
+      records: [],
+      report: {
+        fetchedAt,
+        tags,
+        types,
+        limit,
+        pages,
+        sort,
+        keywordMode: normalizedKeywordMode,
+        stopAfterEmptyPages: normalizedStopAfterEmptyPages,
+        searchOnly,
+        minWeightedScore,
+        minTopTagCount,
+        proxyUsed: Boolean(proxy),
+        resume,
+        existingCount: 0,
+        searched: searched.length,
+        uniqueSearched: uniqueSubjects.length,
+        searchBatches,
+        fetched: 0,
+        skipped: 0,
+        failed: 0,
+        rejectedBelowThreshold: 0,
+        count: 0,
+        subjects: [],
+        skippedSubjects: [],
+        failedSubjects: [],
+        rejectedSubjects: [],
+      },
+    }
+  }
 
   if (!resume) {
     await writeJsonl(output, [])
@@ -476,6 +567,8 @@ export async function fetchBangumiTaggedSubjectsToJsonl({
       pages,
       sort,
       keywordMode: normalizedKeywordMode,
+      stopAfterEmptyPages: normalizedStopAfterEmptyPages,
+      searchOnly,
       minWeightedScore,
       minTopTagCount,
       proxyUsed: Boolean(proxy),
@@ -511,33 +604,45 @@ async function main() {
   const minTopTagCount = Number(args.get('min-top-tag-count') || 5)
   const sort = args.get('sort') || 'rank'
   const keywordMode = normalizeBangumiKeywordMode(args.get('keyword-mode') || process.env.BANGUMI_KEYWORD_MODE || DEFAULT_KEYWORD_MODE)
+  const stopAfterEmptyPages = normalizeBangumiStopAfterEmptyPages(args.get('stop-after-empty-pages') || process.env.BANGUMI_STOP_AFTER_EMPTY_PAGES || 0)
   const userAgent = args.get('user-agent') || process.env.BANGUMI_USER_AGENT || DEFAULT_USER_AGENT
   const token = args.get('token') || process.env.BANGUMI_ACCESS_TOKEN || ''
   const proxy = args.get('proxy') || process.env.BANGUMI_PROXY || ''
   const resume = parseBoolean(args.get('resume'), false)
+  const searchOnly = parseBoolean(args.get('search-only'), false)
 
   if (proxy) {
     console.log('Using proxy for Bangumi requests.')
   }
 
-  if (resume) {
+  if (resume && !searchOnly) {
     console.log(`Resuming Bangumi fetch output from ${output}.`)
+  }
+
+  if (searchOnly) {
+    console.log('Running Bangumi search-only diagnostics; raw JSONL output will not be changed.')
   }
 
   if (keywordMode !== DEFAULT_KEYWORD_MODE) {
     console.log(`Using Bangumi keyword mode: ${keywordMode}.`)
   }
 
+  if (stopAfterEmptyPages > 0) {
+    console.log(`Stopping each Bangumi tag/type search after ${stopAfterEmptyPages} consecutive empty page(s).`)
+  }
+
   const { report } = await fetchBangumiTaggedSubjectsToJsonl({
     output,
     fetchedAt,
     resume,
+    searchOnly,
     tags,
     types,
     limit,
     pages,
     sort,
     keywordMode,
+    stopAfterEmptyPages,
     delayMs,
     minWeightedScore,
     minTopTagCount,
@@ -548,8 +653,13 @@ async function main() {
 
   await writeJsonFile(reportOutput, report)
 
-  console.log(`Fetched ${report.fetched} new Bangumi yuri-tagged subjects -> ${output}`)
-  console.log(`Output contains ${report.count} total records; skipped ${report.skipped}; failed ${report.failed}.`)
+  if (searchOnly) {
+    console.log(`Search-only Bangumi probe returned ${report.searched} search rows (${report.uniqueSearched} unique).`)
+  } else {
+    console.log(`Fetched ${report.fetched} new Bangumi yuri-tagged subjects -> ${output}`)
+    console.log(`Output contains ${report.count} total records; skipped ${report.skipped}; failed ${report.failed}.`)
+  }
+
   console.log(`Wrote summary -> ${reportOutput}`)
 }
 
