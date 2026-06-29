@@ -7,7 +7,7 @@ export const PLAN_SCHEMA_VERSION = 1;
 
 export const DEFAULT_PATHS = {
   packagePreview: 'data_local/payload/bangumi-media-work-package-preview.json',
-  idMap: 'data_local/payload/bgm-id-map.jwt.json',
+  idMap: 'data_local/payload/bgm-id-map.json',
   planJson: 'data_local/payload/bgm-work-entity-link-plan.json',
   planMarkdown: 'data_local/reports/bgm-work-entity-link-plan.md',
 };
@@ -824,3 +824,4 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.exitCode = 1;
   });
 }
+
