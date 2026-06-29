@@ -64,15 +64,34 @@ function hasValue(value) {
 function relationId(value) {
   if (!hasValue(value)) return undefined;
   if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'object') return relationId(value.id ?? value.payloadId ?? value.value ?? value.doc?.id ?? value.creator ?? value.organization);
   const text = String(value).trim();
   if (!text) return undefined;
   return /^\d+$/.test(text) ? Number(text) : text;
 }
 
+function normalizeText(value) {
+  return String(value ?? '').trim().normalize('NFKC').toLowerCase();
+}
+
+function uniqueStrings(values) {
+  const seen = new Set();
+  const result = [];
+  for (const value of asArray(values)) {
+    const text = String(value ?? '').trim();
+    if (!text) continue;
+    const key = normalizeText(text);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(text);
+  }
+  return result;
+}
+
 function uniqueIds(values) {
   const seen = new Set();
   const result = [];
-  for (const value of values) {
+  for (const value of asArray(values)) {
     const id = relationId(value);
     if (id === undefined) continue;
     const key = String(id);
@@ -83,33 +102,115 @@ function uniqueIds(values) {
   return result;
 }
 
-function sanitizeCreatorCredit(credit, index) {
-  const creator = relationId(credit?.creator ?? credit?.creatorId);
-  if (creator === undefined) return undefined;
-  return {
-    creator,
-    creatorId: creator,
-    name: hasValue(credit?.name) ? String(credit.name) : undefined,
-    roles: asArray(credit?.roles).map((role) => String(role)).filter(Boolean),
-    order: Number.isFinite(Number(credit?.order)) ? Number(credit.order) : index + 1,
-    sourcePath: hasValue(credit?.sourcePath) ? String(credit.sourcePath) : undefined,
-    matchBy: hasValue(credit?.matchBy) ? String(credit.matchBy) : undefined,
-    matchKey: hasValue(credit?.matchKey) ? String(credit.matchKey) : undefined,
-  };
+function rolesOf(credit) {
+  return uniqueStrings([credit?.role, credit?.originalRole, ...asArray(credit?.roles)]);
+}
+
+function firstOriginalRole(credit) {
+  const roles = rolesOf(credit);
+  return roles.length > 0 ? roles.join(' / ') : undefined;
+}
+
+function normalizeCreatorRole(roles) {
+  const text = roles.map(normalizeText).join('|');
+  if (/original_concept|原案/.test(text)) return 'original_concept';
+  if (/original_creator|原作|作者|original/.test(text)) return 'original_creator';
+  if (/chief.*director|总监督|総監督|總監督/.test(text)) return 'chief_director';
+  if (/series.*director|系列监督|系列監督/.test(text)) return 'series_director';
+  if (/director|监督|監督/.test(text)) return 'director';
+  if (/series.*composition|系列构成|系列構成|シリーズ構成/.test(text)) return 'series_composition';
+  if (/script|scenario|writer|脚本|剧本|劇本/.test(text)) return 'script';
+  if (/character.*original|角色原案/.test(text)) return 'character_original_design';
+  if (/character.*design|角色设计|角色設計/.test(text)) return 'character_design';
+  if (/producer|制作人/.test(text)) return 'producer';
+  return 'other';
+}
+
+function normalizeOrganizationRole(roles) {
+  const text = roles.map(normalizeText).join('|');
+  if (/publisher|出版社/.test(text)) return 'publisher';
+  if (/animation.*studio|动画制作|動畫製作|アニメーション制作/.test(text)) return 'animation_studio';
+  if (/game.*developer|developer|开发|開発/.test(text)) return 'game_developer';
+  if (/production.*company|制作公司|制作|製作|studio/.test(text)) return 'production_company';
+  if (/distributor|发行|發行|発売/.test(text)) return 'distributor';
+  if (/circle|社团|社團/.test(text)) return 'circle';
+  if (/brand|品牌/.test(text)) return 'brand';
+  if (/platform|平台|対応機種/.test(text)) return 'platform';
+  if (/streaming|播放平台|配信/.test(text)) return 'streaming_platform';
+  if (/broadcaster|电视台|電視台|放送/.test(text)) return 'broadcaster';
+  if (/committee.*member|委员会成员|委員会成员|委員会メンバー/.test(text)) return 'committee_member';
+  if (/committee|委员会|委員会/.test(text)) return 'committee';
+  if (/music.*label|音乐厂牌|音楽レーベル/.test(text)) return 'music_label';
+  if (/investor|出资|出資/.test(text)) return 'investor';
+  if (/rights|版权|版權/.test(text)) return 'rights_holder';
+  return 'other';
 }
 
 function compactObject(obj) {
   return Object.fromEntries(Object.entries(obj).filter(([, value]) => value !== undefined));
 }
 
+function sanitizeCreatorCredit(credit) {
+  const creator = relationId(credit?.creator ?? credit?.creatorId);
+  if (creator === undefined) return undefined;
+  const roles = rolesOf(credit);
+  return compactObject({
+    creator,
+    role: normalizeCreatorRole(roles),
+    originalRole: firstOriginalRole(credit),
+    source: 'bangumi',
+    note: hasValue(credit?.name) ? String(credit.name) : undefined,
+  });
+}
+
+function sanitizeOrganizationCredit(credit) {
+  const organization = relationId(credit?.organization ?? credit?.organizationId);
+  if (organization === undefined) return undefined;
+  const roles = rolesOf(credit);
+  return compactObject({
+    organization,
+    role: normalizeOrganizationRole(roles),
+    originalRole: firstOriginalRole(credit),
+    source: 'bangumi',
+    note: hasValue(credit?.name) ? String(credit.name) : undefined,
+  });
+}
+
+function dedupeRows(rows, idField) {
+  const seen = new Set();
+  const result = [];
+  for (const row of rows) {
+    const id = relationId(row?.[idField]);
+    if (id === undefined) continue;
+    const key = [id, row.role ?? 'other', row.originalRole ?? '', row.source ?? ''].join('|');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(row);
+  }
+  return result;
+}
+
+function buildOrganizationRows(links) {
+  const creditRows = asArray(links.organizationCredits)
+    .map((credit) => sanitizeOrganizationCredit(credit))
+    .filter(Boolean);
+  const creditedIds = new Set(creditRows.map((row) => String(row.organization)));
+  const fallbackRows = uniqueIds(links.organizations)
+    .filter((id) => !creditedIds.has(String(id)))
+    .map((organization) => ({ organization, role: 'other', source: 'bangumi' }));
+  return dedupeRows([...creditRows, ...fallbackRows], 'organization');
+}
+
 export function buildWorkRelationPatch(item) {
   const links = item?.links ?? {};
   const creators = uniqueIds(links.creators);
-  const organizations = uniqueIds(links.organizations);
-  const creatorCredits = asArray(links.creatorCredits)
-    .map((credit, index) => sanitizeCreatorCredit(credit, index))
-    .filter(Boolean)
-    .map(compactObject);
+  const creatorCredits = dedupeRows(
+    asArray(links.creatorCredits)
+      .map((credit) => sanitizeCreatorCredit(credit))
+      .filter(Boolean),
+    'creator',
+  );
+  const organizations = buildOrganizationRows(links);
 
   return { creators, creatorCredits, organizations };
 }

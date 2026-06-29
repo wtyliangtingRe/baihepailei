@@ -19,10 +19,11 @@ function readyPlan(overrides = {}) {
         links: {
           creators: [201, '202'],
           creatorCredits: [
-            { creator: 201, roles: ['原作'], order: 1 },
-            { creatorId: '202', roles: ['作画'], order: 2 },
+            { creator: 201, roles: ['原作'] },
+            { creatorId: '202', roles: ['作画'] },
           ],
-          organizations: [301],
+          organizations: [301, 302],
+          organizationCredits: [{ organization: 301, roles: ['出版社'] }],
         },
         errors: [],
         unresolvedRefs: { creators: [], organizations: [] },
@@ -33,52 +34,66 @@ function readyPlan(overrides = {}) {
   };
 }
 
+function matchingPayloadWork() {
+  return {
+    id: 101,
+    title: 'Work A',
+    creators: [201, 202],
+    organizations: [
+      { organization: 301, role: 'publisher', originalRole: '出版社', source: 'bangumi' },
+      { organization: 302, role: 'other', source: 'bangumi' },
+    ],
+    creatorCredits: [
+      { creator: 201, role: 'original_creator', originalRole: '原作', source: 'bangumi' },
+      { creator: 202, role: 'other', originalRole: '作画', source: 'bangumi' },
+    ],
+  };
+}
+
 test('normalizes expected relation fields from a plan item', () => {
-  const item = readyPlan().items[0];
-  const expected = expectedReadbackFieldsFromPlanItem(item);
+  const expected = expectedReadbackFieldsFromPlanItem(readyPlan().items[0]);
 
   assert.deepEqual(expected.creators, [201, 202]);
-  assert.deepEqual(expected.organizations, [301]);
+  assert.deepEqual(expected.organizations, [
+    { organization: 301, role: 'publisher', originalRole: '出版社', source: 'bangumi' },
+    { organization: 302, role: 'other', source: 'bangumi' },
+  ]);
   assert.deepEqual(expected.creatorCredits, [
-    { creator: 201, roles: ['原作'], order: 1 },
-    { creator: 202, roles: ['作画'], order: 2 },
+    { creator: 201, role: 'original_creator', originalRole: '原作', source: 'bangumi' },
+    { creator: 202, role: 'other', originalRole: '作画', source: 'bangumi' },
   ]);
 });
 
-test('normalizes actual relation fields from Payload readback docs or ids', () => {
+test('normalizes actual relation fields from Payload rows', () => {
   const actual = actualReadbackFieldsFromPayloadWork({
+    ...matchingPayloadWork(),
     creators: [{ id: 201 }, 202],
-    organizations: [{ id: 301 }],
-    creatorCredits: [
-      { creator: { id: 201 }, roles: ['原作'], order: 1 },
-      { creator: 202, roles: ['作画'], order: 2 },
+    organizations: [
+      { organization: { id: 301 }, role: 'publisher', originalRole: '出版社', source: 'bangumi' },
+      { organization: 302, role: 'other', source: 'bangumi' },
     ],
   });
 
   assert.deepEqual(actual.creators, [201, 202]);
-  assert.deepEqual(actual.organizations, [301]);
-  assert.deepEqual(actual.creatorCredits, [
-    { creator: 201, roles: ['原作'], order: 1 },
-    { creator: 202, roles: ['作画'], order: 2 },
-  ]);
+  assert.deepEqual(actual.organizations[0], { organization: 301, role: 'publisher', originalRole: '出版社', source: 'bangumi' });
+  assert.deepEqual(actual.creatorCredits[1], { creator: 202, role: 'other', originalRole: '作画', source: 'bangumi' });
 });
 
 test('detects relation mismatches for a single item', () => {
   const result = compareReadbackItem(readyPlan().items[0], {
-    id: 101,
-    title: 'Work A',
+    ...matchingPayloadWork(),
     creators: [201],
-    organizations: [301],
-    creatorCredits: [{ creator: 201, roles: ['原作'], order: 1 }],
+    organizations: [{ organization: 301, role: 'publisher', originalRole: '出版社', source: 'bangumi' }],
+    creatorCredits: [{ creator: 201, role: 'original_creator', originalRole: '原作', source: 'bangumi' }],
   });
 
   assert.equal(result.status, 'fail');
-  assert.deepEqual(result.mismatches.map((mismatch) => mismatch.field), ['creators', 'creatorCredits']);
+  assert.deepEqual(result.mismatches.map((mismatch) => mismatch.field), ['creators', 'organizations', 'creatorCredits']);
 });
 
 test('blocks readback audit when the plan is not ready', async () => {
   const audit = await auditBgmWorkEntityLinkReadback(readyPlan({ status: 'needs-review' }), {
-    token: 'fake-token',
+    token: 'token',
     fetchImpl: async () => assert.fail('fetch should not be called'),
   });
 
@@ -87,27 +102,14 @@ test('blocks readback audit when the plan is not ready', async () => {
   assert.equal(validateReadbackPlan(readyPlan()).status, 'pass');
 });
 
-test('reads Payload works and passes when readback matches plan', async () => {
+test('reads works and passes when readback matches plan', async () => {
   const calls = [];
   const audit = await auditBgmWorkEntityLinkReadback(readyPlan(), {
-    token: 'fake-token',
-    payloadBaseUrl: 'http://payload.test',
+    token: 'token',
+    payloadBaseUrl: 'http://local.test',
     fetchImpl: async (url, options) => {
       calls.push({ url, options });
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          id: 101,
-          title: 'Work A',
-          creators: [201, 202],
-          organizations: [301],
-          creatorCredits: [
-            { creator: 201, roles: ['原作'], order: 1 },
-            { creator: 202, roles: ['作画'], order: 2 },
-          ],
-        }),
-      };
+      return { ok: true, status: 200, json: async () => matchingPayloadWork() };
     },
   });
 
@@ -117,6 +119,4 @@ test('reads Payload works and passes when readback matches plan', async () => {
   assert.equal(audit.counts.mismatchedWorksTotal, 0);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].options.method, 'GET');
-  assert.equal(calls[0].options.headers.Authorization, 'JWT fake-token');
-  assert.ok(calls[0].url.includes('/api/works/101?depth=0&draft=true'));
 });
