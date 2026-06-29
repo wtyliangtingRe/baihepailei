@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
+import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { access, mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
 
 import { parseJsonl, writeJsonFile } from '../lib/jsonl.mjs'
 
@@ -20,8 +22,13 @@ const DEFAULT_REPORT = path.join('data_local', 'reports', 'bangumi-cover-cache.m
 const DEFAULT_TOP_LIMIT = 100
 const DEFAULT_DELAY_MS = 300
 const DEFAULT_USER_AGENT = 'BaihepaileiCoverCache/0.1 (https://github.com/wtyliangtingRe/baihepailei)'
+const DEFAULT_TRANSPORT = 'auto'
+const DEFAULT_CURL_CONNECT_TIMEOUT_SECONDS = 30
+const CURL_MAX_BUFFER_BYTES = 100 * 1024 * 1024
 const REPORT_UTF8_BOM = '\uFEFF'
 const IMAGE_PRIORITY = ['large', 'common', 'medium', 'grid', 'small']
+
+const execFileAsync = promisify(execFile)
 
 function parseArgs(argv) {
   const args = new Map()
@@ -77,6 +84,127 @@ function sleep(ms) {
 
 function fileExists(filePath) {
   return access(filePath).then(() => true).catch(() => false)
+}
+
+function normalizeTransport(value) {
+  const normalized = cleanText(value || DEFAULT_TRANSPORT).toLowerCase()
+  return ['auto', 'fetch', 'curl'].includes(normalized) ? normalized : DEFAULT_TRANSPORT
+}
+
+function formatError(error) {
+  const message = error?.message ? String(error.message) : String(error)
+  const stderr = error?.stderr ? String(error.stderr).trim().slice(0, 800) : ''
+  const stdout = error?.stdout ? String(error.stdout).trim().slice(0, 800) : ''
+  return [message, stderr, stdout].filter(Boolean).join('\n')
+}
+
+function createCurlArgs(url, { headers = {}, output = '' } = {}, { proxy = '', connectTimeoutSeconds = DEFAULT_CURL_CONNECT_TIMEOUT_SECONDS } = {}) {
+  const args = [
+    '--silent',
+    '--show-error',
+    '--fail',
+    '--location',
+    '--connect-timeout',
+    String(connectTimeoutSeconds),
+  ]
+
+  if (proxy) args.push('--proxy', proxy)
+
+  for (const [key, value] of Object.entries(headers || {})) {
+    if (value === undefined || value === null || value === '') continue
+    args.push('--header', `${key}: ${value}`)
+  }
+
+  if (output) args.push('--output', output)
+  args.push(String(url))
+  return args
+}
+
+function requestHeaders({ userAgent, token, accept = 'application/json' }) {
+  return {
+    'User-Agent': userAgent,
+    Accept: accept,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
+async function requestJsonWithFetch(url, { headers }) {
+  const response = await fetch(url, { headers })
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new Error(`HTTP ${response.status} ${response.statusText}: ${text.slice(0, 200)}`)
+  }
+  return response.json()
+}
+
+async function requestJsonWithCurl(url, { headers, proxy }) {
+  const args = createCurlArgs(url, { headers }, { proxy })
+  try {
+    const { stdout } = await execFileAsync('curl', args, {
+      maxBuffer: CURL_MAX_BUFFER_BYTES,
+      windowsHide: true,
+    })
+    return JSON.parse(stdout)
+  } catch (error) {
+    throw new Error(`curl request failed:\n${formatError(error)}`)
+  }
+}
+
+async function requestJson(url, { headers, proxy = '', transport = DEFAULT_TRANSPORT } = {}) {
+  const normalizedTransport = normalizeTransport(transport)
+  if (normalizedTransport === 'curl') return requestJsonWithCurl(url, { headers, proxy })
+  if (normalizedTransport === 'fetch') return requestJsonWithFetch(url, { headers })
+
+  try {
+    return await requestJsonWithFetch(url, { headers })
+  } catch (fetchError) {
+    try {
+      return await requestJsonWithCurl(url, { headers, proxy })
+    } catch (curlError) {
+      throw new Error(`fetch failed, and curl fallback failed:\nfetch: ${formatError(fetchError)}\ncurl: ${formatError(curlError)}`)
+    }
+  }
+}
+
+async function downloadImageWithFetch(url, { outputPath, headers }) {
+  const response = await fetch(url, { headers })
+  if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`)
+  const contentType = response.headers.get('content-type') || ''
+  const buffer = Buffer.from(await response.arrayBuffer())
+  await mkdir(path.dirname(outputPath), { recursive: true })
+  await writeFile(outputPath, buffer)
+  return { bytes: buffer.length, contentType, transport: 'fetch' }
+}
+
+async function downloadImageWithCurl(url, { outputPath, headers, proxy }) {
+  await mkdir(path.dirname(outputPath), { recursive: true })
+  const args = createCurlArgs(url, { headers, output: outputPath }, { proxy })
+  try {
+    await execFileAsync('curl', args, {
+      maxBuffer: CURL_MAX_BUFFER_BYTES,
+      windowsHide: true,
+    })
+    const size = await stat(outputPath)
+    return { bytes: size.size, contentType: '', transport: 'curl' }
+  } catch (error) {
+    throw new Error(`curl image download failed:\n${formatError(error)}`)
+  }
+}
+
+async function downloadImage(url, { outputPath, headers, proxy = '', transport = DEFAULT_TRANSPORT }) {
+  const normalizedTransport = normalizeTransport(transport)
+  if (normalizedTransport === 'curl') return downloadImageWithCurl(url, { outputPath, headers, proxy })
+  if (normalizedTransport === 'fetch') return downloadImageWithFetch(url, { outputPath, headers })
+
+  try {
+    return await downloadImageWithFetch(url, { outputPath, headers })
+  } catch (fetchError) {
+    try {
+      return await downloadImageWithCurl(url, { outputPath, headers, proxy })
+    } catch (curlError) {
+      throw new Error(`fetch image failed, and curl fallback failed:\nfetch: ${formatError(fetchError)}\ncurl: ${formatError(curlError)}`)
+    }
+  }
 }
 
 function subjectId(value) {
@@ -243,20 +371,18 @@ async function readRecords(filePath) {
   return [json]
 }
 
-async function fetchBangumiSubject(subjectIdValue, { userAgent = DEFAULT_USER_AGENT, token = process.env.BANGUMI_ACCESS_TOKEN || '' } = {}) {
+async function fetchBangumiSubject(subjectIdValue, {
+  userAgent = DEFAULT_USER_AGENT,
+  token = process.env.BANGUMI_ACCESS_TOKEN || '',
+  proxy = process.env.BANGUMI_PROXY || '',
+  transport = DEFAULT_TRANSPORT,
+} = {}) {
   const url = new URL(`/v0/subjects/${subjectIdValue}`, API_BASE_URL)
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': userAgent,
-      Accept: 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+  return requestJson(url, {
+    headers: requestHeaders({ userAgent, token }),
+    proxy,
+    transport,
   })
-  if (!response.ok) {
-    const text = await response.text().catch(() => '')
-    throw new Error(`HTTP ${response.status} ${response.statusText}: ${text.slice(0, 200)}`)
-  }
-  return response.json()
 }
 
 async function fetchMissingCoverEntries(stubs, existingKeys, {
@@ -265,6 +391,8 @@ async function fetchMissingCoverEntries(stubs, existingKeys, {
   fetchDelayMs = DEFAULT_DELAY_MS,
   userAgent = DEFAULT_USER_AGENT,
   token = process.env.BANGUMI_ACCESS_TOKEN || '',
+  proxy = process.env.BANGUMI_PROXY || '',
+  transport = DEFAULT_TRANSPORT,
 } = {}) {
   const missingStubs = rows(stubs).filter((stub) => stub.bangumiSubjectId && !existingKeys.has(stub.bangumiSubjectId))
   const limitedStubs = fetchLimit > 0 ? missingStubs.slice(0, fetchLimit) : missingStubs
@@ -273,7 +401,7 @@ async function fetchMissingCoverEntries(stubs, existingKeys, {
 
   for (const stub of limitedStubs) {
     try {
-      const subject = await fetchSubject(stub.bangumiSubjectId, { userAgent, token })
+      const subject = await fetchSubject(stub.bangumiSubjectId, { userAgent, token, proxy, transport })
       const entry = coverEntryFromSubject({ ...subject, title: stub.title || subject?.name_cn || subject?.name }, { sourcePath: `bangumi-api:${stub.bangumiSubjectId}` })
       if (entry) entries.push(entry)
       else failed.push({ ...stub, reason: 'no-image-in-fetched-subject' })
@@ -298,6 +426,8 @@ export async function buildBangumiCoverManifest({
   fetchDelayMs = DEFAULT_DELAY_MS,
   userAgent = DEFAULT_USER_AGENT,
   token = process.env.BANGUMI_ACCESS_TOKEN || '',
+  proxy = process.env.BANGUMI_PROXY || '',
+  transport = DEFAULT_TRANSPORT,
   fetchSubject = fetchBangumiSubject,
 } = {}) {
   const manifests = []
@@ -336,6 +466,8 @@ export async function buildBangumiCoverManifest({
       fetchDelayMs,
       userAgent,
       token,
+      proxy,
+      transport,
     })
     for (const entry of fetched.entries) {
       const key = entry.bangumiSubjectId || entry.imageUrl
@@ -355,6 +487,8 @@ export async function buildBangumiCoverManifest({
       fetchedSubjects: fetched.requested,
       fetchRemainingSubjects: fetched.remaining,
       fetchFailedSubjects: fetched.failed.length,
+      transport: normalizeTransport(transport),
+      proxyUsed: Boolean(proxy),
       coversTotal: byKey.size,
     },
     covers: [...byKey.values()],
@@ -362,27 +496,28 @@ export async function buildBangumiCoverManifest({
   }
 }
 
-async function downloadOne(entry, { outputDir, userAgent = DEFAULT_USER_AGENT, overwrite = false } = {}) {
+async function downloadOne(entry, {
+  outputDir,
+  userAgent = DEFAULT_USER_AGENT,
+  overwrite = false,
+  proxy = process.env.BANGUMI_PROXY || '',
+  transport = DEFAULT_TRANSPORT,
+} = {}) {
   const outputPath = path.resolve(outputDir, entry.relativePath.replace(/^files\//u, ''))
   if (!overwrite && await fileExists(outputPath)) {
     return { ...entry, outputPath, status: 'skipped-existing', bytes: 0 }
   }
 
-  const response = await fetch(entry.imageUrl, {
-    headers: {
-      'User-Agent': userAgent,
-      Accept: 'image/avif,image/webp,image/png,image/jpeg,image/*,*/*;q=0.8',
-    },
+  const result = await downloadImage(entry.imageUrl, {
+    outputPath,
+    headers: requestHeaders({
+      userAgent,
+      accept: 'image/avif,image/webp,image/png,image/jpeg,image/*,*/*;q=0.8',
+    }),
+    proxy,
+    transport,
   })
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} ${response.statusText}`)
-  }
-
-  const contentType = response.headers.get('content-type') || ''
-  const buffer = Buffer.from(await response.arrayBuffer())
-  await mkdir(path.dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, buffer)
-  return { ...entry, outputPath, status: 'downloaded', bytes: buffer.length, contentType }
+  return { ...entry, outputPath, status: 'downloaded', bytes: result.bytes, contentType: result.contentType, transport: result.transport }
 }
 
 export async function cacheBangumiCovers(manifest, {
@@ -391,13 +526,15 @@ export async function cacheBangumiCovers(manifest, {
   delayMs = DEFAULT_DELAY_MS,
   overwrite = false,
   userAgent = DEFAULT_USER_AGENT,
+  proxy = process.env.BANGUMI_PROXY || '',
+  transport = DEFAULT_TRANSPORT,
 } = {}) {
   const covers = limit > 0 ? rows(manifest?.covers).slice(0, limit) : rows(manifest?.covers)
   const results = []
 
   for (const entry of covers) {
     try {
-      results.push(await downloadOne(entry, { outputDir, userAgent, overwrite }))
+      results.push(await downloadOne(entry, { outputDir, userAgent, overwrite, proxy, transport }))
     } catch (error) {
       results.push({ ...entry, status: 'error', error: String(error?.message || error) })
     }
@@ -420,6 +557,8 @@ export async function cacheBangumiCovers(manifest, {
       skipped,
       errors,
       bytes,
+      transport: normalizeTransport(transport),
+      proxyUsed: Boolean(proxy),
     },
     results,
   }
@@ -450,6 +589,8 @@ export function createBangumiCoverCacheReport(result, { topLimit = DEFAULT_TOP_L
     meta.fetchedSubjects !== undefined ? `- fetched subjects：${meta.fetchedSubjects}` : '',
     meta.fetchRemainingSubjects !== undefined ? `- fetch remaining subjects：${meta.fetchRemainingSubjects}` : '',
     meta.fetchFailedSubjects !== undefined ? `- fetch failed subjects：${meta.fetchFailedSubjects}` : '',
+    meta.transport ? `- transport：${meta.transport}` : '',
+    meta.proxyUsed !== undefined ? `- proxy used：${meta.proxyUsed}` : '',
     meta.downloaded !== undefined ? `- downloaded：${meta.downloaded}` : '',
     meta.skipped !== undefined ? `- skipped existing：${meta.skipped}` : '',
     meta.errors !== undefined ? `- errors：${meta.errors}` : '',
@@ -465,6 +606,7 @@ export function createBangumiCoverCacheReport(result, { topLimit = DEFAULT_TOP_L
     '- 本脚本只读取本地 Bangumi / Payload 预览 JSON。',
     '- 默认只生成 manifest，不下载。',
     '- 本地没有封面 URL 时，可传入 `--fetch-missing` 从 Bangumi subject API 补拉封面元数据。',
+    '- 默认 `--transport auto` 会先试 Node fetch，失败后用 curl 兜底；也可显式传入 `--transport curl`。',
     '- 传入 `--download` 时只写入 `data_local/media/bangumi-covers`。',
     '- 不上传 Payload，不创建 media，不修改 works。',
     '- `data_local` 输出不要提交。',
@@ -488,13 +630,15 @@ async function main() {
   const overwrite = boolArg(args, 'overwrite', false)
   const userAgent = args.get('user-agent') || DEFAULT_USER_AGENT
   const token = args.get('token') || process.env.BANGUMI_ACCESS_TOKEN || ''
+  const proxy = args.get('proxy') || process.env.BANGUMI_PROXY || ''
+  const transport = normalizeTransport(args.get('transport'))
 
-  const manifest = await buildBangumiCoverManifest({ inputs, fetchMissing, fetchLimit, fetchDelayMs, userAgent, token })
+  const manifest = await buildBangumiCoverManifest({ inputs, fetchMissing, fetchLimit, fetchDelayMs, userAgent, token, proxy, transport })
   await writeJsonFile(path.resolve(manifestOut), manifest)
 
   let result = manifest
   if (download) {
-    result = await cacheBangumiCovers(manifest, { outputDir, limit, delayMs, overwrite, userAgent })
+    result = await cacheBangumiCovers(manifest, { outputDir, limit, delayMs, overwrite, userAgent, proxy, transport })
   }
 
   await mkdir(path.dirname(path.resolve(reportOut)), { recursive: true })
