@@ -55,9 +55,9 @@ test('builds packages from work preview items', () => {
   assert.equal(packages.other.works[0].title, 'Other A');
 });
 
-test('supports nested sourceWork media type fallback', () => {
+test('supports nested sourceWork media type fallback for work-like items', () => {
   const { packages, report } = buildMediaTypePackages({
-    works: [{ title: 'Nested Game', sourceWork: { mediaType: '游戏' } }],
+    works: [{ title: 'Nested Game', bangumiSubjectId: '6', sourceWork: { mediaType: '游戏' } }],
   });
 
   assert.equal(report.counts.gameWorksTotal, 1);
@@ -65,7 +65,7 @@ test('supports nested sourceWork media type fallback', () => {
 });
 
 test('renders markdown report with outputs', () => {
-  const { report } = buildMediaTypePackages({ works: [{ title: 'Manga A', mediaType: 'manga' }] });
+  const { report } = buildMediaTypePackages({ works: [{ title: 'Manga A', mediaType: 'manga', bangumiSubjectId: '7' }] });
   const markdown = renderMediaTypePackageReport(report);
 
   assert.match(markdown, /# BGM Media Type Packages/);
