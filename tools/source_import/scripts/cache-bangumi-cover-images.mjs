@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 
 import { parseJsonl, writeJsonFile } from '../lib/jsonl.mjs'
 
+const API_BASE_URL = 'https://api.bgm.tv'
 const DEFAULT_INPUTS = [
   path.join('data_local', 'payload', 'bangumi-work-entity-link-preview.json'),
   path.join('data_local', 'payload', 'bangumi-work-entity-link-patch-plan.json'),
@@ -86,6 +87,7 @@ function subjectId(value) {
     ?? value?.subject_id
     ?? value?.raw?.id
     ?? value?.raw?.subject_id
+    ?? value?.work?.bangumiSubjectId
   return id === undefined || id === null || id === '' ? '' : String(id)
 }
 
@@ -103,6 +105,17 @@ function subjectTitle(value) {
 function subjectType(value) {
   const type = value?.type ?? value?.raw?.type ?? value?.mediaType ?? value?.work?.mediaType
   return type === undefined || type === null ? '' : String(type)
+}
+
+function subjectStubFromObject(value, { sourcePath = '' } = {}) {
+  const id = subjectId(value)
+  if (!id) return null
+  return {
+    bangumiSubjectId: id,
+    title: subjectTitle(value),
+    type: subjectType(value),
+    sourcePath,
+  }
 }
 
 function imageCandidatesFromImages(images) {
@@ -205,6 +218,19 @@ export function buildBangumiCoverManifestFromRecords(records, { sourcePath = '' 
   return [...byKey.values()].sort((a, b) => Number(a.bangumiSubjectId || 0) - Number(b.bangumiSubjectId || 0))
 }
 
+export function buildBangumiCoverSubjectStubsFromRecords(records, { sourcePath = '' } = {}) {
+  const byId = new Map()
+  for (const record of rows(records)) {
+    const objects = collectObjects(record, [])
+    for (const object of objects) {
+      const stub = subjectStubFromObject(object, { sourcePath })
+      if (!stub || byId.has(stub.bangumiSubjectId)) continue
+      byId.set(stub.bangumiSubjectId, stub)
+    }
+  }
+  return [...byId.values()].sort((a, b) => Number(a.bangumiSubjectId || 0) - Number(b.bangumiSubjectId || 0))
+}
+
 async function readRecords(filePath) {
   const resolved = path.resolve(filePath)
   const text = await readFile(resolved, 'utf8')
@@ -217,8 +243,65 @@ async function readRecords(filePath) {
   return [json]
 }
 
-export async function buildBangumiCoverManifest({ inputs = DEFAULT_INPUTS } = {}) {
+async function fetchBangumiSubject(subjectIdValue, { userAgent = DEFAULT_USER_AGENT, token = process.env.BANGUMI_ACCESS_TOKEN || '' } = {}) {
+  const url = new URL(`/v0/subjects/${subjectIdValue}`, API_BASE_URL)
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': userAgent,
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new Error(`HTTP ${response.status} ${response.statusText}: ${text.slice(0, 200)}`)
+  }
+  return response.json()
+}
+
+async function fetchMissingCoverEntries(stubs, existingKeys, {
+  fetchSubject = fetchBangumiSubject,
+  fetchLimit = 0,
+  fetchDelayMs = DEFAULT_DELAY_MS,
+  userAgent = DEFAULT_USER_AGENT,
+  token = process.env.BANGUMI_ACCESS_TOKEN || '',
+} = {}) {
+  const missingStubs = rows(stubs).filter((stub) => stub.bangumiSubjectId && !existingKeys.has(stub.bangumiSubjectId))
+  const limitedStubs = fetchLimit > 0 ? missingStubs.slice(0, fetchLimit) : missingStubs
+  const entries = []
+  const failed = []
+
+  for (const stub of limitedStubs) {
+    try {
+      const subject = await fetchSubject(stub.bangumiSubjectId, { userAgent, token })
+      const entry = coverEntryFromSubject({ ...subject, title: stub.title || subject?.name_cn || subject?.name }, { sourcePath: `bangumi-api:${stub.bangumiSubjectId}` })
+      if (entry) entries.push(entry)
+      else failed.push({ ...stub, reason: 'no-image-in-fetched-subject' })
+    } catch (error) {
+      failed.push({ ...stub, reason: String(error?.message || error) })
+    }
+    if (fetchDelayMs > 0) await sleep(fetchDelayMs)
+  }
+
+  return {
+    requested: limitedStubs.length,
+    remaining: missingStubs.length - limitedStubs.length,
+    entries,
+    failed,
+  }
+}
+
+export async function buildBangumiCoverManifest({
+  inputs = DEFAULT_INPUTS,
+  fetchMissing = false,
+  fetchLimit = 0,
+  fetchDelayMs = DEFAULT_DELAY_MS,
+  userAgent = DEFAULT_USER_AGENT,
+  token = process.env.BANGUMI_ACCESS_TOKEN || '',
+  fetchSubject = fetchBangumiSubject,
+} = {}) {
   const manifests = []
+  const stubs = []
   const missingInputs = []
 
   for (const input of inputs) {
@@ -229,6 +312,7 @@ export async function buildBangumiCoverManifest({ inputs = DEFAULT_INPUTS } = {}
     }
     const records = await readRecords(resolved)
     manifests.push(...buildBangumiCoverManifestFromRecords(records, { sourcePath: resolved }))
+    stubs.push(...buildBangumiCoverSubjectStubsFromRecords(records, { sourcePath: resolved }))
   }
 
   const byKey = new Map()
@@ -238,16 +322,43 @@ export async function buildBangumiCoverManifest({ inputs = DEFAULT_INPUTS } = {}
     byKey.set(key, entry)
   }
 
+  const stubById = new Map()
+  for (const stub of stubs) {
+    if (!stub.bangumiSubjectId || stubById.has(stub.bangumiSubjectId)) continue
+    stubById.set(stub.bangumiSubjectId, stub)
+  }
+
+  let fetched = { requested: 0, remaining: 0, entries: [], failed: [] }
+  if (fetchMissing) {
+    fetched = await fetchMissingCoverEntries([...stubById.values()], new Set(byKey.keys()), {
+      fetchSubject,
+      fetchLimit,
+      fetchDelayMs,
+      userAgent,
+      token,
+    })
+    for (const entry of fetched.entries) {
+      const key = entry.bangumiSubjectId || entry.imageUrl
+      if (!key || byKey.has(key)) continue
+      byKey.set(key, entry)
+    }
+  }
+
   return {
     meta: {
       source: 'bangumi-cover-cache-manifest',
-      mode: 'manifest-only-no-payload-write',
+      mode: fetchMissing ? 'manifest-with-bangumi-fetch-no-payload-write' : 'manifest-only-no-payload-write',
       generatedAt: new Date().toISOString(),
       inputs: inputs.map((input) => path.resolve(input)),
       missingInputs,
+      subjectStubsTotal: stubById.size,
+      fetchedSubjects: fetched.requested,
+      fetchRemainingSubjects: fetched.remaining,
+      fetchFailedSubjects: fetched.failed.length,
       coversTotal: byKey.size,
     },
     covers: [...byKey.values()],
+    failedFetches: fetched.failed,
   }
 }
 
@@ -335,6 +446,10 @@ export function createBangumiCoverCacheReport(result, { topLimit = DEFAULT_TOP_L
     '',
     `- 模式：${meta.mode}`,
     `- covers：${meta.coversTotal}`,
+    meta.subjectStubsTotal !== undefined ? `- subject stubs：${meta.subjectStubsTotal}` : '',
+    meta.fetchedSubjects !== undefined ? `- fetched subjects：${meta.fetchedSubjects}` : '',
+    meta.fetchRemainingSubjects !== undefined ? `- fetch remaining subjects：${meta.fetchRemainingSubjects}` : '',
+    meta.fetchFailedSubjects !== undefined ? `- fetch failed subjects：${meta.fetchFailedSubjects}` : '',
     meta.downloaded !== undefined ? `- downloaded：${meta.downloaded}` : '',
     meta.skipped !== undefined ? `- skipped existing：${meta.skipped}` : '',
     meta.errors !== undefined ? `- errors：${meta.errors}` : '',
@@ -349,6 +464,7 @@ export function createBangumiCoverCacheReport(result, { topLimit = DEFAULT_TOP_L
     '',
     '- 本脚本只读取本地 Bangumi / Payload 预览 JSON。',
     '- 默认只生成 manifest，不下载。',
+    '- 本地没有封面 URL 时，可传入 `--fetch-missing` 从 Bangumi subject API 补拉封面元数据。',
     '- 传入 `--download` 时只写入 `data_local/media/bangumi-covers`。',
     '- 不上传 Payload，不创建 media，不修改 works。',
     '- `data_local` 输出不要提交。',
@@ -364,12 +480,16 @@ async function main() {
   const outputDir = args.get('dir') || DEFAULT_OUTPUT_DIR
   const topLimit = numberArg(args, 'top', DEFAULT_TOP_LIMIT)
   const limit = numberArg(args, 'limit', 0)
+  const fetchLimit = numberArg(args, 'fetch-limit', 0)
   const delayMs = numberArg(args, 'delay-ms', DEFAULT_DELAY_MS)
+  const fetchDelayMs = numberArg(args, 'fetch-delay-ms', DEFAULT_DELAY_MS)
   const download = boolArg(args, 'download', false)
+  const fetchMissing = boolArg(args, 'fetch-missing', false)
   const overwrite = boolArg(args, 'overwrite', false)
   const userAgent = args.get('user-agent') || DEFAULT_USER_AGENT
+  const token = args.get('token') || process.env.BANGUMI_ACCESS_TOKEN || ''
 
-  const manifest = await buildBangumiCoverManifest({ inputs })
+  const manifest = await buildBangumiCoverManifest({ inputs, fetchMissing, fetchLimit, fetchDelayMs, userAgent, token })
   await writeJsonFile(path.resolve(manifestOut), manifest)
 
   let result = manifest
@@ -383,7 +503,7 @@ async function main() {
   console.log(`Wrote Bangumi cover manifest -> ${path.resolve(manifestOut)}`)
   console.log(`Wrote Bangumi cover report -> ${path.resolve(reportOut)}`)
   if (download) console.log(`Cached Bangumi covers -> ${path.resolve(outputDir)}`)
-  if (result.meta?.errors > 0) process.exitCode = 1
+  if (result.meta?.errors > 0 || manifest.meta?.fetchFailedSubjects > 0) process.exitCode = 1
 }
 
 const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
