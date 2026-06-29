@@ -498,19 +498,41 @@ export function extractEntityRefsFromWork(work, kind) {
   return dedupeRefs(refs).filter((ref) => !shouldIgnoreEntityRef(ref));
 }
 
+function preferSingleSourceKeyCandidate(matches) {
+  const withSourceKeys = matches.filter((entry) => Array.isArray(entry.sourceKeys) && entry.sourceKeys.length > 0);
+  if (withSourceKeys.length === 1) return withSourceKeys[0];
+  return undefined;
+}
+
 function lookupOne(index, refOrWork, fallbackName) {
   const sourceKeys = refOrWork.sourceKeys ?? collectSourceKeys(refOrWork);
   for (const sourceKey of sourceKeys) {
     const matches = index.bySourceKey.get(normalizeText(sourceKey)) ?? [];
-    if (matches.length === 1) return { status: 'matched', matchBy: 'sourceKey', key: sourceKey, entry: matches[0] };
-    if (matches.length > 1) return { status: 'ambiguous', matchBy: 'sourceKey', key: sourceKey, matches };
+    if (matches.length === 1) {
+      return { status: 'matched', matchBy: 'sourceKey', key: sourceKey, entry: matches[0] };
+    }
+    if (matches.length > 1) {
+      const preferred = preferSingleSourceKeyCandidate(matches);
+      if (preferred) {
+        return { status: 'matched', matchBy: 'sourceKey-preferred-source-key', key: sourceKey, entry: preferred };
+      }
+      return { status: 'ambiguous', matchBy: 'sourceKey', key: sourceKey, matches };
+    }
   }
 
   const name = refOrWork.name ?? fallbackName ?? getName(refOrWork);
   if (name) {
     const matches = index.byName.get(normalizeText(name)) ?? [];
-    if (matches.length === 1) return { status: 'matched', matchBy: 'name', key: name, entry: matches[0] };
-    if (matches.length > 1) return { status: 'ambiguous', matchBy: 'name', key: name, matches };
+    if (matches.length === 1) {
+      return { status: 'matched', matchBy: 'name', key: name, entry: matches[0] };
+    }
+    if (matches.length > 1) {
+      const preferred = preferSingleSourceKeyCandidate(matches);
+      if (preferred) {
+        return { status: 'matched', matchBy: 'name-preferred-source-key', key: name, entry: preferred };
+      }
+      return { status: 'ambiguous', matchBy: 'name', key: name, matches };
+    }
   }
 
   return { status: 'missing', matchBy: undefined, key: sourceKeys[0] ?? name ?? undefined, matches: [] };

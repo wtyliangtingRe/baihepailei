@@ -199,3 +199,42 @@ test('ignores platform-like organization hints and collision metadata', () => {
   const audit = auditWorkEntityLinkPlan(plan);
   assert.equal(audit.status, 'pass');
 });
+
+test('prefers the single source-keyed candidate when resolving known name collisions', () => {
+  const packagePreview = {
+    works: [
+      {
+        bangumiSubjectId: '21096',
+        title: '百合星人奈绪子美眉',
+        creatorCreditHints: [
+          { name: 'kashmir', role: 'original_creator', originalRole: '作者' },
+        ],
+        organizationCreditHints: [
+          { name: '小学館', role: 'publisher', originalRole: '出版社' },
+        ],
+      },
+    ],
+  };
+
+  const idMap = {
+    works: [{ bangumiSubjectId: '21096', title: '百合星人奈绪子美眉', payloadId: 101 }],
+    creators: [
+      { name: 'kashmir', payloadId: 651 },
+      { name: 'kashmir', payloadId: 545, sourceId: 'creator:1r6xa4i' },
+    ],
+    organizations: [
+      { name: '小学館', payloadId: 265 },
+      { name: '小学館', payloadId: 57, sourceId: 'organization:0ykcrhc' },
+    ],
+  };
+
+  const plan = buildWorkEntityLinkPlan(packagePreview, idMap);
+  assert.equal(plan.status, 'ready');
+  assert.deepEqual(plan.items[0].links.creators, [545]);
+  assert.deepEqual(plan.items[0].links.organizations, [57]);
+  assert.equal(plan.counts.ambiguousCreatorRefsTotal, 0);
+  assert.equal(plan.counts.ambiguousOrganizationRefsTotal, 0);
+
+  const audit = auditWorkEntityLinkPlan(plan);
+  assert.equal(audit.status, 'pass');
+});
