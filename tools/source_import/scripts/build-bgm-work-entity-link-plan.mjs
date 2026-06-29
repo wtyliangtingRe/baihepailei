@@ -345,8 +345,8 @@ function getWorkTitle(work) {
   return firstValue(work, ['title', 'name', 'sourceTitle', 'package.title', 'input.title']) ?? '(untitled)';
 }
 
-const CREATOR_PATH_RE = /(^|\.)(creators?|creatorcredits?|persons?|people|staff|authors?|artists?|illustrators?|writers?|originalcreators?)(\.|$)/i;
-const ORG_PATH_RE = /(^|\.)(organizations?|orgs?|companies?|publishers?|studios?|labels?|magazines?|serialization|serializations)(\.|$)/i;
+const CREATOR_PATH_RE = /(^|\.)(creators?|creatorcredits?|creatorcredithints?|persons?|people|staff|authors?|artists?|illustrators?|writers?|originalcreators?)(\.|$)/i;
+const ORG_PATH_RE = /(^|\.)(organizations?|organizationcredits?|organizationcredithints?|orgs?|companies?|publishers?|publisherhints?|studios?|studiohints?|labels?|magazines?|magazinehints?|serialization|serializations)(\.|$)/i;
 
 const ROLE_PATHS = [
   'role',
@@ -418,7 +418,6 @@ function dedupeRefs(refs) {
       name: normalizeText(ref.name),
       sourceKeys: [...ref.sourceKeys].map(normalizeText).sort(),
       roles: [...ref.roles].map(normalizeText).sort(),
-      sourcePath: ref.sourcePath,
     });
     if (seen.has(key)) continue;
     seen.add(key);
@@ -519,7 +518,6 @@ function dedupeLinks(links) {
     const key = JSON.stringify({
       payloadId: link.payloadId,
       roles: [...(link.roles ?? [])].map(normalizeText).sort(),
-      sourcePath: link.sourcePath,
     });
     if (!byIdAndRoles.has(key)) byIdAndRoles.set(key, link);
   }
