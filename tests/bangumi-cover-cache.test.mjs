@@ -1,3 +1,6 @@
+import { mkdtemp, writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -62,21 +65,26 @@ test('cover manifest can find nested raw images', () => {
 })
 
 test('cover cache skips existing files without network download', async () => {
+  const outputDir = await mkdtemp(path.join(os.tmpdir(), 'bangumi-cover-cache-'))
+  await writeFile(path.join(outputDir, 'already-exists.jpg'), 'cached')
+
   const manifest = {
     covers: [
       {
         bangumiSubjectId: '1',
         title: 'Work A',
         imageUrl: 'https://example.test/a.jpg',
-        relativePath: '../already-exists.jpg',
+        relativePath: 'files/already-exists.jpg',
       },
     ],
   }
 
-  const result = await cacheBangumiCovers(manifest, { outputDir: process.cwd(), limit: 0 })
+  const result = await cacheBangumiCovers(manifest, { outputDir, limit: 0 })
 
   assert.equal(result.meta.coversTotal, 1)
-  assert.equal(result.meta.errors, 1)
+  assert.equal(result.meta.skipped, 1)
+  assert.equal(result.meta.errors, 0)
+  assert.equal(result.results[0].status, 'skipped-existing')
 })
 
 test('cover report includes safety summary', () => {
