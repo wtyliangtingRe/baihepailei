@@ -97,19 +97,29 @@ function relationId(value) {
 export function buildWorkLookup(linkPlan) {
   const byKey = new Map();
   const byTitle = new Map();
+  const ambiguousTitleKeys = new Set();
   for (const item of asArray(linkPlan?.items)) {
     const payloadId = relationId(item?.work?.payloadId);
     if (payloadId === undefined) continue;
+    const sourceKeys = asArray(item?.work?.sourceKeys);
     const keys = uniqueStrings([
       item?.work?.siteId,
       item?.work?.bangumiSubjectId,
+      ...sourceKeys,
+      ...sourceKeys.flatMap(sourceKeysForSubject),
       ...sourceKeysForSubject(item?.work?.bangumiSubjectId),
       ...sourceKeysForSubject(item?.work?.siteId),
     ]);
     for (const key of keys) byKey.set(normalizeText(key), payloadId);
-    if (item?.work?.title) byTitle.set(normalizeText(item.work.title), payloadId);
+    if (item?.work?.title) {
+      const titleKey = normalizeText(item.work.title);
+      const existing = byTitle.get(titleKey);
+      if (existing !== undefined && existing !== payloadId) ambiguousTitleKeys.add(titleKey);
+      else byTitle.set(titleKey, payloadId);
+    }
   }
-  return { byKey, byTitle };
+  for (const titleKey of ambiguousTitleKeys) byTitle.delete(titleKey);
+  return { byKey, byTitle, ambiguousTitleKeys };
 }
 
 function lookupPayloadId(work, lookup) {
