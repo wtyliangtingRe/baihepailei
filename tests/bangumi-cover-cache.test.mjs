@@ -5,7 +5,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  buildBangumiCoverManifest,
   buildBangumiCoverManifestFromRecords,
+  buildBangumiCoverSubjectStubsFromRecords,
   cacheBangumiCovers,
   createBangumiCoverCacheReport,
 } from '../tools/source_import/scripts/cache-bangumi-cover-images.mjs'
@@ -62,6 +64,39 @@ test('cover manifest can find nested raw images', () => {
   assert.equal(manifest.length, 1)
   assert.equal(manifest[0].bangumiSubjectId, '9')
   assert.equal(manifest[0].imageUrl, 'https://example.test/raw.jpg')
+})
+
+test('cover stubs collect subject ids even without local image urls', () => {
+  const stubs = buildBangumiCoverSubjectStubsFromRecords([
+    { work: { bangumiSubjectId: '101', title: 'Planned Work' } },
+    { externalIds: { bangumiSubjectId: '102' }, title: 'Seed Work' },
+  ])
+
+  assert.equal(stubs.length, 2)
+  assert.deepEqual(stubs.map((stub) => stub.bangumiSubjectId), ['101', '102'])
+})
+
+test('cover manifest can fetch missing subject images through an injected fetcher', async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), 'bangumi-cover-manifest-'))
+  const inputPath = path.join(tempDir, 'plan.json')
+  await writeFile(inputPath, JSON.stringify({
+    works: [
+      { work: { bangumiSubjectId: '101', title: 'Planned Work' } },
+    ],
+  }))
+
+  const manifest = await buildBangumiCoverManifest({
+    inputs: [inputPath],
+    fetchMissing: true,
+    fetchSubject: async (id) => subject(id, 'Fetched Work', { common: 'https://example.test/fetched.jpg' }),
+  })
+
+  assert.equal(manifest.meta.mode, 'manifest-with-bangumi-fetch-no-payload-write')
+  assert.equal(manifest.meta.subjectStubsTotal, 1)
+  assert.equal(manifest.meta.fetchedSubjects, 1)
+  assert.equal(manifest.meta.fetchFailedSubjects, 0)
+  assert.equal(manifest.meta.coversTotal, 1)
+  assert.equal(manifest.covers[0].imageUrl, 'https://example.test/fetched.jpg')
 })
 
 test('cover cache skips existing files without network download', async () => {
