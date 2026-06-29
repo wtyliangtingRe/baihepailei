@@ -159,3 +159,43 @@ test('extracts Bangumi credit hint arrays and deduplicates nested sourceWork hin
   const audit = auditWorkEntityLinkPlan(plan);
   assert.equal(audit.status, 'pass');
 });
+
+test('ignores platform-like organization hints and collision metadata', () => {
+  const packagePreview = {
+    works: [
+      {
+        bangumiSubjectId: '1',
+        title: 'Work A',
+        creatorCreditHints: [
+          { name: 'kashmir', role: 'original_creator', originalRole: '作者' },
+        ],
+        organizationCreditHints: [
+          { name: '小学館', role: 'publisher', originalRole: '出版社' },
+          { name: 'PC', role: 'platform', originalRole: '平台' },
+          { name: 'Web', role: 'platform', originalRole: '平台' },
+        ],
+      },
+    ],
+  };
+
+  const idMap = {
+    works: [{ bangumiSubjectId: '1', title: 'Work A', payloadId: 101 }],
+    creators: [{ name: 'kashmir', payloadId: 201 }],
+    organizations: [{ name: '小学館', payloadId: 301 }],
+    entityNameCollisionRows: [
+      { collection: 'creators', name: 'kashmir', payloadId: 999 },
+      { collection: 'organizations', name: '小学館', payloadId: 998 },
+    ],
+  };
+
+  const plan = buildWorkEntityLinkPlan(packagePreview, idMap);
+  assert.equal(plan.status, 'ready');
+  assert.deepEqual(plan.items[0].links.creators, [201]);
+  assert.deepEqual(plan.items[0].links.organizations, [301]);
+  assert.equal(plan.counts.unresolvedOrganizationRefsTotal, 0);
+  assert.equal(plan.counts.ambiguousCreatorRefsTotal, 0);
+  assert.equal(plan.counts.ambiguousOrganizationRefsTotal, 0);
+
+  const audit = auditWorkEntityLinkPlan(plan);
+  assert.equal(audit.status, 'pass');
+});

@@ -203,6 +203,11 @@ function collectSourceKeys(obj) {
   return [...new Set(values.flatMap((value) => bangumiKeyVariants(value)))];
 }
 
+function shouldSkipIndexPath(pathParts) {
+  const joined = pathParts.join('.').toLowerCase();
+  return /(^|\.)(entitynamecollisionrows?|entitynamecollisiondocs?|entitynamecollisions?|collisionrows?|collisiondocs?|collisions?)(\.|$)/.test(joined);
+}
+
 function kindFromPath(pathParts) {
   const joined = pathParts.join('.').toLowerCase();
   if (/(^|\.)(works|work|mediaworks|media_works)(\.|$)/.test(joined)) return 'works';
@@ -261,6 +266,7 @@ export function buildIdIndexes(idMap) {
   };
 
   function visit(node, pathParts = []) {
+    if (shouldSkipIndexPath(pathParts)) return;
     const pathKind = kindFromPath(pathParts);
 
     if (isPlainObject(node)) {
@@ -351,6 +357,7 @@ const ORG_PATH_RE = /(^|\.)(organizations?|organizationcredits?|organizationcred
 const ROLE_PATHS = [
   'role',
   'roles',
+  'originalRole',
   'credit',
   'credits',
   'job',
@@ -409,6 +416,44 @@ function entityRefFromItem(item, pathParts, kind) {
   return ref;
 }
 
+const IGNORED_ORGANIZATION_NAMES = new Set([
+  'pc',
+  'web',
+  'mac os',
+  'linux',
+  'psp',
+  'windows',
+  'windows pc',
+  'playstation portable',
+  'android',
+  'ios',
+  'iphone',
+  'ipad',
+]);
+
+const IGNORED_ORGANIZATION_ROLES = new Set([
+  'platform',
+  'platforms',
+  'game_platform',
+  '游戏平台',
+  '平台',
+  '対応機種',
+  '平台機種',
+]);
+
+function shouldIgnoreEntityRef(ref) {
+  if (ref.kind !== 'organizations') return false;
+
+  const name = normalizeText(ref.name);
+  if (IGNORED_ORGANIZATION_NAMES.has(name)) return true;
+
+  for (const role of ref.roles ?? []) {
+    if (IGNORED_ORGANIZATION_ROLES.has(normalizeText(role))) return true;
+  }
+
+  return false;
+}
+
 function dedupeRefs(refs) {
   const seen = new Set();
   const result = [];
@@ -450,7 +495,7 @@ export function extractEntityRefsFromWork(work, kind) {
   }
 
   scan(work);
-  return dedupeRefs(refs);
+  return dedupeRefs(refs).filter((ref) => !shouldIgnoreEntityRef(ref));
 }
 
 function lookupOne(index, refOrWork, fallbackName) {
