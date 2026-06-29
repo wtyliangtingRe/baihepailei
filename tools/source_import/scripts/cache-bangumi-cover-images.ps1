@@ -20,16 +20,17 @@ param(
 $ErrorActionPreference = "Stop"
 $ApiBaseUrl = "https://api.bgm.tv"
 $ImagePriority = @("large", "common", "medium", "grid", "small")
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
 function Ensure-Directory {
   param([string]$PathValue)
-  New-Item -ItemType Directory -Force -Path $PathValue | Out-Null
+  if ($PathValue) { New-Item -ItemType Directory -Force -Path $PathValue | Out-Null }
 }
 
 function Ensure-ParentDirectory {
   param([string]$FilePath)
   $parent = Split-Path -Parent $FilePath
-  if ($parent) { Ensure-Directory $parent }
+  Ensure-Directory $parent
 }
 
 function Clean-Text {
@@ -38,10 +39,19 @@ function Clean-Text {
   return ([string]$Value).Trim() -replace "\s+", " "
 }
 
+function First-Text {
+  param([object[]]$Values)
+  foreach ($value in $Values) {
+    $text = Clean-Text $value
+    if ($text) { return $text }
+  }
+  return ""
+}
+
 function Get-SubjectId {
   param($Object)
   if ($null -eq $Object) { return "" }
-  foreach ($candidate in @(
+  return First-Text @(
     $Object.bangumiSubjectId,
     $Object.externalIds.bangumiSubjectId,
     $Object.sourceRecordId,
@@ -50,34 +60,24 @@ function Get-SubjectId {
     $Object.raw.id,
     $Object.raw.subject_id,
     $Object.work.bangumiSubjectId
-  )) {
-    if ($null -ne $candidate -and "" -ne [string]$candidate) { return [string]$candidate }
-  }
-  return ""
+  )
 }
 
 function Get-SubjectTitle {
   param($Object)
-  foreach ($candidate in @(
+  return First-Text @(
     $Object.title,
     $Object.name_cn,
     $Object.name,
     $Object.raw.name_cn,
     $Object.raw.name,
     $Object.work.title
-  )) {
-    $text = Clean-Text $candidate
-    if ($text) { return $text }
-  }
-  return ""
+  )
 }
 
 function Get-SubjectType {
   param($Object)
-  foreach ($candidate in @($Object.type, $Object.raw.type, $Object.mediaType, $Object.work.mediaType)) {
-    if ($null -ne $candidate -and "" -ne [string]$candidate) { return [string]$candidate }
-  }
-  return ""
+  return First-Text @($Object.type, $Object.raw.type, $Object.mediaType, $Object.work.mediaType)
 }
 
 function Visit-Objects {
@@ -154,29 +154,12 @@ function Get-ImageCandidates {
   return $candidates
 }
 
-function Get-FileHashPart {
+function Get-HashPart {
   param([string]$Text)
   $sha = [System.Security.Cryptography.SHA1]::Create()
   $bytes = [System.Text.Encoding]::UTF8.GetBytes($Text)
   $hash = $sha.ComputeHash($bytes)
   return ([System.BitConverter]::ToString($hash) -replace "-", "").ToLower().Substring(0, 12)
-}
-
-function Get-SafeFileStem {
-  param(
-    [string]$Id,
-    [string]$Title,
-    [string]$Url
-  )
-  $hash = Get-FileHashPart "$Id|$Title|$Url"
-  $safeTitle = (Clean-Text $Title).ToLower() -replace "[^\p{L}\p{Nd}]+", "-"
-  $safeTitle = $safeTitle.Trim("-")
-  if ($safeTitle.Length -gt 60) { $safeTitle = $safeTitle.Substring(0, 60).Trim("-") }
-  $parts = @()
-  if ($Id) { $parts += "bgm-$Id" } else { $parts += "bgm-unknown" }
-  if ($safeTitle) { $parts += $safeTitle }
-  $parts += $hash
-  return ($parts -join "-")
 }
 
 function New-CoverEntry {
@@ -187,22 +170,22 @@ function New-CoverEntry {
   $candidates = Get-ImageCandidates $Subject
   if ($candidates.Count -eq 0) { return $null }
   $selected = $candidates[0]
-  $id = [string]$Subject.id
+  $id = Clean-Text $Subject.id
   if (-not $id) { $id = $Stub.bangumiSubjectId }
-  $title = Clean-Text $Stub.title
-  if (-not $title) { $title = Clean-Text $Subject.name_cn }
-  if (-not $title) { $title = Clean-Text $Subject.name }
+  $title = First-Text @($Stub.title, $Subject.name_cn, $Subject.name)
+  $type = Clean-Text $Subject.type
   $ext = [System.IO.Path]::GetExtension(([uri]$selected.url).AbsolutePath)
   if (-not $ext) { $ext = ".jpg" }
-  $stem = Get-SafeFileStem -Id $id -Title $title -Url $selected.url
+  $hash = Get-HashPart "$id|$title|$($selected.url)"
+  $fileName = "bgm-$id-$hash$ext"
   return [pscustomobject]@{
     bangumiSubjectId = $id
     title = $title
-    type = [string]$Subject.type
+    type = $type
     selectedImageKind = $selected.kind
     imageUrl = $selected.url
     candidateImages = $candidates
-    relativePath = "files/$stem$ext"
+    relativePath = "files/$fileName"
     sourcePath = "bangumi-api:$id"
   }
 }
@@ -223,69 +206,41 @@ function Write-JsonUtf8 {
     $Value
   )
   Ensure-ParentDirectory $PathValue
-  $Value | ConvertTo-Json -Depth 80 | Out-File -LiteralPath $PathValue -Encoding UTF8
-}
-
-function Add-Line {
-  param(
-    [System.Collections.Generic.List[string]]$Lines,
-    [string]$Text
-  )
-  $Lines.Add($Text) | Out-Null
+  $json = $Value | ConvertTo-Json -Depth 80
+  [System.IO.File]::WriteAllText([System.IO.Path]::GetFullPath($PathValue), $json, $Utf8NoBom)
 }
 
 function Write-Report {
   param(
     [string]$PathValue,
-    $Result,
-    [int]$TopRows
+    $Result
   )
   Ensure-ParentDirectory $PathValue
   $meta = $Result.meta
-  $rows = @($Result.covers)
-  if ($null -eq $rows -or $rows.Count -eq 0) { $rows = @($Result.results) }
-  $sample = @($rows | Select-Object -First $TopRows)
   $lines = New-Object System.Collections.Generic.List[string]
-  Add-Line $lines "# Bangumi cover cache PowerShell"
-  Add-Line $lines "GeneratedAt: $($meta.generatedAt)"
-  Add-Line $lines ""
-  Add-Line $lines "## Summary"
-  Add-Line $lines "- mode: $($meta.mode)"
-  Add-Line $lines "- covers: $($meta.coversTotal)"
-  if ($null -ne $meta.subjectStubsTotal) { Add-Line $lines "- subject stubs: $($meta.subjectStubsTotal)" }
-  if ($null -ne $meta.fetchedSubjects) { Add-Line $lines "- fetched subjects: $($meta.fetchedSubjects)" }
-  if ($null -ne $meta.fetchRemainingSubjects) { Add-Line $lines "- fetch remaining subjects: $($meta.fetchRemainingSubjects)" }
-  if ($null -ne $meta.fetchFailedSubjects) { Add-Line $lines "- fetch failed subjects: $($meta.fetchFailedSubjects)" }
-  if ($null -ne $meta.downloaded) { Add-Line $lines "- downloaded: $($meta.downloaded)" }
-  if ($null -ne $meta.skipped) { Add-Line $lines "- skipped existing: $($meta.skipped)" }
-  if ($null -ne $meta.errors) { Add-Line $lines "- errors: $($meta.errors)" }
-  if ($null -ne $meta.bytes) { Add-Line $lines "- bytes: $($meta.bytes)" }
-  Add-Line $lines ""
-  Add-Line $lines "## Sample"
-  if ($sample.Count -eq 0) {
-    Add-Line $lines "No rows."
-  } else {
-    Add-Line $lines "| # | Subject | Title | Image | Local path | Status |"
-    Add-Line $lines "| ---: | --- | --- | --- | --- | --- |"
-    $index = 0
-    foreach ($row in $sample) {
-      $index += 1
-      $status = $row.status
-      if (-not $status) { $status = "planned" }
-      $local = $row.relativePath
-      if (-not $local) { $local = $row.outputPath }
-      $title = (Clean-Text $row.title) -replace "\|", " "
-      Add-Line $lines "| $index | $($row.bangumiSubjectId) | $title | $($row.selectedImageKind) | $local | $status |"
-    }
-  }
-  Add-Line $lines ""
-  Add-Line $lines "## Safety"
-  Add-Line $lines "- Reads local Bangumi / Payload preview JSON only."
-  Add-Line $lines "- Writes only under data_local/media/bangumi-covers."
-  Add-Line $lines "- Does not upload Payload media."
-  Add-Line $lines "- Does not patch works."
-  Add-Line $lines "- Do not commit data_local outputs."
-  $lines | Out-File -LiteralPath $PathValue -Encoding UTF8
+  $lines.Add("# Bangumi cover cache PowerShell") | Out-Null
+  $lines.Add("GeneratedAt: $($meta.generatedAt)") | Out-Null
+  $lines.Add("") | Out-Null
+  $lines.Add("## Summary") | Out-Null
+  $lines.Add("- source: $($meta.source)") | Out-Null
+  $lines.Add("- mode: $($meta.mode)") | Out-Null
+  $lines.Add("- covers: $($meta.coversTotal)") | Out-Null
+  if ($null -ne $meta.subjectStubsTotal) { $lines.Add("- subject stubs: $($meta.subjectStubsTotal)") | Out-Null }
+  if ($null -ne $meta.fetchedSubjects) { $lines.Add("- fetched subjects: $($meta.fetchedSubjects)") | Out-Null }
+  if ($null -ne $meta.fetchRemainingSubjects) { $lines.Add("- fetch remaining subjects: $($meta.fetchRemainingSubjects)") | Out-Null }
+  if ($null -ne $meta.fetchFailedSubjects) { $lines.Add("- fetch failed subjects: $($meta.fetchFailedSubjects)") | Out-Null }
+  if ($null -ne $meta.downloaded) { $lines.Add("- downloaded: $($meta.downloaded)") | Out-Null }
+  if ($null -ne $meta.skipped) { $lines.Add("- skipped existing: $($meta.skipped)") | Out-Null }
+  if ($null -ne $meta.errors) { $lines.Add("- errors: $($meta.errors)") | Out-Null }
+  if ($null -ne $meta.bytes) { $lines.Add("- bytes: $($meta.bytes)") | Out-Null }
+  $lines.Add("") | Out-Null
+  $lines.Add("## Safety") | Out-Null
+  $lines.Add("- Reads local Bangumi / Payload preview JSON only.") | Out-Null
+  $lines.Add("- Writes only under data_local/media/bangumi-covers.") | Out-Null
+  $lines.Add("- Does not upload Payload media.") | Out-Null
+  $lines.Add("- Does not patch works.") | Out-Null
+  $lines.Add("- Do not commit data_local outputs.") | Out-Null
+  [System.IO.File]::WriteAllText([System.IO.Path]::GetFullPath($PathValue), ($lines -join "`n"), $Utf8NoBom)
 }
 
 $allStubs = New-Object System.Collections.Generic.List[object]
@@ -353,8 +308,8 @@ $manifestObject = [pscustomobject]@{
     fetchFailedSubjects = $failedFetches.Count
     coversTotal = $covers.Count
   }
-  covers = $covers
-  failedFetches = $failedFetches
+  covers = @($covers)
+  failedFetches = @($failedFetches)
 }
 
 Write-JsonUtf8 -PathValue $Manifest -Value $manifestObject
@@ -369,15 +324,37 @@ if ($Download) {
     $outputPath = Join-Path $Dir $fileName
     try {
       if (Test-Path -LiteralPath $outputPath) {
-        $results.Add(($cover | Select-Object *, @{Name="outputPath";Expression={$outputPath}}, @{Name="status";Expression={"skipped-existing"}}, @{Name="bytes";Expression={0}})) | Out-Null
+        $results.Add([pscustomobject]@{
+          bangumiSubjectId = $cover.bangumiSubjectId
+          title = $cover.title
+          imageUrl = $cover.imageUrl
+          outputPath = $outputPath
+          status = "skipped-existing"
+          bytes = 0
+        }) | Out-Null
       } else {
         Invoke-WebRequest -Uri $cover.imageUrl -Headers @{ "User-Agent" = $UserAgent; "Accept" = "image/avif,image/webp,image/png,image/jpeg,image/*,*/*;q=0.8" } -OutFile $outputPath
         $size = (Get-Item -LiteralPath $outputPath).Length
         $bytesTotal += $size
-        $results.Add(($cover | Select-Object *, @{Name="outputPath";Expression={$outputPath}}, @{Name="status";Expression={"downloaded"}}, @{Name="bytes";Expression={$size}})) | Out-Null
+        $results.Add([pscustomobject]@{
+          bangumiSubjectId = $cover.bangumiSubjectId
+          title = $cover.title
+          imageUrl = $cover.imageUrl
+          outputPath = $outputPath
+          status = "downloaded"
+          bytes = $size
+        }) | Out-Null
       }
     } catch {
-      $results.Add(($cover | Select-Object *, @{Name="outputPath";Expression={$outputPath}}, @{Name="status";Expression={"error"}}, @{Name="error";Expression={$_.Exception.Message}}, @{Name="bytes";Expression={0}})) | Out-Null
+      $results.Add([pscustomobject]@{
+        bangumiSubjectId = $cover.bangumiSubjectId
+        title = $cover.title
+        imageUrl = $cover.imageUrl
+        outputPath = $outputPath
+        status = "error"
+        error = $_.Exception.Message
+        bytes = 0
+      }) | Out-Null
     }
     if ($DelayMs -gt 0) { Start-Sleep -Milliseconds $DelayMs }
   }
@@ -397,11 +374,11 @@ if ($Download) {
       errors = $errors
       bytes = $bytesTotal
     }
-    results = $results
+    results = @($results)
   }
 }
 
-Write-Report -PathValue $Report -Result $resultObject -TopRows $Top
+Write-Report -PathValue $Report -Result $resultObject
 Write-Host "Wrote Bangumi cover manifest -> $([System.IO.Path]::GetFullPath($Manifest))"
 Write-Host "Wrote Bangumi cover report -> $([System.IO.Path]::GetFullPath($Report))"
 if ($Download) { Write-Host "Cached Bangumi covers -> $([System.IO.Path]::GetFullPath($Dir))" }
