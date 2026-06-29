@@ -72,21 +72,45 @@ test('entity import dry-run classifies would-create and existing rows without wr
   assert.equal(dryRun.results.find((row) => row.collection === 'organizations').plannedOperation, 'none')
 })
 
-test('entity import dry-run detects ambiguous matches and query errors', async () => {
+test('entity import dry-run prefers exact name and slug while recording same-name collisions', async () => {
   const dryRun = await buildBangumiMediaEntityImportDryRun(packagePreview(), passAudit(), {
     lookupEntity: async (row) => {
       if (row.collection === 'creators') return [
-        { id: 'creator-1', name: row.name, slug: row.slug },
-        { id: 'creator-2', name: row.name, slug: `${row.slug}-2` },
+        { id: 'creator-new', name: row.name, slug: row.slug, status: 'draft' },
+        { id: 'creator-old', name: row.name, slug: 'creator-legacy-random', status: 'draft' },
       ]
       throw new Error('local payload unavailable')
     },
   })
 
-  assert.equal(dryRun.meta.stats.ambiguousExistingTotal, 1)
+  const creator = dryRun.results.find((row) => row.collection === 'creators')
+
+  assert.equal(dryRun.meta.stats.alreadyExistsTotal, 1)
+  assert.equal(dryRun.meta.stats.ambiguousExistingTotal, 0)
   assert.equal(dryRun.meta.stats.queryErrorsTotal, 1)
+  assert.equal(dryRun.meta.stats.nameCollisionRowsTotal, 1)
+  assert.equal(dryRun.meta.stats.nameCollisionDocsTotal, 1)
+  assert.equal(creator.status, 'already-exists')
+  assert.equal(creator.existing.length, 1)
+  assert.equal(creator.existing[0].id, 'creator-new')
+  assert.equal(creator.nameCollisions.length, 1)
+  assert.equal(creator.nameCollisions[0].id, 'creator-old')
+})
+
+test('entity import dry-run still detects ambiguous matches when no exact match exists', async () => {
+  const dryRun = await buildBangumiMediaEntityImportDryRun(packagePreview(), passAudit(), {
+    lookupEntity: async (row) => {
+      if (row.collection === 'creators') return [
+        { id: 'creator-1', name: row.name, slug: 'creator-random-1' },
+        { id: 'creator-2', name: row.name, slug: 'creator-random-2' },
+      ]
+      return []
+    },
+  })
+
+  assert.equal(dryRun.meta.stats.ambiguousExistingTotal, 1)
+  assert.equal(dryRun.meta.stats.queryErrorsTotal, 0)
   assert.equal(dryRun.results.find((row) => row.collection === 'creators').status, 'ambiguous-existing')
-  assert.equal(dryRun.results.find((row) => row.collection === 'organizations').status, 'query-error')
 })
 
 test('entity import dry-run blocks when audit is missing or package is invalid', async () => {
@@ -132,5 +156,6 @@ test('entity import dry-run report includes safety and result counts', async () 
   assert.match(report, /Payload read\/query only/)
   assert.match(report, /No Payload create\/update\/delete/)
   assert.match(report, /wouldCreateTotal: 2/)
+  assert.match(report, /nameCollisionRowsTotal: 0/)
   assert.match(report, /## Results/)
 })
