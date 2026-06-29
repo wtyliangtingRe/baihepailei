@@ -20,6 +20,13 @@ Safety boundary:
 - Do not patch works.
 - Do not decide yet whether cached images should be used as official covers.
 
+Implementation notes:
+
+- Existing local preview / plan JSON may contain `bangumiSubjectId` but not `images`.
+- The cover cache script can run in manifest-only mode first.
+- When local JSON does not include cover URLs, use `--fetch-missing` to fetch subject details from Bangumi and fill image metadata.
+- `--download` still only writes local files under `data_local`.
+
 ## Book handling
 
 Bangumi book subjects can be handled together at the source import layer.
