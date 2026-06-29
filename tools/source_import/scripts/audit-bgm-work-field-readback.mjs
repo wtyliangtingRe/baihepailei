@@ -63,6 +63,10 @@ function normalizeDate(value) {
   return parsed.toISOString();
 }
 
+function normalizePrecision(value) {
+  return hasValue(value) ? String(value).trim() : 'unknown';
+}
+
 function relationId(value) {
   if (!hasValue(value)) return undefined;
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -90,7 +94,7 @@ export function expectedFieldsFromPlanItem(item) {
     mediaType: patch.mediaType ?? null,
     format: patch.format ?? null,
     firstPublishedAt: normalizeDate(patch.firstPublishedAt),
-    firstPublishedPrecision: patch.firstPublishedPrecision ?? null,
+    firstPublishedPrecision: normalizePrecision(patch.firstPublishedPrecision),
     firstPublishedLabel: patch.firstPublishedLabel ?? null,
     externalIds: { bangumiSubjectId: String(patch.externalIds?.bangumiSubjectId ?? '') },
     candidateSources: sourceRows(patch.candidateSources),
@@ -105,7 +109,7 @@ export function actualFieldsFromPayloadWork(work) {
     mediaType: work?.mediaType ?? null,
     format: work?.format ?? null,
     firstPublishedAt: normalizeDate(work?.firstPublishedAt),
-    firstPublishedPrecision: work?.firstPublishedPrecision ?? null,
+    firstPublishedPrecision: normalizePrecision(work?.firstPublishedPrecision),
     firstPublishedLabel: work?.firstPublishedLabel ?? null,
     externalIds: { bangumiSubjectId: String(work?.externalIds?.bangumiSubjectId ?? '') },
     candidateSources: sourceRows(work?.candidateSources),
