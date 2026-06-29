@@ -24,6 +24,7 @@
     "export:lite-details:base": "node scripts/export/build-lite-detail-index.mjs",
     "export:lite-details:enrich": "node scripts/export/enrich-lite-detail-index.mjs",
     "smoke:lite-details": "node scripts/smoke/lite-detail-pages-smoke.mjs",
+    "audit:lite-detail-bgm-samples": "node scripts/export/audit-lite-detail-bgm-samples.mjs",
     "source:normalize": "node tools/source_import/scripts/normalize-candidates.mjs",
     "source:dedupe": "node tools/source_import/scripts/dedupe-candidates.mjs",
     "source:to-payload": "node tools/source_import/scripts/to-payload-seed.mjs",
