@@ -53,3 +53,28 @@ test('field readback comparison detects object string issues', () => {
   assert.equal(result.matched, false);
   assert.deepEqual(result.objectIssues.sort(), ['alias_object_string', 'searchText_object_string']);
 });
+
+test('field readback comparison treats missing precision as Payload unknown default', () => {
+  const item = planItem();
+  delete item.patch.firstPublishedAt;
+  delete item.patch.firstPublishedPrecision;
+  delete item.patch.firstPublishedLabel;
+  item.patch.aliases = [{ value: 'Alias A' }];
+  item.patch.searchText = 'Manga A\nAlias A';
+
+  const result = compareFieldReadbackItem(item, {
+    mediaGroup: 'manga',
+    mediaType: 'manga',
+    format: 'manga_series',
+    firstPublishedAt: null,
+    firstPublishedPrecision: 'unknown',
+    firstPublishedLabel: null,
+    externalIds: { bangumiSubjectId: '1' },
+    candidateSources: [{ source: 'bangumi', label: 'Bangumi', externalId: '1' }],
+    aliases: [{ value: 'Alias A' }],
+    searchText: 'Manga A\nAlias A',
+  });
+
+  assert.equal(result.matched, true);
+  assert.deepEqual(result.mismatches, []);
+});
