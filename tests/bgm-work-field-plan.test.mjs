@@ -61,6 +61,19 @@ test('builds lookup from link plan subject keys and titles', () => {
   assert.equal(lookup.byTitle.get('manga a'), 101);
 });
 
+test('builds lookup from link plan source keys and ignores ambiguous duplicate titles', () => {
+  const lookup = buildWorkLookup({
+    items: [
+      { work: { payloadId: 1002, title: '百合少女', sourceKeys: ['215568', 'bangumi-215568'] } },
+      { work: { payloadId: 1003, title: '百合少女', sourceKeys: ['215570', 'bangumi-215570'] } },
+    ],
+  });
+
+  assert.equal(lookup.byKey.get('215568'), 1002);
+  assert.equal(lookup.byKey.get('bangumi-215570'), 1003);
+  assert.equal(lookup.byTitle.has('百合少女'), false);
+});
+
 test('builds a safe field patch for manga work', () => {
   const patch = buildWorkFieldPatch(normalizedPackages().manga.works[0]);
 
@@ -98,6 +111,29 @@ test('builds full field plan with Payload work ids', () => {
   assert.equal(plan.counts.missingPayloadIdTotal, 0);
   assert.equal(plan.items[0].work.payloadId, 101);
   assert.equal(plan.items[1].work.payloadId, 102);
+});
+
+test('builds duplicate-title field plan using Bangumi subject source keys', () => {
+  const packages = {
+    manga: {
+      works: [
+        { title: '百合少女', mediaType: 'manga', bangumiSubjectId: '215568', publishers: ['コスミック出版'] },
+        { title: '百合少女', mediaType: 'manga', bangumiSubjectId: '215570', publishers: ['コスミック出版'] },
+      ],
+    },
+    game: { works: [] },
+    novel: { works: [] },
+  };
+  const plan = buildWorkFieldPlan(packages, {
+    items: [
+      { work: { payloadId: 1002, title: '百合少女', sourceKeys: ['215568', 'bangumi-215568'] } },
+      { work: { payloadId: 1003, title: '百合少女', sourceKeys: ['215570', 'bangumi-215570'] } },
+    ],
+  });
+
+  assert.equal(plan.status, 'ready');
+  assert.equal(plan.items[0].work.payloadId, 1002);
+  assert.equal(plan.items[1].work.payloadId, 1003);
 });
 
 test('marks plan needs-review when a work cannot be matched', () => {
