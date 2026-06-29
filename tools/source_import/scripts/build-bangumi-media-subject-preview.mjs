@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
+import { execFile } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
 
 import {
@@ -13,6 +15,7 @@ import {
   searchBangumiTaggedSubjectCandidates,
 } from './fetch-bangumi-tagged-subjects.mjs'
 
+const API_BASE_URL = 'https://api.bgm.tv'
 const DEFAULT_TAGS = ['百合', '轻百合', 'GL']
 const DEFAULT_MEDIA = ['book', 'game']
 const DEFAULT_LIMIT = 20
@@ -24,7 +27,11 @@ const DEFAULT_RETRY_DELAY_MS = 1000
 const DEFAULT_OUT = path.join('data_local', 'payload', 'bangumi-media-subject-preview.json')
 const DEFAULT_REPORT = path.join('data_local', 'reports', 'bangumi-media-subject-preview.md')
 const DEFAULT_USER_AGENT = 'BaihepaileiMediaPreview/0.1 (https://github.com/wtyliangtingRe/baihepailei)'
+const DEFAULT_TRANSPORT = 'auto'
 const REPORT_UTF8_BOM = '\uFEFF'
+const POWERSHELL_MAX_BUFFER_BYTES = 20 * 1024 * 1024
+
+const execFileAsync = promisify(execFile)
 
 const BANGUMI_MEDIA_TYPES = new Map([
   ['book', 1],
@@ -41,6 +48,8 @@ const BANGUMI_TYPE_NAMES = new Map([
   [1, 'book'],
   [4, 'game'],
 ])
+
+const TRANSPORTS = new Set(['auto', 'node', 'powershell'])
 
 function parseArgs(argv) {
   const args = new Map()
@@ -61,8 +70,12 @@ function parseArgs(argv) {
 
 function parseCsv(value, fallback = []) {
   if (!value) return [...fallback]
-  return String(value)
-    .split(',')
+  const text = String(value).trim()
+  if (!text) return [...fallback]
+  const separator = text.includes(',') ? /,/u : /\s+/u
+
+  return text
+    .split(separator)
     .map((item) => item.trim())
     .filter(Boolean)
 }
@@ -95,6 +108,275 @@ function subjectId(subject) {
 
 function bangumiTypeName(type) {
   return BANGUMI_TYPE_NAMES.get(Number(type)) || `type-${type}`
+}
+
+function normalizeTransport(value, fallback = DEFAULT_TRANSPORT) {
+  const normalized = String(value || '').trim().toLowerCase()
+  return TRANSPORTS.has(normalized) ? normalized : fallback
+}
+
+function uniqueById(subjects) {
+  const seen = new Set()
+  const result = []
+
+  for (const subject of subjects) {
+    const id = subjectId(subject)
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    result.push(subject)
+  }
+
+  return result
+}
+
+function nextEmptyPageStreak(returned, currentStreak = 0) {
+  return Number(returned) > 0 ? 0 : currentStreak + 1
+}
+
+function shouldStopAfterEmptyPages({ emptyPageStreak, stopAfterEmptyPages }) {
+  const threshold = normalizeBangumiStopAfterEmptyPages(stopAfterEmptyPages)
+  return threshold > 0 && emptyPageStreak >= threshold
+}
+
+function requestHeaders({ userAgent, token }) {
+  return {
+    'User-Agent': userAgent,
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
+function createSearchBody({ tag, type, sort, keywordMode }) {
+  const normalizedKeywordMode = normalizeBangumiKeywordMode(keywordMode)
+  const body = {
+    sort,
+    filter: {
+      tag: [tag],
+      type: [type],
+    },
+  }
+
+  if (normalizedKeywordMode === 'tag') {
+    body.keyword = tag
+  } else if (normalizedKeywordMode === 'empty') {
+    body.keyword = ''
+  }
+
+  return body
+}
+
+function searchBatchSummary({
+  tag,
+  type,
+  page,
+  offset,
+  limit,
+  sort,
+  keywordMode,
+  subjects,
+  emptyPageStreak = 0,
+  stoppedAfterThisBatch = false,
+}) {
+  return {
+    tag,
+    type,
+    page,
+    offset,
+    limit,
+    sort,
+    keywordMode,
+    returned: subjects.length,
+    emptyPageStreak,
+    stoppedAfterThisBatch,
+    subjectIds: subjects.map(subjectId).filter(Boolean),
+  }
+}
+
+async function requestJsonWithPowerShell(url, { method = 'GET', headers = {}, body } = {}) {
+  const request = {
+    url: String(url),
+    method,
+    headers,
+    body: body || '',
+  }
+  const encodedRequest = Buffer.from(JSON.stringify(request), 'utf8').toString('base64')
+  const script = `
+$ErrorActionPreference = "Stop"
+$payload = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:BGM_PREVIEW_REQUEST))
+$request = $payload | ConvertFrom-Json
+$headers = @{}
+if ($null -ne $request.headers) {
+  foreach ($property in $request.headers.PSObject.Properties) {
+    if ($null -ne $property.Value -and [string]$property.Value -ne "") {
+      $headers[$property.Name] = [string]$property.Value
+    }
+  }
+}
+$params = @{
+  Uri = [string]$request.url
+  Method = [string]$request.method
+  Headers = $headers
+}
+if ($request.body) {
+  $params.Body = [string]$request.body
+  $params.ContentType = "application/json"
+}
+$response = Invoke-RestMethod @params
+$response | ConvertTo-Json -Depth 80
+`.trim()
+
+  const env = {
+    ...process.env,
+    BGM_PREVIEW_REQUEST: encodedRequest,
+  }
+
+  try {
+    const { stdout } = await execFileAsync('pwsh', ['-NoProfile', '-Command', script], {
+      env,
+      maxBuffer: POWERSHELL_MAX_BUFFER_BYTES,
+      windowsHide: true,
+    })
+    return JSON.parse(stdout)
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error
+
+    const { stdout } = await execFileAsync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script], {
+      env,
+      maxBuffer: POWERSHELL_MAX_BUFFER_BYTES,
+      windowsHide: true,
+    })
+    return JSON.parse(stdout)
+  }
+}
+
+async function requestJsonWithPowerShellRetries(url, options, { retries = DEFAULT_RETRIES, retryDelayMs = DEFAULT_RETRY_DELAY_MS } = {}) {
+  const normalizedRetries = normalizeBangumiRetryCount(retries)
+  const normalizedRetryDelayMs = normalizeBangumiRetryDelayMs(retryDelayMs)
+
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await requestJsonWithPowerShell(url, options)
+    } catch (error) {
+      if (attempt >= normalizedRetries) throw error
+      await sleep(normalizedRetryDelayMs)
+    }
+  }
+}
+
+async function searchBangumiSubjectsWithPowerShell({
+  tag,
+  type,
+  limit,
+  offset,
+  sort,
+  keywordMode,
+  userAgent,
+  token,
+  retries,
+  retryDelayMs,
+}) {
+  const url = new URL('/v0/search/subjects', API_BASE_URL)
+  url.searchParams.set('limit', String(limit))
+  url.searchParams.set('offset', String(offset))
+
+  const json = await requestJsonWithPowerShellRetries(
+    url,
+    {
+      method: 'POST',
+      headers: requestHeaders({ userAgent, token }),
+      body: JSON.stringify(createSearchBody({ tag, type, sort, keywordMode })),
+    },
+    { retries, retryDelayMs },
+  )
+
+  return Array.isArray(json?.data) ? json.data : []
+}
+
+async function searchBangumiTaggedSubjectCandidatesWithPowerShell({
+  tags,
+  types,
+  limit,
+  pages,
+  sort,
+  keywordMode,
+  stopAfterEmptyPages,
+  delayMs,
+  retries,
+  retryDelayMs,
+  userAgent,
+  token,
+}) {
+  const searched = []
+  const searchBatches = []
+  const normalizedStopAfterEmptyPages = normalizeBangumiStopAfterEmptyPages(stopAfterEmptyPages)
+
+  for (const tag of tags) {
+    for (const type of types) {
+      let emptyPageStreak = 0
+
+      for (let page = 0; page < pages; page += 1) {
+        const offset = page * limit
+        const subjects = await searchBangumiSubjectsWithPowerShell({
+          tag,
+          type,
+          limit,
+          offset,
+          sort,
+          keywordMode,
+          userAgent,
+          token,
+          retries,
+          retryDelayMs,
+        })
+        emptyPageStreak = nextEmptyPageStreak(subjects.length, emptyPageStreak)
+        const stoppedAfterThisBatch = shouldStopAfterEmptyPages({
+          emptyPageStreak,
+          stopAfterEmptyPages: normalizedStopAfterEmptyPages,
+        })
+
+        searched.push(...subjects)
+        searchBatches.push(searchBatchSummary({
+          tag,
+          type,
+          page,
+          offset,
+          limit,
+          sort,
+          keywordMode,
+          subjects,
+          emptyPageStreak,
+          stoppedAfterThisBatch,
+        }))
+
+        if (stoppedAfterThisBatch) break
+        if (delayMs > 0) await sleep(delayMs)
+      }
+    }
+  }
+
+  return {
+    searched,
+    uniqueSubjects: uniqueById(searched),
+    searchBatches,
+  }
+}
+
+async function fetchBangumiSubjectWithPowerShell(subjectId, {
+  userAgent,
+  token,
+  retries,
+  retryDelayMs,
+}) {
+  const url = new URL(`/v0/subjects/${subjectId}`, API_BASE_URL)
+  return requestJsonWithPowerShellRetries(
+    url,
+    {
+      method: 'GET',
+      headers: requestHeaders({ userAgent, token }),
+    },
+    { retries, retryDelayMs },
+  )
 }
 
 export function parseBangumiMediaTypes({ media, types } = {}) {
@@ -229,6 +511,9 @@ export function buildBangumiMediaSubjectPreview({
       stopAfterEmptyPages: options.stopAfterEmptyPages || 0,
       fetchDetails: options.fetchDetails !== false,
       includeRaw,
+      requestedTransport: options.transport || DEFAULT_TRANSPORT,
+      searchTransport: options.searchTransport || options.transport || DEFAULT_TRANSPORT,
+      detailTransport: options.detailTransport || options.searchTransport || options.transport || DEFAULT_TRANSPORT,
       searchedTotal: searched.length,
       uniqueSubjectsTotal: uniqueSubjects.length,
       subjectsTotal: subjects.length,
@@ -250,6 +535,54 @@ async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+async function searchWithTransport(options) {
+  const transport = normalizeTransport(options.transport)
+
+  if (transport === 'powershell') {
+    return {
+      ...(await searchBangumiTaggedSubjectCandidatesWithPowerShell(options)),
+      transportUsed: 'powershell',
+    }
+  }
+
+  try {
+    return {
+      ...(await searchBangumiTaggedSubjectCandidates(options)),
+      transportUsed: 'node',
+    }
+  } catch (error) {
+    if (transport !== 'auto') throw error
+    return {
+      ...(await searchBangumiTaggedSubjectCandidatesWithPowerShell(options)),
+      transportUsed: 'powershell',
+    }
+  }
+}
+
+async function fetchSubjectWithTransport(subjectIdValue, options) {
+  const transport = normalizeTransport(options.transport)
+
+  if (transport === 'powershell') {
+    return {
+      subject: await fetchBangumiSubjectWithPowerShell(subjectIdValue, options),
+      transportUsed: 'powershell',
+    }
+  }
+
+  try {
+    return {
+      subject: await fetchBangumiSubject(subjectIdValue, options),
+      transportUsed: 'node',
+    }
+  } catch (error) {
+    if (transport !== 'auto') throw error
+    return {
+      subject: await fetchBangumiSubjectWithPowerShell(subjectIdValue, options),
+      transportUsed: 'powershell',
+    }
+  }
+}
+
 export async function fetchBangumiMediaSubjectPreview({
   tags = DEFAULT_TAGS,
   media = DEFAULT_MEDIA,
@@ -264,12 +597,13 @@ export async function fetchBangumiMediaSubjectPreview({
   retryDelayMs = DEFAULT_RETRY_DELAY_MS,
   fetchDetails = true,
   includeRaw = true,
+  transport = DEFAULT_TRANSPORT,
   userAgent = DEFAULT_USER_AGENT,
   token = process.env.BANGUMI_ACCESS_TOKEN || '',
   proxy = process.env.BANGUMI_PROXY || '',
   generatedAt = new Date().toISOString(),
 } = {}) {
-  const { searched, uniqueSubjects, searchBatches } = await searchBangumiTaggedSubjectCandidates({
+  const searchResult = await searchWithTransport({
     tags,
     types,
     limit,
@@ -283,10 +617,12 @@ export async function fetchBangumiMediaSubjectPreview({
     userAgent,
     token,
     proxy,
+    transport,
   })
-
+  const { searched, uniqueSubjects, searchBatches } = searchResult
   const detailedSubjects = []
   const failedSubjects = []
+  const detailTransports = new Set()
 
   if (fetchDetails) {
     for (const subject of uniqueSubjects) {
@@ -294,14 +630,19 @@ export async function fetchBangumiMediaSubjectPreview({
       if (!id) continue
 
       try {
-        const detail = await fetchBangumiSubject(id, {
+        const detailTransport = transport === 'auto' && searchResult.transportUsed === 'powershell'
+          ? 'powershell'
+          : transport
+        const detail = await fetchSubjectWithTransport(id, {
           userAgent,
           token,
           proxy,
           retries,
           retryDelayMs,
+          transport: detailTransport,
         })
-        detailedSubjects.push(detail)
+        detailTransports.add(detail.transportUsed)
+        detailedSubjects.push(detail.subject)
       } catch (error) {
         failedSubjects.push({
           ...createBangumiMediaSubjectSummary(subject, { source: 'search', includeRaw: false }),
@@ -313,6 +654,7 @@ export async function fetchBangumiMediaSubjectPreview({
     }
   } else {
     detailedSubjects.push(...uniqueSubjects)
+    detailTransports.add('not-used')
   }
 
   return buildBangumiMediaSubjectPreview({
@@ -333,6 +675,9 @@ export async function fetchBangumiMediaSubjectPreview({
       stopAfterEmptyPages,
       fetchDetails,
       includeRaw,
+      transport,
+      searchTransport: searchResult.transportUsed,
+      detailTransport: [...detailTransports].join(',') || 'not-used',
     },
   })
 }
@@ -350,6 +695,9 @@ export function createBangumiMediaSubjectPreviewReport(preview, { topLimit = 80 
     `- tags: ${(meta.tags || []).join(', ')}`,
     `- media: ${(meta.media || []).join(', ')}`,
     `- types: ${(meta.types || []).join(', ')}`,
+    `- requestedTransport: ${meta.requestedTransport || ''}`,
+    `- searchTransport: ${meta.searchTransport || ''}`,
+    `- detailTransport: ${meta.detailTransport || ''}`,
     `- searchedTotal: ${meta.searchedTotal}`,
     `- uniqueSubjectsTotal: ${meta.uniqueSubjectsTotal}`,
     `- subjectsTotal: ${meta.subjectsTotal}`,
@@ -407,6 +755,7 @@ async function main() {
   const retryDelayMs = normalizeBangumiRetryDelayMs(args.get('retry-delay-ms') || process.env.BANGUMI_RETRY_DELAY_MS || DEFAULT_RETRY_DELAY_MS)
   const fetchDetails = parseBoolean(args.get('fetch-details'), true)
   const includeRaw = parseBoolean(args.get('include-raw'), true)
+  const transport = normalizeTransport(args.get('transport') || process.env.BANGUMI_TRANSPORT || DEFAULT_TRANSPORT)
   const out = args.get('out') || DEFAULT_OUT
   const report = args.get('report') || DEFAULT_REPORT
   const topLimit = parseNumber(args.get('top'), 80)
@@ -428,6 +777,7 @@ async function main() {
     retryDelayMs,
     fetchDetails,
     includeRaw,
+    transport,
     userAgent,
     token,
     proxy,
@@ -439,6 +789,7 @@ async function main() {
   console.log(`Wrote Bangumi media subject preview -> ${out}`)
   console.log(`Wrote Bangumi media subject report -> ${report}`)
   console.log(`Preview subjects: ${preview.meta.subjectsTotal}; failed: ${preview.meta.failedSubjectsTotal}`)
+  console.log(`Transport: requested=${preview.meta.requestedTransport}; search=${preview.meta.searchTransport}; detail=${preview.meta.detailTransport}`)
 }
 
 const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
