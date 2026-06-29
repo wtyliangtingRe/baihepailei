@@ -49,7 +49,7 @@ function validPreview() {
             { name: '漫画', count: 10 },
           ],
           infobox: [
-            { key: '作者', value: 'Example Author' },
+            { key: '原作', value: 'Example Author' },
             { key: '出版社', value: 'Example Publisher' },
           ],
         },
