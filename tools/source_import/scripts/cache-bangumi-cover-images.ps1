@@ -21,20 +21,15 @@ $ErrorActionPreference = "Stop"
 $ApiBaseUrl = "https://api.bgm.tv"
 $ImagePriority = @("large", "common", "medium", "grid", "small")
 
-function New-DirectoryForFile {
-  param([string]$FilePath)
-  $parent = Split-Path -Parent (Resolve-Path -LiteralPath (Split-Path -Parent $FilePath) -ErrorAction SilentlyContinue)
-  if (-not $parent) {
-    $parent = Split-Path -Parent $FilePath
-  }
-  if ($parent) {
-    New-Item -ItemType Directory -Force -Path $parent | Out-Null
-  }
-}
-
 function Ensure-Directory {
   param([string]$PathValue)
   New-Item -ItemType Directory -Force -Path $PathValue | Out-Null
+}
+
+function Ensure-ParentDirectory {
+  param([string]$FilePath)
+  $parent = Split-Path -Parent $FilePath
+  if ($parent) { Ensure-Directory $parent }
 }
 
 function Clean-Text {
@@ -227,8 +222,16 @@ function Write-JsonUtf8 {
     [string]$PathValue,
     $Value
   )
-  New-DirectoryForFile $PathValue
+  Ensure-ParentDirectory $PathValue
   $Value | ConvertTo-Json -Depth 80 | Out-File -LiteralPath $PathValue -Encoding UTF8
+}
+
+function Add-Line {
+  param(
+    [System.Collections.Generic.List[string]]$Lines,
+    [string]$Text
+  )
+  $Lines.Add($Text) | Out-Null
 }
 
 function Write-Report {
@@ -237,33 +240,33 @@ function Write-Report {
     $Result,
     [int]$TopRows
   )
-  New-DirectoryForFile $PathValue
+  Ensure-ParentDirectory $PathValue
   $meta = $Result.meta
   $rows = @($Result.covers)
   if ($null -eq $rows -or $rows.Count -eq 0) { $rows = @($Result.results) }
   $sample = @($rows | Select-Object -First $TopRows)
   $lines = New-Object System.Collections.Generic.List[string]
-  $lines.Add("# Bangumi cover cache PowerShell") | Out-Null
-  $lines.Add("生成时间：$($meta.generatedAt)") | Out-Null
-  $lines.Add("") | Out-Null
-  $lines.Add("## 总览") | Out-Null
-  $lines.Add("- 模式：$($meta.mode)") | Out-Null
-  $lines.Add("- covers：$($meta.coversTotal)") | Out-Null
-  if ($null -ne $meta.subjectStubsTotal) { $lines.Add("- subject stubs：$($meta.subjectStubsTotal)") | Out-Null }
-  if ($null -ne $meta.fetchedSubjects) { $lines.Add("- fetched subjects：$($meta.fetchedSubjects)") | Out-Null }
-  if ($null -ne $meta.fetchRemainingSubjects) { $lines.Add("- fetch remaining subjects：$($meta.fetchRemainingSubjects)") | Out-Null }
-  if ($null -ne $meta.fetchFailedSubjects) { $lines.Add("- fetch failed subjects：$($meta.fetchFailedSubjects)") | Out-Null }
-  if ($null -ne $meta.downloaded) { $lines.Add("- downloaded：$($meta.downloaded)") | Out-Null }
-  if ($null -ne $meta.skipped) { $lines.Add("- skipped existing：$($meta.skipped)") | Out-Null }
-  if ($null -ne $meta.errors) { $lines.Add("- errors：$($meta.errors)") | Out-Null }
-  if ($null -ne $meta.bytes) { $lines.Add("- bytes：$($meta.bytes)") | Out-Null }
-  $lines.Add("") | Out-Null
-  $lines.Add("## Sample") | Out-Null
+  Add-Line $lines "# Bangumi cover cache PowerShell"
+  Add-Line $lines "GeneratedAt: $($meta.generatedAt)"
+  Add-Line $lines ""
+  Add-Line $lines "## Summary"
+  Add-Line $lines "- mode: $($meta.mode)"
+  Add-Line $lines "- covers: $($meta.coversTotal)"
+  if ($null -ne $meta.subjectStubsTotal) { Add-Line $lines "- subject stubs: $($meta.subjectStubsTotal)" }
+  if ($null -ne $meta.fetchedSubjects) { Add-Line $lines "- fetched subjects: $($meta.fetchedSubjects)" }
+  if ($null -ne $meta.fetchRemainingSubjects) { Add-Line $lines "- fetch remaining subjects: $($meta.fetchRemainingSubjects)" }
+  if ($null -ne $meta.fetchFailedSubjects) { Add-Line $lines "- fetch failed subjects: $($meta.fetchFailedSubjects)" }
+  if ($null -ne $meta.downloaded) { Add-Line $lines "- downloaded: $($meta.downloaded)" }
+  if ($null -ne $meta.skipped) { Add-Line $lines "- skipped existing: $($meta.skipped)" }
+  if ($null -ne $meta.errors) { Add-Line $lines "- errors: $($meta.errors)" }
+  if ($null -ne $meta.bytes) { Add-Line $lines "- bytes: $($meta.bytes)" }
+  Add-Line $lines ""
+  Add-Line $lines "## Sample"
   if ($sample.Count -eq 0) {
-    $lines.Add("暂无。") | Out-Null
+    Add-Line $lines "No rows."
   } else {
-    $lines.Add("| # | Subject | Title | Image | Local path | Status |") | Out-Null
-    $lines.Add("| ---: | --- | --- | --- | --- | --- |") | Out-Null
+    Add-Line $lines "| # | Subject | Title | Image | Local path | Status |"
+    Add-Line $lines "| ---: | --- | --- | --- | --- | --- |"
     $index = 0
     foreach ($row in $sample) {
       $index += 1
@@ -271,16 +274,17 @@ function Write-Report {
       if (-not $status) { $status = "planned" }
       $local = $row.relativePath
       if (-not $local) { $local = $row.outputPath }
-      $title = (Clean-Text $row.title) -replace "\|", "\|"
-      $lines.Add("| $index | $($row.bangumiSubjectId) | $title | $($row.selectedImageKind) | $local | $status |") | Out-Null
+      $title = (Clean-Text $row.title) -replace "\|", " "
+      Add-Line $lines "| $index | $($row.bangumiSubjectId) | $title | $($row.selectedImageKind) | $local | $status |"
     }
   }
-  $lines.Add("") | Out-Null
-  $lines.Add("## 安全说明") | Out-Null
-  $lines.Add("- 只读取本地 Bangumi / Payload 预览 JSON。") | Out-Null
-  $lines.Add("- 只写入 data_local/media/bangumi-covers。") | Out-Null
-  $lines.Add("- 不上传 Payload，不创建 media，不修改 works。") | Out-Null
-  $lines.Add("- data_local 输出不要提交。") | Out-Null
+  Add-Line $lines ""
+  Add-Line $lines "## Safety"
+  Add-Line $lines "- Reads local Bangumi / Payload preview JSON only."
+  Add-Line $lines "- Writes only under data_local/media/bangumi-covers."
+  Add-Line $lines "- Does not upload Payload media."
+  Add-Line $lines "- Does not patch works."
+  Add-Line $lines "- Do not commit data_local outputs."
   $lines | Out-File -LiteralPath $PathValue -Encoding UTF8
 }
 
