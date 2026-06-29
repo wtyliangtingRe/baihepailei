@@ -93,15 +93,35 @@ test('work import dry-run prefers exact title and slug while recording title col
   assert.equal(row.titleCollisions[0].id, 'work-old')
 })
 
-test('work import dry-run treats same-title different-slug rows as ambiguous when no exact match exists', async () => {
+test('work import dry-run allows same-title different-slug rows as create with title collision note', async () => {
   const dryRun = await buildBangumiMediaWorkImportDryRun(packagePreview({ works: [work()] }), passAudit(), {
     lookupWork: async (row) => [
       { id: 'work-old', title: row.title, slug: 'legacy-same-title', status: 'draft' },
     ],
   })
+  const row = dryRun.results[0]
+
+  assert.equal(dryRun.meta.stats.wouldCreateTotal, 1)
+  assert.equal(dryRun.meta.stats.ambiguousExistingTotal, 0)
+  assert.equal(dryRun.meta.stats.titleCollisionRowsTotal, 1)
+  assert.equal(row.status, 'would-create')
+  assert.equal(row.plannedOperation, 'create')
+  assert.equal(row.existing.length, 0)
+  assert.equal(row.titleCollisions.length, 1)
+})
+
+test('work import dry-run treats same-slug different-title rows as ambiguous', async () => {
+  const dryRun = await buildBangumiMediaWorkImportDryRun(packagePreview({ works: [work()] }), passAudit(), {
+    lookupWork: async (row) => [
+      { id: 'work-old', title: '另一个作品', slug: row.slug, status: 'draft' },
+    ],
+  })
+  const row = dryRun.results[0]
 
   assert.equal(dryRun.meta.stats.ambiguousExistingTotal, 1)
-  assert.equal(dryRun.results[0].status, 'ambiguous-existing')
+  assert.equal(dryRun.meta.stats.slugCollisionRowsTotal, 1)
+  assert.equal(row.status, 'ambiguous-existing')
+  assert.equal(row.slugCollisions.length, 1)
 })
 
 test('work import dry-run detects query errors', async () => {
@@ -160,5 +180,6 @@ test('work import dry-run report includes safety and result counts', async () =>
   assert.match(report, /No Payload create\/update\/delete/)
   assert.match(report, /wouldCreateTotal: 2/)
   assert.match(report, /titleCollisionRowsTotal: 0/)
+  assert.match(report, /slugCollisionRowsTotal: 0/)
   assert.match(report, /## Results/)
 })
