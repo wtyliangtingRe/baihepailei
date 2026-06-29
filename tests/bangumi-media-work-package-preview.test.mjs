@@ -52,6 +52,7 @@ test('work package preview preserves candidate fields and stays no-write', () =>
   assert.equal(pkg.meta.stats.creatorCreditHintsTotal, 1)
   assert.equal(pkg.meta.stats.organizationCreditHintsTotal, 1)
   assert.equal(pkg.meta.stats.rowsWithCoverReferences, 1)
+  assert.equal(pkg.meta.stats.slugCollisionRowsTotal, 0)
   assert.equal(work.collection, 'works')
   assert.equal(work.kind, 'media-work')
   assert.equal(work.title, '样本漫画')
@@ -60,6 +61,22 @@ test('work package preview preserves candidate fields and stays no-write', () =>
   assert.equal(work.coverPreview.referenceOnly, true)
   assert.equal(work.creatorCreditHints[0].name, '作者A')
   assert.equal(work.organizationCreditHints[0].name, '出版社B')
+})
+
+test('work package preview resolves duplicate slugs by Bangumi subject id', () => {
+  const pkg = buildBangumiMediaWorkPackagePreview([
+    candidate({ title: '百合少女', slug: '百合少女', bangumiSubjectId: '2001' }),
+    candidate({ title: '百合少女', slug: '百合少女', bangumiSubjectId: '2002' }),
+  ])
+
+  assert.equal(pkg.meta.stats.slugCollisionRowsTotal, 1)
+  assert.equal(pkg.works[0].slug, '百合少女')
+  assert.equal(pkg.works[0].slugCollisionResolved, false)
+  assert.equal(pkg.works[1].slug, '百合少女-bgm-2002')
+  assert.equal(pkg.works[1].originalSlug, '百合少女')
+  assert.equal(pkg.works[1].slugCollisionResolved, true)
+  assert.equal(pkg.slugCollisions[0].originalSlug, '百合少女')
+  assert.equal(pkg.slugCollisions[0].resolvedSlug, '百合少女-bgm-2002')
 })
 
 test('work package audit passes valid package and records cover reference info', () => {
@@ -79,8 +96,20 @@ test('work package audit passes valid package and records cover reference info',
   assert.ok(audit.infos.some((info) => info.code === 'cover-references-present'))
 })
 
+test('work package audit passes package with resolved duplicate slugs', () => {
+  const pkg = buildBangumiMediaWorkPackagePreview([
+    candidate({ title: '百合少女', slug: '百合少女', bangumiSubjectId: '2001' }),
+    candidate({ title: '百合少女', slug: '百合少女', bangumiSubjectId: '2002' }),
+  ])
+  const audit = auditBangumiMediaWorkPackagePreview(pkg)
+
+  assert.equal(audit.status, 'pass')
+  assert.equal(audit.errors.length, 0)
+  assert.equal(audit.stats.worksTotal, 2)
+})
+
 test('work package audit fails unsafe and malformed rows', () => {
-  const pkg = buildBangumiMediaWorkPackagePreview([candidate(), candidate({ title: '重复', slug: 'sample-manga', bangumiSubjectId: '1001' })])
+  const pkg = buildBangumiMediaWorkPackagePreview([candidate(), candidate({ title: '重复', slug: 'duplicate-manga', bangumiSubjectId: '1001' })])
   pkg.meta.source = 'wrong-source'
   pkg.meta.mode = 'apply'
   pkg.meta.safety.payloadWrite = true
@@ -122,11 +151,12 @@ test('work package audit fails unsafe and malformed rows', () => {
   assert.ok(codes.includes('works-total-mismatch'))
 })
 
-test('work package audit detects duplicate Bangumi ids and slugs', () => {
+test('work package audit detects duplicate Bangumi ids and unresolved duplicate slugs', () => {
   const pkg = buildBangumiMediaWorkPackagePreview([
     candidate(),
-    candidate({ title: '重复作品', slug: 'sample-manga', bangumiSubjectId: '1001' }),
+    candidate({ title: '重复作品', slug: 'other-slug', bangumiSubjectId: '1001' }),
   ])
+  pkg.works[1].slug = pkg.works[0].slug
   const audit = auditBangumiMediaWorkPackagePreview(pkg)
   const codes = audit.errors.map((error) => error.code)
 
@@ -144,6 +174,7 @@ test('work package reports include safety and summary sections', () => {
   assert.match(previewReport, /# Bangumi media work package preview/)
   assert.match(previewReport, /No Payload connection/)
   assert.match(previewReport, /Cover values are reference-only/)
+  assert.match(previewReport, /slugCollisionRowsTotal: 0/)
   assert.match(previewReport, /样本漫画/)
   assert.match(auditReport, /# Bangumi media work package preview audit/)
   assert.match(auditReport, /status: pass/)
