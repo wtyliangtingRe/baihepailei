@@ -153,16 +153,37 @@ function aliasesToValues(aliases) {
     .filter(Boolean)
 }
 
+function relationshipName(item) {
+  if (!item) return ''
+  if (typeof item === 'string') return item
+  return item.title || item.name || item.slug || ''
+}
+
 function relationshipNames(values) {
   if (!Array.isArray(values)) return []
+  return values.map(relationshipName).map(normalizeText).filter(Boolean)
+}
+
+function workOrganizationNames(values) {
+  if (!Array.isArray(values)) return []
   return values
-    .map((item) => {
-      if (!item) return ''
-      if (typeof item === 'string') return item
-      return item.title || item.name || item.slug || ''
-    })
+    .map((item) => relationshipName(item?.organization || item))
     .map(normalizeText)
     .filter(Boolean)
+}
+
+function mediaImage(value) {
+  if (!value || typeof value === 'string') return undefined
+  const url = normalizeText(value.url)
+  if (!url) return undefined
+
+  return {
+    url,
+    alt: normalizeText(value.alt),
+    filename: normalizeText(value.filename),
+    width: Number(value.width) || undefined,
+    height: Number(value.height) || undefined,
+  }
 }
 
 function sourceLinks(values) {
@@ -219,9 +240,17 @@ function mapWork(doc) {
     rank: doc.rank || 'unknown',
     originalTitle: doc.originalTitle || '',
     aliases: aliasesToValues(doc.aliases),
+    mediaGroup: doc.mediaGroup || 'unknown',
+    mediaType: doc.mediaType || 'unknown',
+    format: doc.format || 'unknown',
+    firstPublishedAt: doc.firstPublishedAt || '',
+    firstPublishedPrecision: doc.firstPublishedPrecision || '',
+    firstPublishedLabel: doc.firstPublishedLabel || '',
     creators: relationshipNames(doc.creators),
+    organizations: workOrganizationNames(doc.organizations),
     tags: relationshipNames(doc.tags),
     warnings: relationshipNames(doc.warnings),
+    cover: mediaImage(doc.cover),
     hasEvidence: Boolean(doc.hasEvidence),
     evidenceNote: doc.evidenceNote || '',
     sourceLinks: sourceLinks(doc.sourceLinks),
