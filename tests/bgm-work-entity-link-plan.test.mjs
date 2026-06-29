@@ -106,3 +106,56 @@ test('missing entity refs become review-blocking audit errors', () => {
   assert.equal(audit.status, 'fail');
   assert.ok(audit.errors.some((error) => error.code === 'unresolved_creator_refs'));
 });
+
+test('extracts Bangumi credit hint arrays and deduplicates nested sourceWork hints', () => {
+  const packagePreview = {
+    works: [
+      {
+        bangumiSubjectId: '21096',
+        title: '百合星人奈绪子美眉',
+        creatorCreditHints: [
+          { name: 'kashmir', role: 'original_creator', originalRole: '作者' },
+        ],
+        organizationCreditHints: [
+          { name: 'メディアワークス→アスキー・メディアワークス→KADOKAWA', role: 'publisher', originalRole: '出版社' },
+          { name: '月刊コミック電撃大王', role: 'magazine', originalRole: '连载杂志' },
+        ],
+        sourceWork: {
+          creatorCreditHints: [
+            { name: 'kashmir', role: 'original_creator', originalRole: '作者' },
+          ],
+          organizationCreditHints: [
+            { name: 'メディアワークス→アスキー・メディアワークス→KADOKAWA', role: 'publisher', originalRole: '出版社' },
+            { name: '月刊コミック電撃大王', role: 'magazine', originalRole: '连载杂志' },
+          ],
+        },
+      },
+    ],
+  };
+
+  const idMap = {
+    works: [{ bangumiSubjectId: '21096', title: '百合星人奈绪子美眉', payloadId: 101 }],
+    creators: [{ name: 'kashmir', payloadId: 201 }],
+    organizations: [
+      { name: 'メディアワークス→アスキー・メディアワークス→KADOKAWA', payloadId: 301 },
+      { name: '月刊コミック電撃大王', payloadId: 302 },
+    ],
+  };
+
+  const creatorRefs = extractEntityRefsFromWork(packagePreview.works[0], 'creators');
+  const organizationRefs = extractEntityRefsFromWork(packagePreview.works[0], 'organizations');
+
+  assert.equal(creatorRefs.length, 1);
+  assert.equal(creatorRefs[0].name, 'kashmir');
+  assert.equal(organizationRefs.length, 2);
+
+  const plan = buildWorkEntityLinkPlan(packagePreview, idMap);
+  assert.equal(plan.status, 'ready');
+  assert.deepEqual(plan.items[0].links.creators, [201]);
+  assert.deepEqual(plan.items[0].links.organizations, [301, 302]);
+  assert.equal(plan.items[0].links.creatorCredits.length, 1);
+  assert.equal(plan.items[0].links.organizationCredits.length, 2);
+
+  const audit = auditWorkEntityLinkPlan(plan);
+  assert.equal(audit.status, 'pass');
+});
