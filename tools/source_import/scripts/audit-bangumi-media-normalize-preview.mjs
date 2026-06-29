@@ -12,7 +12,7 @@ const REPORT_UTF8_BOM = '\uFEFF'
 
 const ALLOWED_MEDIA_TYPES = new Set(['manga', 'novel', 'light_novel', 'visual_novel', 'game'])
 const ALLOWED_FORMATS = new Set(['manga_series', 'novel_series', 'light_novel_series', 'visual_novel', 'unknown'])
-const ALLOWED_MEDIA_GROUPS = new Set(['book', 'game'])
+const ALLOWED_MEDIA_GROUPS = new Set(['book', 'manga', 'novel', 'light_novel', 'game', 'visual_novel'])
 
 function parseArgs(argv) {
   const args = new Map()

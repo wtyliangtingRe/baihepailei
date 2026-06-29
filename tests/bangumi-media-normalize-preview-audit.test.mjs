@@ -11,7 +11,7 @@ function validCandidate(overrides = {}) {
     siteId: null,
     title: '样本作品',
     slug: 'sample-work',
-    mediaGroup: 'book',
+    mediaGroup: 'manga',
     mediaType: 'manga',
     format: 'manga_series',
     externalIds: {
