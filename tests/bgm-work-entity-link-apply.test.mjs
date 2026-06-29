@@ -34,14 +34,18 @@ function readyPlan() {
   };
 }
 
-test('builds a relation-only PATCH payload', () => {
+test('builds a relation-only PATCH payload matching Works schema', () => {
   const patch = buildWorkRelationPatch(readyPlan().items[0]);
   assert.deepEqual(Object.keys(patch), ['creators', 'creatorCredits', 'organizations']);
   assert.deepEqual(patch.creators, [201, 202]);
-  assert.deepEqual(patch.organizations, [301, 302]);
-  assert.equal(patch.creatorCredits.length, 2);
-  assert.equal(patch.creatorCredits[0].creator, 201);
-  assert.equal(patch.creatorCredits[1].creator, 202);
+  assert.deepEqual(patch.creatorCredits, [
+    { creator: 201, role: 'original_creator', originalRole: '原作', source: 'bangumi', note: 'Alice' },
+    { creator: 202, role: 'other', originalRole: '作画', source: 'bangumi', note: 'Bob' },
+  ]);
+  assert.deepEqual(patch.organizations, [
+    { organization: 301, role: 'publisher', originalRole: '出版社', source: 'bangumi', note: 'Pub' },
+    { organization: 302, role: 'other', source: 'bangumi' },
+  ]);
   assert.equal('organizationCredits' in patch, false);
 });
 
@@ -74,12 +78,8 @@ test('apply mode reads before writing and PATCHes only relation fields with JWT 
   const calls = [];
   const fetchImpl = async (url, options) => {
     calls.push({ url, options });
-    if (options.method === 'GET') {
-      return { ok: true, status: 200, json: async () => ({ id: 101, title: 'Work A', creators: [] }) };
-    }
-    if (options.method === 'PATCH') {
-      return { ok: true, status: 200, json: async () => ({ id: 101, title: 'Work A' }) };
-    }
+    if (options.method === 'GET') return { ok: true, status: 200, json: async () => ({ id: 101, title: 'Work A', creators: [] }) };
+    if (options.method === 'PATCH') return { ok: true, status: 200, json: async () => ({ id: 101, title: 'Work A' }) };
     throw new Error(`unexpected method ${options.method}`);
   };
 
@@ -103,7 +103,8 @@ test('apply mode reads before writing and PATCHes only relation fields with JWT 
   const patch = JSON.parse(calls[1].options.body);
   assert.deepEqual(Object.keys(patch), ['creators', 'creatorCredits', 'organizations']);
   assert.deepEqual(patch.creators, [201, 202]);
-  assert.deepEqual(patch.organizations, [301, 302]);
+  assert.equal(patch.organizations[0].organization, 301);
+  assert.equal(patch.organizations[0].role, 'publisher');
 });
 
 test('buildApplyOperations preserves work metadata and patch', () => {
@@ -112,4 +113,5 @@ test('buildApplyOperations preserves work metadata and patch', () => {
   assert.equal(operation.work.title, 'Work A');
   assert.equal(operation.work.bangumiSubjectId, '1');
   assert.deepEqual(operation.patch.creators, [201, 202]);
+  assert.equal(operation.patch.organizations[1].organization, 302);
 });
