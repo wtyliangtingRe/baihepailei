@@ -87,7 +87,7 @@ function entityRow(entity, collection) {
 
 async function defaultLookup(collection, queries, { url = DEFAULT_URL, token = '' } = {}) {
   const baseUrl = String(url || DEFAULT_URL).replace(/\/+$/u, '')
-  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  const headers = token ? { Authorization: `JWT ${token}` } : {}
   const docs = []
   for (const item of queries) {
     const field = cleanText(item.field)
@@ -322,3 +322,5 @@ const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURL
 if (isDirectRun) {
   await main()
 }
+
+

@@ -123,7 +123,7 @@ function analyzeExistingMatches(work, existing, error = '') {
 
 async function defaultLookupWork(work, { url = DEFAULT_PAYLOAD_URL, token = '' } = {}) {
   const baseUrl = String(url || DEFAULT_PAYLOAD_URL).replace(/\/+$/u, '')
-  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  const headers = token ? { Authorization: `JWT ${token}` } : {}
   const title = cleanText(work.title)
   const slug = cleanText(work.slug)
   const docs = []
@@ -386,3 +386,5 @@ const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURL
 if (isDirectRun) {
   await main()
 }
+
+
