@@ -66,7 +66,7 @@ function compact(value) {
 function uniqueStrings(values) {
   const seen = new Set();
   const result = [];
-  for (const value of values) {
+  for (const value of asArray(values)) {
     const text = String(value ?? '').trim();
     if (!text) continue;
     const key = normalizeText(text);
@@ -115,8 +115,8 @@ function commonFields(work, mediaType) {
 }
 
 export function normalizeMangaWork(work) {
-  const creators = work.creatorCreditHints;
-  const orgs = work.organizationCreditHints;
+  const creators = asArray(work.creatorCreditHints);
+  const orgs = asArray(work.organizationCreditHints);
   return {
     ...commonFields(work, 'manga'),
     authors: hintNamesByRole(creators, [/author|作者|原作|original/]),
@@ -128,8 +128,8 @@ export function normalizeMangaWork(work) {
 }
 
 export function normalizeGameWork(work) {
-  const creators = work.creatorCreditHints;
-  const orgs = work.organizationCreditHints;
+  const creators = asArray(work.creatorCreditHints);
+  const orgs = asArray(work.organizationCreditHints);
   return {
     ...commonFields(work, 'game'),
     developers: hintNamesByRole(orgs, [/developer|开发|開発|制作|studio/]),
@@ -142,8 +142,8 @@ export function normalizeGameWork(work) {
 }
 
 export function normalizeNovelWork(work) {
-  const creators = work.creatorCreditHints;
-  const orgs = work.organizationCreditHints;
+  const creators = asArray(work.creatorCreditHints);
+  const orgs = asArray(work.organizationCreditHints);
   return {
     ...commonFields(work, 'novel'),
     authors: hintNamesByRole(creators, [/author|作者|原作|writer/]),
