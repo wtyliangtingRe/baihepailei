@@ -20,11 +20,28 @@ function parseArgs(argv) {
   return args
 }
 
+function safeJson(text) {
+  try {
+    return text ? JSON.parse(text) : null
+  } catch {
+    return { raw: text }
+  }
+}
+
 async function requestJson(url) {
   const response = await fetch(url)
   const text = await response.text()
-  const payload = text ? JSON.parse(text) : null
-  if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}: ${text}`)
+  const payload = safeJson(text)
+
+  if (!response.ok) {
+    const error = new Error(`HTTP ${response.status} ${response.statusText}: ${text}`)
+    error.status = response.status
+    error.statusText = response.statusText
+    error.url = url
+    error.payload = payload
+    throw error
+  }
+
   return payload
 }
 
@@ -123,7 +140,21 @@ function visibilityParams(includeDrafts) {
   return params
 }
 
-async function fetchEvidence(baseUrl, includeDrafts) {
+function describeFetchError(error) {
+  const status = error?.status ? `HTTP ${error.status} ${error.statusText || ''}`.trim() : ''
+  const url = error?.url ? `url=${error.url}` : ''
+  return [status, url].filter(Boolean).join('; ') || String(error?.message || error)
+}
+
+function warnEvidenceFetchFailure(error, { strict }) {
+  const mode = strict ? 'failed' : 'skipped'
+  console.warn(`Lite evidence details ${mode}: ${describeFetchError(error)}`)
+  if (error?.payload) {
+    console.warn(JSON.stringify(error.payload, null, 2))
+  }
+}
+
+async function fetchEvidence(baseUrl, includeDrafts, { strict = false } = {}) {
   const docs = []
   let page = 1
   let totalPages = 1
@@ -131,7 +162,17 @@ async function fetchEvidence(baseUrl, includeDrafts) {
   do {
     const params = visibilityParams(includeDrafts)
     params.set('page', String(page))
-    const result = await requestJson(`${baseUrl}/api/evidence?${params.toString()}`)
+    const url = `${baseUrl}/api/evidence?${params.toString()}`
+
+    let result
+    try {
+      result = await requestJson(url)
+    } catch (error) {
+      warnEvidenceFetchFailure(error, { strict })
+      if (strict) throw error
+      return docs
+    }
+
     docs.push(...(result?.docs || []))
     totalPages = Number(result?.totalPages || 1)
     page += 1
@@ -146,7 +187,8 @@ async function main() {
   const index = readJson(file)
   const baseUrl = String(args.url || index.source || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
   const includeDrafts = Boolean(args['include-drafts']) || index.mode === 'drafts-and-published'
-  const evidenceItems = (await fetchEvidence(baseUrl, includeDrafts)).map(mapEvidence)
+  const strictEvidence = Boolean(args['strict-evidence'])
+  const evidenceItems = (await fetchEvidence(baseUrl, includeDrafts, { strict: strictEvidence })).map(mapEvidence)
   const byId = new Map((index.items || []).map((item) => [item.id, item]))
 
   for (const item of evidenceItems) {
