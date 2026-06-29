@@ -40,6 +40,10 @@ function cleanText(value) {
   return String(value ?? '').trim().replace(/\s+/gu, ' ')
 }
 
+function normalizedKey(value) {
+  return cleanText(value).toLowerCase()
+}
+
 function asRows(value) {
   return Array.isArray(value) ? value : []
 }
@@ -95,11 +99,63 @@ function uniqueDocs(docs, collection) {
   return output
 }
 
-function resultStatus(existing, error = '') {
-  if (error) return 'query-error'
-  if (existing.length === 0) return 'would-create'
-  if (existing.length === 1) return 'already-exists'
-  return 'ambiguous-existing'
+function analyzeExistingMatches(entity, existing, error = '') {
+  if (error) {
+    return {
+      status: 'query-error',
+      existing: [],
+      exactExisting: [],
+      nameCollisions: [],
+    }
+  }
+
+  if (existing.length === 0) {
+    return {
+      status: 'would-create',
+      existing: [],
+      exactExisting: [],
+      nameCollisions: [],
+    }
+  }
+
+  const nameKey = normalizedKey(entity.name)
+  const slugKey = normalizedKey(entity.slug)
+  const exactExisting = existing.filter((doc) => normalizedKey(doc.name) === nameKey && normalizedKey(doc.slug) === slugKey)
+  const nameCollisions = existing.filter((doc) => normalizedKey(doc.name) === nameKey && normalizedKey(doc.slug) !== slugKey)
+
+  if (exactExisting.length === 1) {
+    return {
+      status: 'already-exists',
+      existing: exactExisting,
+      exactExisting,
+      nameCollisions,
+    }
+  }
+
+  if (exactExisting.length > 1) {
+    return {
+      status: 'ambiguous-existing',
+      existing: exactExisting,
+      exactExisting,
+      nameCollisions,
+    }
+  }
+
+  if (existing.length === 1) {
+    return {
+      status: 'already-exists',
+      existing,
+      exactExisting,
+      nameCollisions,
+    }
+  }
+
+  return {
+    status: 'ambiguous-existing',
+    existing,
+    exactExisting,
+    nameCollisions,
+  }
 }
 
 async function defaultLookupEntity(entity, { url = DEFAULT_PAYLOAD_URL, token = '' } = {}) {
@@ -173,13 +229,16 @@ export async function buildBangumiMediaEntityImportDryRun(pkg, audit = null, {
       error = err instanceof Error ? err.message : String(err)
     }
 
-    const status = resultStatus(existing, error)
+    const matchAnalysis = analyzeExistingMatches(entity, existing, error)
+    const status = matchAnalysis.status
     results.push({
       ...summary,
       mode: DRY_RUN_MODE,
       status,
       plannedOperation: status === 'would-create' ? 'create' : 'none',
-      existing,
+      existing: matchAnalysis.existing,
+      nameCollisions: matchAnalysis.nameCollisions,
+      exactExisting: matchAnalysis.exactExisting,
       error,
       safety: {
         payloadRead: true,
@@ -193,6 +252,7 @@ export async function buildBangumiMediaEntityImportDryRun(pkg, audit = null, {
 
   const allRows = [...results, ...skippedEntities]
   const countsByStatus = Object.fromEntries(['would-create', 'already-exists', 'ambiguous-existing', 'query-error'].map((status) => [status, results.filter((row) => row.status === status).length]))
+  const rowsWithNameCollisions = results.filter((row) => asRows(row.nameCollisions).length > 0)
 
   return {
     meta: {
@@ -230,6 +290,8 @@ export async function buildBangumiMediaEntityImportDryRun(pkg, audit = null, {
         alreadyExistsTotal: countsByStatus['already-exists'],
         ambiguousExistingTotal: countsByStatus['ambiguous-existing'],
         queryErrorsTotal: countsByStatus['query-error'],
+        nameCollisionRowsTotal: rowsWithNameCollisions.length,
+        nameCollisionDocsTotal: rowsWithNameCollisions.reduce((sum, row) => sum + asRows(row.nameCollisions).length, 0),
         creatorResultsTotal: allRows.filter((row) => row.collection === 'creators').length,
         organizationResultsTotal: allRows.filter((row) => row.collection === 'organizations').length,
         packageEvidenceTotal: entities.reduce((sum, entity) => sum + safeCount(asRows(entity.evidence).length), 0),
@@ -242,7 +304,9 @@ export async function buildBangumiMediaEntityImportDryRun(pkg, audit = null, {
 
 function reportRow(row) {
   const existing = asRows(row.existing).map((item) => item.name || item.slug || item.id).filter(Boolean).join('；')
-  return `| ${row.collection} | ${row.name} | ${row.slug} | ${row.status || 'skipped'} | ${row.plannedOperation || 'none'} | ${existing} | ${row.reason || row.error || ''} |`
+  const collisionNote = asRows(row.nameCollisions).length > 0 ? `nameCollisions=${asRows(row.nameCollisions).length}` : ''
+  const note = [row.reason, row.error, collisionNote].filter(Boolean).join('；')
+  return `| ${row.collection} | ${row.name} | ${row.slug} | ${row.status || 'skipped'} | ${row.plannedOperation || 'none'} | ${existing} | ${note} |`
 }
 
 export function createBangumiMediaEntityImportDryRunReport(dryRun, { inputPath = '', auditPath = '', topLimit = DEFAULT_TOP_LIMIT } = {}) {
@@ -270,6 +334,8 @@ export function createBangumiMediaEntityImportDryRunReport(dryRun, { inputPath =
     `- alreadyExistsTotal: ${stats.alreadyExistsTotal}`,
     `- ambiguousExistingTotal: ${stats.ambiguousExistingTotal}`,
     `- queryErrorsTotal: ${stats.queryErrorsTotal}`,
+    `- nameCollisionRowsTotal: ${stats.nameCollisionRowsTotal || 0}`,
+    `- nameCollisionDocsTotal: ${stats.nameCollisionDocsTotal || 0}`,
     '',
     '## Safety',
     '',
@@ -335,7 +401,7 @@ async function main() {
 
   console.log(`Wrote Bangumi media entity import dry-run -> ${output}`)
   console.log(`Wrote Bangumi media entity import dry-run report -> ${report}`)
-  console.log(`Dry-run: would-create=${dryRun.meta.stats.wouldCreateTotal}; already-exists=${dryRun.meta.stats.alreadyExistsTotal}; ambiguous=${dryRun.meta.stats.ambiguousExistingTotal}; query-errors=${dryRun.meta.stats.queryErrorsTotal}; skipped=${dryRun.meta.stats.skippedEntitiesTotal}`)
+  console.log(`Dry-run: would-create=${dryRun.meta.stats.wouldCreateTotal}; already-exists=${dryRun.meta.stats.alreadyExistsTotal}; ambiguous=${dryRun.meta.stats.ambiguousExistingTotal}; query-errors=${dryRun.meta.stats.queryErrorsTotal}; skipped=${dryRun.meta.stats.skippedEntitiesTotal}; name-collisions=${dryRun.meta.stats.nameCollisionRowsTotal}`)
 
   if (dryRun.meta.stats.queryErrorsTotal > 0 || dryRun.meta.stats.skippedEntitiesTotal > 0) process.exitCode = 1
 }
