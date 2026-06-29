@@ -193,6 +193,13 @@ function searchBatchSummary({
   }
 }
 
+function parseBase64Json(stdout) {
+  const encoded = String(stdout || '').trim().replace(/\s+/gu, '')
+  if (!encoded) throw new Error('PowerShell Bangumi request returned empty output')
+  const jsonText = Buffer.from(encoded, 'base64').toString('utf8')
+  return JSON.parse(jsonText)
+}
+
 async function requestJsonWithPowerShell(url, { method = 'GET', headers = {}, body } = {}) {
   const request = {
     url: String(url),
@@ -223,7 +230,9 @@ if ($request.body) {
   $params.ContentType = "application/json"
 }
 $response = Invoke-RestMethod @params
-$response | ConvertTo-Json -Depth 80
+$json = $response | ConvertTo-Json -Depth 80 -Compress
+$bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
+[System.Convert]::ToBase64String($bytes)
 `.trim()
 
   const env = {
@@ -237,7 +246,7 @@ $response | ConvertTo-Json -Depth 80
       maxBuffer: POWERSHELL_MAX_BUFFER_BYTES,
       windowsHide: true,
     })
-    return JSON.parse(stdout)
+    return parseBase64Json(stdout)
   } catch (error) {
     if (error?.code !== 'ENOENT') throw error
 
@@ -246,7 +255,7 @@ $response | ConvertTo-Json -Depth 80
       maxBuffer: POWERSHELL_MAX_BUFFER_BYTES,
       windowsHide: true,
     })
-    return JSON.parse(stdout)
+    return parseBase64Json(stdout)
   }
 }
 
@@ -362,13 +371,13 @@ async function searchBangumiTaggedSubjectCandidatesWithPowerShell({
   }
 }
 
-async function fetchBangumiSubjectWithPowerShell(subjectId, {
+async function fetchBangumiSubjectWithPowerShell(subjectIdValue, {
   userAgent,
   token,
   retries,
   retryDelayMs,
 }) {
-  const url = new URL(`/v0/subjects/${subjectId}`, API_BASE_URL)
+  const url = new URL(`/v0/subjects/${subjectIdValue}`, API_BASE_URL)
   return requestJsonWithPowerShellRetries(
     url,
     {
