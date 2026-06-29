@@ -10,8 +10,11 @@ import {
 
 test('media parser maps book and game to Bangumi subject types', () => {
   assert.deepEqual(parseBangumiMediaTypes({ media: 'book,game' }), [1, 4])
+  assert.deepEqual(parseBangumiMediaTypes({ media: 'book game' }), [1, 4])
+  assert.deepEqual(parseBangumiMediaTypes({ media: 'manga light-novel games' }), [1, 4])
   assert.deepEqual(parseBangumiMediaTypes({ media: 'manga,light-novel,games' }), [1, 4])
   assert.deepEqual(parseBangumiMediaTypes({ types: '1,4' }), [1, 4])
+  assert.deepEqual(parseBangumiMediaTypes({ types: '1 4' }), [1, 4])
 })
 
 test('subject summary keeps book/game metadata without Payload writes', () => {
@@ -65,11 +68,17 @@ test('preview metadata is explicitly preview-only and safe', () => {
       pages: 1,
       fetchDetails: true,
       includeRaw: false,
+      transport: 'auto',
+      searchTransport: 'powershell',
+      detailTransport: 'powershell',
     },
   })
 
   assert.equal(preview.meta.source, 'bangumi-media-subject-preview')
   assert.equal(preview.meta.mode, 'preview-only-no-payload-write')
+  assert.equal(preview.meta.requestedTransport, 'auto')
+  assert.equal(preview.meta.searchTransport, 'powershell')
+  assert.equal(preview.meta.detailTransport, 'powershell')
   assert.equal(preview.meta.searchedTotal, 2)
   assert.equal(preview.meta.uniqueSubjectsTotal, 1)
   assert.equal(preview.meta.subjectsTotal, 1)
@@ -81,7 +90,7 @@ test('preview metadata is explicitly preview-only and safe', () => {
   assert.equal(preview.subjects[0].raw, undefined)
 })
 
-test('preview report includes safety summary and sample subjects', () => {
+test('preview report includes safety summary, transport, and sample subjects', () => {
   const preview = buildBangumiMediaSubjectPreview({
     searched: [{ id: 1 }],
     uniqueSubjects: [{ id: 1 }],
@@ -92,6 +101,9 @@ test('preview report includes safety summary and sample subjects', () => {
       media: ['book'],
       types: [1],
       includeRaw: false,
+      transport: 'auto',
+      searchTransport: 'powershell',
+      detailTransport: 'not-used',
     },
   })
 
@@ -100,5 +112,6 @@ test('preview report includes safety summary and sample subjects', () => {
   assert.match(report, /# Bangumi media subject preview/)
   assert.match(report, /No Payload connection/)
   assert.match(report, /No database writes/)
+  assert.match(report, /searchTransport: powershell/)
   assert.match(report, /book #1: 样本书/)
 })
