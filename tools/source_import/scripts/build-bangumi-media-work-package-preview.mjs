@@ -35,6 +35,10 @@ function cleanText(value) {
   return String(value ?? '').trim().replace(/\s+/gu, ' ')
 }
 
+function normalizedKey(value) {
+  return cleanText(value).toLowerCase()
+}
+
 function asRows(value) {
   return Array.isArray(value) ? value : []
 }
@@ -79,16 +83,58 @@ function pickCoverReference(row) {
   }
 }
 
-function packageWork(row, index) {
+function collisionSlug(originalSlug, bangumiSubjectId, index) {
+  const suffix = cleanText(bangumiSubjectId) ? `bgm-${cleanText(bangumiSubjectId)}` : `row-${index + 1}`
+  return `${originalSlug}-${suffix}`
+}
+
+function resolveWorkSlugs(rows) {
+  const used = new Set()
+  const collisions = []
+
+  return rows.map((row, index) => {
+    const originalSlug = cleanText(row.slug)
+    const originalKey = normalizedKey(originalSlug)
+    let resolvedSlug = originalSlug
+    let resolved = false
+
+    if (originalKey && used.has(originalKey)) {
+      resolvedSlug = collisionSlug(originalSlug, pickBangumiSubjectId(row), index)
+      resolved = true
+      let attempt = 2
+      while (used.has(normalizedKey(resolvedSlug))) {
+        resolvedSlug = `${collisionSlug(originalSlug, pickBangumiSubjectId(row), index)}-${attempt}`
+        attempt += 1
+      }
+      collisions.push({ index, title: firstText(row.title, row.name), originalSlug, resolvedSlug, bangumiSubjectId: pickBangumiSubjectId(row) })
+    }
+
+    if (resolvedSlug) used.add(normalizedKey(resolvedSlug))
+
+    return {
+      row,
+      index,
+      slug: resolvedSlug,
+      originalSlug,
+      slugCollisionResolved: resolved,
+    }
+  }).map((entry) => ({ ...entry, collisions }))
+}
+
+function packageWork(entry) {
+  const { row, index, slug, originalSlug, slugCollisionResolved } = entry
   const creatorCreditHints = readCreditHints(row?.creatorCreditHints)
   const organizationCreditHints = readCreditHints(row?.organizationCreditHints)
   const bangumiSubjectId = pickBangumiSubjectId(row)
+  const title = firstText(row?.title, row?.name)
 
   return {
     collection: 'works',
     kind: 'media-work',
-    title: firstText(row?.title, row?.name),
-    slug: cleanText(row?.slug),
+    title,
+    slug,
+    originalSlug,
+    slugCollisionResolved,
     status: 'draft',
     importAction: 'create-if-missing',
     source: PACKAGE_SOURCE,
@@ -97,7 +143,7 @@ function packageWork(row, index) {
       source: cleanText(row?.source || INPUT_SOURCE),
       mode: cleanText(row?.mode),
       bangumiSubjectId,
-      title: firstText(row?.title, row?.name),
+      title,
       slug: cleanText(row?.slug),
     },
     mediaGroup: cleanText(row?.mediaGroup),
@@ -116,7 +162,7 @@ function packageWork(row, index) {
       {
         source: 'bangumi',
         bangumiSubjectId,
-        title: firstText(row?.title, row?.name),
+        title,
         mediaGroup: cleanText(row?.mediaGroup),
         mediaType: cleanText(row?.mediaType),
       },
@@ -144,7 +190,9 @@ function countBy(items, keyFn) {
 
 export function buildBangumiMediaWorkPackagePreview(candidateWorks, { generatedAt = new Date().toISOString() } = {}) {
   const inputWorks = asRows(candidateWorks)
-  const works = inputWorks.map((row, index) => packageWork(row, index))
+  const slugEntries = resolveWorkSlugs(inputWorks)
+  const works = slugEntries.map(packageWork)
+  const slugCollisions = slugEntries[0]?.collisions || []
 
   return {
     meta: {
@@ -171,10 +219,12 @@ export function buildBangumiMediaWorkPackagePreview(candidateWorks, { generatedA
         rowsWithCreatorHints: works.filter((work) => work.creatorCreditHints.length > 0).length,
         rowsWithOrganizationHints: works.filter((work) => work.organizationCreditHints.length > 0).length,
         rowsWithCoverReferences: works.filter((work) => work.coverPreview?.value).length,
+        slugCollisionRowsTotal: slugCollisions.length,
         mediaGroupCounts: countBy(works, (work) => work.mediaGroup),
         mediaTypeCounts: countBy(works, (work) => work.mediaType),
       },
     },
+    slugCollisions,
     works,
   }
 }
@@ -196,6 +246,7 @@ export function createBangumiMediaWorkPackagePreviewReport(pkg, { topLimit = DEF
     `- rowsWithCreatorHints: ${stats.rowsWithCreatorHints}`,
     `- rowsWithOrganizationHints: ${stats.rowsWithOrganizationHints}`,
     `- rowsWithCoverReferences: ${stats.rowsWithCoverReferences}`,
+    `- slugCollisionRowsTotal: ${stats.slugCollisionRowsTotal || 0}`,
     '',
     '## Safety',
     '',
@@ -217,9 +268,18 @@ export function createBangumiMediaWorkPackagePreviewReport(pkg, { topLimit = DEF
   lines.push('', '## Media type counts', '')
   for (const [type, count] of Object.entries(stats.mediaTypeCounts || {})) lines.push(`- ${type}: ${count}`)
 
+  lines.push('', '## Slug collisions resolved', '')
+  if (asRows(pkg?.slugCollisions).length === 0) lines.push('- none')
+  else {
+    for (const collision of asRows(pkg?.slugCollisions).slice(0, topLimit)) {
+      lines.push(`- ${collision.title}: ${collision.originalSlug} -> ${collision.resolvedSlug}`)
+    }
+  }
+
   lines.push('', '## Works', '')
   for (const work of asRows(pkg?.works).slice(0, topLimit)) {
-    lines.push(`- ${work.title}: bangumi=${work.bangumiSubjectId}; media=${work.mediaGroup}/${work.mediaType}; creatorHints=${work.creatorCreditHints.length}; organizationHints=${work.organizationCreditHints.length}`)
+    const collisionNote = work.slugCollisionResolved ? `; originalSlug=${work.originalSlug}` : ''
+    lines.push(`- ${work.title}: bangumi=${work.bangumiSubjectId}; slug=${work.slug}${collisionNote}; media=${work.mediaGroup}/${work.mediaType}; creatorHints=${work.creatorCreditHints.length}; organizationHints=${work.organizationCreditHints.length}`)
   }
 
   return `${REPORT_UTF8_BOM}${lines.join('\n')}\n`
@@ -264,7 +324,7 @@ async function main() {
 
   console.log(`Wrote Bangumi media work package preview -> ${output}`)
   console.log(`Wrote Bangumi media work package preview report -> ${report}`)
-  console.log(`Package works: works=${pkg.meta.stats.worksTotal}; creatorHints=${pkg.meta.stats.creatorCreditHintsTotal}; organizationHints=${pkg.meta.stats.organizationCreditHintsTotal}; coverRefs=${pkg.meta.stats.rowsWithCoverReferences}`)
+  console.log(`Package works: works=${pkg.meta.stats.worksTotal}; creatorHints=${pkg.meta.stats.creatorCreditHintsTotal}; organizationHints=${pkg.meta.stats.organizationCreditHintsTotal}; coverRefs=${pkg.meta.stats.rowsWithCoverReferences}; slugCollisions=${pkg.meta.stats.slugCollisionRowsTotal}`)
 }
 
 const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
