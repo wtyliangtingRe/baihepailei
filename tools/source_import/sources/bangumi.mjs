@@ -38,24 +38,32 @@ const YURI_TAG_RULES = [
 ]
 
 const CREATOR_CREDIT_INFBOX_RULES = [
-  { role: 'original_creator', keys: ['原作'] },
-  { role: 'original_concept', keys: ['原案'] },
+  { role: 'original_creator', keys: ['原作', '原作者', '作者', '著者', '作家'] },
+  { role: 'original_concept', keys: ['原案', '故事原案', '企画原案'] },
+  { role: 'story', keys: ['故事', '剧情', '劇情', 'ストーリー'] },
+  { role: 'art', keys: ['作画', '作畫', '漫画', '漫畫'] },
+  { role: 'illustration', keys: ['插画', '插畫', '插图', '插圖', 'イラスト'] },
   { role: 'director', keys: ['監督', '监督', '导演'] },
   { role: 'chief_director', keys: ['総監督', '总监督', '總監督'] },
   { role: 'series_director', keys: ['シリーズディレクター', '系列监督', '系列監督'] },
   { role: 'series_composition', keys: ['シリーズ構成', '系列构成', '系列構成'] },
-  { role: 'script', keys: ['脚本'] },
+  { role: 'script', keys: ['脚本', '剧本', '劇本', 'シナリオ'] },
+  { role: 'planning', keys: ['企画', '企劃'] },
   { role: 'character_original_design', keys: ['キャラクター原案', '角色原案', '人物原案'] },
-  { role: 'character_design', keys: ['キャラクターデザイン', '角色设计', '角色設計', '人物设定', '人物設定'] },
+  { role: 'character_design', keys: ['キャラクターデザイン', '角色设计', '角色設計', '人物设定', '人物設定', '人设', '人設', '原画', '原畫'] },
   { role: 'producer', keys: ['プロデューサー', '制作人', '製作人'] },
 ]
 
 const ORGANIZATION_CREDIT_INFBOX_RULES = [
   { role: 'committee', keys: ['製作', '製作委員会', '製作委員會', '制作委员会', '制作委員会'] },
+  { role: 'developer', keys: ['开发', '開發', '开发商', '開發商', 'デベロッパー', 'Developer', '品牌', 'ブランド'] },
   { role: 'animation_studio', keys: ['アニメーション制作', '动画制作', '動畫制作', '制作'] },
   { role: 'production_company', keys: ['制作公司', '製作会社', '制作会社'] },
-  { role: 'publisher', keys: ['出版社'] },
-  { role: 'distributor', keys: ['发行', '发行商', '發行', '發行商', '配給', '配给'] },
+  { role: 'publisher', keys: ['出版社', '出版', '出版者'] },
+  { role: 'magazine', keys: ['连载杂志', '連載誌', '掲載誌', '杂志', '雑誌', '刊载杂志', '掲載'] },
+  { role: 'imprint', keys: ['文库', '文庫', 'レーベル', 'Label', 'label'] },
+  { role: 'distributor', keys: ['发行', '发行商', '發行', '發行商', '配給', '配给', '販売', '販売元', '发售', '發售'] },
+  { role: 'platform', keys: ['平台', '游戏平台', '遊戲平台', '対応機種', '対応平台'] },
   { role: 'streaming_platform', keys: ['网络播放', '網絡播放', '网络配信', '配信', '配信平台'] },
   { role: 'broadcaster', keys: ['放送局', '电视台', '電視台', '放送', '播放电视台'] },
   { role: 'music_label', keys: ['音楽制作', '音乐制作', '音樂制作'] },
@@ -529,3 +537,4 @@ export function bangumiSubjectToCandidateInput(subject) {
     yuriCandidateScore: Math.max(yuriSignal.candidateScore, searchSignalTags.length > 0 ? 0.05 : 0),
   }
 }
+
