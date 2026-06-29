@@ -108,12 +108,12 @@ test('dry-run importer validates relation shape', () => {
   assert.equal(result.actions[0].wouldPatch, false)
 })
 
-test('dry-run report includes safety summary', () => {
+test('dry-run report includes guarded safety summary', () => {
   const result = buildBangumiWorkEntityLinkImportDryRun(plan())
   const report = createBangumiWorkEntityLinkImportDryRunReport(result, { planInputPath: 'plan.json' })
 
   assert.match(report, /Bangumi work\/entity link import dry-run/u)
-  assert.match(report, /dry-run importer skeleton/u)
-  assert.match(report, /不调用 Payload API/u)
-  assert.match(report, /不写入 relationships/u)
+  assert.match(report, /默认仍是 dry-run/u)
+  assert.match(report, /APPLY_WORK_ENTITY_LINKS/u)
+  assert.match(report, /只合并缺失关系/u)
 })
