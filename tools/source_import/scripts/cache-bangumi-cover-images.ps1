@@ -10,6 +10,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Resolve-LocalPath {
+  param([string]$PathValue)
+  return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PathValue)
+}
+
 function Ensure-Directory {
   param([string]$PathValue)
   if ($PathValue) {
@@ -42,11 +47,16 @@ function Write-JsonFile {
     $Value
   )
 
-  Ensure-Directory (Split-Path -Parent $PathValue)
+  $fullPath = Resolve-LocalPath $PathValue
+  Ensure-Directory (Split-Path -Parent $fullPath)
   $json = $Value | ConvertTo-Json -Depth 30
   $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-  [System.IO.File]::WriteAllText([System.IO.Path]::GetFullPath($PathValue), $json, $utf8NoBom)
+  [System.IO.File]::WriteAllText($fullPath, $json, $utf8NoBom)
 }
+
+$previewPath = Resolve-LocalPath $Preview
+$manifestPath = Resolve-LocalPath $Manifest
+$dirPath = Resolve-LocalPath $Dir
 
 $headers = @{
   "User-Agent" = $UserAgent
@@ -58,10 +68,10 @@ $imageHeaders = @{
   "Accept" = "image/avif,image/webp,image/png,image/jpeg,image/*,*/*;q=0.8"
 }
 
-Ensure-Directory (Split-Path -Parent $Manifest)
-Ensure-Directory $Dir
+Ensure-Directory (Split-Path -Parent $manifestPath)
+Ensure-Directory $dirPath
 
-$previewData = Get-Content $Preview -Encoding UTF8 -Raw | ConvertFrom-Json
+$previewData = Get-Content $previewPath -Encoding UTF8 -Raw | ConvertFrom-Json
 $seen = @{}
 $worksList = New-Object System.Collections.ArrayList
 
@@ -106,7 +116,7 @@ foreach ($work in $works) {
     }
 
     $fileName = "bgm-$id$ext"
-    $outputPath = Join-Path $Dir $fileName
+    $outputPath = Join-Path $dirPath $fileName
     $status = "planned"
     $bytes = [int64]0
 
@@ -172,7 +182,7 @@ $out = [pscustomobject]@{
   results = @($results)
 }
 
-Write-JsonFile -PathValue $Manifest -Value $out
+Write-JsonFile -PathValue $manifestPath -Value $out
 $out.meta | Format-List
 
 if ($errors -gt 0) {
