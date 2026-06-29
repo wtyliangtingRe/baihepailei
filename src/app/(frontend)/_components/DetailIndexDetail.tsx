@@ -13,6 +13,12 @@ type ExtendedDetailItem = DetailItem & {
   evidenceType?: string
   reviewStatus?: string
   evidenceStrength?: string
+  mediaGroup?: string
+  mediaType?: string
+  format?: string
+  firstPublishedAt?: string
+  firstPublishedPrecision?: string
+  firstPublishedLabel?: string
   image?: DetailCoverImage
   description?: string
   capturedAt?: string
@@ -59,6 +65,15 @@ const evidenceStrengthLabels: Record<string, string> = {
   strong: '证据强',
 }
 
+const mediaGroupLabels: Record<string, string> = {
+  anime: '动画',
+  manga: '漫画',
+  novel: '小说',
+  game: '游戏',
+  other: '其他',
+  unknown: '未知类型',
+}
+
 function collectionLabel(collection: string) {
   if (collection === 'works') return '作品'
   if (collection === 'creators') return '创作者'
@@ -97,6 +112,17 @@ function reviewStatusLabel(value?: string) {
 function evidenceStrengthLabel(value?: string) {
   if (!value) return ''
   return evidenceStrengthLabels[value] || value
+}
+
+function mediaGroupLabel(value?: string) {
+  if (!value || value === 'unknown') return ''
+  return mediaGroupLabels[value] || value
+}
+
+function visibleMetadataValue(value?: string) {
+  const normalized = String(value || '').trim()
+  if (!normalized || normalized === 'unknown') return ''
+  return normalized
 }
 
 function normalizeKey(value: string) {
@@ -172,6 +198,11 @@ function BasicInfo({ item }: { item: DetailItem }) {
     ['证据类型', evidenceTypeLabel(extendedItem.evidenceType)],
     ['截图时间', extendedItem.capturedAt],
     ['原名', item.originalTitle],
+    ['作品类型', mediaGroupLabel(extendedItem.mediaGroup)],
+    ['媒体类型', visibleMetadataValue(extendedItem.mediaType)],
+    ['格式', visibleMetadataValue(extendedItem.format)],
+    ['首发日期', extendedItem.firstPublishedLabel || extendedItem.firstPublishedAt],
+    ['首发精度', visibleMetadataValue(extendedItem.firstPublishedPrecision)],
     ['别名', item.aliases],
     ['关联作品', extendedItem.relatedWorks],
     ['关联创作者', extendedItem.relatedCreators],
@@ -349,6 +380,7 @@ function RichTextSections({ item }: { item: DetailItem }) {
 export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvidence = [] }: { item: DetailItem; relatedWorks?: DetailItem[]; relatedEvidence?: DetailItem[] }) {
   const extendedItem = item as ExtendedDetailItem
   const rank = item.collection === 'works' ? displayRank(item.rank) : ''
+  const mediaGroup = item.collection === 'works' ? mediaGroupLabel(extendedItem.mediaGroup) : ''
   const organizationType = organizationTypeLabel(extendedItem.organizationType)
   const evidenceType = evidenceTypeLabel(extendedItem.evidenceType)
   const reviewStatus = reviewStatusLabel(extendedItem.reviewStatus)
@@ -374,6 +406,7 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
             <h1>{item.title}</h1>
             <div className="detail-chips">
               {rank ? <span>{rank}</span> : null}
+              {mediaGroup ? <span>{mediaGroup}</span> : null}
               {reviewStatus ? <span>{reviewStatus}</span> : null}
               {evidenceStrength ? <span>{evidenceStrength}</span> : null}
               {organizationType ? <span>{organizationType}</span> : null}
