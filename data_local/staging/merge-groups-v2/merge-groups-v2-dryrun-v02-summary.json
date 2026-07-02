@@ -1,0 +1,33 @@
+{
+  "sourceCandidatesGrouped": 1246,
+  "mergeGroups": 1241,
+  "multiSourceGroups": 5,
+  "radarSeeds": 68,
+  "radarSeedAttachments": 46,
+  "uniqueRadarSeedsAttached": 46,
+  "groupsWithRadarSeedRefs": 46,
+  "radarOnlyReviewQueueRows": 22,
+  "radarAttachmentAmbiguityQueueRows": 2,
+  "uniqueRadarSeedsInAttachmentAmbiguityQueue": 2,
+  "attachmentMethods": {
+    "exact_normalized_title_unique": 46
+  },
+  "readyForMergeGroupsV2Preview": true,
+  "blockers": 0,
+  "warnings": 1,
+  "safety": {
+    "noPayloadWrite": true,
+    "noPostgresqlWrite": true,
+    "noProductionCodeChange": true,
+    "dryRunOnly": true
+  },
+  "outputs": {
+    "outJsonl": "data_local\\staging\\merge-groups-v2\\merge-groups-v2-dryrun-v02.jsonl",
+    "outJson": "data_local\\staging\\merge-groups-v2\\merge-groups-v2-dryrun-v02.json",
+    "decisionsCsv": "data_local\\staging\\merge-groups-v2\\merge-groups-v2-radar-attachment-decisions-v02.csv",
+    "radarOnlyCsv": "data_local\\staging\\merge-groups-v2\\merge-groups-v2-radar-only-review-queue-v02.csv",
+    "ambiguityCsv": "data_local\\staging\\merge-groups-v2\\merge-groups-v2-radar-attachment-ambiguity-queue-v02.csv",
+    "qaJsonPath": "data_local\\staging\\merge-groups-v2\\merge-groups-v2-dryrun-v02-qa.json",
+    "qaMdPath": "data_local\\staging\\merge-groups-v2\\merge-groups-v2-dryrun-v02-qa.md"
+  }
+}

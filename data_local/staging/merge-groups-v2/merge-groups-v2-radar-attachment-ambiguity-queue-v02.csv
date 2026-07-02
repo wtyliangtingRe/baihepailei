@@ -1,0 +1,3 @@
+seedId,canonicalReviewTitle,reviewGroupKey,reason,selectedMergeGroupId,selectedCanonicalTitle,selectedMethod,conflictMergeGroupId,conflictCanonicalTitle,conflictByKey,conflictByTitle,action
+seed-0002-出轨-ntr百合短篇集,出轨・NTR百合短篇集,出轨・NTR百合短篇集,weak row localWorkKey match only and no exact title match,,,,mgv2-01146-女装少年短发妹,女装少年短发妹,row-912,,do not auto-attach from weak row-* key; manual radar attachment review required
+seed-0017-百合男子,百合男子,百合男子,ignored_local_work_key_hit_because_exact_title_was_unique,mgv2-00287-百合男子,百合男子,exact_normalized_title_unique,mgv2-01039-旅人的紫阳,旅人的紫阳,row-294,,attach to exact title group only; review conflicting localWorkKey
