@@ -65,10 +65,14 @@ const datePrecisionOptions = [
 ]
 
 const candidateSourceOptions = [
+  { label: 'Yurizukan', value: 'yurizukan' },
   { label: 'Bangumi', value: 'bangumi' },
+  { label: 'MangaDex', value: 'mangadex' },
+  { label: 'NDL', value: 'ndl' },
+  { label: 'Steam', value: 'steam' },
+  { label: 'Wikidata', value: 'wikidata' },
   { label: 'AniList', value: 'anilist' },
   { label: 'VNDB', value: 'vndb' },
-  { label: 'Wikidata', value: 'wikidata' },
   { label: 'Wikipedia', value: 'wikipedia' },
   { label: '手动整理', value: 'manual' },
   { label: '其他', value: 'other' },
