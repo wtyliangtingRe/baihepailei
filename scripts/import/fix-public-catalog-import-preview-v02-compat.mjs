@@ -82,16 +82,45 @@ function fixCandidateSource(item) {
   }
 }
 
+function candidateSourceKey(item) {
+  return [
+    item.source || '',
+    item.externalId || '',
+    item.url || '',
+    item.label || '',
+  ].join('|')
+}
+
+function dedupeCandidateSources(candidateSources) {
+  const seen = new Set()
+  const deduped = []
+
+  for (const item of candidateSources || []) {
+    const key = candidateSourceKey(item)
+    if (seen.has(key)) continue
+
+    seen.add(key)
+    deduped.push(item)
+  }
+
+  return deduped
+}
+
 const rows = JSON.parse(fs.readFileSync(inJson, 'utf8'))
 
 const fixed = rows.map((row) => {
   const rank = normalizeRank(row.rank)
   const reviewStatus = 'pending'
-  const candidateSources = (row.candidateSources || []).map(fixCandidateSource)
+  const rawCandidateSources = (row.candidateSources || []).map(fixCandidateSource)
+  const candidateSources = dedupeCandidateSources(rawCandidateSources)
+  const dedupedCandidateSources = rawCandidateSources.length - candidateSources.length
 
   const evidenceNote = [
     row.payloadDraft?.evidenceNote || '',
     'Payload compat: rank normalized; reviewStatus normalized to pending; candidate source enums preserved when supported; originalSource kept in note.',
+    dedupedCandidateSources > 0
+      ? `Payload compat: removed ${dedupedCandidateSources} duplicate candidate source row(s).`
+      : '',
   ].filter(Boolean).join('\n')
 
   return {
@@ -101,9 +130,12 @@ const fixed = rows.map((row) => {
       rankBefore: row.rank,
       rankAfter: rank,
       reviewStatusAfter: reviewStatus,
-      payloadCandidateSourcesMapped: candidateSources.some((item, index) =>
+      payloadCandidateSourcesMapped: rawCandidateSources.some((item, index) =>
         item.source !== row.candidateSources?.[index]?.source
       ),
+      candidateSourcesBeforeDedupe: rawCandidateSources.length,
+      candidateSourcesAfterDedupe: candidateSources.length,
+      duplicateCandidateSourcesRemoved: dedupedCandidateSources,
     },
     payloadDraft: {
       ...row.payloadDraft,
@@ -135,6 +167,27 @@ if (invalidCandidateSources.length) {
   qaErrors.push(`Invalid payload candidateSources.source after compat: ${invalidCandidateSources.length}`)
 }
 
+const duplicateCandidateSources = payloadWorks.flatMap((work) => {
+  const seen = new Set()
+  const duplicates = []
+
+  for (const item of work.candidateSources || []) {
+    const key = candidateSourceKey(item)
+    if (seen.has(key)) {
+      duplicates.push({ title: work.title, source: item.source, key })
+      continue
+    }
+
+    seen.add(key)
+  }
+
+  return duplicates
+})
+
+if (duplicateCandidateSources.length) {
+  qaErrors.push(`Duplicate payload candidateSources remain after compat: ${duplicateCandidateSources.length}`)
+}
+
 const mappedToOther = payloadWorks.flatMap((work) =>
   (work.candidateSources || [])
     .filter((item) => item.source === 'other' && String(item.note || '').includes('originalSource='))
@@ -153,6 +206,10 @@ if (unresolvedRows.length) {
   qaErrors.push(`Unresolved source candidate rows remain: ${unresolvedRows.length}`)
 }
 
+const duplicateCandidateSourceRows = fixed.filter((row) =>
+  (row.compatFixes?.duplicateCandidateSourcesRemoved || 0) > 0
+)
+
 const summary = {
   generatedAt: new Date().toISOString(),
   readyForPayloadSeedDryRun: qaErrors.length === 0,
@@ -163,6 +220,11 @@ const summary = {
     (row.suggestedVariants || []).some((variant) => variant.resolvedSourceCandidate)
   ).length,
   unresolvedSourceCandidateRows: unresolvedRows.length,
+  duplicateCandidateSourceRows: duplicateCandidateSourceRows.length,
+  duplicateCandidateSourcesRemoved: duplicateCandidateSourceRows.reduce(
+    (sum, row) => sum + (row.compatFixes?.duplicateCandidateSourcesRemoved || 0),
+    0,
+  ),
   bySource: countBy(fixed, (row) => row.chosenBaseSource),
   byRank: countBy(fixed, (row) => row.rank),
   byPayloadRank: countBy(payloadWorks, (work) => work.rank),
@@ -215,6 +277,8 @@ fs.writeFileSync(outMd, [
   `- reviewQueueRows: ${summary.reviewQueueRows}`,
   `- resolvedSourceCandidateRows: ${summary.resolvedSourceCandidateRows}`,
   `- unresolvedSourceCandidateRows: ${summary.unresolvedSourceCandidateRows}`,
+  `- duplicateCandidateSourceRows: ${summary.duplicateCandidateSourceRows}`,
+  `- duplicateCandidateSourcesRemoved: ${summary.duplicateCandidateSourcesRemoved}`,
   '',
   '## By source',
   '',
@@ -261,6 +325,8 @@ console.log(JSON.stringify({
   readyForPayloadSeedDryRun: summary.readyForPayloadSeedDryRun,
   previews: summary.previews,
   reviewQueueRows: summary.reviewQueueRows,
+  duplicateCandidateSourceRows: summary.duplicateCandidateSourceRows,
+  duplicateCandidateSourcesRemoved: summary.duplicateCandidateSourcesRemoved,
   byPayloadRank: summary.byPayloadRank,
   byPayloadReviewStatus: summary.byPayloadReviewStatus,
   byPayloadCandidateSource: summary.byPayloadCandidateSource,
