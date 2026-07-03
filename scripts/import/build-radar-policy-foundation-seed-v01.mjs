@@ -98,13 +98,13 @@ const rules = [
     title: '来源优先级规则 v0.1',
     slug: 'source-priority-policy-v01',
     siteId: 'rule-source-priority-policy-v01',
-    category: 'migration',
-    status: 'review',
+    category: 'principle',
+    status: 'published',
     isLiteVisible: false,
     isFullVisible: true,
     lines: [
       '本规则用于导入、合并和冲突处理。',
-      '来源优先级：Yurizukan > Bangumi > MangaDex > NDL > Steam > Wikidata > AniList。',
+      '来源优先级：Yurizukan, Bangumi, MangaDex, NDL, Steam, Wikidata, AniList。',
       '当不同来源产生冲突时，优先采用顺序靠前的来源。',
       '顺序靠后的冲突信息不得自动覆盖前者，应保留为复核证据并进入 review queue。',
       'Wikidata 只作为身份、外部 ID 和合并辅助证据，不作为排雷评级、成人内容判断或公开警告来源。',
@@ -352,3 +352,4 @@ console.log(JSON.stringify({
     warnings: warnings.length,
   },
 }, null, 2))
+
