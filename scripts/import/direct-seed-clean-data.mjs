@@ -5,26 +5,37 @@ import { fileURLToPath } from 'node:url'
 
 import { normalizeMediaGroup } from '../../tools/source_import/lib/media-groups.mjs'
 
-const DEFAULT_COLLECTION_ORDER = ['rules', 'terms', 'creators', 'works']
+const DEFAULT_COLLECTION_ORDER = ['rules', 'terms', 'warnings', 'creators', 'works']
 const WORK_EXTERNAL_ID_FIELDS = ['bangumiSubjectId', 'anilistMediaId', 'vndbId', 'wikidataQid', 'malId', 'officialUrl']
 
 function parseArgs(argv) {
   const args = {}
+
   for (let i = 0; i < argv.length; i += 1) {
     const item = argv[i]
     if (!item.startsWith('--')) continue
+
+    const equalsIndex = item.indexOf('=')
+    if (equalsIndex > 2) {
+      const key = item.slice(2, equalsIndex)
+      const value = item.slice(equalsIndex + 1)
+      args[key] = value || true
+      continue
+    }
+
     const key = item.slice(2)
-    const next = argv[i + 1]
-    if (!next || next.startsWith('--')) {
-      args[key] = true
-    } else {
-      args[key] = next
+    const values = []
+
+    while (argv[i + 1] && !argv[i + 1].startsWith('--')) {
+      values.push(argv[i + 1])
       i += 1
     }
+
+    args[key] = values.length > 0 ? values.join(' ') : true
   }
+
   return args
 }
-
 function usage() {
   console.log(`Usage:
   pnpm import:clean-seed -- --file <payload_seed.json> [--url http://localhost:3000] [--dry-run] [--update-existing] [--collections works]
@@ -377,6 +388,16 @@ export function cleanDoc(collection, input) {
     }
   }
 
+  if (collection === 'warnings') {
+    return {
+      siteId: doc.siteId,
+      name: doc.name,
+      slug: doc.slug,
+      severity: doc.severity || 'medium',
+      category: doc.category || 'content',
+      description: doc.description,
+    }
+  }
   if (collection === 'creators') {
     const notesText = richTextToPlainText(doc.notes)
     const existingAliases = arrayRowsToValues(doc.aliases)
@@ -518,11 +539,10 @@ export function cleanDoc(collection, input) {
 function parseCollectionList(value) {
   if (!value || value === true) return null
   return String(value)
-    .split(',')
+    .split(/[,\s]+/)
     .map((item) => item.trim())
     .filter(Boolean)
 }
-
 export function collectionsForSeed(seed, collectionArg) {
   const requested = parseCollectionList(collectionArg)
   const order = requested || DEFAULT_COLLECTION_ORDER.filter((collection) => Array.isArray(seed[collection]))
@@ -679,3 +699,6 @@ if (isDirectRun) {
     process.exit(1)
   })
 }
+
+
+
