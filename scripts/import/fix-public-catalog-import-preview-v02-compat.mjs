@@ -26,6 +26,16 @@ const allowedPayloadCandidateSources = new Set([
   'other',
 ])
 
+const allowedReviewReasons = new Set([
+  'radar_seed_attached',
+  'source_conflict',
+  'multi_source_or_variant',
+  'wikidata_candidate_review',
+  'wikidata_quarantine',
+  'manual_review',
+  'other',
+])
+
 function norm(value) {
   return String(value || '').trim().toLowerCase()
 }
@@ -46,9 +56,61 @@ function payloadCandidateSource(source) {
   return 'other'
 }
 
+function normalizeRatingNotice(value) {
+  const raw = String(value || '').trim()
+  const normalized = norm(raw)
+
+  if (!raw) return 'ai_synthesized_pending_review'
+  if (normalized.includes('ai') || raw.includes('AI 综合')) return 'ai_synthesized_pending_review'
+  if (raw.includes('信息不足') || normalized.includes('insufficient')) return 'insufficient_information'
+  if (raw.includes('人工') || normalized.includes('manual')) return 'manual_reviewed'
+  if (raw === '无' || normalized === 'none') return 'none'
+
+  return 'other'
+}
+
+function normalizeReviewReasons(value, row) {
+  const reasons = new Set()
+
+  const add = (reason) => {
+    if (allowedReviewReasons.has(reason)) reasons.add(reason)
+  }
+
+  const values = Array.isArray(value)
+    ? value
+    : String(value || '').split(/[;|,]/u)
+
+  for (const item of values) {
+    const reason = String(item || '').trim()
+    if (allowedReviewReasons.has(reason)) add(reason)
+  }
+
+  const notes = Array.isArray(row.sourceConflictNotes) ? row.sourceConflictNotes : []
+  if (notes.some((note) => String(note || '').startsWith('multi_source:'))) {
+    add('source_conflict')
+    add('multi_source_or_variant')
+  }
+
+  if ((row.radarSeedRefs || []).length) add('radar_seed_attached')
+  if ((row.wikidataCandidateReviewRefs || []).length) add('wikidata_candidate_review')
+  if ((row.wikidataQuarantineRefs || []).length) add('wikidata_quarantine')
+  if (notes.includes('unresolved_source_candidate_refs')) add('other')
+
+  return [...reasons]
+}
+
+function normalizeSourceConflictNotes(value) {
+  if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean).join('\n')
+  return String(value || '').trim()
+}
+
 function needsReview(row) {
+  const reviewReasons = row.payloadDraft?.reviewReasons || row.reviewReasons || []
+  const sourceConflictNotes = row.payloadDraft?.sourceConflictNotes || row.sourceConflictNotes || ''
+
   return Boolean(
-    (row.sourceConflictNotes || []).length ||
+    (Array.isArray(reviewReasons) && reviewReasons.length) ||
+    String(sourceConflictNotes || '').trim() ||
     (row.radarSeedRefs || []).length ||
     (row.wikidataCandidateReviewRefs || []).length ||
     (row.wikidataQuarantineRefs || []).length
@@ -114,6 +176,19 @@ const fixed = rows.map((row) => {
   const rawCandidateSources = (row.candidateSources || []).map(fixCandidateSource)
   const candidateSources = dedupeCandidateSources(rawCandidateSources)
   const dedupedCandidateSources = rawCandidateSources.length - candidateSources.length
+  const importBatch = row.payloadDraft?.importBatch || row.importBatch || 'public-catalog-import-v02'
+  const ratingNotice = normalizeRatingNotice(row.payloadDraft?.ratingNotice || row.ratingNotice)
+  const chosenBaseSource = payloadCandidateSource(row.payloadDraft?.chosenBaseSource || row.chosenBaseSource)
+  const reviewReasons = [
+    ...new Set([
+      ...normalizeReviewReasons(row.payloadDraft?.reviewReasons || row.reviewReasons, row),
+      ...(dedupedCandidateSources > 0 ? ['multi_source_or_variant'] : []),
+    ]),
+  ]
+  const sourceConflictNotes = [
+    normalizeSourceConflictNotes(row.payloadDraft?.sourceConflictNotes || row.sourceConflictNotes),
+    dedupedCandidateSources > 0 ? `duplicate_candidate_sources_removed: ${dedupedCandidateSources}` : '',
+  ].filter(Boolean).join('\n')
 
   const evidenceNote = [
     row.payloadDraft?.evidenceNote || '',
@@ -141,6 +216,11 @@ const fixed = rows.map((row) => {
       ...row.payloadDraft,
       rank,
       reviewStatus,
+      importBatch,
+      ratingNotice,
+      chosenBaseSource,
+      reviewReasons,
+      sourceConflictNotes,
       candidateSources,
       evidenceNote,
     },
@@ -210,12 +290,34 @@ const duplicateCandidateSourceRows = fixed.filter((row) =>
   (row.compatFixes?.duplicateCandidateSourcesRemoved || 0) > 0
 )
 
+const structuredReviewFieldMissing = payloadWorks.filter((work) =>
+  !work.importBatch ||
+  !work.ratingNotice ||
+  !work.chosenBaseSource ||
+  !Array.isArray(work.reviewReasons)
+)
+
+const invalidReviewReasons = payloadWorks.flatMap((work) =>
+  (work.reviewReasons || [])
+    .filter((reason) => !allowedReviewReasons.has(reason))
+    .map((reason) => ({ title: work.title, reason }))
+)
+
+if (invalidReviewReasons.length) {
+  qaErrors.push(`Invalid structured review reasons after compat: ${invalidReviewReasons.length}`)
+}
+
+if (structuredReviewFieldMissing.length) {
+  qaWarnings.push(`Structured review fields missing after compat: ${structuredReviewFieldMissing.length}`)
+}
+
 const summary = {
   generatedAt: new Date().toISOString(),
   readyForPayloadSeedDryRun: qaErrors.length === 0,
   previews: fixed.length,
   payloadDraftWorks: payloadWorks.length,
   reviewQueueRows: fixed.filter(needsReview).length,
+  structuredReviewFieldMissing: structuredReviewFieldMissing.length,
   resolvedSourceCandidateRows: fixed.filter((row) =>
     (row.suggestedVariants || []).some((variant) => variant.resolvedSourceCandidate)
   ).length,
@@ -223,15 +325,23 @@ const summary = {
   duplicateCandidateSourceRows: duplicateCandidateSourceRows.length,
   duplicateCandidateSourcesRemoved: duplicateCandidateSourceRows.reduce(
     (sum, row) => sum + (row.compatFixes?.duplicateCandidateSourcesRemoved || 0),
-    0,
+    0
   ),
+  mappedToOtherCandidateSources: mappedToOther.length,
   bySource: countBy(fixed, (row) => row.chosenBaseSource),
   byRank: countBy(fixed, (row) => row.rank),
   byPayloadRank: countBy(payloadWorks, (work) => work.rank),
   byPayloadReviewStatus: countBy(payloadWorks, (work) => work.reviewStatus),
+  byImportBatch: countBy(payloadWorks, (work) => work.importBatch),
+  byRatingNotice: countBy(payloadWorks, (work) => work.ratingNotice),
+  byChosenBaseSource: countBy(payloadWorks, (work) => work.chosenBaseSource),
+  byReviewReason: countBy(
+    payloadWorks.flatMap((work) => (work.reviewReasons || []).map((reason) => ({ reason }))),
+    (row) => row.reason
+  ),
   byPayloadCandidateSource: countBy(
     payloadWorks.flatMap((work) => work.candidateSources || []),
-    (item) => item.source,
+    (item) => item.source
   ),
   qaErrors,
   qaWarnings,
@@ -255,7 +365,6 @@ fs.writeFileSync(outJson, JSON.stringify(fixed, null, 2), 'utf8')
 fs.writeFileSync(outJsonl, fixed.map((row) => JSON.stringify(row)).join('\n') + '\n', 'utf8')
 fs.writeFileSync(outSummary, JSON.stringify(summary, null, 2), 'utf8')
 fs.writeFileSync(outPayload, JSON.stringify(payloadSeed, null, 2), 'utf8')
-
 fs.writeFileSync(outMd, [
   '# Public Catalog Import Preview v0.2 Compat',
   '',
@@ -266,36 +375,38 @@ fs.writeFileSync(outMd, [
   '- No importer apply.',
   '- No delete.',
   '',
-  '## Ready',
-  '',
-  `readyForPayloadSeedDryRun: ${summary.readyForPayloadSeedDryRun}`,
-  '',
   '## Summary',
   '',
   `- previews: ${summary.previews}`,
   `- payloadDraftWorks: ${summary.payloadDraftWorks}`,
   `- reviewQueueRows: ${summary.reviewQueueRows}`,
-  `- resolvedSourceCandidateRows: ${summary.resolvedSourceCandidateRows}`,
-  `- unresolvedSourceCandidateRows: ${summary.unresolvedSourceCandidateRows}`,
+  `- structuredReviewFieldMissing: ${summary.structuredReviewFieldMissing}`,
+  `- readyForPayloadSeedDryRun: ${summary.readyForPayloadSeedDryRun}`,
   `- duplicateCandidateSourceRows: ${summary.duplicateCandidateSourceRows}`,
   `- duplicateCandidateSourcesRemoved: ${summary.duplicateCandidateSourcesRemoved}`,
   '',
-  '## By source',
+  '## By import batch',
   '',
   '```json',
-  JSON.stringify(summary.bySource, null, 2),
+  JSON.stringify(summary.byImportBatch, null, 2),
   '```',
   '',
-  '## By payload rank',
+  '## By rating notice',
   '',
   '```json',
-  JSON.stringify(summary.byPayloadRank, null, 2),
+  JSON.stringify(summary.byRatingNotice, null, 2),
   '```',
   '',
-  '## By payload reviewStatus',
+  '## By chosen base source',
   '',
   '```json',
-  JSON.stringify(summary.byPayloadReviewStatus, null, 2),
+  JSON.stringify(summary.byChosenBaseSource, null, 2),
+  '```',
+  '',
+  '## By review reason',
+  '',
+  '```json',
+  JSON.stringify(summary.byReviewReason, null, 2),
   '```',
   '',
   '## By payload candidate source',
@@ -304,19 +415,10 @@ fs.writeFileSync(outMd, [
   JSON.stringify(summary.byPayloadCandidateSource, null, 2),
   '```',
   '',
-  '## QA Errors',
+  '## QA',
   '',
-  ...(summary.qaErrors.length ? summary.qaErrors.map((x) => `- ${x}`) : ['- none']),
-  '',
-  '## QA Warnings',
-  '',
-  ...(summary.qaWarnings.length ? summary.qaWarnings.map((x) => `- ${x}`) : ['- none']),
-  '',
-  '## Sample payload works',
-  '',
-  '```json',
-  JSON.stringify(payloadWorks.slice(0, 3), null, 2),
-  '```',
+  `- qaErrors: ${qaErrors.length}`,
+  `- qaWarnings: ${qaWarnings.length}`,
   '',
 ].join('\n'), 'utf8')
 
@@ -325,13 +427,15 @@ console.log(JSON.stringify({
   readyForPayloadSeedDryRun: summary.readyForPayloadSeedDryRun,
   previews: summary.previews,
   reviewQueueRows: summary.reviewQueueRows,
+  structuredReviewFieldMissing: summary.structuredReviewFieldMissing,
   duplicateCandidateSourceRows: summary.duplicateCandidateSourceRows,
   duplicateCandidateSourcesRemoved: summary.duplicateCandidateSourcesRemoved,
   byPayloadRank: summary.byPayloadRank,
   byPayloadReviewStatus: summary.byPayloadReviewStatus,
   byPayloadCandidateSource: summary.byPayloadCandidateSource,
-  qaErrors: summary.qaErrors.length,
-  qaWarnings: summary.qaWarnings.length,
+  byReviewReason: summary.byReviewReason,
+  qaErrors: qaErrors.length,
+  qaWarnings: qaWarnings.length,
   outputs: {
     json: outJson,
     jsonl: outJsonl,
