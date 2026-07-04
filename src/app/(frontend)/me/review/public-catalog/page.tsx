@@ -49,10 +49,6 @@ const sourceOptions = ['mangadex', 'steam', 'yurizukan', 'bangumi', 'wikidata', 
 const rankOptions = ['F', 'E', 'D', 'C', 'B', 'A', 'AA', 'unknown']
 const collator = new Intl.Collator('zh-CN')
 
-const v02ReviewQueueSiteIdOverrides = new Set([
-  'work:mgv2-00326-身为女性向游戏的女主角挑战最强生存剧',
-  'work:mgv2-00413-我亲爱的法医小姐',
-])
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] || '' : value || ''
@@ -147,7 +143,6 @@ function isFocusDoc(doc: WorkDoc) {
   const reasons = reviewReasonValues(doc)
 
   return (
-    v02ReviewQueueSiteIdOverrides.has(siteId) ||
     reasons.includes('radar_seed_attached') ||
     reasons.includes('source_conflict') ||
     reasons.includes('multi_source_or_variant') ||
