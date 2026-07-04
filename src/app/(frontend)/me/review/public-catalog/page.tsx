@@ -28,6 +28,11 @@ type WorkDoc = {
   evidenceStrength?: string
   evidenceNote?: string
   candidateSources?: CandidateSource[]
+  importBatch?: string
+  ratingNotice?: string
+  chosenBaseSource?: string
+  reviewReasons?: string[] | string
+  sourceConflictNotes?: string
   status?: string
   updatedAt?: string
 }
@@ -97,18 +102,39 @@ function asText(value: unknown) {
 
 function sourceValues(doc: WorkDoc) {
   const sources = doc.candidateSources || []
-  return [...new Set(sources.map((item) => item?.source).filter(Boolean))] as string[]
+  return [
+    ...new Set([
+      ...sources.map((item) => item?.source),
+      doc.chosenBaseSource,
+    ].filter(Boolean)),
+  ] as string[]
 }
 
 function primarySource(doc: WorkDoc) {
   return sourceValues(doc)[0] || 'unknown'
 }
 
+function reviewReasonValues(doc: WorkDoc) {
+  const value = doc.reviewReasons
+
+  if (Array.isArray(value)) {
+    return [...new Set(value.map((item) => String(item || '').trim()).filter(Boolean))]
+  }
+
+  if (typeof value === 'string') {
+    return [...new Set(value.split(';').map((item) => item.trim()).filter(Boolean))]
+  }
+
+  return []
+}
+
 function isPublicCatalogDoc(doc: WorkDoc) {
   const siteId = asText(doc.siteId)
   const note = asText(doc.evidenceNote)
+  const importBatch = asText(doc.importBatch)
 
   return (
+    importBatch.startsWith('public-catalog-import') ||
     siteId.startsWith('work:mgv2-') ||
     note.includes('Preview generated from mgv2-') ||
     /AI\s*综合，\s*待\s*复核/.test(note)
@@ -118,9 +144,13 @@ function isPublicCatalogDoc(doc: WorkDoc) {
 function isFocusDoc(doc: WorkDoc) {
   const note = asText(doc.evidenceNote)
   const siteId = asText(doc.siteId)
+  const reasons = reviewReasonValues(doc)
 
   return (
     v02ReviewQueueSiteIdOverrides.has(siteId) ||
+    reasons.includes('radar_seed_attached') ||
+    reasons.includes('source_conflict') ||
+    reasons.includes('multi_source_or_variant') ||
     note.includes('Review notes:') ||
     note.includes('radar_seed_attached') ||
     note.includes('source_conflict')
@@ -152,6 +182,11 @@ function matchesQuery(doc: WorkDoc, q: string) {
     doc.evidenceStrength,
     doc.status,
     doc.evidenceNote,
+    doc.importBatch,
+    doc.ratingNotice,
+    doc.chosenBaseSource,
+    doc.sourceConflictNotes,
+    ...reviewReasonValues(doc),
     ...sourceValues(doc),
   ]
     .map(normalizeText)
@@ -269,14 +304,14 @@ export default async function PublicCatalogReviewPage({ searchParams }: { search
       {focusDocs.length !== 50 ? (
         <div style={{ background: '#fff8e6', border: '1px solid #f0d48a', borderRadius: 14, lineHeight: 1.7, marginTop: 18, padding: 14 }}>
           <strong>提示：</strong>
-          handoff 里的 review queue 是 50 条。如果这里不是 50，说明当前数据库字段只能近似还原 queue；后续可以补结构化 reviewReasons / importBatch 字段。
+          handoff 里的 review queue 是 50 条。如果这里不是 50，请检查结构化 reviewReasons / importBatch 是否已回填；当前页面仍保留 evidenceNote fallback。
         </div>
       ) : null}
 
       <form action="/me/review/public-catalog" style={{ border: '1px solid #ddd', borderRadius: 18, display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginTop: 24, padding: 18 }}>
         <label style={{ display: 'grid', gap: 6 }}>
           <span>关键词</span>
-          <input defaultValue={filters.q} name="q" placeholder="title / slug / siteId / note" style={{ padding: '10px 12px' }} type="search" />
+          <input defaultValue={filters.q} name="q" placeholder="title / slug / siteId / reason / note" style={{ padding: '10px 12px' }} type="search" />
         </label>
 
         <label style={{ display: 'grid', gap: 6 }}>
@@ -321,6 +356,7 @@ export default async function PublicCatalogReviewPage({ searchParams }: { search
       <section style={{ display: 'grid', gap: 14, marginTop: 24 }}>
         {filteredDocs.map((doc) => {
           const sources = sourceValues(doc)
+          const reviewReasons = reviewReasonValues(doc)
 
           return (
             <article key={doc.id} style={{ border: '1px solid #ddd', borderRadius: 18, padding: 18 }}>
@@ -345,6 +381,21 @@ export default async function PublicCatalogReviewPage({ searchParams }: { search
 
                 <dt style={{ color: '#666' }}>sources</dt>
                 <dd style={{ margin: 0 }}>{sources.length ? sources.join(', ') : '-'}</dd>
+
+                <dt style={{ color: '#666' }}>import batch</dt>
+                <dd style={{ margin: 0 }}>{doc.importBatch || '-'}</dd>
+
+                <dt style={{ color: '#666' }}>review reasons</dt>
+                <dd style={{ margin: 0 }}>{reviewReasons.length ? reviewReasons.join(', ') : '-'}</dd>
+
+                <dt style={{ color: '#666' }}>rating notice</dt>
+                <dd style={{ margin: 0 }}>{doc.ratingNotice || '-'}</dd>
+
+                <dt style={{ color: '#666' }}>base source</dt>
+                <dd style={{ margin: 0 }}>{doc.chosenBaseSource || '-'}</dd>
+
+                <dt style={{ color: '#666' }}>source conflict</dt>
+                <dd style={{ margin: 0 }}>{doc.sourceConflictNotes || '-'}</dd>
 
                 <dt style={{ color: '#666' }}>evidence</dt>
                 <dd style={{ margin: 0 }}>{shortNote(doc.evidenceNote) || '-'}</dd>
@@ -403,6 +454,4 @@ function SummaryBox({ title, rows }: { title: string; rows: Array<[string, numbe
     </div>
   )
 }
-
-
 

@@ -11,6 +11,24 @@ const reviewStatusOptions = [
   { label: '已废弃', value: 'deprecated' },
 ]
 
+const reviewReasonOptions = [
+  { label: '雷达种子命中', value: 'radar_seed_attached' },
+  { label: '来源冲突', value: 'source_conflict' },
+  { label: '多来源或变体', value: 'multi_source_or_variant' },
+  { label: 'Wikidata 候选待复核', value: 'wikidata_candidate_review' },
+  { label: 'Wikidata 隔离', value: 'wikidata_quarantine' },
+  { label: '人工复核', value: 'manual_review' },
+  { label: '其他', value: 'other' },
+]
+
+const ratingNoticeOptions = [
+  { label: 'AI 综合，待复核', value: 'ai_synthesized_pending_review' },
+  { label: '信息不足', value: 'insufficient_information' },
+  { label: '人工已确认', value: 'manual_reviewed' },
+  { label: '无', value: 'none' },
+  { label: '其他', value: 'other' },
+]
+
 const evidenceStrengthOptions = [
   { label: '未评估', value: 'unassessed' },
   { label: '弱', value: 'weak' },
@@ -120,7 +138,7 @@ export const Works: CollectionConfig = {
     plural: '作品',
   },
   admin: {
-    defaultColumns: ['title', 'siteId', 'mediaGroup', 'mediaType', 'rank', 'reviewStatus', 'evidenceStrength', 'isLiteVisible', 'status', 'updatedAt'],
+    defaultColumns: ['title', 'siteId', 'mediaGroup', 'mediaType', 'rank', 'reviewStatus', 'reviewReasons', 'ratingNotice', 'evidenceStrength', 'isLiteVisible', 'status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'title',
   },
@@ -187,6 +205,50 @@ export const Works: CollectionConfig = {
       options: reviewStatusOptions,
       admin: {
         description: '新站自己的复核状态，不表示旧站来源。',
+      },
+    },
+    {
+      name: 'importBatch',
+      type: 'text',
+      label: '导入批次',
+      admin: {
+        description: '记录批量导入、预览或迁移批次，例如 public-catalog-import-v02。用于内部复核筛选。',
+      },
+    },
+    {
+      name: 'ratingNotice',
+      type: 'select',
+      label: '分级提示',
+      options: ratingNoticeOptions,
+      admin: {
+        description: '记录导入阶段给出的分级提示，例如 AI 综合待复核或信息不足。',
+      },
+    },
+    {
+      name: 'chosenBaseSource',
+      type: 'select',
+      label: '导入基准来源',
+      options: candidateSourceOptions,
+      admin: {
+        description: '记录本条导入记录采用的基准来源。候选来源详情仍保存在 candidateSources。',
+      },
+    },
+    {
+      name: 'reviewReasons',
+      type: 'select',
+      label: '复核原因',
+      hasMany: true,
+      options: reviewReasonOptions,
+      admin: {
+        description: '结构化记录进入复核队列的原因；用于内部 review dashboard 精确筛选。',
+      },
+    },
+    {
+      name: 'sourceConflictNotes',
+      type: 'textarea',
+      label: '来源冲突备注',
+      admin: {
+        description: '记录多来源、变体、冲突来源等简要说明。',
       },
     },
     {
@@ -620,3 +682,4 @@ export const Works: CollectionConfig = {
     },
   ],
 }
+
