@@ -28,6 +28,20 @@ const IGNORED_DIR_NAMES = new Set([
 ])
 
 const SUPPORTED_EXTENSIONS = new Set(['.jsonl', '.ndjson', '.csv', '.json'])
+const OBJECT_TEXT_KEYS = [
+  'userPreferred',
+  'romaji',
+  'english',
+  'native',
+  'original',
+  'name_cn',
+  'name',
+  'title_cn',
+  'title',
+  'label',
+  'value',
+  'text',
+]
 
 function parseArgs(argv) {
   const args = {}
@@ -72,15 +86,38 @@ Safety:
 }
 
 function asText(value) {
-  return String(value ?? '').trim()
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value).trim()
+  }
+  return ''
 }
 
 function normalizeWhitespace(value) {
   return asText(value).replace(/\s+/gu, ' ')
 }
 
+function textValues(value, seen = new Set()) {
+  if (value === null || value === undefined) return []
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return [normalizeWhitespace(value)].filter(Boolean)
+  }
+  if (Array.isArray(value)) return value.flatMap((item) => textValues(item, seen))
+  if (typeof value !== 'object') return []
+  if (seen.has(value)) return []
+  seen.add(value)
+
+  const preferred = []
+  for (const key of OBJECT_TEXT_KEYS) {
+    if (key in value) preferred.push(...textValues(value[key], seen))
+  }
+  if (preferred.length) return preferred
+
+  return Object.values(value).flatMap((item) => textValues(item, seen))
+}
+
 function splitListLike(value) {
-  if (Array.isArray(value)) return value.flatMap(splitListLike)
+  if (Array.isArray(value) || (value && typeof value === 'object')) return textValues(value)
 
   return String(value ?? '')
     .split(/[;|,\n]/u)
@@ -89,7 +126,7 @@ function splitListLike(value) {
 }
 
 function unique(values) {
-  return [...new Set(values.map(normalizeWhitespace).filter(Boolean))]
+  return [...new Set(values.flatMap(splitListLike).filter((value) => value && value !== '[object Object]'))]
 }
 
 function normalizePathForReport(value) {
@@ -97,7 +134,7 @@ function normalizePathForReport(value) {
 }
 
 function inc(map, key, amount = 1) {
-  const normalized = asText(key) || 'missing'
+  const normalized = normalizeWhitespace(key) || 'missing'
   map[normalized] = (map[normalized] || 0) + amount
 }
 
@@ -196,6 +233,9 @@ function resolveSourceName(sourceHints, requestedSources, record) {
 
 function getPathValue(object, keyPath) {
   if (!object || typeof object !== 'object') return undefined
+
+  if (keyPath in object) return object[keyPath]
+
   const parts = keyPath.split('.')
   let current = object
 
@@ -222,9 +262,34 @@ function pickValue(record, keys) {
 function objectTitle(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return ''
 
-  return normalizeWhitespace(
-    value.userPreferred || value.romaji || value.english || value.native || value.original || value.name || value.title
-  )
+  for (const key of OBJECT_TEXT_KEYS) {
+    const text = normalizeWhitespace(value[key])
+    if (text) return text
+  }
+
+  return textValues(value)[0] || ''
+}
+
+function fuzzyTitleFromRecord(record) {
+  if (!record || typeof record !== 'object') return ''
+
+  const badKeyPattern = /(url|href|image|cover|thumbnail|banner|description|summary|synopsis|tag|genre)/iu
+  const goodKeyPattern = /(title|name|label|original|alttitle|alt_title|canonical)/iu
+
+  for (const [key, value] of Object.entries(record)) {
+    if (!goodKeyPattern.test(key) || badKeyPattern.test(key)) continue
+
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const title = objectTitle(value)
+      if (title) return title
+      continue
+    }
+
+    const text = normalizeWhitespace(value)
+    if (text && !/^https?:\/\//iu.test(text)) return text
+  }
+
+  return ''
 }
 
 function pickTitle(record, sourceName) {
@@ -235,12 +300,23 @@ function pickTitle(record, sourceName) {
   }
 
   const sourceSpecificKeys = {
-    bangumi: ['name_cn', 'name', 'title', 'title_cn', 'title_jp', 'originalTitle'],
+    bangumi: [
+      'name_cn',
+      'name',
+      'title',
+      'title_cn',
+      'title_jp',
+      'originalTitle',
+      'subject.name_cn',
+      'subject.name',
+      'subject.title',
+    ],
     anilist: [
       'title.userPreferred',
       'title.romaji',
       'title.english',
       'title.native',
+      'title_userPreferred',
       'title_romaji',
       'title_english',
       'title_native',
@@ -248,18 +324,38 @@ function pickTitle(record, sourceName) {
       'english',
       'native',
       'name',
+      'media.title.userPreferred',
+      'media.title.romaji',
+      'media.title.english',
+      'media.title.native',
     ],
-    vndb: ['title', 'original', 'alttitle', 'name', 'label'],
+    vndb: [
+      'title',
+      'vn.title',
+      'vntitle',
+      'vn_title',
+      'vndbTitle',
+      'vndb_title',
+      'original',
+      'alttitle',
+      'alt_title',
+      'name',
+      'label',
+    ],
   }
 
-  return normalizeWhitespace(pickValue(record, [
+  const direct = normalizeWhitespace(pickValue(record, [
     ...(sourceSpecificKeys[sourceName] || []),
     'sourceTitle',
     'source_title',
     'displayTitle',
     'display_title',
+    'canonicalTitle',
+    'canonical_title',
     'label',
   ]))
+
+  return direct || fuzzyTitleFromRecord(record)
 }
 
 function pickAliases(record, sourceName, title) {
@@ -267,7 +363,7 @@ function pickAliases(record, sourceName, title) {
 
   const titleObject = pickValue(record, ['title'])
   if (titleObject && typeof titleObject === 'object' && !Array.isArray(titleObject)) {
-    values.push(titleObject.userPreferred, titleObject.romaji, titleObject.english, titleObject.native)
+    values.push(...textValues(titleObject))
   }
 
   const aliasValue = pickValue(record, [
@@ -285,11 +381,21 @@ function pickAliases(record, sourceName, title) {
   values.push(...splitListLike(aliasValue))
 
   if (sourceName === 'bangumi') {
-    values.push(record.name, record.name_cn, record.title, record.title_cn)
+    values.push(record.name, record.name_cn, record.title, record.title_cn, getPathValue(record, 'subject.name'), getPathValue(record, 'subject.name_cn'))
   }
 
   if (sourceName === 'anilist') {
-    values.push(record.title_romaji, record.title_english, record.title_native, record.romaji, record.english, record.native)
+    values.push(
+      record.title_romaji,
+      record.title_english,
+      record.title_native,
+      record['title.romaji'],
+      record['title.english'],
+      record['title.native'],
+      record.romaji,
+      record.english,
+      record.native
+    )
   }
 
   if (sourceName === 'vndb') {
@@ -299,11 +405,57 @@ function pickAliases(record, sourceName, title) {
   return unique(values).filter((value) => value !== title)
 }
 
+function collectUrls(value, seen = new Set()) {
+  if (value === null || value === undefined) return []
+  if (typeof value === 'string') {
+    return [...value.matchAll(/https?:\/\/[^\s"'<>]+/giu)].map((match) => match[0])
+  }
+  if (Array.isArray(value)) return value.flatMap((item) => collectUrls(item, seen))
+  if (typeof value !== 'object') return []
+  if (seen.has(value)) return []
+  seen.add(value)
+
+  return Object.values(value).flatMap((item) => collectUrls(item, seen))
+}
+
+function extractIdFromUrls(record, sourceName) {
+  const urls = collectUrls(record)
+
+  for (const url of urls) {
+    if (sourceName === 'vndb') {
+      const match = url.match(/vndb\.org\/v(\d+)/iu)
+      if (match) return `v${match[1]}`
+    }
+
+    if (sourceName === 'anilist') {
+      const match = url.match(/anilist\.co\/(?:anime|manga)\/(\d+)/iu)
+      if (match) return match[1]
+    }
+
+    if (sourceName === 'bangumi') {
+      const match = url.match(/(?:bgm\.tv|bangumi\.tv|chii\.in)\/subject\/(\d+)/iu)
+      if (match) return match[1]
+    }
+  }
+
+  return ''
+}
+
 function pickSourceId(record, sourceName) {
   const sourceSpecificKeys = {
-    bangumi: ['bangumiId', 'bgmId', 'subject_id', 'subjectId', 'subjectID', 'id'],
-    anilist: ['anilistId', 'mediaId', 'media_id', 'id'],
-    vndb: ['vndbId', 'vnid', 'vndb_id', 'id', 'vid'],
+    bangumi: [
+      'bangumiId',
+      'bangumi_id',
+      'bgmId',
+      'bgm_id',
+      'subject_id',
+      'subjectId',
+      'subjectID',
+      'subject.id',
+      'id',
+    ],
+    anilist: ['anilistId', 'anilist_id', 'mediaId', 'media_id', 'media.id', 'id'],
+    vndb: ['vndbId', 'vndb_id', 'vnid', 'vn_id', 'vn.id', 'id', 'vid', 'vndb'],
   }
 
   const value = pickValue(record, [
@@ -314,10 +466,14 @@ function pickSourceId(record, sourceName) {
     'external_id',
   ])
 
-  const text = normalizeWhitespace(value)
+  const text = normalizeWhitespace(value) || extractIdFromUrls(record, sourceName)
   if (!text) return ''
 
-  if (sourceName === 'vndb' && /^\d+$/u.test(text)) return `v${text}`
+  if (sourceName === 'vndb') {
+    const match = text.match(/^v?(\d+)$/iu)
+    if (match) return `v${match[1]}`
+  }
+
   return text
 }
 
@@ -330,10 +486,26 @@ function pickSourceUrl(record, sourceName, sourceId) {
     'site_url',
     'link',
     'href',
+    'vndbUrl',
+    'vndb_url',
+    'bangumiUrl',
+    'bangumi_url',
+    'anilistUrl',
+    'anilist_url',
+    'mediaUrl',
+    'media_url',
   ]))
 
   if (existing) return existing
 
+  const matchingUrl = collectUrls(record).find((url) => {
+    if (sourceName === 'vndb') return /vndb\.org\/v\d+/iu.test(url)
+    if (sourceName === 'anilist') return /anilist\.co\/(?:anime|manga)\/\d+/iu.test(url)
+    if (sourceName === 'bangumi') return /(?:bgm\.tv|bangumi\.tv|chii\.in)\/subject\/\d+/iu.test(url)
+    return false
+  })
+
+  if (matchingUrl) return matchingUrl
   if (!sourceId) return ''
 
   if (sourceName === 'bangumi') return `https://bgm.tv/subject/${sourceId}`
@@ -346,12 +518,13 @@ function pickSourceUrl(record, sourceName, sourceId) {
 }
 
 function inferBangumiMediaType(record) {
-  const type = normalizeWhitespace(pickValue(record, ['type', 'subjectType', 'subject_type', 'type_id']))
-  const platform = normalizeWhitespace(pickValue(record, ['platform', 'mediaType', 'media_type']))
+  const type = normalizeWhitespace(pickValue(record, ['type', 'subjectType', 'subject_type', 'type_id', 'subject.type']))
+  const platform = normalizeWhitespace(pickValue(record, ['platform', 'mediaType', 'media_type', 'subject.mediaType', 'subject.media_type']))
   const category = `${type} ${platform}`.toLowerCase()
 
   if (type === '1' || category.includes('book') || category.includes('书籍') || category.includes('漫画') || category.includes('novel')) {
     if (category.includes('novel') || category.includes('小说')) return 'novel_or_book'
+    if (category.includes('manga') || category.includes('漫画')) return 'manga'
     return 'book_or_manga'
   }
   if (type === '2' || category.includes('anime') || category.includes('动画')) return 'anime'
@@ -363,8 +536,8 @@ function inferBangumiMediaType(record) {
 }
 
 function inferAniListMediaType(record) {
-  const type = normalizeWhitespace(pickValue(record, ['type', 'mediaType', 'media_type'])).toUpperCase()
-  const format = normalizeWhitespace(pickValue(record, ['format'])).toUpperCase()
+  const type = normalizeWhitespace(pickValue(record, ['type', 'mediaType', 'media_type', 'media.type'])).toUpperCase()
+  const format = normalizeWhitespace(pickValue(record, ['format', 'media.format'])).toUpperCase()
 
   if (type === 'ANIME') return 'anime'
   if (type === 'MANGA') {
@@ -387,6 +560,8 @@ function inferMediaType(record, sourceName) {
     'media_type',
     'medium',
     'category',
+    'typeName',
+    'type_name',
   ])).toLowerCase()
 
   if (explicit) {
@@ -424,24 +599,14 @@ function pickCreators(record) {
     'brand',
   ]) {
     const value = record?.[key]
-
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        if (typeof item === 'string') values.push(item)
-        else if (item && typeof item === 'object') values.push(item.name, item.title, item.label)
-      }
-    } else if (value && typeof value === 'object') {
-      values.push(value.name, value.title, value.label)
-    } else {
-      values.push(...splitListLike(value))
-    }
+    values.push(...textValues(value))
   }
 
   return unique(values)
 }
 
 function pickReleaseDate(record) {
-  const dateObject = pickValue(record, ['startDate', 'start_date'])
+  const dateObject = pickValue(record, ['startDate', 'start_date', 'startDateFuzzy', 'start_date_fuzzy'])
   if (dateObject && typeof dateObject === 'object' && !Array.isArray(dateObject)) {
     const year = normalizeWhitespace(dateObject.year)
     const month = normalizeWhitespace(dateObject.month).padStart(2, '0')
@@ -467,8 +632,16 @@ function pickReleaseDate(record) {
   ]))
 }
 
-function classifyEligibility(record, sourceName, mediaType, title) {
+function classifyEligibility(record, sourceName, mediaType, title, sourceId, sourceUrl) {
   if (!title) {
+    if (sourceId || sourceUrl) {
+      return {
+        eligibleForCatalog: false,
+        eligibilityStatus: 'evidence_only',
+        excludeReason: 'missing_title_identity_evidence',
+      }
+    }
+
     return {
       eligibleForCatalog: false,
       eligibilityStatus: 'quarantine',
@@ -520,11 +693,11 @@ function normalizeRecord({ record, sourceHints, requestedSources, rawPath, rawRe
   const sourceId = pickSourceId(record, sourceName)
   const title = pickTitle(record, sourceName)
   const mediaType = inferMediaType(record, sourceName)
-  const aliases = pickAliases(record, sourceName, title)
   const sourceUrl = pickSourceUrl(record, sourceName, sourceId)
+  const aliases = pickAliases(record, sourceName, title)
   const creators = pickCreators(record)
   const releaseDate = pickReleaseDate(record)
-  const eligibility = classifyEligibility(record, sourceName, mediaType, title)
+  const eligibility = classifyEligibility(record, sourceName, mediaType, title, sourceId, sourceUrl)
 
   const sourceRecordKey = sourceId
     ? `${sourceName}:${sourceId}`
@@ -860,10 +1033,10 @@ async function main() {
 
   const rootDir = args.root || DEFAULT_ROOT
   const outDir = args['out-dir'] || DEFAULT_OUT_DIR
-  const sources = asText(args.sources)
+  const sources = normalizeWhitespace(args.sources)
     ? splitListLike(args.sources).map((source) => source.toLowerCase())
     : DEFAULT_SOURCES
-  const scanDirs = asText(args['scan-dirs'])
+  const scanDirs = normalizeWhitespace(args['scan-dirs'])
     ? splitListLike(args['scan-dirs'])
     : DEFAULT_SCAN_DIRS
   const includeRawDetail = Boolean(args['include-raw-detail'])
