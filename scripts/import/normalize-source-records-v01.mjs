@@ -632,9 +632,15 @@ function pickReleaseDate(record) {
   ]))
 }
 
-function classifyEligibility(record, sourceName, mediaType, title, sourceId, sourceUrl) {
+function isLinkEvidencePath(rawPath, sourceHints) {
+  const lower = rawPath.toLowerCase()
+  const hasMultipleSourceHints = sourceHints.length > 1
+  return hasMultipleSourceHints || /(?:link|links|url|urls|appid|id-map|identity|entity-link|patch-plan|match|matches|best)/iu.test(lower)
+}
+
+function classifyEligibility(record, sourceName, mediaType, title, sourceId, sourceUrl, rawPath, sourceHints) {
   if (!title) {
-    if (sourceId || sourceUrl) {
+    if (sourceId || sourceUrl || isLinkEvidencePath(rawPath, sourceHints)) {
       return {
         eligibleForCatalog: false,
         eligibilityStatus: 'evidence_only',
@@ -697,7 +703,7 @@ function normalizeRecord({ record, sourceHints, requestedSources, rawPath, rawRe
   const aliases = pickAliases(record, sourceName, title)
   const creators = pickCreators(record)
   const releaseDate = pickReleaseDate(record)
-  const eligibility = classifyEligibility(record, sourceName, mediaType, title, sourceId, sourceUrl)
+  const eligibility = classifyEligibility(record, sourceName, mediaType, title, sourceId, sourceUrl, rawPath, sourceHints)
 
   const sourceRecordKey = sourceId
     ? `${sourceName}:${sourceId}`
