@@ -37,16 +37,36 @@ type WorkDoc = {
   updatedAt?: string
 }
 
+type LabeledOption = {
+  value: string
+  label: string
+}
+
 type Filters = {
   q: string
   rank: string
   source: string
+  reason: string
+  ratingNotice: string
+  importBatch: string
   mode: 'focus' | 'all'
 }
 
 const allowedRoles: Role[] = ['admin', 'editor', 'reviewer']
 const sourceOptions = ['mangadex', 'steam', 'yurizukan', 'bangumi', 'wikidata', 'anilist', 'vndb', 'wikipedia', 'ndl', 'manual', 'other']
 const rankOptions = ['F', 'E', 'D', 'C', 'B', 'A', 'AA', 'unknown']
+const reviewReasonOptions: LabeledOption[] = [
+  { value: 'radar_seed_attached', label: '雷达种子命中' },
+  { value: 'multi_source_or_variant', label: '多来源或变体' },
+  { value: 'source_conflict', label: '来源冲突' },
+]
+const ratingNoticeOptions: LabeledOption[] = [
+  { value: 'ai_synthesized_pending_review', label: 'AI 综合，待复核' },
+  { value: 'insufficient_information', label: '信息不足' },
+]
+const importBatchOptions: LabeledOption[] = [
+  { value: 'public-catalog-import-v02', label: 'Public Catalog v0.2' },
+]
 const collator = new Intl.Collator('zh-CN')
 
 
@@ -66,10 +86,14 @@ function normalizeRank(value: string) {
   return rank.toUpperCase()
 }
 
+function normalizeOption(value: string, options: string[]) {
+  const normalized = value.trim().toLowerCase()
+  if (!normalized || normalized === 'all') return 'all'
+  return options.includes(normalized) ? normalized : 'all'
+}
+
 function normalizeSource(value: string) {
-  const source = value.trim().toLowerCase()
-  if (!source || source === 'all') return 'all'
-  return sourceOptions.includes(source) ? source : 'all'
+  return normalizeOption(value, sourceOptions)
 }
 
 function parseFilters(params: Record<string, string | string[] | undefined>): Filters {
@@ -78,6 +102,9 @@ function parseFilters(params: Record<string, string | string[] | undefined>): Fi
     q: firstParam(params.q).trim(),
     rank: normalizeRank(firstParam(params.rank)),
     source: normalizeSource(firstParam(params.source)),
+    reason: normalizeOption(firstParam(params.reason), reviewReasonOptions.map((item) => item.value)),
+    ratingNotice: normalizeOption(firstParam(params.ratingNotice), ratingNoticeOptions.map((item) => item.value)),
+    importBatch: normalizeOption(firstParam(params.importBatch), importBatchOptions.map((item) => item.value)),
     mode,
   }
 }
@@ -118,10 +145,28 @@ function reviewReasonValues(doc: WorkDoc) {
   }
 
   if (typeof value === 'string') {
-    return [...new Set(value.split(';').map((item) => item.trim()).filter(Boolean))]
+    return [...new Set(value.split(/[;|,]/u).map((item) => item.trim()).filter(Boolean))]
   }
 
   return []
+}
+
+function labelFromOptions(options: LabeledOption[], value?: string) {
+  const normalized = asText(value)
+  if (!normalized || normalized === 'missing') return '未填写'
+  return options.find((option) => option.value === normalized)?.label || normalized
+}
+
+function reviewReasonLabel(value?: string) {
+  return labelFromOptions(reviewReasonOptions, value)
+}
+
+function ratingNoticeLabel(value?: string) {
+  return labelFromOptions(ratingNoticeOptions, value)
+}
+
+function importBatchLabel(value?: string) {
+  return labelFromOptions(importBatchOptions, value)
 }
 
 function isPublicCatalogDoc(doc: WorkDoc) {
@@ -139,7 +184,6 @@ function isPublicCatalogDoc(doc: WorkDoc) {
 
 function isFocusDoc(doc: WorkDoc) {
   const note = asText(doc.evidenceNote)
-  const siteId = asText(doc.siteId)
   const reasons = reviewReasonValues(doc)
 
   return (
@@ -181,7 +225,10 @@ function matchesQuery(doc: WorkDoc, q: string) {
     doc.ratingNotice,
     doc.chosenBaseSource,
     doc.sourceConflictNotes,
+    ratingNoticeLabel(doc.ratingNotice),
+    importBatchLabel(doc.importBatch),
     ...reviewReasonValues(doc),
+    ...reviewReasonValues(doc).map(reviewReasonLabel),
     ...sourceValues(doc),
   ]
     .map(normalizeText)
@@ -197,6 +244,9 @@ function matchesFilters(doc: WorkDoc, filters: Filters) {
   if (filters.mode === 'focus' && !isFocusDoc(doc)) return false
   if (filters.rank !== 'all' && (doc.rank || 'unknown') !== filters.rank) return false
   if (filters.source !== 'all' && !sourceValues(doc).includes(filters.source)) return false
+  if (filters.reason !== 'all' && !reviewReasonValues(doc).includes(filters.reason)) return false
+  if (filters.ratingNotice !== 'all' && (doc.ratingNotice || 'missing') !== filters.ratingNotice) return false
+  if (filters.importBatch !== 'all' && (doc.importBatch || 'missing') !== filters.importBatch) return false
   return matchesQuery(doc, filters.q)
 }
 
@@ -207,6 +257,27 @@ function countBy(items: WorkDoc[], getKey: (item: WorkDoc) => string) {
     counts[key] = (counts[key] || 0) + 1
   }
   return Object.entries(counts).sort(([a], [b]) => collator.compare(a, b))
+}
+
+function countReviewReasons(items: WorkDoc[]) {
+  const counts: Record<string, number> = {}
+  for (const item of items) {
+    const reasons = reviewReasonValues(item)
+    if (!reasons.length) {
+      counts.missing = (counts.missing || 0) + 1
+      continue
+    }
+
+    for (const reason of reasons) {
+      counts[reason] = (counts[reason] || 0) + 1
+    }
+  }
+
+  return Object.entries(counts).sort(([a], [b]) => collator.compare(reviewReasonLabel(a), reviewReasonLabel(b)))
+}
+
+function mapCountLabels(rows: Array<[string, number]>, getLabel: (value: string) => string): Array<[string, number]> {
+  return rows.map(([value, count]) => [getLabel(value), count])
 }
 
 function shortNote(note?: string) {
@@ -269,7 +340,10 @@ export default async function PublicCatalogReviewPage({ searchParams }: { search
     })
 
   const rankStats = countBy(baseDocs, (doc) => doc.rank || 'unknown')
+  const reasonStats = countReviewReasons(baseDocs)
+  const ratingNoticeStats = countBy(baseDocs, (doc) => doc.ratingNotice || 'missing')
   const sourceStats = countBy(baseDocs, primarySource)
+  const importBatchStats = countBy(baseDocs, (doc) => doc.importBatch || 'missing')
 
   return (
     <main style={{ margin: '0 auto', maxWidth: 1180, padding: '40px 20px 72px' }}>
@@ -278,7 +352,7 @@ export default async function PublicCatalogReviewPage({ searchParams }: { search
           <p style={{ color: '#777', fontSize: 14, letterSpacing: '0.08em', margin: 0, textTransform: 'uppercase' }}>Public Catalog Review</p>
           <h1 style={{ marginBottom: 8 }}>Public catalog 复核队列</h1>
           <p style={{ color: '#666', lineHeight: 1.7, marginTop: 0, maxWidth: 760 }}>
-            只读内部页。当前不写 Payload、不改 PostgreSQL、不批量更新。默认显示 evidenceNote 含 Review notes / radar_seed_attached / source_conflict 的重点复核项。
+            只读内部页。当前不写 Payload、不改 PostgreSQL、不批量更新。默认显示 reviewReasons 包含雷达种子命中、多来源或变体、来源冲突的重点复核项，并保留 evidenceNote fallback。
           </p>
         </div>
 
@@ -337,6 +411,36 @@ export default async function PublicCatalogReviewPage({ searchParams }: { search
           </select>
         </label>
 
+        <label style={{ display: 'grid', gap: 6 }}>
+          <span>复核原因</span>
+          <select defaultValue={filters.reason} name="reason" style={{ padding: '10px 12px' }}>
+            <option value="all">全部原因</option>
+            {reviewReasonOptions.map((reason) => (
+              <option key={reason.value} value={reason.value}>{reason.label}</option>
+            ))}
+          </select>
+        </label>
+
+        <label style={{ display: 'grid', gap: 6 }}>
+          <span>分级提示</span>
+          <select defaultValue={filters.ratingNotice} name="ratingNotice" style={{ padding: '10px 12px' }}>
+            <option value="all">全部提示</option>
+            {ratingNoticeOptions.map((notice) => (
+              <option key={notice.value} value={notice.value}>{notice.label}</option>
+            ))}
+          </select>
+        </label>
+
+        <label style={{ display: 'grid', gap: 6 }}>
+          <span>导入批次</span>
+          <select defaultValue={filters.importBatch} name="importBatch" style={{ padding: '10px 12px' }}>
+            <option value="all">全部批次</option>
+            {importBatchOptions.map((batch) => (
+              <option key={batch.value} value={batch.value}>{batch.label}</option>
+            ))}
+          </select>
+        </label>
+
         <div style={{ alignItems: 'end', display: 'flex', gap: 10 }}>
           <button style={{ padding: '10px 16px' }} type="submit">筛选</button>
           <Link href="/me/review/public-catalog">重置</Link>
@@ -344,14 +448,18 @@ export default async function PublicCatalogReviewPage({ searchParams }: { search
       </form>
 
       <section style={{ display: 'grid', gap: 18, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', marginTop: 24 }}>
-        <SummaryBox title="分级分布" rows={rankStats.map(([rank, count]) => [rankLabel(rank), count])} />
+        <SummaryBox title="分级分布" rows={mapCountLabels(rankStats, rankLabel)} />
+        <SummaryBox title="复核原因分布" rows={mapCountLabels(reasonStats, reviewReasonLabel)} />
+        <SummaryBox title="分级提示分布" rows={mapCountLabels(ratingNoticeStats, ratingNoticeLabel)} />
         <SummaryBox title="来源分布" rows={sourceStats} />
+        <SummaryBox title="导入批次分布" rows={mapCountLabels(importBatchStats, importBatchLabel)} />
       </section>
 
       <section style={{ display: 'grid', gap: 14, marginTop: 24 }}>
         {filteredDocs.map((doc) => {
           const sources = sourceValues(doc)
           const reviewReasons = reviewReasonValues(doc)
+          const reviewReasonLabels = reviewReasons.map(reviewReasonLabel)
 
           return (
             <article key={doc.id} style={{ border: '1px solid #ddd', borderRadius: 18, padding: 18 }}>
@@ -378,13 +486,13 @@ export default async function PublicCatalogReviewPage({ searchParams }: { search
                 <dd style={{ margin: 0 }}>{sources.length ? sources.join(', ') : '-'}</dd>
 
                 <dt style={{ color: '#666' }}>import batch</dt>
-                <dd style={{ margin: 0 }}>{doc.importBatch || '-'}</dd>
+                <dd style={{ margin: 0 }}>{importBatchLabel(doc.importBatch)}</dd>
 
                 <dt style={{ color: '#666' }}>review reasons</dt>
-                <dd style={{ margin: 0 }}>{reviewReasons.length ? reviewReasons.join(', ') : '-'}</dd>
+                <dd style={{ margin: 0 }}>{reviewReasonLabels.length ? reviewReasonLabels.join(', ') : '-'}</dd>
 
                 <dt style={{ color: '#666' }}>rating notice</dt>
-                <dd style={{ margin: 0 }}>{doc.ratingNotice || '-'}</dd>
+                <dd style={{ margin: 0 }}>{ratingNoticeLabel(doc.ratingNotice)}</dd>
 
                 <dt style={{ color: '#666' }}>base source</dt>
                 <dd style={{ margin: 0 }}>{doc.chosenBaseSource || '-'}</dd>
@@ -414,7 +522,7 @@ export default async function PublicCatalogReviewPage({ searchParams }: { search
         {filteredDocs.length === 0 ? (
           <div style={{ border: '1px solid #ddd', borderRadius: 18, padding: 24 }}>
             <h2>没有匹配项</h2>
-            <p>可以切换到“全部 pending”，或者清空关键词、分级、来源筛选。</p>
+            <p>可以切换到“全部 pending”，或者清空关键词、分级、来源、复核原因、分级提示、导入批次筛选。</p>
           </div>
         ) : null}
       </section>
