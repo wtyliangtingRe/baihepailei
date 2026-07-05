@@ -89,20 +89,23 @@ function html(summary, rows, generatedAt) {
 <html lang="zh-Hans">
 <head>
   <meta charset="utf-8">
-  <title>百合排雷本地 Review Queue v0.1</title>
+  <title>百合排雷本地 Review Queue v0.2</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     :root {
       color-scheme: light dark;
       --bg: #f7f7fb;
       --panel: #ffffff;
-      --text: #1f2937;
+      --text: #111827;
       --muted: #6b7280;
       --line: #e5e7eb;
       --p1: #fee2e2;
       --p2: #fef3c7;
       --p3: #dbeafe;
       --chip: #eef2ff;
+      --chip-strong: #e0e7ff;
+      --button: #e9eefc;
+      --button-active: #c7d2fe;
       --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
       --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
@@ -118,10 +121,14 @@ function html(summary, rows, generatedAt) {
         --p2: #463512;
         --p3: #172554;
         --chip: #1e1b4b;
+        --chip-strong: #312e81;
+        --button: #1f2937;
+        --button-active: #3730a3;
       }
     }
 
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: var(--sans);
@@ -130,12 +137,13 @@ function html(summary, rows, generatedAt) {
     }
 
     header {
-      padding: 24px;
+      padding: 20px 24px 16px;
       border-bottom: 1px solid var(--line);
-      background: var(--panel);
+      background: color-mix(in srgb, var(--panel) 94%, transparent);
       position: sticky;
       top: 0;
-      z-index: 3;
+      z-index: 10;
+      backdrop-filter: blur(10px);
     }
 
     h1 {
@@ -149,8 +157,8 @@ function html(summary, rows, generatedAt) {
     }
 
     main {
-      padding: 20px 24px 40px;
-      max-width: 1600px;
+      padding: 18px 24px 40px;
+      max-width: 1800px;
       margin: 0 auto;
     }
 
@@ -158,10 +166,10 @@ function html(summary, rows, generatedAt) {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
-    .card, .filters, .table-wrap, details {
+    .card, .filters, .quick, .table-wrap, details {
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 14px;
@@ -183,13 +191,34 @@ function html(summary, rows, generatedAt) {
       font-weight: 700;
     }
 
+    .quick {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      align-items: center;
+    }
+
+    .quick .hint {
+      color: var(--muted);
+      font-size: 12px;
+      margin-right: 4px;
+    }
+
     .filters {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: minmax(260px, 1.3fr) repeat(4, minmax(150px, .8fr)) minmax(180px, .9fr);
       gap: 12px;
       padding: 14px;
       margin-bottom: 16px;
       align-items: end;
+    }
+
+    @media (max-width: 1200px) {
+      .filters {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
     }
 
     label {
@@ -211,18 +240,62 @@ function html(summary, rows, generatedAt) {
 
     button {
       cursor: pointer;
-      background: var(--chip);
-      font-weight: 600;
+      background: var(--button);
+      font-weight: 650;
+      transition: transform .08s ease, background .08s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button.active {
+      background: var(--button-active);
+    }
+
+    .quick button {
+      width: auto;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+
+    .checkbox {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      height: 42px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .checkbox input {
+      width: auto;
     }
 
     .table-wrap {
       overflow: auto;
+      max-height: calc(100vh - 260px);
+      min-height: 360px;
+      position: relative;
     }
 
     table {
       width: 100%;
-      border-collapse: collapse;
-      min-width: 1200px;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 1260px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      background: var(--panel);
+      box-shadow: 0 1px 0 var(--line);
     }
 
     th, td {
@@ -234,21 +307,24 @@ function html(summary, rows, generatedAt) {
     }
 
     th {
-      position: sticky;
-      top: 112px;
-      background: var(--panel);
-      z-index: 2;
       font-size: 12px;
       color: var(--muted);
+      white-space: nowrap;
     }
 
-    tr[data-priority="P1"] { background: var(--p1); }
-    tr[data-priority="P2"] { background: var(--p2); }
-    tr[data-priority="P3"] { background: var(--p3); }
+    tbody tr[data-priority="P1"] { background: var(--p1); }
+    tbody tr[data-priority="P2"] { background: var(--p2); }
+    tbody tr[data-priority="P3"] { background: var(--p3); }
+
+    tbody tr:hover {
+      outline: 2px solid color-mix(in srgb, var(--button-active) 60%, transparent);
+      outline-offset: -2px;
+    }
 
     .mono {
       font-family: var(--mono);
       font-size: 12px;
+      word-break: break-all;
     }
 
     .muted {
@@ -256,7 +332,8 @@ function html(summary, rows, generatedAt) {
     }
 
     .title {
-      font-weight: 700;
+      font-weight: 750;
+      margin-bottom: 4px;
     }
 
     .action {
@@ -268,12 +345,6 @@ function html(summary, rows, generatedAt) {
       color: var(--muted);
     }
 
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
     .chip {
       display: inline-flex;
       border-radius: 999px;
@@ -281,6 +352,25 @@ function html(summary, rows, generatedAt) {
       padding: 3px 8px;
       font-size: 12px;
       white-space: nowrap;
+    }
+
+    .chip.strong {
+      background: var(--chip-strong);
+      font-weight: 700;
+    }
+
+    .copy {
+      width: auto;
+      padding: 4px 7px;
+      border-radius: 8px;
+      font-size: 11px;
+      margin-top: 5px;
+    }
+
+    .result-note {
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0 0 10px 4px;
     }
 
     details {
@@ -304,7 +394,7 @@ function html(summary, rows, generatedAt) {
 </head>
 <body>
   <header>
-    <h1>百合排雷本地 Review Queue v0.1</h1>
+    <h1>百合排雷本地 Review Queue v0.2</h1>
     <div class="subtitle">
       生成时间：${esc(generatedAt)} · 本页面只读 · 不写 Payload / PostgreSQL · 不执行 importer
     </div>
@@ -317,6 +407,17 @@ function html(summary, rows, generatedAt) {
       <div class="card"><div class="label">P1</div><div class="value" id="p1Rows">0</div></div>
       <div class="card"><div class="label">P2</div><div class="value" id="p2Rows">0</div></div>
       <div class="card"><div class="label">P3</div><div class="value" id="p3Rows">0</div></div>
+    </section>
+
+    <section class="quick">
+      <span class="hint">快速筛选：</span>
+      <button data-quick-priority="P1">只看 P1</button>
+      <button data-quick-priority="P2">只看 P2</button>
+      <button data-quick-priority="P3">只看 P3</button>
+      <button data-quick-source="identity">只看 identity</button>
+      <button data-quick-source="work_graph">只看 work_graph</button>
+      <button data-quick-issue="identity_possible_duplicate">identity possible duplicate</button>
+      <button data-quick-issue="possible_duplicate_identity">work graph duplicate</button>
     </section>
 
     <section class="filters">
@@ -356,11 +457,22 @@ function html(summary, rows, generatedAt) {
           <option value="100" selected>100</option>
           <option value="250">250</option>
           <option value="500">500</option>
+          <option value="1000">1000</option>
         </select>
+      </label>
+
+      <label>
+        显示选项
+        <span class="checkbox">
+          <input id="hideTitleSamples" type="checkbox">
+          隐藏 title_match 样本
+        </span>
       </label>
 
       <button id="reset">清空筛选</button>
     </section>
+
+    <p class="result-note" id="resultNote"></p>
 
     <section class="table-wrap">
       <table>
@@ -398,6 +510,7 @@ function html(summary, rows, generatedAt) {
       queueSource: '',
       issueType: '',
       pageSize: 100,
+      hideTitleSamples: false,
     };
 
     const el = {
@@ -406,9 +519,11 @@ function html(summary, rows, generatedAt) {
       queueSource: document.querySelector('#queueSource'),
       issueType: document.querySelector('#issueType'),
       pageSize: document.querySelector('#pageSize'),
+      hideTitleSamples: document.querySelector('#hideTitleSamples'),
       reset: document.querySelector('#reset'),
       tbody: document.querySelector('#tbody'),
       empty: document.querySelector('#empty'),
+      resultNote: document.querySelector('#resultNote'),
       totalRows: document.querySelector('#totalRows'),
       visibleRows: document.querySelector('#visibleRows'),
       p1Rows: document.querySelector('#p1Rows'),
@@ -456,6 +571,11 @@ function html(summary, rows, generatedAt) {
       ].join(' ').toLowerCase();
     }
 
+    function isTitleMatchSample(row) {
+      return row.issueType === 'identity_title_match_sample'
+        || row.candidateType === 'title_match';
+    }
+
     function filteredRows() {
       const q = state.q.trim().toLowerCase();
 
@@ -463,12 +583,42 @@ function html(summary, rows, generatedAt) {
         if (state.priority && row.priority !== state.priority) return false;
         if (state.queueSource && row.queueSource !== state.queueSource) return false;
         if (state.issueType && row.issueType !== state.issueType) return false;
+        if (state.hideTitleSamples && isTitleMatchSample(row)) return false;
         if (q && !rowText(row).includes(q)) return false;
         return true;
       });
     }
 
+    function syncControls() {
+      el.q.value = state.q;
+      el.priority.value = state.priority;
+      el.queueSource.value = state.queueSource;
+      el.issueType.value = state.issueType;
+      el.pageSize.value = String(state.pageSize);
+      el.hideTitleSamples.checked = state.hideTitleSamples;
+
+      document.querySelectorAll('.quick button').forEach((button) => {
+        const active = button.dataset.quickPriority === state.priority
+          || button.dataset.quickSource === state.queueSource
+          || button.dataset.quickIssue === state.issueType;
+        button.classList.toggle('active', active);
+      });
+    }
+
+    async function copyText(text, button) {
+      try {
+        await navigator.clipboard.writeText(text);
+        const old = button.textContent;
+        button.textContent = '已复制';
+        setTimeout(() => { button.textContent = old; }, 900);
+      } catch {
+        window.prompt('复制这段内容：', text);
+      }
+    }
+
     function render() {
+      syncControls();
+
       const filtered = filteredRows();
       const page = filtered.slice(0, state.pageSize);
 
@@ -478,22 +628,33 @@ function html(summary, rows, generatedAt) {
       el.p2Rows.textContent = rows.filter((row) => row.priority === 'P2').length;
       el.p3Rows.textContent = rows.filter((row) => row.priority === 'P3').length;
 
+      el.resultNote.textContent = filtered.length > page.length
+        ? \`当前匹配 \${filtered.length} 行，仅显示前 \${page.length} 行。可提高“每页数量”或继续筛选。\`
+        : \`当前匹配 \${filtered.length} 行。\`;
+
       el.empty.hidden = filtered.length !== 0;
-      el.tbody.innerHTML = page.map((row) => {
+      el.tbody.innerHTML = page.map((row, index) => {
         const source = [row.sourceName, row.sourceId].filter(Boolean).join(':');
         const candidate = [row.candidateClass, row.candidateType].filter(Boolean).join(' / ');
         const safety = row.reviewOnly && !row.applyAllowed ? 'reviewOnly · applyAllowed=false' : 'CHECK';
+        const copyId = row.candidateId || row.combinedQueueId || row.groupId || source || row.title || '';
+        const copyButton = copyId
+          ? \`<button class="copy" data-copy-index="\${index}">复制 ID</button>\`
+          : '';
 
         return \`
           <tr data-priority="\${escapeHtml(row.priority)}">
-            <td><span class="chip">\${escapeHtml(row.priority)}</span></td>
+            <td><span class="chip strong">\${escapeHtml(row.priority)}</span></td>
             <td><span class="chip">\${escapeHtml(row.queueSource)}</span></td>
             <td class="mono">\${escapeHtml(row.issueType)}</td>
             <td>
               <div class="title">\${escapeHtml(row.title || row.normalizedTitle)}</div>
               <div class="muted mono">\${escapeHtml(row.combinedQueueId)}</div>
             </td>
-            <td class="mono">\${escapeHtml(source || row.sourceRecordKey)}</td>
+            <td class="mono">
+              \${escapeHtml(source || row.sourceRecordKey)}
+              \${copyButton}
+            </td>
             <td>
               <div>\${escapeHtml(candidate)}</div>
               <div class="muted mono">\${escapeHtml(row.candidateId || row.groupId || '')}</div>
@@ -505,6 +666,19 @@ function html(summary, rows, generatedAt) {
           </tr>
         \`;
       }).join('');
+
+      document.querySelectorAll('[data-copy-index]').forEach((button) => {
+        const row = page[Number(button.dataset.copyIndex)];
+        const text = [
+          row.combinedQueueId,
+          row.sourceName && row.sourceId ? \`\${row.sourceName}:\${row.sourceId}\` : '',
+          row.sourceRecordKey,
+          row.candidateId,
+          row.groupId,
+        ].filter(Boolean).join('\\n');
+
+        button.addEventListener('click', () => copyText(text, button));
+      });
     }
 
     addOptions(el.queueSource, unique('queueSource'));
@@ -535,17 +709,39 @@ function html(summary, rows, generatedAt) {
       render();
     });
 
+    el.hideTitleSamples.addEventListener('change', () => {
+      state.hideTitleSamples = el.hideTitleSamples.checked;
+      render();
+    });
+
+    document.querySelectorAll('[data-quick-priority]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.priority = state.priority === button.dataset.quickPriority ? '' : button.dataset.quickPriority;
+        render();
+      });
+    });
+
+    document.querySelectorAll('[data-quick-source]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.queueSource = state.queueSource === button.dataset.quickSource ? '' : button.dataset.quickSource;
+        render();
+      });
+    });
+
+    document.querySelectorAll('[data-quick-issue]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.issueType = state.issueType === button.dataset.quickIssue ? '' : button.dataset.quickIssue;
+        render();
+      });
+    });
+
     el.reset.addEventListener('click', () => {
       state.q = '';
       state.priority = '';
       state.queueSource = '';
       state.issueType = '';
       state.pageSize = 100;
-      el.q.value = '';
-      el.priority.value = '';
-      el.queueSource.value = '';
-      el.issueType.value = '';
-      el.pageSize.value = '100';
+      state.hideTitleSamples = false;
       render();
     });
 
@@ -581,7 +777,7 @@ async function main() {
 
   const report = {
     generatedAt: new Date().toISOString(),
-    version: 'local-review-page-v0.1',
+    version: 'local-review-page-v0.2',
     queueRowsRead: queue.read,
     queueRowsFailed: queue.failed,
     htmlRows: rows.length,
