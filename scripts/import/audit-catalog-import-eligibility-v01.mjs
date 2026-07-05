@@ -60,12 +60,55 @@ function countBy(rows, key) {
   )
 }
 
+function countByPair(rows, leftKey, rightKey) {
+  const out = {}
+  for (const row of rows) {
+    const left = val(row[leftKey]) || 'missing'
+    const right = val(row[rightKey]) || 'missing'
+    const key = `${left} / ${right}`
+    out[key] = (out[key] || 0) + 1
+  }
+  return Object.fromEntries(
+    Object.entries(out).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
+  )
+}
+
+function countReasons(rows) {
+  const out = {}
+  for (const row of rows) {
+    const reasons = Array.isArray(row.eligibilityReasons) ? row.eligibilityReasons : []
+    for (const reason of reasons) {
+      const key = val(reason) || 'missing'
+      out[key] = (out[key] || 0) + 1
+    }
+  }
+  return Object.fromEntries(
+    Object.entries(out).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
+  )
+}
+
 function mdCell(value) {
   return String(value ?? '').replace(/\|/gu, '\\|').replace(/\n/gu, ' ')
 }
 
 function asBool(value) {
   return value === true || value === 'true'
+}
+
+function hasUsableText(value) {
+  return /[\p{L}\p{N}]/u.test(val(value))
+}
+
+function titleQualityReasons(node) {
+  const title = val(node.sourceTitle || node.label)
+  const normalizedTitle = val(node.normalizedTitle)
+  const reasons = []
+
+  if (!title) reasons.push('missing_title')
+  if (!normalizedTitle) reasons.push('title_quality_missing_normalized_title')
+  else if (!hasUsableText(normalizedTitle)) reasons.push('title_quality_punctuation_only_normalized_title')
+
+  return reasons
 }
 
 function compactNode(node) {
@@ -128,8 +171,8 @@ function classifyWorkCandidate(node, edges) {
   const reasons = []
   const blockers = []
   const warnings = []
+  const titleReasons = titleQualityReasons(node)
 
-  const title = val(node.sourceTitle || node.label || node.normalizedTitle)
   const mediaType = val(node.sourceMediaType)
   const action = val(node.planAction)
   const confidence = val(node.confidence)
@@ -140,8 +183,11 @@ function classifyWorkCandidate(node, edges) {
   const childEdge = hasEdgeType(edges, 'candidate_child_of')
   const editionEdge = hasEdgeType(edges, 'candidate_edition_of')
 
-  if (!title) blockers.push('missing_title')
-  if (!mediaType) blockers.push('missing_source_media_type')
+  if (titleReasons.includes('missing_title')) blockers.push('missing_title')
+  for (const reason of titleReasons.filter((reason) => reason !== 'missing_title')) warnings.push(reason)
+
+  if (!mediaType) warnings.push('missing_source_media_type')
+  if (mediaType === 'unknown') warnings.push('unknown_source_media_type')
   if (!val(node.sourceRecordKey) && !val(node.sourceId)) blockers.push('missing_source_identity')
   if (duplicateEdge) blockers.push('possible_duplicate_edge')
   if (linkedExistingEdge) blockers.push('already_linked_to_existing_work')
@@ -161,13 +207,13 @@ function classifyWorkCandidate(node, edges) {
     return { eligibility: 'blocked', reasons: [...blockers, ...warnings] }
   }
 
-  if (reviewOnly || action !== 'create_new_work' || confidence === 'low') {
-    return { eligibility: 'needs_review', reasons: [...warnings] }
+  if (warnings.length > 0) {
+    return { eligibility: 'needs_review', reasons: warnings }
   }
 
   reasons.push('work_candidate_create_new_work')
   reasons.push('no_duplicate_or_existing_work_edge')
-  reasons.push('has_title_media_and_source_identity')
+  reasons.push('has_usable_title_media_and_source_identity')
   return { eligibility: 'eligible_for_draft_plan', reasons }
 }
 
@@ -216,6 +262,19 @@ function summarizeOtherNodes(nodes) {
   })), 'bucket')
 }
 
+function buildNotInDraftPlan(summaryCounts, rows) {
+  const needsReviewRows = rows.filter((row) => row.eligibility === 'needs_review').length
+  const blockedRows = rows.filter((row) => row.eligibility === 'blocked').length
+  const existingWorkLinkedRows = rows.filter((row) => row.eligibility === 'existing_work_linked').length
+
+  return {
+    work_candidate_needs_review: needsReviewRows,
+    work_candidate_blocked: blockedRows,
+    work_candidate_existing_work_linked: existingWorkLinkedRows,
+    ...summaryCounts,
+  }
+}
+
 function optionalAuditStatus(summary) {
   if (!summary) return { present: false }
   return {
@@ -231,6 +290,17 @@ function optionalAuditStatus(summary) {
 
 function sampleRows(rows, eligibility, limit = 40) {
   return rows.filter((row) => row.eligibility === eligibility).slice(0, limit)
+}
+
+function formatCountTable(title, entries, keyLabel = 'Key') {
+  return [
+    `## ${title}`,
+    '',
+    `| ${keyLabel} | Count |`,
+    '|---|---:|',
+    ...Object.entries(entries || {}).map(([key, count]) => `| ${mdCell(key)} | ${count} |`),
+    '',
+  ]
 }
 
 function markdown(summary, samples) {
@@ -256,33 +326,18 @@ function markdown(summary, samples) {
     `- needsReview: ${summary.needsReview}`,
     `- blocked: ${summary.blocked}`,
     `- existingWorkLinked: ${summary.existingWorkLinked}`,
+    `- titleQualityIssueRows: ${summary.titleQualityIssueRows}`,
+    `- unknownMediaTypeRows: ${summary.unknownMediaTypeRows}`,
     `- applyAllowedRows: ${summary.safety.applyAllowedRows}`,
     `- payloadWriteAllowedRows: ${summary.safety.payloadWriteAllowedRows}`,
     '',
-    '## By eligibility',
-    '',
-    '| Eligibility | Count |',
-    '|---|---:|',
-    ...Object.entries(summary.byEligibility).map(([key, count]) => `| ${mdCell(key)} | ${count} |`),
-    '',
-    '## By plan action',
-    '',
-    '| Plan Action | Count |',
-    '|---|---:|',
-    ...Object.entries(summary.byPlanAction).map(([key, count]) => `| ${mdCell(key)} | ${count} |`),
-    '',
-    '## By source',
-    '',
-    '| Source | Count |',
-    '|---|---:|',
-    ...Object.entries(summary.bySource).map(([key, count]) => `| ${mdCell(key)} | ${count} |`),
-    '',
-    '## Other graph nodes',
-    '',
-    '| Bucket | Count |',
-    '|---|---:|',
-    ...Object.entries(summary.otherNodeBuckets).map(([key, count]) => `| ${mdCell(key)} | ${count} |`),
-    '',
+    ...formatCountTable('By eligibility', summary.byEligibility, 'Eligibility'),
+    ...formatCountTable('By eligibility and source', summary.byEligibilityAndSource, 'Eligibility / Source'),
+    ...formatCountTable('By eligibility and media type', summary.byEligibilityAndMediaType, 'Eligibility / Media Type'),
+    ...formatCountTable('By plan action', summary.byPlanAction, 'Plan Action'),
+    ...formatCountTable('By source', summary.bySource, 'Source'),
+    ...formatCountTable('By eligibility reason', summary.byEligibilityReason, 'Reason'),
+    ...formatCountTable('Not in draft plan', summary.notInDraftPlan, 'Bucket'),
     '## Eligible samples',
     '',
     samples.eligible.length ? JSON.stringify(samples.eligible, null, 2) : '- none',
@@ -303,7 +358,7 @@ function markdown(summary, samples) {
     '',
     '- Review this audit summary locally.',
     '- If counts look right, build a separate Payload Work draft import plan from `eligible_for_draft_plan` rows only.',
-    '- Keep relation candidates, duplicates, existing-work links, and review-only rows out of the first draft import plan.',
+    '- Keep relation candidates, duplicates, existing-work links, unknown-media rows, title-quality rows, and review-only rows out of the first draft import plan.',
     '',
   ].join('\n')
 }
@@ -334,9 +389,17 @@ async function main() {
   const needsReview = rows.filter((row) => row.eligibility === 'needs_review')
   const blocked = rows.filter((row) => row.eligibility === 'blocked')
   const existingWorkLinked = rows.filter((row) => row.eligibility === 'existing_work_linked')
+  const otherNodeBuckets = summarizeOtherNodes(nodes.rows)
 
   const payloadWriteAllowedRows = rows.filter((row) => row.payloadWriteAllowed === true).length
   const importPlanAllowedRows = rows.filter((row) => row.importPlanAllowed === true).length
+
+  const titleQualityIssueRows = rows.filter((row) => (
+    Array.isArray(row.eligibilityReasons)
+    && row.eligibilityReasons.some((reason) => val(reason).startsWith('title_quality_'))
+  )).length
+
+  const unknownMediaTypeRows = rows.filter((row) => row.sourceMediaType === 'unknown').length
 
   const summary = {
     generatedAt: new Date().toISOString(),
@@ -347,12 +410,18 @@ async function main() {
     needsReview: needsReview.length,
     blocked: blocked.length,
     existingWorkLinked: existingWorkLinked.length,
+    titleQualityIssueRows,
+    unknownMediaTypeRows,
     byEligibility: countBy(rows, 'eligibility'),
+    byEligibilityAndSource: countByPair(rows, 'eligibility', 'sourceName'),
+    byEligibilityAndMediaType: countByPair(rows, 'eligibility', 'sourceMediaType'),
     byPlanAction: countBy(rows, 'planAction'),
     bySource: countBy(rows, 'sourceName'),
     byConfidence: countBy(rows, 'confidence'),
     byMediaType: countBy(rows, 'sourceMediaType'),
-    otherNodeBuckets: summarizeOtherNodes(nodes.rows),
+    byEligibilityReason: countReasons(rows),
+    otherNodeBuckets,
+    notInDraftPlan: buildNotInDraftPlan(otherNodeBuckets, rows),
     inputs: {
       nodes: nodesPath,
       edges: edgesPath,
