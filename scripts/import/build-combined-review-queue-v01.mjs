@@ -122,8 +122,22 @@ function memberSourceId(candidate) {
   return val(sample?.sourceId)
 }
 
+function titleNoiseReason(candidate) {
+  const title = val(candidate.normalizedTitle || memberTitle(candidate))
+  const reasons = [...asList(candidate.scoreReasons), ...asList(candidate.conflictReasons)]
+  if (candidate.candidateType !== 'title_match') return ''
+  if (title.length > 0 && title.length <= 2) return 'very short title match noise'
+  if (reasons.some((reason) => reason.toLowerCase().includes('very short title'))) return 'very short title match noise'
+  return ''
+}
+
+function isTitleMatchNoise(candidate) {
+  return Boolean(titleNoiseReason(candidate))
+}
+
 function identityPriority(candidate) {
   if (candidate.candidateType === 'graph_possible_duplicate') return 'P1'
+  if (isTitleMatchNoise(candidate)) return 'P3'
   if (candidate.candidateClass === 'identity_conflict') return 'P1'
   if (candidate.candidateType === 'boundary_relation') return 'P2'
   if (candidate.candidateType === 'graph_existing_work_link') return 'P3'
@@ -133,6 +147,7 @@ function identityPriority(candidate) {
 
 function identityIssueType(candidate) {
   if (candidate.candidateType === 'graph_possible_duplicate') return 'identity_possible_duplicate'
+  if (isTitleMatchNoise(candidate)) return 'identity_title_match_noise'
   if (candidate.candidateClass === 'identity_conflict') return 'identity_conflict'
   if (candidate.candidateType === 'boundary_relation') return 'identity_boundary_relation'
   if (candidate.candidateType === 'graph_existing_work_link') return 'identity_existing_work_link_review'
@@ -142,6 +157,7 @@ function identityIssueType(candidate) {
 
 function identitySuggestedAction(candidate) {
   if (candidate.candidateType === 'graph_possible_duplicate') return 'Review possible duplicate identity manually; do not merge by title only.'
+  if (isTitleMatchNoise(candidate)) return 'Treat as weak title-only noise; keep visible for sampling, but do not prioritize as conflict.'
   if (candidate.candidateClass === 'identity_conflict') return 'Review conflict evidence manually; keep all source rows visible.'
   if (candidate.candidateType === 'boundary_relation') return 'Review boundary relation; do not treat child or edition relation as identity confirmation.'
   if (candidate.candidateType === 'graph_existing_work_link') return 'Spot-check existing Work link evidence before any future apply step.'
@@ -152,7 +168,8 @@ function identitySuggestedAction(candidate) {
 function identityReason(candidate) {
   const scoreReasons = asList(candidate.scoreReasons).join('; ')
   const conflicts = asList(candidate.conflictReasons).join('; ')
-  return [scoreReasons, conflicts].filter(Boolean).join(' | ')
+  const noise = titleNoiseReason(candidate)
+  return [scoreReasons, conflicts, noise].filter(Boolean).join(' | ')
 }
 
 function fromWorkGraph(row) {
@@ -227,6 +244,14 @@ function pickIdentityCandidates(candidates) {
       continue
     }
 
+    if (candidate.candidateType === 'title_match') {
+      if (titleMatches < TITLE_MATCH_SAMPLE_LIMIT) {
+        rows.push(candidate)
+        titleMatches += 1
+      }
+      continue
+    }
+
     if (candidate.candidateClass === 'identity_conflict') {
       rows.push(candidate)
       continue
@@ -243,13 +268,6 @@ function pickIdentityCandidates(candidates) {
         existingLinks += 1
       }
       continue
-    }
-
-    if (candidate.candidateType === 'title_match') {
-      if (titleMatches < TITLE_MATCH_SAMPLE_LIMIT) {
-        rows.push(candidate)
-        titleMatches += 1
-      }
     }
   }
 
