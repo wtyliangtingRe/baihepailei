@@ -9,6 +9,14 @@ const OUT = 'data_local/staging/identity'
 const MEMBER_SAMPLE_LIMIT = 50
 const EVIDENCE_SAMPLE_LIMIT = 80
 
+const REAL_CONFLICT_REASON_PATTERNS = [
+  /possible duplicate/iu,
+  /multiple media types/iu,
+  /source conflict/iu,
+  /identity conflict/iu,
+  /conflict evidence/iu,
+]
+
 function val(x) {
   return String(x ?? '').trim()
 }
@@ -71,6 +79,12 @@ function scoreBand(score) {
   return '0-29'
 }
 
+function isRealConflictReason(reason) {
+  const text = val(reason)
+  if (!text) return false
+  return REAL_CONFLICT_REASON_PATTERNS.some((pattern) => pattern.test(text))
+}
+
 function memberFromEvidence(row) {
   return {
     entityKey: val(row.entityKey),
@@ -99,7 +113,9 @@ function dedupeMembers(members) {
 }
 
 function classify(score, conflictReasons, candidateType) {
-  if (conflictReasons.length > 0) return 'identity_conflict'
+  const realConflictReasons = conflictReasons.filter(isRealConflictReason)
+  if (candidateType === 'graph_possible_duplicate') return 'identity_conflict'
+  if (realConflictReasons.length > 0) return 'identity_conflict'
   if (candidateType === 'title_match') return 'weak_title_only_candidate'
   if (score >= 90) return 'strong_match_candidate'
   if (score >= 60) return 'review_match_candidate'
@@ -225,7 +241,7 @@ function buildCandidates(evidence) {
 
     if (title.length <= 2) {
       score = 25
-      conflictReasons.push('very short title')
+      scoreReasons.push('very short title')
     }
 
     candidates.push(makeCandidate({
