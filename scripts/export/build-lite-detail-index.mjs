@@ -132,7 +132,7 @@ function normalizeText(value) {
     .replaceAll('\r', ' ')
     .replaceAll('\n', ' ')
     .split(' ')
-    .map((part) => part.trim())
+    .map((line) => line.trim())
     .filter(Boolean)
     .join(' ')
 }
@@ -149,6 +149,14 @@ function aliasesToValues(aliases) {
   if (!Array.isArray(aliases)) return []
   return aliases
     .map((item) => (typeof item === 'string' ? item : item?.value))
+    .map(normalizeText)
+    .filter(Boolean)
+}
+
+function localizedTitleValues(values) {
+  if (!Array.isArray(values)) return []
+  return values
+    .map((item) => (typeof item === 'string' ? item : item?.title))
     .map(normalizeText)
     .filter(Boolean)
 }
@@ -240,6 +248,7 @@ function mapWork(doc) {
     rank: doc.rank || 'unknown',
     originalTitle: doc.originalTitle || '',
     aliases: aliasesToValues(doc.aliases),
+    localizedTitles: localizedTitleValues(doc.localizedTitles),
     mediaGroup: doc.mediaGroup || 'unknown',
     mediaType: doc.mediaType || 'unknown',
     format: doc.format || 'unknown',

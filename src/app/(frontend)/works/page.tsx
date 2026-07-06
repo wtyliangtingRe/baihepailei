@@ -4,6 +4,8 @@ import MissingSearchIndex from '../_components/MissingSearchIndex'
 import { readSearchIndex, type SearchCoverImage, type SearchItem } from '../_lib/search-index'
 
 const rankOrder = ['AA', 'A', 'B', 'C', 'D', 'E', 'unknown']
+const defaultPageSize = 120
+const pageSizeOptions = [60, 120, 240]
 
 const mediaGroupOptions = [
   { label: '动画', value: 'anime' },
@@ -55,6 +57,20 @@ function firstParam(value: string | string[] | undefined) {
 
 function normalizeText(value: string | undefined) {
   return String(value || '').trim().toLowerCase()
+}
+
+function normalizePositiveInteger(value: string | undefined, fallback: number) {
+  const numberValue = Number(value)
+  if (!Number.isFinite(numberValue) || numberValue < 1) return fallback
+  return Math.floor(numberValue)
+}
+
+function normalizePageSize(value: string | undefined) {
+  const requested = normalizePositiveInteger(value, defaultPageSize)
+  if (pageSizeOptions.includes(requested)) return requested
+  if (requested <= 60) return 60
+  if (requested <= 120) return 120
+  return 240
 }
 
 function normalizeRank(value: string) {
@@ -176,6 +192,28 @@ function parseFilters(params: Record<string, string | string[] | undefined>): No
   }
 }
 
+function pageHref(filters: NormalizedFilters, page: number, pageSize: number) {
+  const params = new URLSearchParams()
+  if (filters.q) params.set('q', filters.q)
+  if (filters.rank !== 'all') params.set('rank', filters.rank)
+  if (filters.media !== 'all') params.set('media', filters.media)
+  if (filters.creator) params.set('creator', filters.creator)
+  if (filters.organization) params.set('organization', filters.organization)
+  if (filters.evidence !== 'all') params.set('evidence', filters.evidence)
+  if (page > 1) params.set('page', String(page))
+  if (pageSize !== defaultPageSize) params.set('perPage', String(pageSize))
+
+  const query = params.toString()
+  return query ? `/works?${query}` : '/works'
+}
+
+function paginationPages(currentPage: number, totalPages: number) {
+  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1])
+  return [...pages]
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((a, b) => a - b)
+}
+
 function CoverThumb({ cover, title }: { cover?: SearchCoverImage; title: string }) {
   if (cover?.url) {
     return (
@@ -257,18 +295,52 @@ function WorksFilterForm({ creators, filters, organizations }: { creators: strin
   )
 }
 
+function WorksPagination({ currentPage, filters, pageSize, totalItems, totalPages }: { currentPage: number; filters: NormalizedFilters; pageSize: number; totalItems: number; totalPages: number }) {
+  if (totalItems === 0) return null
+
+  const firstItem = (currentPage - 1) * pageSize + 1
+  const lastItem = Math.min(totalItems, currentPage * pageSize)
+  const pages = paginationPages(currentPage, totalPages)
+
+  return (
+    <nav className="collection-actions" aria-label="作品分页">
+      <span>第 {currentPage} / {totalPages} 页</span>
+      <span>显示 {firstItem}-{lastItem} / {totalItems} 条</span>
+      {currentPage > 1 ? <Link className="back-link" href={pageHref(filters, currentPage - 1, pageSize)}>上一页</Link> : <span>上一页</span>}
+      {pages.map((page) => (
+        page === currentPage
+          ? <span key={page}>{page}</span>
+          : <Link className="back-link" href={pageHref(filters, page, pageSize)} key={page}>{page}</Link>
+      ))}
+      {currentPage < totalPages ? <Link className="back-link" href={pageHref(filters, currentPage + 1, pageSize)}>下一页</Link> : <span>下一页</span>}
+      <span>每页</span>
+      {pageSizeOptions.map((option) => (
+        option === pageSize
+          ? <span key={option}>{option}</span>
+          : <Link className="back-link" href={pageHref(filters, 1, option)} key={option}>{option}</Link>
+      ))}
+    </nav>
+  )
+}
+
 export default async function WorksIndexPage({ searchParams }: { searchParams?: WorksSearchParams }) {
   const index = readSearchIndex()
   if (!index) return <MissingSearchIndex />
 
   const params = searchParams ? await searchParams : {}
   const filters = parseFilters(params)
+  const pageSize = normalizePageSize(firstParam(params.perPage))
+  const requestedPage = normalizePositiveInteger(firstParam(params.page), 1)
 
   const allItems = index.items
     .filter((item) => item.collection === 'works')
     .sort((a, b) => rankSortValue(a.rank) - rankSortValue(b.rank) || a.title.localeCompare(b.title, 'zh-CN'))
 
   const items = allItems.filter((item) => itemMatchesFilters(item, filters))
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
+  const currentPage = Math.min(requestedPage, totalPages)
+  const pageStart = (currentPage - 1) * pageSize
+  const pageItems = items.slice(pageStart, pageStart + pageSize)
   const activeFilterLabels = filterLabel(filters)
   const creators = uniqueValues(allItems, 'creators')
   const organizations = uniqueValues(allItems, 'organizations')
@@ -276,7 +348,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
   const groups = rankOrder
     .map((rank) => ({
       rank,
-      items: items.filter((item) => (item.rank || 'unknown') === rank),
+      items: pageItems.filter((item) => (item.rank || 'unknown') === rank),
     }))
     .filter((group) => group.items.length > 0)
 
@@ -290,6 +362,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
           <Link className="back-link" href="/search?collection=works">搜索作品</Link>
           <Link className="back-link" href="/browse">浏览全部</Link>
           <span>{items.length} / {allItems.length} 条</span>
+          <span>当前页 {pageItems.length} 条</span>
         </div>
         <nav className="media-group-links" aria-label="作品类型快速筛选">
           <Link href="/works">全部</Link>
@@ -303,8 +376,9 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
             {activeFilterLabels.map((label) => <span key={label}>{label}</span>)}
           </div>
         ) : null}
+        <WorksPagination currentPage={currentPage} filters={filters} pageSize={pageSize} totalItems={items.length} totalPages={totalPages} />
         {groups.length ? (
-          <nav className="rank-jump-list" id="works-rank-nav" aria-label="作品分级快速跳转">
+          <nav className="rank-jump-list" id="works-rank-nav" aria-label="当前页作品分级快速跳转">
             {groups.map((group) => (
               <a href={`#${rankAnchor(group.rank)}`} key={group.rank}>
                 {rankLabel(group.rank)} <span>{group.items.length}</span>
@@ -376,6 +450,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
           ))
         )}
       </section>
+      <WorksPagination currentPage={currentPage} filters={filters} pageSize={pageSize} totalItems={items.length} totalPages={totalPages} />
     </main>
   )
 }

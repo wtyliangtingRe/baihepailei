@@ -61,6 +61,7 @@ export type DetailItem = {
   evidenceStrength?: string
   originalTitle?: string
   aliases?: string[]
+  localizedTitles?: string[]
   mediaGroup?: string
   mediaType?: string
   format?: string
