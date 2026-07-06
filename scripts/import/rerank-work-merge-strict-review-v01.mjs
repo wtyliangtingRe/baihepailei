@@ -160,7 +160,7 @@ function titleKey(value) {
     .normalize('NFKC')
     .toLowerCase()
     .replace(/&/gu, 'and')
-    .replace(/[^\u{L}\u{N}]+/gu, '')
+    .replace(/[^\p{L}\p{N}]+/gu, '')
 }
 
 function titlesOf(row) {
