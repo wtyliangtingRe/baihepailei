@@ -14,6 +14,7 @@ function run(commandArgs) {
 }
 
 run(['scripts/export/build-lite-detail-index.mjs', ...args])
+run(['scripts/export/enrich-lite-source-display-fields.mjs', '--file', 'public/detail-index.json', ...args])
 run(['scripts/export/enrich-lite-detail-index.mjs', ...args])
 run(['scripts/export/enrich-lite-evidence-details.mjs', '--file', 'public/detail-index.json', ...args])
 run(['scripts/export/enrich-lite-review-fields.mjs', '--file', 'public/detail-index.json', ...args])
