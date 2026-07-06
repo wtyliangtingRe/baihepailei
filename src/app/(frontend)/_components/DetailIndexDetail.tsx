@@ -198,6 +198,7 @@ function BasicInfo({ item }: { item: DetailItem }) {
     ['证据类型', evidenceTypeLabel(extendedItem.evidenceType)],
     ['截图时间', extendedItem.capturedAt],
     ['原名', item.originalTitle],
+    ['译名', item.localizedTitles],
     ['作品类型', mediaGroupLabel(extendedItem.mediaGroup)],
     ['媒体类型', visibleMetadataValue(extendedItem.mediaType)],
     ['格式', visibleMetadataValue(extendedItem.format)],
