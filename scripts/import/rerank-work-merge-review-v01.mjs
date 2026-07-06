@@ -6,7 +6,7 @@ import readline from 'node:readline'
 const DEFAULT_INPUT = 'data_local/staging/work-merge/work-merge-plan-v02-review.groups.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/work-merge'
 const PAGE_LIMIT = 200
-const VERSION = 'work-merge-review-rerank-v0.1'
+const VERSION = 'work-merge-review-rerank-v0.2'
 const EXPORT_EMAIL_ENV = 'PAYLOAD_EXPORT_EMAIL'
 const EXPORT_SECRET_ENV = ['PAYLOAD_EXPORT', 'PASSWORD'].join('_')
 const SEED_EMAIL_ENV = 'PAYLOAD_SEED_EMAIL'
@@ -14,7 +14,7 @@ const SEED_SECRET_ENV = ['PAYLOAD_SEED', 'PASSWORD'].join('_')
 
 const val = (v) => String(v ?? '').trim()
 const normUrl = (v) => val(v).replace(/\/$/u, '')
-const compact = (v) => val(v).normalize('NFKC').toLowerCase().replace(/[\s\-_.:：・·~～!！?？'"“”‘’()[\]{}<>《》「」『』【】@＠&]+/gu, '').replace(/[^\p{L}\p{N}]+/gu, '')
+const compact = (v) => val(v).normalize('NFKC').toLowerCase().replace(/[\s\-_.:：・·~～!！?？'"“”‘’()[\]{}<>《》「」『』@＠&]+/gu, '').replace(/[^\p{L}\p{N}]+/gu, '')
 
 function parseArgs(argv) {
   const args = {}
@@ -79,20 +79,23 @@ function byId(docs) {
   return m
 }
 
-function sourceOf(d) {
-  const first = Array.isArray(d?.candidateSources) ? d.candidateSources[0] : null
-  const c = val(first?.source || first?.label).toLowerCase()
-  if (c) return c
-  const siteId = val(d?.siteId).toLowerCase()
-  if (siteId.includes('bangumi')) return 'bangumi'
-  if (siteId.includes('anilist')) return 'anilist'
-  return val(d?.source || d?.originalSource || 'unknown').toLowerCase()
-}
-
 function idsOf(d) {
   const ids = d?.externalIds
   if (!ids || Array.isArray(ids) || typeof ids !== 'object') return {}
   return Object.fromEntries(Object.entries(ids).map(([k, v]) => [k, val(v)]).filter(([, v]) => v))
+}
+
+function sourceOf(d) {
+  const siteId = val(d?.siteId).toLowerCase()
+  if (siteId.includes('bangumi')) return 'bangumi'
+  if (siteId.includes('anilist')) return 'anilist'
+  const ids = idsOf(d)
+  if (ids.bangumiSubjectId || ids.bangumiId || ids.bangumi) return 'bangumi'
+  if (ids.anilistMediaId || ids.anilistId || ids.anilist) return 'anilist'
+  const s = val(d?.source || d?.originalSource).toLowerCase()
+  if (s) return s
+  const cands = Array.isArray(d?.candidateSources) ? d.candidateSources : []
+  return cands.map((x) => val(x?.source || x?.label).toLowerCase()).find(Boolean) || 'unknown'
 }
 
 function linksOf(d) {
@@ -129,44 +132,53 @@ function supplementsOf(row) {
   return row.supplement ? [row.supplement] : []
 }
 
+function briefDoc(d) {
+  return d ? { id: val(d.id), title: val(d.title), slug: val(d.slug), source: sourceOf(d), externalIds: idsOf(d) } : null
+}
+
 function classify(row, map) {
-  const issues = []
-  const park = []
-  const ok = []
+  const blockers = []
+  const deferReasons = []
+  const autoReasons = []
   const masterRow = row.master || row.canonical || row.base
   const suppRows = supplementsOf(row)
   const master = map.get(val(masterRow?.id))
-  const supp = suppRows.length === 1 ? map.get(val(suppRows[0]?.id)) : null
+  const suppDocs = suppRows.map((x) => map.get(val(x?.id))).filter(Boolean)
+  const oneSupp = suppRows.length === 1 ? suppDocs[0] : null
 
-  if (!master) issues.push('master_not_found')
-  if (suppRows.length !== 1) issues.push('expected_one_supplement')
-  if (suppRows.length === 1 && !supp) issues.push('supplement_not_found')
-  if (master && sourceOf(master) !== 'bangumi') issues.push('master_source_not_bangumi')
-  if (supp && sourceOf(supp) !== 'anilist') issues.push('supplement_source_not_anilist')
+  if (!master) blockers.push('master_not_found')
+  if (suppRows.length === 0) deferReasons.push('no_supplement')
+  if (suppRows.length > 1) deferReasons.push('multiple_supplements')
+  if (suppRows.length === 1 && !oneSupp) blockers.push('supplement_not_found')
 
-  if (!issues.length) {
+  if (!blockers.length && master && sourceOf(master) !== 'bangumi') deferReasons.push('master_source_not_bangumi')
+  if (!blockers.length && oneSupp && sourceOf(oneSupp) !== 'anilist') deferReasons.push('supplement_source_not_anilist')
+
+  if (!blockers.length && master && oneSupp) {
     const mk = new Set(titlesOf(master, masterRow))
-    const sk = new Set(titlesOf(supp, suppRows[0]))
+    const sk = new Set(titlesOf(oneSupp, suppRows[0]))
     const titleOverlap = [...mk].some((x) => sk.has(x))
     const masterBangumi = trace(master, 'bangumi')
-    const suppAni = trace(supp, 'anilist')
-    const cross = trace(master, 'anilist') || trace(supp, 'bangumi')
-    if (titleOverlap) ok.push('compact_title_key_overlap'); else park.push('no_compact_title_key_overlap')
-    if (masterBangumi) ok.push('has_bangumi_master_trace'); else park.push('master_missing_bangumi_trace')
-    if (suppAni) ok.push('has_anilist_supplement_trace'); else park.push('supplement_missing_anilist_trace')
-    if (cross) ok.push('has_cross_source_trace'); else park.push('missing_cross_source_trace')
+    const suppAni = trace(oneSupp, 'anilist')
+    const cross = trace(master, 'anilist') || trace(oneSupp, 'bangumi')
+    if (titleOverlap) autoReasons.push('compact_title_key_overlap'); else deferReasons.push('no_compact_title_key_overlap')
+    if (masterBangumi) autoReasons.push('has_bangumi_master_trace'); else deferReasons.push('master_missing_bangumi_trace')
+    if (suppAni) autoReasons.push('has_anilist_supplement_trace'); else deferReasons.push('supplement_missing_anilist_trace')
+    if (cross) autoReasons.push('has_cross_source_trace'); else deferReasons.push('missing_cross_source_trace')
   }
 
-  const bucket = issues.length ? 'blocked' : park.length ? 'defer' : 'auto_ready'
+  const bucket = blockers.length ? 'blocked' : deferReasons.length ? 'defer' : 'auto_ready'
   return {
     mergeGroupId: val(row.mergeGroupId || row.groupId || row.id),
     bucket,
     stage3Bucket: bucket,
-    autoReasons: [...new Set(ok)],
-    deferReasons: [...new Set(park)],
-    blockers: [...new Set(issues)],
-    master: master ? { id: val(master.id), title: val(master.title), slug: val(master.slug), source: sourceOf(master), externalIds: idsOf(master) } : masterRow || null,
-    supplements: supp ? [{ id: val(supp.id), title: val(supp.title), slug: val(supp.slug), source: sourceOf(supp), externalIds: idsOf(supp) }] : [],
+    autoReasons: [...new Set(autoReasons)],
+    deferReasons: [...new Set(deferReasons)],
+    blockers: [...new Set(blockers)],
+    master: briefDoc(master) || masterRow || null,
+    supplements: suppDocs.map(briefDoc),
+    supplementCount: suppRows.length,
+    foundSupplementCount: suppDocs.length,
     safety: { localReportReadOnly: true, payloadRead: true, payloadWrite: false, directPostgresqlWrite: false, dataChanged: false },
   }
 }
