@@ -6,7 +6,7 @@ import readline from 'node:readline'
 const DEFAULT_INPUT = 'data_local/staging/work-merge/work-merge-stage2-plan-v01-ready.groups.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/work-merge'
 const PAGE_LIMIT = 200
-const VERSION = 'work-merge-stage2-master-field-apply-v0.1'
+const VERSION = 'work-merge-stage2-master-field-apply-v0.2'
 const CONFIRM_TOKEN = 'strict-review-19'
 const EXPORT_EMAIL_ENV = 'PAYLOAD_EXPORT_EMAIL'
 const EXPORT_SECRET_ENV = ['PAYLOAD_EXPORT', 'PASSWORD'].join('_')
@@ -108,6 +108,12 @@ async function fetchAllWorks(baseUrl, token) {
   return { docs, totalDocs }
 }
 
+async function fetchWork(baseUrl, token, workId) {
+  return requestJson(`${baseUrl}/api/works/${encodeURIComponent(workId)}?draft=true&depth=0`, {
+    headers: authHeaders(token),
+  })
+}
+
 async function updateWork(baseUrl, token, workId, patch) {
   return requestJson(`${baseUrl}/api/works/${encodeURIComponent(workId)}?draft=true`, {
     method: 'PATCH',
@@ -145,6 +151,10 @@ function uniqueBy(values, getKey) {
   return out
 }
 
+function cleanObject(object) {
+  return Object.fromEntries(Object.entries(object || {}).filter(([, value]) => value !== undefined))
+}
+
 function localizedTitleRows(doc) {
   return (Array.isArray(doc?.localizedTitles) ? doc.localizedTitles : [])
     .map((item) => ({ title: val(typeof item === 'string' ? item : item?.title) }))
@@ -170,10 +180,10 @@ function candidateSourceRows(doc) {
 }
 
 function buildPatch(master, fieldAdditions) {
-  const externalIds = {
+  const externalIds = cleanObject({
     ...(master.externalIds || {}),
     ...(fieldAdditions.externalIds || {}),
-  }
+  })
 
   const localizedTitles = uniqueBy(
     [
@@ -212,13 +222,17 @@ function buildPatch(master, fieldAdditions) {
   return { externalIds, localizedTitles, sourceLinks, candidateSources }
 }
 
-function patchChanged(master, patch) {
-  const before = JSON.stringify({
-    externalIds: master.externalIds || {},
+function comparableMasterFields(master) {
+  return {
+    externalIds: cleanObject(master.externalIds || {}),
     localizedTitles: localizedTitleRows(master),
     sourceLinks: sourceLinkRows(master),
     candidateSources: candidateSourceRows(master),
-  })
+  }
+}
+
+function patchChanged(master, patch) {
+  const before = JSON.stringify(comparableMasterFields(master))
   const after = JSON.stringify(patch)
   return before !== after
 }
@@ -243,6 +257,7 @@ function validatePlan(plan, master) {
 function verifyPatch(doc, patch) {
   const missing = []
   for (const [field, value] of Object.entries(patch.externalIds || {})) {
+    if (!val(value)) continue
     if (val(doc?.externalIds?.[field]) !== val(value)) missing.push(`externalIds.${field}`)
   }
   const linkUrls = new Set(sourceLinkRows(doc).map((item) => item.url))
@@ -268,9 +283,9 @@ function countBy(rows, getKey) {
 
 function markdown(summary, samples) {
   return [
-    '# Work Merge Stage 2 Master Field Apply v0.1',
+    '# Work Merge Stage 2 Master Field Apply v0.2',
     '',
-    'Controlled dry-run-first apply for stage 2 master field additions. Real writes require --apply --confirm strict-review-19.',
+    'Controlled dry-run-first apply for stage 2 master field additions. Real writes require --apply --confirm strict-review-19. Apply verification is based on a fresh GET after PATCH.',
     '',
     '## Summary',
     '',
@@ -284,12 +299,13 @@ function markdown(summary, samples) {
     `- blockedGroups: ${summary.blockedGroups}`,
     `- wouldUpdateMasters: ${summary.wouldUpdateMasters}`,
     `- updatedMasters: ${summary.updatedMasters}`,
+    `- alreadyCurrentMasters: ${summary.alreadyCurrentMasters}`,
     '',
     '## Safety',
     '',
     `- applyRequested: ${summary.safety.applyRequested}`,
     `- confirmMatched: ${summary.safety.confirmMatched}`,
-    '- Payload write only when both are true.',
+    `- payloadPatchRequests: ${summary.safety.payloadPatchRequests}`,
     '- No PostgreSQL write.',
     '- No delete/archive/status change.',
     '',
@@ -346,17 +362,27 @@ async function main() {
     const patch = master ? buildPatch(master, plan.fieldAdditions || {}) : null
     const changed = Boolean(master && patch && patchChanged(master, patch))
     const blockers = [...validation.blockers]
-    let updatedDoc = null
+    let finalDoc = master || null
     let status = 'blocked'
     let verifyMissing = []
+    let patchSent = false
 
-    if (!blockers.length && !changed) status = 'already_current'
-    else if (!blockers.length && !applyRequested) status = 'would_update'
-    else if (!blockers.length && applyRequested) {
-      updatedDoc = await updateWork(baseUrl, token, master.id, patch)
-      verifyMissing = verifyPatch(updatedDoc, patch)
+    if (!blockers.length && !changed) {
+      status = 'already_current'
+      verifyMissing = verifyPatch(finalDoc, patch)
       if (verifyMissing.length) {
-        blockers.push('patched_doc_missing_expected_fields')
+        blockers.push('current_doc_missing_expected_fields')
+        status = 'blocked'
+      }
+    } else if (!blockers.length && !applyRequested) {
+      status = 'would_update'
+    } else if (!blockers.length && applyRequested) {
+      await updateWork(baseUrl, token, master.id, patch)
+      patchSent = true
+      finalDoc = await fetchWork(baseUrl, token, master.id)
+      verifyMissing = verifyPatch(finalDoc, patch)
+      if (verifyMissing.length) {
+        blockers.push('fresh_doc_missing_expected_fields')
         status = 'blocked'
       } else {
         status = 'updated'
@@ -373,15 +399,17 @@ async function main() {
       master: {
         id: val(plan.master?.id),
         title: val(plan.master?.title),
-        slug: val(master?.slug || plan.master?.slug),
+        slug: val(finalDoc?.slug || plan.master?.slug),
       },
       supplements: plan.supplements || [],
       patchPreview: patch,
       patchChanged: changed,
+      patchSent,
       verifyMissing,
+      finalFieldSnapshot: finalDoc ? comparableMasterFields(finalDoc) : null,
       safety: {
         payloadRead: true,
-        payloadWrite: applyRequested && status === 'updated',
+        payloadWrite: patchSent,
         directPostgresqlWrite: false,
         onlyMasterFieldsChanged: true,
         deleted: false,
@@ -397,6 +425,7 @@ async function main() {
   const changedFields = rows.flatMap((row) => row.changedFields || [])
   const ready = rows.filter((row) => ['would_update', 'updated', 'already_current'].includes(row.status))
   const blocked = rows.filter((row) => row.status === 'blocked')
+  const patchSentMasters = rows.filter((row) => row.patchSent).length
 
   const outputs = {
     rows: path.join(outDir, 'work-merge-stage2-master-fields-v01.rows.jsonl'),
@@ -424,6 +453,7 @@ async function main() {
     wouldUpdateMasters: rows.filter((row) => row.status === 'would_update').length,
     updatedMasters: rows.filter((row) => row.status === 'updated').length,
     alreadyCurrentMasters: rows.filter((row) => row.status === 'already_current').length,
+    patchSentMasters,
     byStatus: countBy(rows, 'status'),
     byChangedField: countBy(changedFields, (value) => value),
     byBlocker: countBy(blockers, (value) => value),
@@ -433,7 +463,8 @@ async function main() {
       confirmMatched,
       readOnly: !applyRequested,
       payloadRead: true,
-      payloadWrite: applyRequested,
+      payloadWrite: patchSentMasters > 0,
+      payloadPatchRequests: patchSentMasters,
       directPostgresqlWrite: false,
       onlyMasterFieldsChanged: true,
       deleted: false,
