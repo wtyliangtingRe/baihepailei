@@ -14,4 +14,5 @@ function run(commandArgs) {
 }
 
 run(['scripts/export/build-lite-search-index.mjs', ...args])
+run(['scripts/export/enrich-lite-title-search-fields.mjs', ...args])
 run(['scripts/export/enrich-lite-review-fields.mjs', ...args])
