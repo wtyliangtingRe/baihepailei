@@ -91,16 +91,6 @@ function externalIdsOf(doc) {
   return Object.fromEntries(Object.entries(ids).map(([key, value]) => [key, text(value)]).filter(([, value]) => value))
 }
 
-function sourceLinksOf(doc) {
-  const links = Array.isArray(doc?.sourceLinks) ? doc.sourceLinks : []
-  return uniqueBy(
-    links
-      .map((item) => ({ label: text(typeof item === 'string' ? '' : item?.label), url: text(typeof item === 'string' ? item : item?.url) }))
-      .filter((item) => item.url),
-    (item) => item.url,
-  )
-}
-
 function candidateSourcesOf(doc) {
   const sources = Array.isArray(doc?.candidateSources) ? doc.candidateSources : []
   return uniqueBy(
@@ -114,6 +104,20 @@ function candidateSourcesOf(doc) {
       .filter((item) => item.source || item.label || item.externalId || item.url),
     (item) => [item.source, item.externalId, item.url, item.label].join('|').toLowerCase(),
   )
+}
+
+function sourceLinksOf(doc) {
+  const rawLinks = Array.isArray(doc?.sourceLinks) ? doc.sourceLinks : []
+  const sourceLinks = rawLinks
+    .map((item) => ({ label: text(typeof item === 'string' ? '' : item?.label), url: text(typeof item === 'string' ? item : item?.url) }))
+    .filter((item) => item.url)
+  const candidateLinks = candidateSourcesOf(doc)
+    .filter((item) => item.url)
+    .map((item) => ({
+      label: text(item.label || [item.source, item.externalId].filter(Boolean).join(' ')),
+      url: item.url,
+    }))
+  return uniqueBy([...sourceLinks, ...candidateLinks], (item) => item.url)
 }
 
 async function requestJson(url, options = {}) {
