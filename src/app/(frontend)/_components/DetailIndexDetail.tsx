@@ -141,6 +141,20 @@ function visibleFieldsOf(fields: Array<[string, string | string[] | boolean | un
     .filter(([, values]) => values.length > 0)
 }
 
+function uniqueValues(values: Array<string | undefined>) {
+  const seen = new Set<string>()
+  const output: string[] = []
+  for (const raw of values) {
+    const value = String(raw || '').trim()
+    if (!value) continue
+    const key = value.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    output.push(value)
+  }
+  return output
+}
+
 function relationCollection(label: string) {
   if (['创作者', '关联创作者'].includes(label)) return 'creators'
   if (['相关机构', '关联机构'].includes(label)) return 'organizations'
@@ -191,20 +205,23 @@ function FieldList({ fields }: { fields: Array<[string, string | string[] | bool
 
 function BasicInfo({ item }: { item: DetailItem }) {
   const extendedItem = item as ExtendedDetailItem
+  const allTitles = uniqueValues([item.title, item.originalTitle, ...(item.localizedTitles || []), ...(item.aliases || []), ...(item.allTitles || [])])
   const fields: Array<[string, string | string[] | boolean | undefined]> = [
     ['复核状态', reviewStatusLabel(extendedItem.reviewStatus)],
     ['证据强度', evidenceStrengthLabel(extendedItem.evidenceStrength)],
     ['机构类型', organizationTypeLabel(extendedItem.organizationType)],
     ['证据类型', evidenceTypeLabel(extendedItem.evidenceType)],
     ['截图时间', extendedItem.capturedAt],
+    ['主标题', item.title],
     ['原名', item.originalTitle],
     ['译名', item.localizedTitles],
+    ['别名', item.aliases],
+    ['全部可搜索标题', allTitles],
     ['作品类型', mediaGroupLabel(extendedItem.mediaGroup)],
     ['媒体类型', visibleMetadataValue(extendedItem.mediaType)],
     ['格式', visibleMetadataValue(extendedItem.format)],
     ['首发日期', extendedItem.firstPublishedLabel || extendedItem.firstPublishedAt],
     ['首发精度', visibleMetadataValue(extendedItem.firstPublishedPrecision)],
-    ['别名', item.aliases],
     ['关联作品', extendedItem.relatedWorks],
     ['关联创作者', extendedItem.relatedCreators],
     ['关联机构', extendedItem.relatedOrganizations],
@@ -230,22 +247,41 @@ function BasicInfo({ item }: { item: DetailItem }) {
   )
 }
 
+function sourceName(source?: string) {
+  const value = String(source || '').trim()
+  if (!value) return ''
+  if (value.toLowerCase() === 'bangumi') return 'Bangumi'
+  if (value.toLowerCase() === 'anilist') return 'AniList'
+  return value
+}
+
 function SourceLinks({ item }: { item: DetailItem }) {
   const links = (item.sourceLinks || []).filter((link) => link.url)
-  if (links.length === 0) return null
+  const externalIds = Object.entries(item.externalIds || {}).filter(([, value]) => value)
+  const candidateSources = (item.candidateSources || []).filter((source) => source.source || source.label || source.externalId || source.url)
+
+  if (links.length === 0 && externalIds.length === 0 && candidateSources.length === 0) return null
 
   return (
     <section className="detail-card">
-      <h2>来源链接</h2>
-      <ul className="source-links">
-        {links.map((link) => (
-          <li key={link.url}>
-            <a href={link.url} rel="noreferrer" target="_blank">
-              {link.label || link.url}
-            </a>
-          </li>
-        ))}
-      </ul>
+      <h2>公开来源</h2>
+      <FieldList
+        fields={[
+          ['外部 ID', externalIds.map(([key, value]) => `${key}: ${value}`)],
+          ['候选来源', candidateSources.map((source) => [sourceName(source.source), source.label, source.externalId].filter(Boolean).join(' / '))],
+        ]}
+      />
+      {links.length > 0 ? (
+        <ul className="source-links">
+          {links.map((link) => (
+            <li key={link.url}>
+              <a href={link.url} rel="noreferrer" target="_blank">
+                {link.label || link.url}
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </section>
   )
 }
