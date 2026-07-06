@@ -7,7 +7,7 @@ const DEFAULT_INPUT = 'data_local/staging/work-merge/work-merge-stage2-visibilit
 const DEFAULT_OUT_DIR = 'data_local/staging/work-merge'
 const DEFAULT_SEARCH_INDEX = 'public/search-index.json'
 const DEFAULT_DETAIL_INDEX = 'public/detail-index.json'
-const VERSION = 'work-merge-stage2-index-verify-v0.1'
+const VERSION = 'work-merge-stage2-index-verify-v0.2'
 
 function val(value) {
   return String(value ?? '').trim()
@@ -65,10 +65,6 @@ function slugOf(item) {
   return val(item.slug || item.path || item.urlSlug)
 }
 
-function titleOf(item) {
-  return val(item.title || item.name || item.label)
-}
-
 function workItems(index) {
   return index.items.filter((item) => typeOf(item) === 'works' || typeOf(item) === 'work')
 }
@@ -85,30 +81,21 @@ function countTypes(index) {
 function indexLookup(index) {
   const byId = new Map()
   const bySlug = new Map()
-  const byTitle = new Map()
   for (const item of workItems(index)) {
     const id = idOf(item)
     const slug = slugOf(item)
-    const title = titleOf(item).toLowerCase()
     if (id) byId.set(id, item)
     if (slug) bySlug.set(slug, item)
-    if (title) {
-      const arr = byTitle.get(title) || []
-      arr.push(item)
-      byTitle.set(title, arr)
-    }
   }
-  return { byId, bySlug, byTitle }
+  return { byId, bySlug }
 }
 
-function hasWork(lookup, doc) {
+function findWork(lookup, doc) {
   const id = val(doc?.id)
   const slug = val(doc?.slug)
-  const title = val(doc?.title).toLowerCase()
-  if (id && lookup.byId.has(id)) return true
-  if (slug && lookup.bySlug.has(slug)) return true
-  if (title && (lookup.byTitle.get(title) || []).length) return true
-  return false
+  if (id && lookup.byId.has(id)) return { present: true, matchedBy: 'id' }
+  if (slug && lookup.bySlug.has(slug)) return { present: true, matchedBy: 'slug' }
+  return { present: false, matchedBy: null }
 }
 
 function countBy(rows, getKey) {
@@ -122,9 +109,9 @@ function countBy(rows, getKey) {
 
 function markdown(summary, samples) {
   return [
-    '# Work Merge Stage 2 Index Verify v0.1',
+    '# Work Merge Stage 2 Index Verify v0.2',
     '',
-    'Read-only verification for stage 2 work merge search/detail indexes.',
+    'Read-only verification for stage 2 work merge search/detail indexes. Matching uses exact id/slug only so same-title master/supplement pairs do not collide.',
     '',
     '## Summary',
     '',
@@ -187,17 +174,17 @@ async function main() {
     const blockers = []
     const master = group.master
     const supplement = group.supplement
-    const masterInSearch = hasWork(searchLookup, master)
-    const masterInDetail = hasWork(detailLookup, master)
-    const supplementInSearch = hasWork(searchLookup, supplement)
-    const supplementInDetail = hasWork(detailLookup, supplement)
+    const masterSearchMatch = findWork(searchLookup, master)
+    const masterDetailMatch = findWork(detailLookup, master)
+    const supplementSearchMatch = findWork(searchLookup, supplement)
+    const supplementDetailMatch = findWork(detailLookup, supplement)
 
     if (!master) blockers.push('master_missing_from_input')
     if (!supplement) blockers.push('supplement_missing_from_input')
-    if (!masterInSearch) blockers.push('search_index_missing_master')
-    if (!masterInDetail) blockers.push('detail_index_missing_master')
-    if (supplementInSearch) blockers.push('search_index_contains_hidden_supplement')
-    if (supplementInDetail) blockers.push('detail_index_contains_hidden_supplement')
+    if (!masterSearchMatch.present) blockers.push('search_index_missing_master')
+    if (!masterDetailMatch.present) blockers.push('detail_index_missing_master')
+    if (supplementSearchMatch.present) blockers.push('search_index_contains_hidden_supplement')
+    if (supplementDetailMatch.present) blockers.push('detail_index_contains_hidden_supplement')
 
     const status = blockers.length ? 'blocked' : 'verified'
     rows.push({
@@ -208,15 +195,19 @@ async function main() {
         id: val(master?.id),
         title: val(master?.title),
         slug: val(master?.slug),
-        inSearchIndex: masterInSearch,
-        inDetailIndex: masterInDetail,
+        inSearchIndex: masterSearchMatch.present,
+        searchMatchedBy: masterSearchMatch.matchedBy,
+        inDetailIndex: masterDetailMatch.present,
+        detailMatchedBy: masterDetailMatch.matchedBy,
       },
       supplement: {
         id: val(supplement?.id),
         title: val(supplement?.title),
         slug: val(supplement?.slug),
-        inSearchIndex: supplementInSearch,
-        inDetailIndex: supplementInDetail,
+        inSearchIndex: supplementSearchMatch.present,
+        searchMatchedBy: supplementSearchMatch.matchedBy,
+        inDetailIndex: supplementDetailMatch.present,
+        detailMatchedBy: supplementDetailMatch.matchedBy,
       },
       safety: {
         readOnly: true,
