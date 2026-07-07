@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const VERSION = 'mangadex-ndl-creator-romanization-plan-v0.3'
+const VERSION = 'mangadex-ndl-creator-romanization-plan-v0.4'
 const DEFAULT_READY_INPUT = 'data_local/staging/mangadex-ndl-integration/mangadex-ndl-work-integration-v01-ready.jsonl'
 const DEFAULT_REVIEW_INPUT = 'data_local/staging/mangadex-ndl-integration/mangadex-ndl-blocked-review-v01.rows.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/mangadex-ndl-integration'
 const TARGET_BUCKET = 'creator_romanization_alias_review'
 const CREATOR_BLOCKER = 'review_warning_requires_manual_review:creator_diff_or_missing'
 const TITLE_FORM_MANUAL_RE = /(?:アンソロジ|anthology|合集|小説|小说|novel)/iu
+const MAX_AUTO_PASS_SEARCH_TEXT_ADDITIONS = 6
 const SAFE_READY_WARNINGS = new Set([
   'raw_source_id_not_bangumi_subject_id',
   'has_search_text_additions',
@@ -182,6 +183,7 @@ function planDecision(reviewRow, readyPlan) {
   if (blockers.length !== 1 || blockers[0] !== CREATOR_BLOCKER) issues.push('unexpected_review_blockers')
   if (!safeReadyWarnings(readyWarnings)) issues.push('unsafe_ready_warnings')
   if (!searchTextAdditions.length) issues.push('no_search_text_additions')
+  if (searchTextAdditions.length > MAX_AUTO_PASS_SEARCH_TEXT_ADDITIONS) issues.push('too_many_search_text_additions_for_auto_pass')
   if (titleFormNeedsManualReview(reviewRow, readyPlan)) issues.push('title_form_requires_manual_review')
   if (incomingCreators.length > 3 || existingCreators.length > 3) issues.push('creator_set_too_broad_for_auto_pass')
 
@@ -198,6 +200,8 @@ function planDecision(reviewRow, readyPlan) {
     decision = 'candidate_medium_confidence_sample_before_apply'
   } else if (issues.includes('unsafe_ready_warnings')) {
     decision = 'manual_review_extra_ready_warnings'
+  } else if (issues.includes('too_many_search_text_additions_for_auto_pass')) {
+    decision = 'manual_review_many_search_text_additions'
   } else if (issues.includes('title_form_requires_manual_review')) {
     decision = 'manual_review_special_title_form'
   } else if (issues.includes('creator_set_too_broad_for_auto_pass')) {
@@ -238,6 +242,7 @@ function compactRow(reviewRow, readyPlan) {
     issues: plan.issues.join(' | '),
     notes: plan.notes.join(' | '),
     searchTextAdditions: plan.searchTextAdditions.join(' | '),
+    searchTextAdditionCount: String(plan.searchTextAdditions.length),
     sourceMetadataPresent: String(plan.sourceMetadataPresent),
     sourceLinkCount: String(plan.sourceLinkCount),
     candidateSourceCount: String(plan.candidateSourceCount),
@@ -320,6 +325,8 @@ function main() {
       sourceMetadataDeferred: true,
       passRequiresEmbeddedNativeCreatorEvidence: true,
       passRequiresCompactCreatorSet: true,
+      maxAutoPassSearchTextAdditions: MAX_AUTO_PASS_SEARCH_TEXT_ADDITIONS,
+      manySearchTextAdditionsRequireManualReview: true,
       specialTitleFormsRequireManualReview: true,
       mediumConfidenceRowsRequireManualSampling: true,
     },
@@ -347,6 +354,7 @@ function main() {
     'issues',
     'notes',
     'searchTextAdditions',
+    'searchTextAdditionCount',
     'sourceMetadataPresent',
     'sourceLinkCount',
     'candidateSourceCount',
