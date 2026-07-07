@@ -55,6 +55,12 @@ function evidenceTypeLabel(value?: string) {
   return evidenceTypeLabels[value] || value
 }
 
+function contentVisibilityLabel(value?: string) {
+  if (value === 'adult') return '标记内容'
+  if (value === 'restricted') return '限制展示'
+  return ''
+}
+
 function primaryMeta(item: SearchItem) {
   if (item.collection === 'works') {
     return displayRank(item.rank) || item.slug
@@ -102,6 +108,8 @@ export default function CollectionIndexPage({ collection, eyebrow, title, descri
     .filter((item) => item.collection === collection)
     .sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
 
+  const markedItems = items.filter((item) => item.collection === 'works' && item.contentVisibility && item.contentVisibility !== 'ordinary')
+
   return (
     <main className="page collection-page">
       <section className="page-heading collection-heading">
@@ -116,17 +124,20 @@ export default function CollectionIndexPage({ collection, eyebrow, title, descri
             浏览全部
           </Link>
           <span>{items.length} 条</span>
+          {markedItems.length ? <span>普通模式隐藏 {markedItems.length} 条标记作品</span> : null}
         </div>
       </section>
 
       <section className="collection-grid">
         {items.map((item) => {
           const secondary = secondaryMeta(item)
+          const visibilityLabel = contentVisibilityLabel(item.contentVisibility)
 
           return (
-            <Link className="collection-card" href={item.url} key={item.id}>
+            <Link className="collection-card" data-content-visibility={item.contentVisibility || 'ordinary'} href={item.url} key={item.id}>
               <p>{primaryMeta(item)}</p>
               <h2>{item.title}</h2>
+              {visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}
               {secondary ? <span>{secondary}</span> : null}
             </Link>
           )
