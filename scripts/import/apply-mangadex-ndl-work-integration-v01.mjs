@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const VERSION = 'mangadex-ndl-work-integration-apply-v0.1'
+const VERSION = 'mangadex-ndl-work-integration-apply-v0.2'
 const DEFAULT_INPUT = 'data_local/staging/mangadex-ndl-integration/mangadex-ndl-work-integration-v01-ready.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/mangadex-ndl-integration'
 const CONFIRM = 'apply-mangadex-ndl-work-integration-v01'
@@ -19,6 +19,12 @@ const ALLOWED_SOURCE_LINK_LABELS = new Set([
   'NDL',
 ])
 const ALLOWED_CANDIDATE_SOURCES = new Set(['mangadex', 'ndl'])
+const REVIEW_WARNING_BLOCKERS = new Set([
+  'creator_diff_or_missing',
+  'publisher_diff_or_missing',
+  'year_diff_or_missing',
+])
+const NON_SAFE_MANGADEX_RATINGS = new Set(['suggestive', 'erotica', 'pornographic'])
 
 function val(value) {
   return String(value ?? '').trim()
@@ -174,16 +180,40 @@ function countBy(rows, key) {
   return Object.fromEntries(Object.entries(out).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])))
 }
 
-function validatePlan(plan) {
+function contentRatingFromNote(note) {
+  const match = val(note).match(/contentRating=([^;]+)/iu)
+  return val(match?.[1]).toLowerCase()
+}
+
+function titleLooksLikeDoujinshiOrLooseExtra(value) {
+  const text = normalizeText(value)
+  return /\bdoujinshi\b|\bdj\b|同人/u.test(text)
+}
+
+function validatePlan(plan, options) {
   const blockers = []
+  const warnings = Array.isArray(plan?.warnings) ? plan.warnings.map(val).filter(Boolean) : []
+  const searchTextAdditions = Array.isArray(plan?.fieldAdditions?.searchTextAdditions) ? plan.fieldAdditions.searchTextAdditions : []
+  const sourceLinks = Array.isArray(plan?.fieldAdditions?.sourceLinks) ? plan.fieldAdditions.sourceLinks : []
+  const candidateSources = Array.isArray(plan?.fieldAdditions?.candidateSources) ? plan.fieldAdditions.candidateSources : []
+
   if (plan?.planStatus !== 'ready_for_apply_review') blockers.push('not_ready_for_apply_review')
   if (!ALLOWED_ACTIONS.has(val(plan?.action))) blockers.push('unsupported_action')
   if (Array.isArray(plan?.blockers) && plan.blockers.length) blockers.push('plan_has_blockers')
   if (!val(plan?.work?.id)) blockers.push('missing_work_id')
   if (plan?.createCandidatePreview) blockers.push('create_candidate_preview_not_allowed_for_apply')
 
-  const sourceLinks = Array.isArray(plan?.fieldAdditions?.sourceLinks) ? plan.fieldAdditions.sourceLinks : []
-  const candidateSources = Array.isArray(plan?.fieldAdditions?.candidateSources) ? plan.fieldAdditions.candidateSources : []
+  if (options.strictReviewWarnings) {
+    for (const warning of warnings) {
+      if (REVIEW_WARNING_BLOCKERS.has(warning)) blockers.push(`review_warning_requires_manual_review:${warning}`)
+    }
+  }
+
+  if (options.doujinshiTitleGuard) {
+    for (const title of searchTextAdditions) {
+      if (titleLooksLikeDoujinshiOrLooseExtra(title)) blockers.push('doujinshi_or_loose_extra_title_requires_manual_review')
+    }
+  }
 
   for (const link of sourceLinks) {
     if (!ALLOWED_SOURCE_LINK_LABELS.has(val(link?.label))) blockers.push(`unsupported_source_link_label:${val(link?.label) || 'missing'}`)
@@ -191,8 +221,13 @@ function validatePlan(plan) {
   }
 
   for (const source of candidateSources) {
-    if (!ALLOWED_CANDIDATE_SOURCES.has(val(source?.source))) blockers.push(`unsupported_candidate_source:${val(source?.source) || 'missing'}`)
+    const sourceName = val(source?.source)
+    if (!ALLOWED_CANDIDATE_SOURCES.has(sourceName)) blockers.push(`unsupported_candidate_source:${sourceName || 'missing'}`)
     if (source?.url && !/^https?:\/\//iu.test(val(source.url))) blockers.push('invalid_candidate_source_url')
+    if (options.safeContentRatingOnly && sourceName === 'mangadex') {
+      const rating = contentRatingFromNote(source?.note)
+      if (rating && NON_SAFE_MANGADEX_RATINGS.has(rating)) blockers.push(`mangadex_content_rating_requires_manual_review:${rating}`)
+    }
   }
 
   return [...new Set(blockers)]
@@ -205,6 +240,11 @@ async function main() {
   const outDir = String(args['out-dir'] || DEFAULT_OUT_DIR)
   const apply = Boolean(args.apply)
   const confirmMatched = val(args.confirm) === CONFIRM
+  const options = {
+    strictReviewWarnings: !Boolean(args['allow-review-warnings']),
+    safeContentRatingOnly: !Boolean(args['allow-non-safe-content-rating']),
+    doujinshiTitleGuard: !Boolean(args['allow-doujinshi-title']),
+  }
   if (apply && !confirmMatched) throw new Error(`Need --apply --confirm ${CONFIRM}`)
 
   const email = process.env.PAYLOAD_EXPORT_EMAIL || process.env.PAYLOAD_SEED_EMAIL
@@ -233,7 +273,7 @@ async function main() {
       action: val(plan?.action),
       status: '',
       mode: apply ? 'apply' : 'dry-run',
-      blockers: validatePlan(plan),
+      blockers: validatePlan(plan, options),
       warnings: Array.isArray(plan?.warnings) ? plan.warnings : [],
       changedFields: [],
       additions: {
@@ -317,6 +357,7 @@ async function main() {
     mode: apply ? 'apply' : 'dry-run',
     payloadBaseUrl: base,
     inputFile: input,
+    options,
     plansRead: plans.length,
     wouldPatch,
     patched,
@@ -326,6 +367,7 @@ async function main() {
     byStatus: countBy(rows, 'status'),
     byAction: countBy(rows, 'action'),
     byChangedField: countBy(rows.flatMap((row) => row.changedFields), (item) => item),
+    byWarning: countBy(rows.flatMap((row) => row.warnings), (item) => item),
     byBlocker: countBy(rows.flatMap((row) => row.blockers), (item) => item),
     outputs,
     safety: {
@@ -337,6 +379,11 @@ async function main() {
       directPostgresqlWrite: false,
       createsWorks: false,
       deletesWorks: false,
+      defaultConservativeGuards: {
+        strictReviewWarnings: options.strictReviewWarnings,
+        safeContentRatingOnly: options.safeContentRatingOnly,
+        doujinshiTitleGuard: options.doujinshiTitleGuard,
+      },
       changedFieldsAllowed: ['searchText', 'sourceLinks', 'candidateSources'],
       doesNotWrite: ['title', 'originalTitle', 'aliases', 'localizedTitles', 'creators', 'creatorCredits', 'organizations', 'mediaGroup', 'mediaType', 'reviewStatus', 'riskMatrix'],
     },
