@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const VERSION = 'mangadex-ndl-work-integration-apply-v0.2'
+const VERSION = 'mangadex-ndl-work-integration-apply-v0.3'
 const DEFAULT_INPUT = 'data_local/staging/mangadex-ndl-integration/mangadex-ndl-work-integration-v01-ready.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/mangadex-ndl-integration'
 const CONFIRM = 'apply-mangadex-ndl-work-integration-v01'
@@ -190,6 +190,15 @@ function titleLooksLikeDoujinshiOrLooseExtra(value) {
   return /\bdoujinshi\b|\bdj\b|同人/u.test(text)
 }
 
+function titleLooksLikeShortLooseFragment(value) {
+  const text = cleanLine(value)
+  if (!text) return false
+  if (/[^\x00-\x7F]/u.test(text)) return false
+  const alnum = text.replace(/[^\p{L}\p{N}]+/gu, '')
+  const words = text.split(/\s+/u).filter(Boolean)
+  return alnum.length > 0 && alnum.length <= 3 && words.length <= 1
+}
+
 function validatePlan(plan, options) {
   const blockers = []
   const warnings = Array.isArray(plan?.warnings) ? plan.warnings.map(val).filter(Boolean) : []
@@ -233,6 +242,19 @@ function validatePlan(plan, options) {
   return [...new Set(blockers)]
 }
 
+function validateDiffAdditions(row, options) {
+  const blockers = []
+  if (options.searchTextOnlyFirstPass && (row.additions.sourceLinks.length || row.additions.candidateSources.length)) {
+    blockers.push('source_metadata_requires_manual_review')
+  }
+  if (options.shortFragmentGuard) {
+    for (const title of row.additions.searchText) {
+      if (titleLooksLikeShortLooseFragment(title)) blockers.push('short_search_text_fragment_requires_manual_review')
+    }
+  }
+  return blockers
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   const base = String(args.url || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/+$/u, '')
@@ -244,6 +266,8 @@ async function main() {
     strictReviewWarnings: !Boolean(args['allow-review-warnings']),
     safeContentRatingOnly: !Boolean(args['allow-non-safe-content-rating']),
     doujinshiTitleGuard: !Boolean(args['allow-doujinshi-title']),
+    shortFragmentGuard: !Boolean(args['allow-short-fragments']),
+    searchTextOnlyFirstPass: !Boolean(args['allow-source-metadata']),
   }
   if (apply && !confirmMatched) throw new Error(`Need --apply --confirm ${CONFIRM}`)
 
@@ -312,7 +336,13 @@ async function main() {
             row.changedFields.push('candidateSources')
           }
 
-          if (!row.changedFields.length) {
+          row.blockers.push(...validateDiffAdditions(row, options))
+          row.blockers = [...new Set(row.blockers)]
+
+          if (row.blockers.length) {
+            row.status = 'blocked'
+            blocked += 1
+          } else if (!row.changedFields.length) {
             row.status = 'already_current'
             alreadyCurrent += 1
           } else if (apply) {
@@ -331,7 +361,7 @@ async function main() {
         }
       }
 
-      if (row.blockers.length) {
+      if (row.blockers.length && row.status !== 'blocked') {
         row.status = 'blocked'
         blocked += 1
       }
@@ -350,6 +380,7 @@ async function main() {
     blocked: `${outDir}/mangadex-ndl-work-integration-apply-v01-blocked.jsonl`,
     summary: `${outDir}/mangadex-ndl-work-integration-apply-v01-summary.json`,
   }
+  const actionableRows = rows.filter((row) => row.status === 'would_patch' || row.status === 'patched')
 
   const summary = {
     generatedAt: new Date().toISOString(),
@@ -366,7 +397,7 @@ async function main() {
     failed,
     byStatus: countBy(rows, 'status'),
     byAction: countBy(rows, 'action'),
-    byChangedField: countBy(rows.flatMap((row) => row.changedFields), (item) => item),
+    byChangedField: countBy(actionableRows.flatMap((row) => row.changedFields), (item) => item),
     byWarning: countBy(rows.flatMap((row) => row.warnings), (item) => item),
     byBlocker: countBy(rows.flatMap((row) => row.blockers), (item) => item),
     outputs,
@@ -383,8 +414,12 @@ async function main() {
         strictReviewWarnings: options.strictReviewWarnings,
         safeContentRatingOnly: options.safeContentRatingOnly,
         doujinshiTitleGuard: options.doujinshiTitleGuard,
+        shortFragmentGuard: options.shortFragmentGuard,
+        searchTextOnlyFirstPass: options.searchTextOnlyFirstPass,
       },
       changedFieldsAllowed: ['searchText', 'sourceLinks', 'candidateSources'],
+      defaultFirstPassWritableFields: ['searchText'],
+      sourceMetadataRequiresOptIn: true,
       doesNotWrite: ['title', 'originalTitle', 'aliases', 'localizedTitles', 'creators', 'creatorCredits', 'organizations', 'mediaGroup', 'mediaType', 'reviewStatus', 'riskMatrix'],
     },
   }
