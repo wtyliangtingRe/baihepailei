@@ -4,6 +4,7 @@ import path from 'node:path'
 
 const DEFAULT_OUT = 'public/search-index.json'
 const COLLECTIONS = ['works', 'creators', 'organizations', 'evidence', 'terms', 'rules']
+const OPTIONAL_COLLECTIONS = new Set(['evidence'])
 const EXPORT_EMAIL_ENV = 'PAYLOAD_EXPORT_EMAIL'
 const EXPORT_SECRET_ENV = ['PAYLOAD_EXPORT', 'PASSWORD'].join('_')
 const SEED_EMAIL_ENV = 'PAYLOAD_SEED_EMAIL'
@@ -423,6 +424,14 @@ function countBy(items, getKey) {
   return counts
 }
 
+function exportWarning(collection, error) {
+  const message = String(error?.message || error)
+  return {
+    collection,
+    message: message.slice(0, 1200),
+  }
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   if (args.help) {
@@ -443,9 +452,19 @@ async function main() {
 
   const items = []
   const counts = {}
+  const exportWarnings = []
 
   for (const collection of COLLECTIONS) {
-    const docs = await fetchCollection(baseUrl, token, collection, { includeDrafts })
+    let docs = []
+    try {
+      docs = await fetchCollection(baseUrl, token, collection, { includeDrafts })
+    } catch (error) {
+      if (!OPTIONAL_COLLECTIONS.has(collection)) throw error
+      const warning = exportWarning(collection, error)
+      exportWarnings.push(warning)
+      console.warn(`[warn] skipped optional collection ${collection}: ${warning.message.split('\n')[0]}`)
+    }
+
     counts[collection] = docs.length
     items.push(...docs.map((doc) => mapDocument(collection, doc)))
   }
@@ -457,6 +476,7 @@ async function main() {
     mode: includeDrafts ? 'drafts-and-published' : 'published-only',
     counts,
     visibilityCounts: countBy(items.filter((item) => item.collection === 'works'), (item) => item.contentVisibility || 'ordinary'),
+    exportWarnings,
     total: items.length,
     items,
   }
