@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const VERSION = 'mangadex-ndl-creator-romanization-apply-v0.1'
+const VERSION = 'mangadex-ndl-creator-romanization-apply-v0.2'
 const DEFAULT_PASS_INPUT = 'data_local/staging/mangadex-ndl-integration/mangadex-ndl-creator-romanization-plan-v01-pass.rows.jsonl'
 const DEFAULT_READY_INPUT = 'data_local/staging/mangadex-ndl-integration/mangadex-ndl-work-integration-v01-ready.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/mangadex-ndl-integration'
@@ -10,6 +10,7 @@ const TARGET_DECISION = 'candidate_high_confidence_search_text_only'
 const TARGET_EVIDENCE = 'embedded_native_name_match'
 const TARGET_ACTION = 'enrich_primary_title_matched_bangumi_work'
 const MAX_SEARCH_TEXT_ADDITIONS = 6
+const MAX_UNPROVEN_CREATOR_NAME_GROUPS = 1
 const ALLOWED_READY_WARNINGS = new Set([
   'raw_source_id_not_bangumi_subject_id',
   'has_search_text_additions',
@@ -72,6 +73,12 @@ function cleanLine(value) {
   return val(value).replace(/[\r\n\t]+/gu, ' ').replace(/\s+/gu, ' ')
 }
 
+function compactCreatorName(value) {
+  return normalizeText(value)
+    .replace(/[\s,，.・･:：;；'’`"“”\-—_()（）\[\]【】<>《》「」『』]+/gu, '')
+    .replace(/著・文・その他|著・文|著|漫画・原作|漫画|原作|脚本|作画|構成|企画・原案|原案|\[ほか\]/gu, '')
+}
+
 function shortLooseFragment(value) {
   const text = cleanLine(value)
   if (!text) return false
@@ -79,6 +86,14 @@ function shortLooseFragment(value) {
   const alnum = text.replace(/[^\p{L}\p{N}]+/gu, '')
   const words = text.split(/\s+/u).filter(Boolean)
   return alnum.length > 0 && alnum.length <= 3 && words.length <= 1
+}
+
+function cjkLooseFragment(value) {
+  const text = cleanLine(value)
+  if (!text) return false
+  if (/[\p{Script=Latin}]/u.test(text)) return false
+  const compact = text.replace(/[^\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{N}]/gu, '')
+  return compact.length > 0 && compact.length <= 2
 }
 
 function contentRatingFromNote(note) {
@@ -154,6 +169,24 @@ function validatePassRow(passRow) {
   return [...new Set(blockers)]
 }
 
+function hasComplexUnprovenCreatorSet(diffReport) {
+  const existingCompacts = unique(diffReport?.existingCreators)
+    .map(compactCreatorName)
+    .filter((item) => item.length >= 2)
+  const missing = unique(diffReport?.missingIncomingCreators)
+  const unprovenGroups = []
+
+  for (const creator of missing) {
+    const compact = compactCreatorName(creator)
+    if (!compact) continue
+    const containsExistingNativeName = existingCompacts.some((existing) => compact.includes(existing) || existing.includes(compact))
+    if (containsExistingNativeName) continue
+    if (!unprovenGroups.some((item) => item.includes(compact) || compact.includes(item))) unprovenGroups.push(compact)
+  }
+
+  return unprovenGroups.length > MAX_UNPROVEN_CREATOR_NAME_GROUPS
+}
+
 function validateReadyPlan(readyPlan, passRow) {
   const blockers = []
   const warnings = unique(readyPlan?.warnings)
@@ -178,6 +211,10 @@ function validateReadyPlan(readyPlan, passRow) {
   if (searchTextAdditions.length > MAX_SEARCH_TEXT_ADDITIONS) blockers.push('too_many_search_text_additions_for_guarded_apply')
   for (const title of searchTextAdditions) {
     if (shortLooseFragment(title)) blockers.push('short_search_text_fragment_requires_manual_review')
+    if (cjkLooseFragment(title)) blockers.push('short_cjk_search_text_fragment_requires_manual_review')
+  }
+  if (hasComplexUnprovenCreatorSet(readyPlan?.diffReport || passRow?.rawReadyPlan?.diffReport || {})) {
+    blockers.push('complex_creator_set_requires_manual_review')
   }
   for (const source of candidateSources) {
     if (val(source?.source) === 'mangadex') {
@@ -197,7 +234,7 @@ function validateReadyPlan(readyPlan, passRow) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
-  const base = String(args.url || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/+$|$/u, '')
+  const base = String(args.url || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/+$/u, '')
   const passInput = String(args.pass || args.input || DEFAULT_PASS_INPUT)
   const readyInput = String(args.ready || DEFAULT_READY_INPUT)
   const outDir = String(args['out-dir'] || DEFAULT_OUT_DIR)
@@ -349,7 +386,10 @@ async function main() {
       requiresPlannerDecision: TARGET_DECISION,
       requiresPlannerEvidence: TARGET_EVIDENCE,
       maxSearchTextAdditions: MAX_SEARCH_TEXT_ADDITIONS,
+      maxUnprovenCreatorNameGroups: MAX_UNPROVEN_CREATOR_NAME_GROUPS,
       rejectsShortStoryCollectionTags: [...DISALLOWED_REVIEW_TAGS],
+      rejectsShortCjkSearchTextFragments: true,
+      rejectsComplexCreatorSets: true,
       doesNotWrite: ['title', 'originalTitle', 'aliases', 'localizedTitles', 'creators', 'creatorCredits', 'organizations', 'mediaGroup', 'mediaType', 'reviewStatus', 'riskMatrix', 'sourceLinks', 'candidateSources'],
     },
   }
