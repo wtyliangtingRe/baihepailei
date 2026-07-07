@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import readline from 'node:readline'
 
-const VERSION = 'mangadex-ndl-work-integration-audit-v0.1'
+const VERSION = 'mangadex-ndl-work-integration-audit-v0.2'
 const PAGE_LIMIT = 200
 const DEFAULT_OUT_DIR = 'data_local/staging/mangadex-ndl-integration'
 const DEFAULT_MANGADEX_REVIEW = 'data_local/raw/mangadex/index/mangadex-bangumi-books-review.jsonl'
@@ -39,12 +39,12 @@ function normalizeText(value) {
   return val(value).normalize('NFKC').toLowerCase().replace(/\s+/gu, ' ')
 }
 
-function normalizeUrl(value) {
-  return val(value).replace(/\/+$/u, '')
-}
-
 function compactLine(value) {
   return val(value).replace(/[\r\n\t]+/gu, ' ').replace(/\s+/gu, ' ')
+}
+
+function normalizeUrl(value) {
+  return val(value).replace(/\/+$/u, '')
 }
 
 function uniqueBy(values, getKey = normalizeText) {
@@ -59,10 +59,22 @@ function uniqueBy(values, getKey = normalizeText) {
   return out
 }
 
+function isUsefulTitle(value) {
+  const text = compactLine(value)
+  if (!text) return false
+  if (/^https?:\/\//iu.test(text)) return false
+  if (/^\d+$/u.test(text)) return false
+  if (/^(unknown|null|undefined)$/iu.test(text)) return false
+  return true
+}
+
 function splitLooseList(value) {
   const text = compactLine(value)
   if (!text) return []
-  return text.split(/[|；;]+/u).map((item) => compactLine(item)).filter(Boolean)
+  return text
+    .split(/\s+[\/／]\s+|[|；;]+/u)
+    .map((item) => compactLine(item))
+    .filter(isUsefulTitle)
 }
 
 function maybeJson(value) {
@@ -93,8 +105,8 @@ function collectTextDeep(value, out = []) {
   return out
 }
 
-function readJsonlIfExists(file) {
-  if (!fs.existsSync(file)) return Promise.resolve({ rows: [], read: 0, failed: 0, exists: false })
+async function readJsonlIfExists(file) {
+  if (!fs.existsSync(file)) return { rows: [], read: 0, failed: 0, exists: false }
   return readJsonl(file)
 }
 
@@ -261,6 +273,19 @@ function buildWorkIndexes(works) {
   return { byId, byBangumiId, titleIndex }
 }
 
+function validBangumiSubjectId(value) {
+  const text = val(value)
+  return /^\d+$/u.test(text) ? text : ''
+}
+
+function rawSourceIdOf(row) {
+  return val(row?.sourceId || row?.source?.sourceId || row?.source?.id)
+}
+
+function bangumiSubjectIdOf(row) {
+  return validBangumiSubjectId(row?.bangumiId || row?.bangumiSubjectId || row?.source?.bangumiId || row?.source?.subjectId || row?.sourceId)
+}
+
 function mangaDexId(row) {
   return val(row?.mangaDexId || row?.bestMangaDexId)
 }
@@ -268,6 +293,39 @@ function mangaDexId(row) {
 function mangaDexUrl(row) {
   const id = mangaDexId(row)
   return id ? `https://mangadex.org/title/${id}` : ''
+}
+
+function externalLinkUrl(label, value) {
+  const text = normalizeUrl(value)
+  if (!text) return ''
+  if (/^https?:\/\//iu.test(text)) return text
+  if (label === 'AniList via MangaDex' && /^\d+$/u.test(text)) return `https://anilist.co/manga/${text}`
+  if (label === 'MyAnimeList via MangaDex' && /^\d+$/u.test(text)) return `https://myanimelist.net/manga/${text}`
+  return ''
+}
+
+function selectedMangaDexRows(group) {
+  const bestIds = new Set(group.mangaDexBestRows.map(mangaDexId).filter(Boolean))
+  const detailRows = bestIds.size
+    ? group.mangaDexRows.filter((row) => bestIds.has(mangaDexId(row)))
+    : []
+  return {
+    bestRows: group.mangaDexBestRows,
+    detailRows,
+    evidenceRows: [...group.mangaDexBestRows, ...detailRows],
+    selectedIds: [...bestIds],
+  }
+}
+
+function selectedNdlRows(group) {
+  const acceptedMaterialTypes = new Set(['', 'manga', 'novel_or_light_novel', 'book', 'unknown'])
+  const bibliographicRows = group.ndlRows.filter((row) => acceptedMaterialTypes.has(val(row?.materialType)))
+  const nonBookRows = group.ndlRows.filter((row) => !acceptedMaterialTypes.has(val(row?.materialType)))
+  return {
+    manifestRows: group.ndlManifestRows,
+    bibliographicRows,
+    nonBookRows,
+  }
 }
 
 function collectMangaDexTitles(row) {
@@ -279,39 +337,68 @@ function collectMangaDexTitles(row) {
     row?.bestTitle,
     row?.titleMain,
     ...collectTextDeep(row?.allTitles),
-  ].map(compactLine).filter(Boolean), normalizeText)
+  ].map(compactLine).filter(isUsefulTitle), normalizeText)
 }
 
-function collectNdlTitles(row) {
+function collectNdlManifestTitles(row) {
   return uniqueBy([
     row?.query,
-    row?.ndlTitle,
-    row?.volume,
     row?.source?.title,
     row?.source?.titleCn,
     ...collectTextDeep(row?.source?.aliases),
-  ].map(compactLine).filter(Boolean), normalizeText)
+  ].map(compactLine).filter(isUsefulTitle), normalizeText)
 }
 
-function sourceIdFromManifestRow(row) {
-  return val(row?.sourceId || row?.source?.subjectId)
+function collectNdlBibliographicTitles(row) {
+  return uniqueBy([
+    row?.query,
+    row?.ndlTitle,
+  ].map(compactLine).filter(isUsefulTitle), normalizeText)
+}
+
+function primaryTitlesForGroup(group) {
+  const md = selectedMangaDexRows(group)
+  const ndl = selectedNdlRows(group)
+  return uniqueBy([
+    ...md.bestRows.flatMap((row) => [row?.query, row?.sourceTitle, row?.sourceTitleCn, row?.bestMatchedTitle].map(compactLine).filter(isUsefulTitle)),
+    ...ndl.manifestRows.flatMap(collectNdlManifestTitles),
+  ], normalizeText)
+}
+
+function titlesForGroup(group) {
+  const md = selectedMangaDexRows(group)
+  const ndl = selectedNdlRows(group)
+  return uniqueBy([
+    ...md.evidenceRows.flatMap(collectMangaDexTitles),
+    ...ndl.manifestRows.flatMap(collectNdlManifestTitles),
+  ].map(compactLine).filter(isUsefulTitle), normalizeText)
+}
+
+function ndlReviewTitlesForReport(group) {
+  const ndl = selectedNdlRows(group)
+  return uniqueBy(ndl.bibliographicRows.flatMap(collectNdlBibliographicTitles), normalizeText)
 }
 
 function incomingCreatorNames(group) {
+  const md = selectedMangaDexRows(group)
+  const ndl = selectedNdlRows(group)
   return uniqueBy([
-    ...group.mangaDexRows.flatMap((row) => [...collectTextDeep(row?.authors), ...collectTextDeep(row?.artists), ...collectTextDeep(row?.bestAuthors), ...collectTextDeep(row?.bestArtists)]),
-    ...group.ndlRows.flatMap((row) => collectTextDeep(row?.author)),
+    ...md.evidenceRows.flatMap((row) => [...collectTextDeep(row?.authors), ...collectTextDeep(row?.artists), ...collectTextDeep(row?.bestAuthors), ...collectTextDeep(row?.bestArtists)]),
+    ...ndl.bibliographicRows.flatMap((row) => collectTextDeep(row?.author)),
   ].map(compactLine).filter(Boolean), normalizeText)
 }
 
 function incomingPublishers(group) {
-  return uniqueBy(group.ndlRows.flatMap((row) => collectTextDeep(row?.publisher)).map(compactLine).filter(Boolean), normalizeText)
+  const ndl = selectedNdlRows(group)
+  return uniqueBy(ndl.bibliographicRows.flatMap((row) => collectTextDeep(row?.publisher)).map(compactLine).filter(Boolean), normalizeText)
 }
 
 function incomingYears(group) {
+  const md = selectedMangaDexRows(group)
+  const ndl = selectedNdlRows(group)
   return uniqueBy([
-    ...group.mangaDexRows.flatMap((row) => [row?.year, row?.bestYear]),
-    ...group.ndlRows.flatMap((row) => collectTextDeep(row?.publicationYear)),
+    ...md.evidenceRows.flatMap((row) => [row?.year, row?.bestYear]),
+    ...ndl.bibliographicRows.flatMap((row) => collectTextDeep(row?.publicationYear)),
   ].map((item) => val(item).match(/\d{4}/u)?.[0] || '').filter(Boolean), (item) => item)
 }
 
@@ -351,130 +438,170 @@ function differenceNormalized(incoming, existing) {
 }
 
 function linksForGroup(group) {
+  const md = selectedMangaDexRows(group)
+  const ndl = selectedNdlRows(group)
   const links = []
-  for (const row of group.mangaDexRows) {
+
+  for (const row of md.detailRows) {
     const url = mangaDexUrl(row)
     if (url) links.push({ label: 'MangaDex', url })
-    if (normalizeUrl(row?.linkAniList)) links.push({ label: 'AniList via MangaDex', url: normalizeUrl(row.linkAniList) })
-    if (normalizeUrl(row?.linkMAL)) links.push({ label: 'MyAnimeList via MangaDex', url: normalizeUrl(row.linkMAL) })
-    if (normalizeUrl(row?.linkMangaUpdates)) links.push({ label: 'MangaUpdates via MangaDex', url: normalizeUrl(row.linkMangaUpdates) })
-    if (normalizeUrl(row?.linkRaw)) links.push({ label: 'Raw link via MangaDex', url: normalizeUrl(row.linkRaw) })
+    for (const [label, value] of [
+      ['AniList via MangaDex', row?.linkAniList],
+      ['MyAnimeList via MangaDex', row?.linkMAL],
+      ['MangaUpdates via MangaDex', row?.linkMangaUpdates],
+      ['Raw link via MangaDex', row?.linkRaw],
+    ]) {
+      const link = externalLinkUrl(label, value)
+      if (link) links.push({ label, url: link })
+    }
   }
-  for (const row of group.ndlRows) {
+
+  for (const row of md.bestRows) {
+    const url = mangaDexUrl(row)
+    if (url) links.push({ label: 'MangaDex', url })
+  }
+
+  for (const row of ndl.bibliographicRows) {
     if (normalizeUrl(row?.link)) links.push({ label: 'NDL', url: normalizeUrl(row.link) })
   }
+
   return uniqueBy(links, (item) => normalizeUrl(item.url))
 }
 
 function candidateSourcesForGroup(group) {
+  const md = selectedMangaDexRows(group)
+  const ndl = selectedNdlRows(group)
   const sources = []
-  for (const row of group.mangaDexRows) {
+
+  for (const row of md.evidenceRows) {
     const id = mangaDexId(row)
     const url = mangaDexUrl(row)
-    if (id || url) {
-      sources.push({
-        source: 'mangadex',
-        label: 'MangaDex',
-        externalId: id,
-        url,
-        note: ['MangaDex + Bangumi books integration audit', row?.contentRating ? `contentRating=${row.contentRating}` : '', row?.hasGirlsLove ? 'hasGirlsLove=true' : ''].filter(Boolean).join('; '),
-      })
-    }
+    if (!id && !url) continue
+    sources.push({
+      source: 'mangadex',
+      label: 'MangaDex',
+      externalId: id,
+      url,
+      note: [
+        'MangaDex + Bangumi books integration audit',
+        row?.contentRating || row?.bestContentRating ? `contentRating=${val(row.contentRating || row.bestContentRating)}` : '',
+        row?.hasGirlsLove ? 'hasGirlsLove=true' : '',
+      ].filter(Boolean).join('; '),
+    })
   }
-  for (const row of group.ndlRows) {
-    const externalId = val(row?.identifier || row?.link)
+
+  for (const row of ndl.bibliographicRows) {
+    const externalId = val(row?.identifier || row?.isbn || row?.link)
     const url = normalizeUrl(row?.link)
-    if (externalId || url) {
-      sources.push({
-        source: 'ndl',
-        label: 'NDL',
-        externalId,
-        url,
-        note: ['NDL OpenSearch bibliographic integration audit', row?.isbn ? `isbn=${compactLine(row.isbn)}` : '', row?.materialType ? `materialType=${compactLine(row.materialType)}` : ''].filter(Boolean).join('; '),
-      })
-    }
+    if (!externalId && !url) continue
+    sources.push({
+      source: 'ndl',
+      label: 'NDL',
+      externalId,
+      url,
+      note: [
+        'NDL OpenSearch bibliographic integration audit',
+        row?.isbn ? `isbn=${compactLine(row.isbn)}` : '',
+        row?.materialType ? `materialType=${compactLine(row.materialType)}` : '',
+      ].filter(Boolean).join('; '),
+    })
   }
+
   return uniqueBy(sources, (item) => [item.source, item.externalId, normalizeUrl(item.url)].join('|'))
 }
 
 function groupRawRows({ mangaDexReviewRows, mangaDexBestRows, ndlReviewRows, ndlManifestRows }) {
   const groups = new Map()
-  const queryToSourceIds = new Map()
+  const queryToRawSourceIds = new Map()
 
-  function ensure(sourceId, fallbackKey = '') {
-    const key = sourceId ? `bangumi:${sourceId}` : fallbackKey
+  function ensure(rawSourceId, bangumiSubjectId = '', fallbackKey = '') {
+    const key = bangumiSubjectId ? `bangumi:${bangumiSubjectId}` : rawSourceId ? `raw:${rawSourceId}` : fallbackKey
     if (!groups.has(key)) {
-      groups.set(key, { key, sourceId: sourceId || '', mangaDexRows: [], mangaDexBestRows: [], ndlRows: [], ndlManifestRows: [] })
+      groups.set(key, { key, rawSourceId: rawSourceId || '', bangumiSubjectId: bangumiSubjectId || '', mangaDexRows: [], mangaDexBestRows: [], ndlRows: [], ndlManifestRows: [] })
     }
-    return groups.get(key)
+    const group = groups.get(key)
+    if (!group.bangumiSubjectId && bangumiSubjectId) group.bangumiSubjectId = bangumiSubjectId
+    if (!group.rawSourceId && rawSourceId) group.rawSourceId = rawSourceId
+    return group
   }
 
   for (const row of ndlManifestRows) {
-    const sourceId = sourceIdFromManifestRow(row)
+    const rawSourceId = rawSourceIdOf(row)
+    const bangumiSubjectId = bangumiSubjectIdOf(row)
     const query = normalizeText(row?.query)
-    if (sourceId && query) {
-      if (!queryToSourceIds.has(query)) queryToSourceIds.set(query, new Set())
-      queryToSourceIds.get(query).add(sourceId)
+    if (rawSourceId && query) {
+      if (!queryToRawSourceIds.has(query)) queryToRawSourceIds.set(query, new Set())
+      queryToRawSourceIds.get(query).add(rawSourceId)
     }
-    ensure(sourceId || '', `ndl-manifest:${query || groups.size}`).ndlManifestRows.push(row)
+    ensure(rawSourceId, bangumiSubjectId, `ndl-manifest:${query || groups.size}`).ndlManifestRows.push(row)
   }
 
   for (const row of mangaDexReviewRows) {
-    const sourceId = val(row?.sourceId)
-    ensure(sourceId || '', `mangadex:${mangaDexId(row) || normalizeText(row?.query) || groups.size}`).mangaDexRows.push(row)
+    const rawSourceId = rawSourceIdOf(row)
+    const bangumiSubjectId = bangumiSubjectIdOf(row)
+    ensure(rawSourceId, bangumiSubjectId, `mangadex:${mangaDexId(row) || normalizeText(row?.query) || groups.size}`).mangaDexRows.push(row)
   }
 
   for (const row of mangaDexBestRows) {
-    const sourceId = val(row?.sourceId)
-    ensure(sourceId || '', `mangadex-best:${mangaDexId(row) || normalizeText(row?.query) || groups.size}`).mangaDexBestRows.push(row)
+    const rawSourceId = rawSourceIdOf(row)
+    const bangumiSubjectId = bangumiSubjectIdOf(row)
+    ensure(rawSourceId, bangumiSubjectId, `mangadex-best:${mangaDexId(row) || normalizeText(row?.query) || groups.size}`).mangaDexBestRows.push(row)
   }
 
   for (const row of ndlReviewRows) {
     const queryKey = normalizeText(row?.query)
-    const candidates = [...(queryToSourceIds.get(queryKey) || [])]
-    const sourceId = candidates.length === 1 ? candidates[0] : ''
-    ensure(sourceId, `ndl:${queryKey || normalizeUrl(row?.link) || groups.size}`).ndlRows.push(row)
+    const candidates = [...(queryToRawSourceIds.get(queryKey) || [])]
+    const rawSourceId = candidates.length === 1 ? candidates[0] : rawSourceIdOf(row)
+    const bangumiSubjectId = bangumiSubjectIdOf(row)
+    ensure(rawSourceId, bangumiSubjectId, `ndl:${queryKey || normalizeUrl(row?.link) || groups.size}`).ndlRows.push(row)
   }
 
   return [...groups.values()]
 }
 
-function titlesForGroup(group) {
-  return uniqueBy([
-    ...group.mangaDexRows.flatMap(collectMangaDexTitles),
-    ...group.mangaDexBestRows.flatMap(collectMangaDexTitles),
-    ...group.ndlManifestRows.flatMap(collectNdlTitles),
-    ...group.ndlRows.flatMap(collectNdlTitles),
-  ].map(compactLine).filter(Boolean), normalizeText)
-}
-
-function matchGroup(group, indexes) {
-  if (group.sourceId && indexes.byBangumiId.has(group.sourceId)) {
-    return { status: 'matched_by_bangumi_id', work: indexes.byBangumiId.get(group.sourceId), matchedTitles: [], candidates: [] }
-  }
-
+function candidatesFromTitles(titles, indexes) {
   const candidateMap = new Map()
   const matchedTitles = []
-  for (const title of titlesForGroup(group)) {
+  for (const title of titles) {
     const matches = indexes.titleIndex.get(normalizeText(title)) || []
     for (const work of matches) {
       candidateMap.set(val(work.id), work)
       matchedTitles.push(title)
     }
   }
+  return { candidates: [...candidateMap.values()], matchedTitles: uniqueBy(matchedTitles, normalizeText) }
+}
 
-  const candidates = [...candidateMap.values()]
-  if (candidates.length === 1) {
-    const work = candidates[0]
+function matchGroup(group, indexes) {
+  if (group.bangumiSubjectId && indexes.byBangumiId.has(group.bangumiSubjectId)) {
+    return { status: 'matched_by_bangumi_id', work: indexes.byBangumiId.get(group.bangumiSubjectId), matchedTitles: [], candidates: [] }
+  }
+
+  const primary = candidatesFromTitles(primaryTitlesForGroup(group), indexes)
+  if (primary.candidates.length === 1) {
+    const work = primary.candidates[0]
+    const source = sourceOf(work)
+    return {
+      status: source === 'bangumi' ? 'matched_by_primary_title_with_bangumi_source' : 'matched_by_primary_title_without_bangumi_source',
+      work,
+      matchedTitles: primary.matchedTitles,
+      candidates: primary.candidates,
+    }
+  }
+  if (primary.candidates.length > 1) return { status: 'primary_title_multi_match', work: null, matchedTitles: primary.matchedTitles, candidates: primary.candidates }
+
+  const fallback = candidatesFromTitles(titlesForGroup(group), indexes)
+  if (fallback.candidates.length === 1) {
+    const work = fallback.candidates[0]
     const source = sourceOf(work)
     return {
       status: source === 'bangumi' ? 'matched_by_title_with_bangumi_source' : 'matched_by_title_without_bangumi_source',
       work,
-      matchedTitles: uniqueBy(matchedTitles, normalizeText),
-      candidates,
+      matchedTitles: fallback.matchedTitles,
+      candidates: fallback.candidates,
     }
   }
-  if (candidates.length > 1) return { status: 'title_multi_match', work: null, matchedTitles: uniqueBy(matchedTitles, normalizeText), candidates }
+  if (fallback.candidates.length > 1) return { status: 'title_multi_match', work: null, matchedTitles: fallback.matchedTitles, candidates: fallback.candidates }
   return { status: 'no_match', work: null, matchedTitles: [], candidates: [] }
 }
 
@@ -483,23 +610,28 @@ function buildPlan(group, indexes) {
   const work = match.work
   const warnings = []
   const blockers = []
+  const md = selectedMangaDexRows(group)
+  const ndl = selectedNdlRows(group)
   const incomingTitles = titlesForGroup(group)
   const incomingCreators = incomingCreatorNames(group)
   const incomingPublisherNames = incomingPublishers(group)
   const incomingYearLabels = incomingYears(group)
-  const hasMangaDex = group.mangaDexRows.length > 0 || group.mangaDexBestRows.length > 0
-  const hasNdl = group.ndlRows.length > 0 || group.ndlManifestRows.length > 0
+  const hasMangaDex = md.bestRows.length > 0 || md.detailRows.length > 0
+  const hasNdl = ndl.manifestRows.length > 0 || ndl.bibliographicRows.length > 0
 
-  if (group.sourceId && !indexes.byBangumiId.has(group.sourceId)) warnings.push('bangumi_id_not_found_in_works')
-  if (match.status === 'title_multi_match') blockers.push('title_multi_match')
-  if (match.status === 'matched_by_title_without_bangumi_source') blockers.push('matched_work_without_bangumi_source_review_required')
+  if (group.rawSourceId && !group.bangumiSubjectId && /^row-\d+$/u.test(group.rawSourceId)) warnings.push('raw_source_id_not_bangumi_subject_id')
+  if (group.bangumiSubjectId && !indexes.byBangumiId.has(group.bangumiSubjectId)) warnings.push('bangumi_id_not_found_in_works')
+  if (ndl.nonBookRows.length) warnings.push('ndl_non_book_material_deferred')
+  if (match.status === 'title_multi_match' || match.status === 'primary_title_multi_match') blockers.push(match.status)
+  if (match.status === 'matched_by_title_without_bangumi_source' || match.status === 'matched_by_primary_title_without_bangumi_source') blockers.push('matched_work_without_bangumi_source_review_required')
   if (match.status === 'no_match' && !hasMangaDex) blockers.push('ndl_only_no_work_match')
 
   let action = 'defer'
   if (match.status === 'matched_by_bangumi_id') action = 'enrich_existing_bangumi_work'
+  else if (match.status === 'matched_by_primary_title_with_bangumi_source') action = 'enrich_primary_title_matched_bangumi_work'
   else if (match.status === 'matched_by_title_with_bangumi_source') action = 'enrich_title_matched_bangumi_work'
-  else if (match.status === 'matched_by_title_without_bangumi_source') action = 'propose_merge_existing_non_bangumi_work'
-  else if (match.status === 'title_multi_match') action = 'defer_title_ambiguous'
+  else if (match.status === 'matched_by_title_without_bangumi_source' || match.status === 'matched_by_primary_title_without_bangumi_source') action = 'propose_merge_existing_non_bangumi_work'
+  else if (match.status === 'title_multi_match' || match.status === 'primary_title_multi_match') action = 'defer_title_ambiguous'
   else if (match.status === 'no_match' && hasMangaDex) action = 'create_mangadex_draft_candidate'
   else if (match.status === 'no_match' && hasNdl) action = 'defer_ndl_bibliographic_candidate'
 
@@ -536,18 +668,22 @@ function buildPlan(group, indexes) {
 
   return {
     key: group.key,
-    sourceId: group.sourceId,
+    sourceId: group.bangumiSubjectId,
+    rawSourceId: group.rawSourceId,
     action,
     matchStatus: match.status,
     planStatus: blockers.length ? 'blocked_or_review_required' : 'ready_for_apply_review',
-    confidence: match.status === 'matched_by_bangumi_id' ? 'high' : match.status === 'matched_by_title_with_bangumi_source' ? 'medium' : 'review',
+    confidence: match.status === 'matched_by_bangumi_id' ? 'high' : match.status.includes('primary_title') ? 'medium' : match.status === 'matched_by_title_with_bangumi_source' ? 'medium_low' : 'review',
     blockers: [...new Set(blockers)],
     warnings: [...new Set(warnings)],
     changedFields,
     counts: {
       mangaDexRows: group.mangaDexRows.length,
+      selectedMangaDexRows: md.evidenceRows.length,
       mangaDexBestRows: group.mangaDexBestRows.length,
       ndlRows: group.ndlRows.length,
+      ndlBibliographicRows: ndl.bibliographicRows.length,
+      ndlNonBookRows: ndl.nonBookRows.length,
       ndlManifestRows: group.ndlManifestRows.length,
       incomingTitles: incomingTitles.length,
     },
@@ -560,6 +696,7 @@ function buildPlan(group, indexes) {
       bangumiSubjectId: externalIdsOf(work).bangumiSubjectId || '',
     } : null,
     titleCandidates: incomingTitles,
+    ndlReviewTitlesForReport: ndlReviewTitlesForReport(group),
     matchedTitles: match.matchedTitles,
     matchedCandidates: match.candidates.map((item) => ({ id: val(item.id), title: val(item.title), slug: val(item.slug), source: sourceOf(item), bangumiSubjectId: externalIdsOf(item).bangumiSubjectId || '' })),
     fieldAdditions: {
@@ -589,8 +726,14 @@ function buildPlan(group, indexes) {
       candidateSources,
       sourceLinks,
     } : null,
+    selectionPolicy: {
+      mangaDexSearchCandidatesUsedForSearchText: false,
+      mangaDexOnlyBestMatchAndSelectedDetailUsed: true,
+      ndlNonBookMaterialsDeferredFromPatchPlan: true,
+      rawRowSourceIdTreatedAsBangumiId: false,
+    },
     searchTextPolicy: {
-      allIncomingLanguageTitlesIncluded: true,
+      allIncomingLanguageTitlesIncludedFromSelectedSourceRecords: true,
       duplicateTitlesRemovedByNormalizedText: true,
       titleOverwrite: false,
       localizedTitlesWrite: false,
@@ -617,7 +760,7 @@ function countBy(rows, getKey) {
 
 function markdown(summary, samples) {
   return [
-    '# MangaDex + NDL Work Integration Audit v0.1',
+    '# MangaDex + NDL Work Integration Audit v0.2',
     '',
     'Read-only integration audit for MangaDex and NDL rows aligned from Bangumi books.',
     '',
@@ -632,11 +775,13 @@ function markdown(summary, samples) {
     `- rowsWithSearchTextAdditions: ${summary.rowsWithSearchTextAdditions}`,
     `- totalSearchTextAdditions: ${summary.totalSearchTextAdditions}`,
     '',
-    '## Search text policy',
+    '## Selection policy',
     '',
-    '- Collects all incoming MangaDex / NDL language title variants available in the raw rows.',
-    '- Removes duplicates with normalized text matching.',
-    '- Proposes new names only as `searchText` additions; it does not overwrite `title`, `originalTitle`, `aliases`, or `localizedTitles`.',
+    '- Raw `row-*` source ids are not treated as Bangumi subject ids.',
+    '- MangaDex search candidates are not used as work titles or patch-plan links.',
+    '- Only the MangaDex best row and its selected detail row are used for `searchText`, `sourceLinks`, and `candidateSources` proposals.',
+    '- NDL non-book materials are kept in the report but are deferred from patch-plan links and sources.',
+    '- New names are proposed only as `searchText` additions; `title`, `originalTitle`, `aliases`, and `localizedTitles` are not overwritten.',
     '',
     '## Safety',
     '',
