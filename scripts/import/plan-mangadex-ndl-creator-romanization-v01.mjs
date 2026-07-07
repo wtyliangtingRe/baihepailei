@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const VERSION = 'mangadex-ndl-creator-romanization-plan-v0.4'
+const VERSION = 'mangadex-ndl-creator-romanization-plan-v0.5'
 const DEFAULT_READY_INPUT = 'data_local/staging/mangadex-ndl-integration/mangadex-ndl-work-integration-v01-ready.jsonl'
 const DEFAULT_REVIEW_INPUT = 'data_local/staging/mangadex-ndl-integration/mangadex-ndl-blocked-review-v01.rows.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/mangadex-ndl-integration'
@@ -154,6 +154,28 @@ function titleFormNeedsManualReview(reviewRow, readyPlan) {
   return TITLE_FORM_MANUAL_RE.test(text)
 }
 
+function reviewTagsFor({
+  searchTextAdditions,
+  titleFormManual,
+  incomingCreators,
+  existingCreators,
+  sourceMetadataPresent,
+  incomingYears,
+  existingYears,
+  incomingPublishers,
+  existingPublishers,
+}) {
+  const tags = []
+  if (searchTextAdditions.length > MAX_AUTO_PASS_SEARCH_TEXT_ADDITIONS) tags.push('possible_short_story_or_chapter_title_additions')
+  if (searchTextAdditions.length > MAX_AUTO_PASS_SEARCH_TEXT_ADDITIONS) tags.push('many_search_text_additions')
+  if (titleFormManual) tags.push('special_title_form_anthology_novel_collection')
+  if (incomingCreators.length > 3 || existingCreators.length > 3) tags.push('broad_creator_set_possible_collection')
+  if (sourceMetadataPresent) tags.push('source_metadata_deferred')
+  if (incomingYears.length || existingYears.length) tags.push('year_values_present_non_blocking')
+  if (incomingPublishers.length || existingPublishers.length) tags.push('publisher_values_present_non_blocking')
+  return tags
+}
+
 function planDecision(reviewRow, readyPlan) {
   const blockers = unique(reviewRow.blockers)
   const readyWarnings = unique(readyPlan?.warnings)
@@ -173,6 +195,18 @@ function planDecision(reviewRow, readyPlan) {
   const issues = []
   const notes = []
   const sourceMetadataPresent = Boolean(sourceLinks.length || candidateSources.length)
+  const titleFormManual = titleFormNeedsManualReview(reviewRow, readyPlan)
+  const reviewTags = reviewTagsFor({
+    searchTextAdditions,
+    titleFormManual,
+    incomingCreators,
+    existingCreators,
+    sourceMetadataPresent,
+    incomingYears,
+    existingYears,
+    incomingPublishers,
+    existingPublishers,
+  })
 
   if (reviewRow.bucket !== TARGET_BUCKET) issues.push('not_target_bucket')
   if (reviewRow.status !== 'blocked') issues.push('not_blocked_status')
@@ -184,7 +218,7 @@ function planDecision(reviewRow, readyPlan) {
   if (!safeReadyWarnings(readyWarnings)) issues.push('unsafe_ready_warnings')
   if (!searchTextAdditions.length) issues.push('no_search_text_additions')
   if (searchTextAdditions.length > MAX_AUTO_PASS_SEARCH_TEXT_ADDITIONS) issues.push('too_many_search_text_additions_for_auto_pass')
-  if (titleFormNeedsManualReview(reviewRow, readyPlan)) issues.push('title_form_requires_manual_review')
+  if (titleFormManual) issues.push('title_form_requires_manual_review')
   if (incomingCreators.length > 3 || existingCreators.length > 3) issues.push('creator_set_too_broad_for_auto_pass')
 
   if (sourceMetadataPresent) notes.push('source_metadata_present_but_deferred')
@@ -213,6 +247,7 @@ function planDecision(reviewRow, readyPlan) {
     pass,
     issues,
     notes,
+    reviewTags,
     evidence,
     searchTextAdditions,
     sourceMetadataPresent,
@@ -241,6 +276,7 @@ function compactRow(reviewRow, readyPlan) {
     reason: plan.evidence.reason,
     issues: plan.issues.join(' | '),
     notes: plan.notes.join(' | '),
+    reviewTags: plan.reviewTags.join(' | '),
     searchTextAdditions: plan.searchTextAdditions.join(' | '),
     searchTextAdditionCount: String(plan.searchTextAdditions.length),
     sourceMetadataPresent: String(plan.sourceMetadataPresent),
@@ -274,6 +310,11 @@ function sampleRows(rows, perDecision) {
   return out
 }
 
+function hasAnyTag(row, tags) {
+  const existing = new Set(row.reviewTags.split(' | ').filter(Boolean))
+  return tags.some((tag) => existing.has(tag))
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2))
   const readyInput = String(args.ready || DEFAULT_READY_INPUT)
@@ -288,12 +329,18 @@ function main() {
   const planned = targetRows.map((reviewRow) => compactRow(reviewRow, readyByKey.get(val(reviewRow.key))))
   const passRows = planned.filter((row) => row.pass)
   const nonPassRows = planned.filter((row) => !row.pass)
+  const shortStoryOrCollectionRows = planned.filter((row) => hasAnyTag(row, [
+    'possible_short_story_or_chapter_title_additions',
+    'special_title_form_anthology_novel_collection',
+    'broad_creator_set_possible_collection',
+  ]))
 
   const outputs = {
     rows: `${outDir}/mangadex-ndl-creator-romanization-plan-v01.rows.jsonl`,
     rowsCsv: `${outDir}/mangadex-ndl-creator-romanization-plan-v01.rows.csv`,
     passRows: `${outDir}/mangadex-ndl-creator-romanization-plan-v01-pass.rows.jsonl`,
     manualRows: `${outDir}/mangadex-ndl-creator-romanization-plan-v01-manual.rows.jsonl`,
+    shortStoryOrCollectionRows: `${outDir}/mangadex-ndl-creator-romanization-plan-v01-short-story-or-collection.rows.jsonl`,
     sample: `${outDir}/mangadex-ndl-creator-romanization-plan-v01-sample.jsonl`,
     summary: `${outDir}/mangadex-ndl-creator-romanization-plan-v01-summary.json`,
   }
@@ -309,11 +356,13 @@ function main() {
     targetRows: targetRows.length,
     passRows: passRows.length,
     manualRows: nonPassRows.length,
+    shortStoryOrCollectionRows: shortStoryOrCollectionRows.length,
     byDecision: countBy(planned, 'decision'),
     byEvidence: countBy(planned, 'evidence'),
     byConfidence: countBy(planned, 'confidence'),
     byIssue: countBy(planned.flatMap((row) => row.issues.split(' | ').filter(Boolean)), (item) => item),
     byNote: countBy(planned.flatMap((row) => row.notes.split(' | ').filter(Boolean)), (item) => item),
+    byReviewTag: countBy(planned.flatMap((row) => row.reviewTags.split(' | ').filter(Boolean)), (item) => item),
     safety: {
       payloadRead: false,
       payloadWrite: false,
@@ -328,10 +377,12 @@ function main() {
       maxAutoPassSearchTextAdditions: MAX_AUTO_PASS_SEARCH_TEXT_ADDITIONS,
       manySearchTextAdditionsRequireManualReview: true,
       specialTitleFormsRequireManualReview: true,
+      shortStoryAndCollectionLikeRowsTagged: true,
+      shortStoryAndCollectionLikeRowsExportedSeparately: true,
       mediumConfidenceRowsRequireManualSampling: true,
     },
     nextStep: passRows.length
-      ? 'Review pass rows, then create a separate apply dry-run guarded by this pass list.'
+      ? 'Review pass rows, then create a separate apply dry-run guarded by this pass list. Use the short-story/collection report for a separate future search strategy.'
       : 'No rows are safe enough for automated second pass; use manual review only.',
     outputs,
   }
@@ -340,6 +391,7 @@ function main() {
   writeJsonl(outputs.rows, planned)
   writeJsonl(outputs.passRows, passRows)
   writeJsonl(outputs.manualRows, nonPassRows)
+  writeJsonl(outputs.shortStoryOrCollectionRows, shortStoryOrCollectionRows)
   writeJsonl(outputs.sample, sampleRows(planned, sampleSize))
   writeCsv(outputs.rowsCsv, planned.map(({ rawReview, rawReadyPlan, ...row }) => row), [
     'key',
@@ -353,6 +405,7 @@ function main() {
     'reason',
     'issues',
     'notes',
+    'reviewTags',
     'searchTextAdditions',
     'searchTextAdditionCount',
     'sourceMetadataPresent',
