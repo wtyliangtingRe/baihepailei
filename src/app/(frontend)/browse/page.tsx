@@ -58,12 +58,15 @@ export default function BrowsePage() {
   const index = readSearchIndex()
   if (!index) return <MissingSearchIndex />
 
+  const markedWorks = Number(index.visibilityCounts?.adult || 0) + Number(index.visibilityCounts?.restricted || 0)
+
   return (
     <main className="page">
       <section className="page-heading">
         <p className="eyebrow">资料库</p>
         <h1>浏览资料库</h1>
         <p>当前轻量索引共收录 {index.total} 个条目。你可以按内容类型浏览，也可以直接使用搜索。</p>
+        {markedWorks ? <p className="content-visibility-note">普通模式默认隐藏 {markedWorks} 条标记作品；打开左上角“全部作品”后可显示。</p> : null}
         <div className="actions">
           <Link href="/search">开始搜索</Link>
           <Link href="/">返回首页</Link>
