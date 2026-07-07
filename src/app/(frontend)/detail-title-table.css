@@ -1,0 +1,43 @@
+.detail-title-table-wrap {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 20px;
+}
+
+.detail-title-table-wrap h3 {
+  margin: 0;
+  color: #ffb5d7;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+}
+
+.detail-title-table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border: 1px solid #303030;
+  border-radius: 16px;
+  background: #111;
+}
+
+.detail-title-table tr + tr {
+  border-top: 1px solid #303030;
+}
+
+.detail-title-table th,
+.detail-title-table td {
+  padding: 11px 14px;
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.65;
+}
+
+.detail-title-table th {
+  width: 58px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+.detail-title-table td {
+  color: #f2f2f2;
+}

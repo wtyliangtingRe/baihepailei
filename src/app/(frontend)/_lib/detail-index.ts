@@ -8,6 +8,13 @@ export type DetailSourceLink = {
   url?: string
 }
 
+export type DetailCandidateSource = {
+  source?: string
+  label?: string
+  externalId?: string
+  url?: string
+}
+
 export type DetailCoverImage = {
   url?: string
   alt?: string
@@ -62,6 +69,7 @@ export type DetailItem = {
   originalTitle?: string
   aliases?: string[]
   localizedTitles?: string[]
+  allTitles?: string[]
   mediaGroup?: string
   mediaType?: string
   format?: string
@@ -88,6 +96,8 @@ export type DetailItem = {
   hasEvidence?: boolean
   evidenceNote?: string
   sourceLinks?: DetailSourceLink[]
+  candidateSources?: DetailCandidateSource[]
+  externalIds?: Record<string, string>
   callouts?: DetailCallout[]
   sections: DetailRichTextSection[]
   updatedAt?: string

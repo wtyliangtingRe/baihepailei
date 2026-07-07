@@ -18,6 +18,7 @@ import './work-list.css'
 import './recommendations.css'
 import './profile-lists.css'
 import './frontend-simplification.css'
+import './detail-title-table.css'
 import './theme.css'
 
 export const metadata: Metadata = {
