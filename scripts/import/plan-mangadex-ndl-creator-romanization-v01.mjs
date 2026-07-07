@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const VERSION = 'mangadex-ndl-creator-romanization-plan-v0.2'
+const VERSION = 'mangadex-ndl-creator-romanization-plan-v0.3'
 const DEFAULT_READY_INPUT = 'data_local/staging/mangadex-ndl-integration/mangadex-ndl-work-integration-v01-ready.jsonl'
 const DEFAULT_REVIEW_INPUT = 'data_local/staging/mangadex-ndl-integration/mangadex-ndl-blocked-review-v01.rows.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/mangadex-ndl-integration'
 const TARGET_BUCKET = 'creator_romanization_alias_review'
 const CREATOR_BLOCKER = 'review_warning_requires_manual_review:creator_diff_or_missing'
+const TITLE_FORM_MANUAL_RE = /(?:アンソロジ|anthology|合集|小説|小说|novel)/iu
 const SAFE_READY_WARNINGS = new Set([
   'raw_source_id_not_bangumi_subject_id',
   'has_search_text_additions',
@@ -83,7 +84,7 @@ function normalize(value) {
 function compactName(value) {
   return normalize(value)
     .replace(/[\s,，.・･:：;；'’`"“”\-—_()（）\[\]【】<>《》「」『』]+/gu, '')
-    .replace(/著・文・その他|著・文|著|漫画・原作|漫画|原作|脚本|作画|構成|企画・原案|原案/gu, '')
+    .replace(/著・文・その他|著・文|著|漫画・原作|漫画|原作|脚本|作画|構成|企画・原案|原案|\[ほか\]/gu, '')
 }
 
 function romanLike(value) {
@@ -147,6 +148,11 @@ function safeReadyWarnings(warnings) {
   return unique(warnings).every((warning) => SAFE_READY_WARNINGS.has(warning))
 }
 
+function titleFormNeedsManualReview(reviewRow, readyPlan) {
+  const text = [reviewRow.workTitle, readyPlan?.work?.title].map(val).filter(Boolean).join(' | ')
+  return TITLE_FORM_MANUAL_RE.test(text)
+}
+
 function planDecision(reviewRow, readyPlan) {
   const blockers = unique(reviewRow.blockers)
   const readyWarnings = unique(readyPlan?.warnings)
@@ -176,6 +182,8 @@ function planDecision(reviewRow, readyPlan) {
   if (blockers.length !== 1 || blockers[0] !== CREATOR_BLOCKER) issues.push('unexpected_review_blockers')
   if (!safeReadyWarnings(readyWarnings)) issues.push('unsafe_ready_warnings')
   if (!searchTextAdditions.length) issues.push('no_search_text_additions')
+  if (titleFormNeedsManualReview(reviewRow, readyPlan)) issues.push('title_form_requires_manual_review')
+  if (incomingCreators.length > 3 || existingCreators.length > 3) issues.push('creator_set_too_broad_for_auto_pass')
 
   if (sourceMetadataPresent) notes.push('source_metadata_present_but_deferred')
   if (incomingYears.length || existingYears.length) notes.push('year_values_present_without_year_diff_blocker')
@@ -188,8 +196,12 @@ function planDecision(reviewRow, readyPlan) {
     pass = true
   } else if (!issues.length && evidence.confidence === 'medium') {
     decision = 'candidate_medium_confidence_sample_before_apply'
-  } else if (issues.includes('unsafe_ready_warnings') && evidence.confidence === 'high') {
+  } else if (issues.includes('unsafe_ready_warnings')) {
     decision = 'manual_review_extra_ready_warnings'
+  } else if (issues.includes('title_form_requires_manual_review')) {
+    decision = 'manual_review_special_title_form'
+  } else if (issues.includes('creator_set_too_broad_for_auto_pass')) {
+    decision = 'manual_review_broad_creator_set'
   }
 
   return {
@@ -231,6 +243,8 @@ function compactRow(reviewRow, readyPlan) {
     candidateSourceCount: String(plan.candidateSourceCount),
     incomingCreators: plan.incomingCreators.join(' | '),
     existingCreators: plan.existingCreators.join(' | '),
+    incomingCreatorCount: String(plan.incomingCreators.length),
+    existingCreatorCount: String(plan.existingCreators.length),
     incomingYears: plan.incomingYears.join(' | '),
     existingYears: plan.existingYears.join(' | '),
     incomingPublishers: plan.incomingPublishers.join(' | '),
@@ -305,6 +319,8 @@ function main() {
       proposedWritableFieldsForFuturePass: ['searchText'],
       sourceMetadataDeferred: true,
       passRequiresEmbeddedNativeCreatorEvidence: true,
+      passRequiresCompactCreatorSet: true,
+      specialTitleFormsRequireManualReview: true,
       mediumConfidenceRowsRequireManualSampling: true,
     },
     nextStep: passRows.length
@@ -336,6 +352,8 @@ function main() {
     'candidateSourceCount',
     'incomingCreators',
     'existingCreators',
+    'incomingCreatorCount',
+    'existingCreatorCount',
     'incomingYears',
     'existingYears',
     'incomingPublishers',
