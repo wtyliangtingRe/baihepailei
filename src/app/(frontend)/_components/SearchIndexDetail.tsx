@@ -146,12 +146,14 @@ function FieldList({ fields }: { fields: Array<[string, string | string[] | unde
 
 function BasicInfo({ item }: { item: SearchItem }) {
   const fields: Array<[string, string | string[] | undefined]> = [
-    ['复核状态', reviewStatusLabel(item.reviewStatus)],
-    ['证据强度', evidenceStrengthLabel(item.evidenceStrength)],
     ['作品大类', mediaGroupLabel(item.mediaGroup)],
     ['作品类型', item.mediaType],
     ['作品形态', item.format],
     ['首次发表', item.firstPublishedLabel],
+    ['创作者', item.creators],
+    ['相关机构', item.organizations],
+    ['复核状态', reviewStatusLabel(item.reviewStatus)],
+    ['证据强度', evidenceStrengthLabel(item.evidenceStrength)],
     ['内容标记', contentVisibilityLabel(item.contentVisibility)],
     ['内容提示', item.contentAdvisories?.map(advisoryLabel)],
     ['机构类型', organizationTypeLabel(item.organizationType)],
@@ -162,8 +164,6 @@ function BasicInfo({ item }: { item: SearchItem }) {
     ['关联作品', item.relatedWorks],
     ['关联创作者', item.relatedCreators],
     ['关联机构', item.relatedOrganizations],
-    ['创作者', item.creators],
-    ['相关机构', item.organizations],
     ['标签', item.tags],
     ['注意点', item.warnings],
     ['相关名词', item.relatedTerms],
