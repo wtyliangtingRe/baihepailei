@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import React from 'react'
 
+import ContentScopeToggle from './_components/ContentScopeToggle'
 import ThemeToggle from './_components/ThemeToggle'
 import './styles.css'
 import './covers.css'
@@ -19,6 +20,7 @@ import './recommendations.css'
 import './profile-lists.css'
 import './frontend-simplification.css'
 import './detail-title-table.css'
+import './content-scope.css'
 import './theme.css'
 
 export const metadata: Metadata = {
@@ -43,13 +45,16 @@ const navItems = [
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html data-scroll-behavior="smooth" lang="zh-CN">
+    <html data-content-scope="ordinary" data-scroll-behavior="smooth" lang="zh-CN">
       <body>
         <div className="site-shell">
           <header className="site-header">
-            <Link className="site-title" href="/">
-              Baihepailei
-            </Link>
+            <div className="site-branding">
+              <Link className="site-title" href="/">
+                Baihepailei
+              </Link>
+              <ContentScopeToggle />
+            </div>
             <nav className="site-nav" aria-label="主导航">
               {navItems.map((item) => (
                 <Link href={item.href} key={item.href}>
