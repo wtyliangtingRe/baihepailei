@@ -48,6 +48,14 @@ const mediaGroupLabels: Record<string, string> = {
   unknown: '未知类型',
 }
 
+const advisoryLabels: Record<string, string> = {
+  suggestive: '暗示性内容',
+  erotica: '成人向',
+  pornographic: '成人内容',
+  doujinshi_or_extra: '同人 / 衍生',
+  restricted: '限制展示',
+}
+
 function collectionLabel(collection: string) {
   if (collection === 'works') return '作品'
   if (collection === 'creators') return '创作者'
@@ -93,6 +101,16 @@ function evidenceStrengthLabel(value?: string) {
   return evidenceStrengthLabels[value] || value
 }
 
+function contentVisibilityLabel(value?: string) {
+  if (value === 'adult') return '标记内容'
+  if (value === 'restricted') return '限制展示'
+  return ''
+}
+
+function advisoryLabel(value: string) {
+  return advisoryLabels[value] || value
+}
+
 function compactLines(text: string) {
   return String(text || '')
     .split('\n')
@@ -134,6 +152,8 @@ function BasicInfo({ item }: { item: SearchItem }) {
     ['作品类型', item.mediaType],
     ['作品形态', item.format],
     ['首次发表', item.firstPublishedLabel],
+    ['内容标记', contentVisibilityLabel(item.contentVisibility)],
+    ['内容提示', item.contentAdvisories?.map(advisoryLabel)],
     ['机构类型', organizationTypeLabel(item.organizationType)],
     ['证据类型', evidenceTypeLabel(item.evidenceType)],
     ['原名', item.originalTitle],
@@ -167,10 +187,11 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
   const evidenceType = evidenceTypeLabel(item.evidenceType)
   const reviewStatus = reviewStatusLabel(item.reviewStatus)
   const evidenceStrength = evidenceStrengthLabel(item.evidenceStrength)
+  const contentVisibility = contentVisibilityLabel(item.contentVisibility)
   const searchLines = compactLines(item.searchText)
 
   return (
-    <main className="page detail-page">
+    <main className="page detail-page" data-content-visibility={item.contentVisibility || 'ordinary'}>
       <section className="detail-hero">
         <div className="detail-actions">
           <Link className="back-link" href="/search">
@@ -182,11 +203,13 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
         </div>
         <p className="eyebrow">{collectionLabel(item.collection)}</p>
         <h1>{item.title}</h1>
+        {contentVisibility ? <p className="content-visibility-note">此条目标记为「{contentVisibility}」。普通模式下不会出现在列表和搜索结果中。</p> : null}
         <div className="detail-chips">
           {rank ? <span>{rank}</span> : null}
           {mediaGroup ? <span>{mediaGroup}</span> : null}
           {item.mediaType ? <span>{item.mediaType}</span> : null}
           {item.firstPublishedLabel ? <span>{item.firstPublishedLabel}</span> : null}
+          {contentVisibility ? <span>{contentVisibility}</span> : null}
           {reviewStatus ? <span>{reviewStatus}</span> : null}
           {evidenceStrength ? <span>{evidenceStrength}</span> : null}
           {organizationType ? <span>{organizationType}</span> : null}

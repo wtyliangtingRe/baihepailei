@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 export type SearchCollection = 'works' | 'creators' | 'organizations' | 'evidence' | 'terms' | 'rules'
+export type ContentVisibility = 'ordinary' | 'adult' | 'restricted'
 
 export type SearchCoverImage = {
   url?: string
@@ -42,6 +43,8 @@ export type SearchItem = {
   relatedTerms?: string[]
   relatedWarnings?: string[]
   hasEvidence?: boolean
+  contentVisibility?: ContentVisibility
+  contentAdvisories?: string[]
   cover?: SearchCoverImage
   image?: SearchCoverImage
   legacyXWikiPage?: string
@@ -53,6 +56,7 @@ export type SearchIndex = {
   generatedAt: string
   mode: string
   counts: Record<string, number>
+  visibilityCounts?: Record<string, number>
   total: number
   items: SearchItem[]
 }

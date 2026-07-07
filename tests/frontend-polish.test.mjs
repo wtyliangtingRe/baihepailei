@@ -19,6 +19,8 @@ const detailIndexDetail = read('src/app/(frontend)/_components/DetailIndexDetail
 const searchIndexDetail = read('src/app/(frontend)/_components/SearchIndexDetail.tsx')
 const searchClient = read('src/app/(frontend)/search/search-client.tsx')
 const collectionIndexPage = read('src/app/(frontend)/_components/CollectionIndexPage.tsx')
+const contentScopeToggle = read('src/app/(frontend)/_components/ContentScopeToggle.tsx')
+const contentScopeCss = read('src/app/(frontend)/content-scope.css')
 
 test('global navigation uses user-facing Chinese labels', () => {
   for (const label of ['资料库', '作品', '创作者', '名词解释', '规则', '搜索', '后台']) {
@@ -112,6 +114,19 @@ test('search page and result links use user-facing Chinese labels', () => {
   assert.match(searchClient, /if \(mode === 'published'\) return '仅已发布'/)
   assert.match(searchClient, />\s*查看详情\s*</)
   assert.doesNotMatch(searchClient, />\s*\{item\.url\}\s*</)
+})
+
+test('content scope toggle is available beside the home link and gates marked works', () => {
+  assert.match(layout, /<ContentScopeToggle \/>/)
+  assert.match(layout, /data-content-scope="ordinary"/)
+  assert.match(contentScopeToggle, /baihepailei-content-scope/)
+  assert.match(contentScopeToggle, /普通作品/)
+  assert.match(contentScopeToggle, /全部作品/)
+  assert.match(contentScopeCss, /data-content-visibility='adult'/)
+  assert.match(contentScopeCss, /data-content-visibility='restricted'/)
+  assert.match(worksPage, /data-content-visibility=\{item\.contentVisibility \|\| 'ordinary'\}/)
+  assert.match(searchClient, /itemAllowedByScope/)
+  assert.match(searchIndexDetail, /内容标记/)
 })
 
 test('detail pages do not show raw slug chips in the hero area', () => {

@@ -4,6 +4,7 @@ import path from 'node:path'
 
 const DEFAULT_OUT = 'public/search-index.json'
 const COLLECTIONS = ['works', 'creators', 'organizations', 'evidence', 'terms', 'rules']
+const OPTIONAL_COLLECTIONS = new Set(['evidence'])
 const EXPORT_EMAIL_ENV = 'PAYLOAD_EXPORT_EMAIL'
 const EXPORT_SECRET_ENV = ['PAYLOAD_EXPORT', 'PASSWORD'].join('_')
 const SEED_EMAIL_ENV = 'PAYLOAD_SEED_EMAIL'
@@ -222,6 +223,31 @@ function itemUrl(collection, slug) {
   return `/${collection}/${slug}`
 }
 
+function sourceNotes(doc) {
+  return Array.isArray(doc?.candidateSources)
+    ? doc.candidateSources.map((item) => normalizeText(item?.note)).filter(Boolean)
+    : []
+}
+
+function deriveContentAdvisories({ tags, warnings, notes, searchText }) {
+  const haystack = [tags, warnings, notes, searchText].flat().join('\n').toLowerCase()
+  const advisories = []
+
+  if (/contentrating=suggestive|\bsuggestive\b|擦边|暗示性/u.test(haystack)) advisories.push('suggestive')
+  if (/contentrating=erotica|\berotica\b|情色|成人向/u.test(haystack)) advisories.push('erotica')
+  if (/contentrating=pornographic|\bpornographic\b|色情|成人内容|18禁|r-?18/u.test(haystack)) advisories.push('pornographic')
+  if (/doujinshi|同人志|同人本|loose extra/u.test(haystack)) advisories.push('doujinshi_or_extra')
+  if (/不宜展示|敏感内容|restricted|hidden|quarantine/u.test(haystack)) advisories.push('restricted')
+
+  return uniqueValues(advisories)
+}
+
+function contentVisibilityFromAdvisories(advisories) {
+  if (advisories.includes('restricted')) return 'restricted'
+  if (advisories.some((item) => ['suggestive', 'erotica', 'pornographic', 'doujinshi_or_extra'].includes(item))) return 'adult'
+  return 'ordinary'
+}
+
 function mapWork(doc) {
   const aliases = aliasesToValues(doc.aliases)
   const localizedTitles = localizedTitleValues(doc.localizedTitles)
@@ -231,6 +257,9 @@ function mapWork(doc) {
   const warnings = relationshipNames(doc.warnings)
   const summaryText = richTextToPlainText(doc.summary)
   const analysisText = richTextToPlainText(doc.analysis)
+  const notes = sourceNotes(doc)
+  const contentAdvisories = deriveContentAdvisories({ tags, warnings, notes, searchText: doc.searchText })
+  const contentVisibility = contentVisibilityFromAdvisories(contentAdvisories)
 
   return {
     id: `works:${doc.slug}`,
@@ -251,6 +280,8 @@ function mapWork(doc) {
     organizations,
     tags,
     warnings,
+    contentVisibility,
+    contentAdvisories,
     cover: mediaImage(doc.cover),
     searchText: buildSearchBlob([
       doc.title,
@@ -384,6 +415,23 @@ function ensureOutputDir(outFile) {
   fs.mkdirSync(dir, { recursive: true })
 }
 
+function countBy(items, getKey) {
+  const counts = {}
+  for (const item of items) {
+    const key = getKey(item) || 'unknown'
+    counts[key] = (counts[key] || 0) + 1
+  }
+  return counts
+}
+
+function exportWarning(collection, error) {
+  const message = String(error?.message || error)
+  return {
+    collection,
+    message: message.slice(0, 1200),
+  }
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   if (args.help) {
@@ -404,31 +452,41 @@ async function main() {
 
   const items = []
   const counts = {}
+  const exportWarnings = []
 
   for (const collection of COLLECTIONS) {
-    const docs = await fetchCollection(baseUrl, token, collection, { includeDrafts })
+    let docs = []
+    try {
+      docs = await fetchCollection(baseUrl, token, collection, { includeDrafts })
+    } catch (error) {
+      if (!OPTIONAL_COLLECTIONS.has(collection)) throw error
+      const warning = exportWarning(collection, error)
+      exportWarnings.push(warning)
+      console.warn(`[warn] skipped optional collection ${collection}: ${warning.message.split('\n')[0]}`)
+    }
+
     counts[collection] = docs.length
     items.push(...docs.map((doc) => mapDocument(collection, doc)))
   }
 
   const payload = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     generatedAt: new Date().toISOString(),
     source: baseUrl,
     mode: includeDrafts ? 'drafts-and-published' : 'published-only',
     counts,
+    visibilityCounts: countBy(items.filter((item) => item.collection === 'works'), (item) => item.contentVisibility || 'ordinary'),
+    exportWarnings,
     total: items.length,
     items,
   }
 
   ensureOutputDir(outFile)
-  fs.writeFileSync(path.resolve(outFile), `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
-
-  console.log('Lite search index generated')
-  console.log(JSON.stringify({ out: path.resolve(outFile), counts, total: items.length }, null, 2))
+  fs.writeFileSync(outFile, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
+  console.log(`Wrote ${items.length} items to ${outFile}`)
 }
 
 main().catch((error) => {
   console.error(error)
-  process.exit(1)
+  process.exitCode = 1
 })
