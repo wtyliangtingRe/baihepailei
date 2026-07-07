@@ -35,6 +35,7 @@
     "source:audit:bangumi-work-entities": "node tools/source_import/scripts/audit-bangumi-work-entity-link-preview.mjs",
     "source:plan:bangumi-work-entities": "node tools/source_import/scripts/build-bangumi-work-entity-link-patch-plan.mjs",
     "source:preview:bangumi-media-subjects": "node tools/source_import/scripts/build-bangumi-media-subject-preview.mjs",
+    "source:audit:mangadex-ndl-integration": "node scripts/import/audit-mangadex-ndl-work-integration-v01.mjs",
     "test:source-import": "node --test tests/source-import.test.mjs",
     "test:source-bangumi": "node --test tests/bangumi-source.test.mjs",
     "test:source-bangumi-fetch": "node --test tests/bangumi-tag-fetcher.test.mjs",
