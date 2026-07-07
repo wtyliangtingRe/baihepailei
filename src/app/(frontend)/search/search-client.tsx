@@ -10,6 +10,9 @@ import {
   splitQuery,
 } from './search-utils.mjs'
 
+type ContentScope = 'ordinary' | 'all'
+type ContentVisibility = 'ordinary' | 'adult' | 'restricted'
+
 type SearchItem = {
   id: string
   collection: 'works' | 'creators' | 'organizations' | 'evidence' | 'terms' | 'rules' | string
@@ -33,6 +36,8 @@ type SearchItem = {
   organizationType?: string
   evidenceType?: string
   legacyXWikiPage?: string
+  contentVisibility?: ContentVisibility
+  contentAdvisories?: string[]
   searchText: string
 }
 
@@ -41,6 +46,7 @@ type SearchIndex = {
   generatedAt: string
   mode: string
   counts: Record<string, number>
+  visibilityCounts?: Record<string, number>
   total: number
   items: SearchItem[]
 }
@@ -56,6 +62,33 @@ function indexModeLabel(mode: string) {
   if (mode === 'include-drafts') return '含草稿'
   if (mode === 'published') return '仅已发布'
   return mode || '未知模式'
+}
+
+function readContentScope(): ContentScope {
+  if (typeof document === 'undefined') return 'ordinary'
+  return document.documentElement.dataset.contentScope === 'all' ? 'all' : 'ordinary'
+}
+
+function itemAllowedByScope(item: SearchItem, scope: ContentScope) {
+  if (item.collection !== 'works') return true
+  if (scope === 'all') return true
+  return !item.contentVisibility || item.contentVisibility === 'ordinary'
+}
+
+function visibleItemsForScope(items: SearchItem[], scope: ContentScope) {
+  return items.filter((item) => itemAllowedByScope(item, scope))
+}
+
+function countVisibleByCollection(items: SearchItem[]) {
+  const counts: Record<string, number> = {}
+  for (const item of items) counts[item.collection] = (counts[item.collection] || 0) + 1
+  return counts
+}
+
+function contentVisibilityLabel(value?: ContentVisibility) {
+  if (value === 'adult') return '标记内容'
+  if (value === 'restricted') return '限制展示'
+  return ''
 }
 
 function HighlightedText({ query, text }: { query: string; text: string }) {
@@ -84,6 +117,7 @@ export default function SearchClient() {
   const [index, setIndex] = useState<SearchIndex | null>(null)
   const [query, setQuery] = useState('')
   const [activeCollection, setActiveCollection] = useState('all')
+  const [contentScope, setContentScope] = useState<ContentScope>('ordinary')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
 
@@ -94,6 +128,17 @@ export default function SearchClient() {
 
     if (initialQuery) setQuery(initialQuery)
     if (validCollections.has(initialCollection)) setActiveCollection(initialCollection)
+  }, [])
+
+  useEffect(() => {
+    setContentScope(readContentScope())
+
+    function handleScopeChange() {
+      setContentScope(readContentScope())
+    }
+
+    window.addEventListener('baihepailei:content-scope-change', handleScopeChange)
+    return () => window.removeEventListener('baihepailei:content-scope-change', handleScopeChange)
   }, [])
 
   useEffect(() => {
@@ -123,12 +168,13 @@ export default function SearchClient() {
     }
   }, [])
 
+  const visibleItems = useMemo(() => visibleItemsForScope(index?.items || [], contentScope), [contentScope, index?.items])
   const results = useMemo<SearchResult[]>(() => {
-    const items = index?.items || []
-    return filterAndRankItems(items, { activeCollection, query }) as SearchResult[]
-  }, [activeCollection, index?.items, query])
+    return filterAndRankItems(visibleItems, { activeCollection, query }) as SearchResult[]
+  }, [activeCollection, query, visibleItems])
 
-  const collectionCounts = index?.counts || {}
+  const collectionCounts = countVisibleByCollection(visibleItems)
+  const hiddenMarkedWorks = Math.max(0, Number(index?.visibilityCounts?.adult || 0) + Number(index?.visibilityCounts?.restricted || 0))
 
   if (isLoading) {
     return <div className="search-panel">正在加载搜索索引…</div>
@@ -147,9 +193,10 @@ export default function SearchClient() {
   return (
     <section className="search-panel">
       <div className="search-meta">
-        <span>索引：{index.total} 条</span>
+        <span>索引：{visibleItems.length} / {index.total} 条</span>
         <span>生成：{new Date(index.generatedAt).toLocaleString('zh-CN')}</span>
         <span>模式：{indexModeLabel(index.mode)}</span>
+        {contentScope === 'ordinary' && hiddenMarkedWorks ? <span>普通模式隐藏 {hiddenMarkedWorks} 条标记作品</span> : null}
       </div>
 
       <label className="search-box">
@@ -165,7 +212,7 @@ export default function SearchClient() {
 
       <div className="search-filters" aria-label="搜索范围">
         <button className={activeCollection === 'all' ? 'active' : ''} onClick={() => setActiveCollection('all')} type="button">
-          全部 {index.total}
+          全部 {visibleItems.length}
         </button>
         {Object.entries(collectionCounts).map(([collection, count]) => (
           <button
@@ -195,20 +242,25 @@ export default function SearchClient() {
             </ul>
           </div>
         ) : (
-          results.map((item) => (
-            <article className="result-card" key={item.id}>
-              <div className="result-card-header">
-                <p>{resultMeta(item)}</p>
-              </div>
-              <h2>
-                <HighlightedText query={query} text={item.title} />
-              </h2>
-              {resultSummary(item) ? <p className="result-text">{resultSummary(item)}</p> : null}
-              <a className="result-link" href={item.url}>
-                查看详情
-              </a>
-            </article>
-          ))
+          results.map((item) => {
+            const visibilityLabel = contentVisibilityLabel(item.contentVisibility)
+
+            return (
+              <article className="result-card" data-content-visibility={item.contentVisibility || 'ordinary'} key={item.id}>
+                <div className="result-card-header">
+                  <p>{resultMeta(item)}</p>
+                  {visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}
+                </div>
+                <h2>
+                  <HighlightedText query={query} text={item.title} />
+                </h2>
+                {resultSummary(item) ? <p className="result-text">{resultSummary(item)}</p> : null}
+                <a className="result-link" href={item.url}>
+                  查看详情
+                </a>
+              </article>
+            )
+          })
         )}
       </div>
     </section>
