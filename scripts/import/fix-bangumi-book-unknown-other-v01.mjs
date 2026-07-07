@@ -39,7 +39,7 @@ for (const p of plans) {
   rows.push(row)
 }
 const outputs = { rows: `${OUT}/bangumi-book-other-fix-v01.rows.jsonl`, summary: `${OUT}/bangumi-book-other-fix-v01-summary.json` }
-const summary = { version: 'bangumi-book-other-fix-v0.1', mode: apply ? 'apply' : 'dry-run', plansRead: plans.length, wouldPatch, patched, alreadyCurrent, blocked, byStatus: count(rows, 'status'), byChangedField: count(rows.flatMap((r) => r.changedFields), (x) => x), byBlocker: count(rows.flatMap((r) => r.blockers), (x) => x), safety: { payloadWrite: apply, fields: ['mediaGroup', 'mediaType'] }, outputs }
+const summary = { version: 'bangumi-book-other-fix-v0.2', mode: apply ? 'apply' : 'dry-run', plansRead: plans.length, wouldPatch, patched, alreadyCurrent, blocked, byStatus: count(rows, 'status'), byChangedField: count(rows.flatMap((r) => r.changedFields), (x) => x), byBlocker: count(rows.flatMap((r) => r.blockers), (x) => x), safety: { payloadWrite: apply, fields: ['mediaGroup', 'mediaType'] }, outputs }
 fs.writeFileSync(outputs.rows, rows.map((r) => JSON.stringify(r)).join('\n') + (rows.length ? '\n' : ''), 'utf8')
 fs.writeFileSync(outputs.summary, JSON.stringify(summary, null, 2), 'utf8')
 console.log(JSON.stringify({ ok: blocked === 0, summary }, null, 2))
