@@ -203,25 +203,38 @@ function FieldList({ fields }: { fields: Array<[string, string | string[] | bool
   )
 }
 
+function SearchableTitleTable({ titles }: { titles: string[] }) {
+  if (titles.length === 0) return null
+
+  return (
+    <div className="detail-title-table-wrap">
+      <h3>可搜索作品名</h3>
+      <table className="detail-title-table">
+        <tbody>
+          {titles.map((title, index) => (
+            <tr key={`${title}-${index}`}>
+              <th scope="row">{index + 1}</th>
+              <td>{title}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 function BasicInfo({ item }: { item: DetailItem }) {
   const extendedItem = item as ExtendedDetailItem
-  const allTitles = uniqueValues([item.title, item.originalTitle, ...(item.localizedTitles || []), ...(item.aliases || []), ...(item.allTitles || [])])
+  const searchableTitles = uniqueValues([item.title, item.originalTitle, ...(item.localizedTitles || []), ...(item.aliases || []), ...(item.allTitles || [])])
   const fields: Array<[string, string | string[] | boolean | undefined]> = [
+    ['作品类型', mediaGroupLabel(extendedItem.mediaGroup)],
+    ['作品形态', visibleMetadataValue(extendedItem.format)],
+    ['日期', extendedItem.firstPublishedLabel || extendedItem.firstPublishedAt],
     ['复核状态', reviewStatusLabel(extendedItem.reviewStatus)],
     ['证据强度', evidenceStrengthLabel(extendedItem.evidenceStrength)],
     ['机构类型', organizationTypeLabel(extendedItem.organizationType)],
     ['证据类型', evidenceTypeLabel(extendedItem.evidenceType)],
     ['截图时间', extendedItem.capturedAt],
-    ['主标题', item.title],
-    ['原名', item.originalTitle],
-    ['译名', item.localizedTitles],
-    ['别名', item.aliases],
-    ['全部可搜索标题', allTitles],
-    ['作品类型', mediaGroupLabel(extendedItem.mediaGroup)],
-    ['媒体类型', visibleMetadataValue(extendedItem.mediaType)],
-    ['格式', visibleMetadataValue(extendedItem.format)],
-    ['首发日期', extendedItem.firstPublishedLabel || extendedItem.firstPublishedAt],
-    ['首发精度', visibleMetadataValue(extendedItem.firstPublishedPrecision)],
     ['关联作品', extendedItem.relatedWorks],
     ['关联创作者', extendedItem.relatedCreators],
     ['关联机构', extendedItem.relatedOrganizations],
@@ -233,15 +246,15 @@ function BasicInfo({ item }: { item: DetailItem }) {
     ['相关注意点', item.relatedWarnings],
     ['相关标签', item.relatedTags],
     ['相关作品', item.examples],
-    ['证据备注', item.evidenceNote],
     ['状态', item.status],
   ]
 
-  if (visibleFieldsOf(fields).length === 0) return null
+  if (searchableTitles.length === 0 && visibleFieldsOf(fields).length === 0) return null
 
   return (
     <section className="detail-card">
       <h2>基础信息</h2>
+      <SearchableTitleTable titles={searchableTitles} />
       <FieldList fields={fields} />
     </section>
   )
