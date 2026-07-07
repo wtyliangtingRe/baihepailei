@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const VERSION = 'mangadex-ndl-creator-romanization-plan-v0.1'
+const VERSION = 'mangadex-ndl-creator-romanization-plan-v0.2'
 const DEFAULT_READY_INPUT = 'data_local/staging/mangadex-ndl-integration/mangadex-ndl-work-integration-v01-ready.jsonl'
 const DEFAULT_REVIEW_INPUT = 'data_local/staging/mangadex-ndl-integration/mangadex-ndl-blocked-review-v01.rows.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/mangadex-ndl-integration'
@@ -56,12 +56,14 @@ function writeCsv(file, rows, columns) {
   fs.writeFileSync(file, lines.join('\n') + '\n', 'utf8')
 }
 
-function asArray(value) {
-  return Array.isArray(value) ? value : []
+function list(value) {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string') return value.split(/\s*\|\s*|\r?\n/u).filter(Boolean)
+  return []
 }
 
 function unique(values) {
-  return [...new Set(values.map(val).filter(Boolean))]
+  return [...new Set(list(values).map(val).filter(Boolean))]
 }
 
 function countBy(rows, key) {
@@ -146,23 +148,24 @@ function safeReadyWarnings(warnings) {
 }
 
 function planDecision(reviewRow, readyPlan) {
-  const blockers = unique(asArray(reviewRow.blockers))
-  const warnings = unique(asArray(reviewRow.warnings))
-  const readyWarnings = unique(asArray(readyPlan?.warnings))
-  const readyBlockers = unique(asArray(readyPlan?.blockers))
+  const blockers = unique(reviewRow.blockers)
+  const readyWarnings = unique(readyPlan?.warnings)
+  const readyBlockers = unique(readyPlan?.blockers)
   const fieldAdditions = readyPlan?.fieldAdditions || {}
-  const searchTextAdditions = unique(asArray(fieldAdditions.searchTextAdditions))
-  const sourceLinks = asArray(fieldAdditions.sourceLinks)
-  const candidateSources = asArray(fieldAdditions.candidateSources)
+  const searchTextAdditions = unique(fieldAdditions.searchTextAdditions)
+  const sourceLinks = list(fieldAdditions.sourceLinks)
+  const candidateSources = list(fieldAdditions.candidateSources)
   const diff = readyPlan?.diffReport || reviewRow.raw?.diffReport || reviewRow.diffReport || {}
-  const incomingCreators = unique(asArray(diff.incomingCreators))
-  const existingCreators = unique(asArray(diff.existingCreators))
-  const incomingYears = unique(asArray(diff.incomingYears))
-  const existingYears = unique(asArray(diff.existingYears))
-  const incomingPublishers = unique(asArray(diff.incomingPublishers))
-  const existingPublishers = unique(asArray(diff.existingPublishers))
+  const incomingCreators = unique(diff.incomingCreators)
+  const existingCreators = unique(diff.existingCreators)
+  const incomingYears = unique(diff.incomingYears)
+  const existingYears = unique(diff.existingYears)
+  const incomingPublishers = unique(diff.incomingPublishers)
+  const existingPublishers = unique(diff.existingPublishers)
   const evidence = creatorEvidence(incomingCreators, existingCreators)
   const issues = []
+  const notes = []
+  const sourceMetadataPresent = Boolean(sourceLinks.length || candidateSources.length)
 
   if (reviewRow.bucket !== TARGET_BUCKET) issues.push('not_target_bucket')
   if (reviewRow.status !== 'blocked') issues.push('not_blocked_status')
@@ -173,13 +176,10 @@ function planDecision(reviewRow, readyPlan) {
   if (blockers.length !== 1 || blockers[0] !== CREATOR_BLOCKER) issues.push('unexpected_review_blockers')
   if (!safeReadyWarnings(readyWarnings)) issues.push('unsafe_ready_warnings')
   if (!searchTextAdditions.length) issues.push('no_search_text_additions')
-  if (sourceLinks.length || candidateSources.length) issues.push('source_metadata_present_deferred')
-  if (incomingYears.length || existingYears.length) {
-    // This bucket should not contain year blockers, but record the signal for later review.
-  }
-  if (incomingPublishers.length || existingPublishers.length) {
-    // Publisher values may be present without mismatch; report only.
-  }
+
+  if (sourceMetadataPresent) notes.push('source_metadata_present_but_deferred')
+  if (incomingYears.length || existingYears.length) notes.push('year_values_present_without_year_diff_blocker')
+  if (incomingPublishers.length || existingPublishers.length) notes.push('publisher_values_present_without_publisher_diff_blocker')
 
   let decision = 'manual_review'
   let pass = false
@@ -188,21 +188,18 @@ function planDecision(reviewRow, readyPlan) {
     pass = true
   } else if (!issues.length && evidence.confidence === 'medium') {
     decision = 'candidate_medium_confidence_sample_before_apply'
-    pass = false
-  } else if (issues.length === 1 && issues[0] === 'source_metadata_present_deferred' && evidence.confidence === 'high' && searchTextAdditions.length) {
-    decision = 'candidate_high_confidence_search_text_only_source_metadata_deferred'
-    pass = true
-  } else if (issues.includes('source_metadata_present_deferred') && evidence.confidence !== 'low') {
-    decision = 'manual_review_source_metadata_present'
+  } else if (issues.includes('unsafe_ready_warnings') && evidence.confidence === 'high') {
+    decision = 'manual_review_extra_ready_warnings'
   }
 
   return {
     decision,
     pass,
     issues,
+    notes,
     evidence,
     searchTextAdditions,
-    sourceMetadataPresent: Boolean(sourceLinks.length || candidateSources.length),
+    sourceMetadataPresent,
     sourceLinkCount: sourceLinks.length,
     candidateSourceCount: candidateSources.length,
     incomingCreators,
@@ -227,6 +224,7 @@ function compactRow(reviewRow, readyPlan) {
     confidence: plan.evidence.confidence,
     reason: plan.evidence.reason,
     issues: plan.issues.join(' | '),
+    notes: plan.notes.join(' | '),
     searchTextAdditions: plan.searchTextAdditions.join(' | '),
     sourceMetadataPresent: String(plan.sourceMetadataPresent),
     sourceLinkCount: String(plan.sourceLinkCount),
@@ -237,8 +235,8 @@ function compactRow(reviewRow, readyPlan) {
     existingYears: plan.existingYears.join(' | '),
     incomingPublishers: plan.incomingPublishers.join(' | '),
     existingPublishers: plan.existingPublishers.join(' | '),
-    readyWarnings: unique(asArray(readyPlan?.warnings)).join(' | '),
-    reviewBlockers: unique(asArray(reviewRow.blockers)).join(' | '),
+    readyWarnings: unique(readyPlan?.warnings).join(' | '),
+    reviewBlockers: unique(reviewRow.blockers).join(' | '),
     rawReview: reviewRow,
     rawReadyPlan: readyPlan || null,
   }
@@ -296,6 +294,7 @@ function main() {
     byEvidence: countBy(planned, 'evidence'),
     byConfidence: countBy(planned, 'confidence'),
     byIssue: countBy(planned.flatMap((row) => row.issues.split(' | ').filter(Boolean)), (item) => item),
+    byNote: countBy(planned.flatMap((row) => row.notes.split(' | ').filter(Boolean)), (item) => item),
     safety: {
       payloadRead: false,
       payloadWrite: false,
@@ -305,6 +304,8 @@ function main() {
       reportOnly: true,
       proposedWritableFieldsForFuturePass: ['searchText'],
       sourceMetadataDeferred: true,
+      passRequiresEmbeddedNativeCreatorEvidence: true,
+      mediumConfidenceRowsRequireManualSampling: true,
     },
     nextStep: passRows.length
       ? 'Review pass rows, then create a separate apply dry-run guarded by this pass list.'
@@ -328,6 +329,7 @@ function main() {
     'confidence',
     'reason',
     'issues',
+    'notes',
     'searchTextAdditions',
     'sourceMetadataPresent',
     'sourceLinkCount',
