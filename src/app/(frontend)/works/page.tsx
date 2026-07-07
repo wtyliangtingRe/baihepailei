@@ -127,6 +127,12 @@ function uniqueValues(items: SearchItem[], key: 'creators' | 'organizations') {
   return [...values].sort((a, b) => a.localeCompare(b, 'zh-CN'))
 }
 
+function contentVisibilityLabel(value?: string) {
+  if (value === 'adult') return '标记内容'
+  if (value === 'restricted') return '限制展示'
+  return ''
+}
+
 function itemMatchesQuery(item: SearchItem, query: string) {
   const normalizedQuery = normalizeText(query)
   if (!normalizedQuery) return true
@@ -336,6 +342,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
     .filter((item) => item.collection === 'works')
     .sort((a, b) => rankSortValue(a.rank) - rankSortValue(b.rank) || a.title.localeCompare(b.title, 'zh-CN'))
 
+  const markedItems = allItems.filter((item) => item.contentVisibility && item.contentVisibility !== 'ordinary')
   const items = allItems.filter((item) => itemMatchesFilters(item, filters))
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
   const currentPage = Math.min(requestedPage, totalPages)
@@ -363,6 +370,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
           <Link className="back-link" href="/browse">浏览全部</Link>
           <span>{items.length} / {allItems.length} 条</span>
           <span>当前页 {pageItems.length} 条</span>
+          {markedItems.length ? <span>普通模式隐藏 {markedItems.length} 条标记作品</span> : null}
         </div>
         <nav className="media-group-links" aria-label="作品类型快速筛选">
           <Link href="/works">全部</Link>
@@ -424,23 +432,28 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
               </div>
 
               <div className="collection-grid">
-                {group.items.map((item) => (
-                  <Link className="collection-card work-card" href={item.url} key={item.id}>
-                    <CoverThumb cover={item.cover} title={item.title} />
-                    <div className="work-card-body">
-                      <p>{[rankLabel(item.rank), mediaGroupLabel(item.mediaGroup)].filter(Boolean).join(' · ')}</p>
-                      <h2>{item.title}</h2>
-                      {item.originalTitle ? <span>原名：{item.originalTitle}</span> : null}
-                      {compactValues(item.localizedTitles).length ? <span>译名：{compactValues(item.localizedTitles).slice(0, 2).join(' / ')}</span> : null}
-                      {[item.mediaType, item.format, item.firstPublishedLabel].filter(Boolean).length ? (
-                        <span>基础信息：{[item.mediaType, item.format, item.firstPublishedLabel].filter(Boolean).join(' / ')}</span>
-                      ) : null}
-                      {compactValues(item.creators).length ? <span>创作者：{compactValues(item.creators).join(' / ')}</span> : null}
-                      {compactValues(item.organizations).length ? <span>机构：{compactValues(item.organizations).join(' / ')}</span> : null}
-                      {hasEvidence(item) ? <span>有证据材料</span> : null}
-                    </div>
-                  </Link>
-                ))}
+                {group.items.map((item) => {
+                  const visibilityLabel = contentVisibilityLabel(item.contentVisibility)
+
+                  return (
+                    <Link className="collection-card work-card" data-content-visibility={item.contentVisibility || 'ordinary'} href={item.url} key={item.id}>
+                      <CoverThumb cover={item.cover} title={item.title} />
+                      <div className="work-card-body">
+                        <p>{[rankLabel(item.rank), mediaGroupLabel(item.mediaGroup)].filter(Boolean).join(' · ')}</p>
+                        <h2>{item.title}</h2>
+                        {visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}
+                        {item.originalTitle ? <span>原名：{item.originalTitle}</span> : null}
+                        {compactValues(item.localizedTitles).length ? <span>译名：{compactValues(item.localizedTitles).slice(0, 2).join(' / ')}</span> : null}
+                        {[item.mediaType, item.format, item.firstPublishedLabel].filter(Boolean).length ? (
+                          <span>基础信息：{[item.mediaType, item.format, item.firstPublishedLabel].filter(Boolean).join(' / ')}</span>
+                        ) : null}
+                        {compactValues(item.creators).length ? <span>创作者：{compactValues(item.creators).join(' / ')}</span> : null}
+                        {compactValues(item.organizations).length ? <span>机构：{compactValues(item.organizations).join(' / ')}</span> : null}
+                        {hasEvidence(item) ? <span>有证据材料</span> : null}
+                      </div>
+                    </Link>
+                  )
+                })}
               </div>
 
               <div className="rank-group-actions">
