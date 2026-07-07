@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import readline from 'node:readline'
 
-const VERSION = 'wikidata-work-integration-audit-v0.1'
+const VERSION = 'wikidata-work-integration-audit-v0.2'
 const PAGE_LIMIT = 200
 const DEFAULT_INPUT = 'data_local/raw/wikidata/index/wikidata-work-review.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/wikidata-work-integration'
@@ -11,6 +11,7 @@ const EXPORT_SECRET_ENV = ['PAYLOAD_EXPORT', 'PASSWORD'].join('_')
 const SEED_EMAIL_ENV = 'PAYLOAD_SEED_EMAIL'
 const SEED_SECRET_ENV = ['PAYLOAD_SEED', 'PASSWORD'].join('_')
 const SOURCE_PRIORITY_NOTE = 'Source priority: Yurizukan > Bangumi > MangaDex > NDL > Steam > Wikidata > AniList'
+const HIGHER_PRIORITY_MARKERS = new Set(['bangumi', 'mangadex', 'ndl'])
 
 function val(value) {
   return String(value ?? '').trim()
@@ -80,7 +81,7 @@ function collectTextDeep(value, out = []) {
     return out
   }
   if (typeof value === 'object') {
-    for (const key of ['title', 'name', 'value', 'text', 'label', 'native', 'romaji', 'english', 'chinese', 'japanese', 'zh', 'ja', 'en']) {
+    for (const key of ['title', 'name', 'value', 'text', 'label', 'native', 'romaji', 'english', 'chinese', 'japanese', 'zh', 'ja', 'en', 'description']) {
       if (key in value) collectTextDeep(value[key], out)
     }
   }
@@ -93,6 +94,16 @@ function collectLabelMap(value) {
   for (const entry of Object.values(value)) {
     if (typeof entry === 'string') out.push(entry)
     else if (entry && typeof entry === 'object') out.push(entry.value || entry.text || entry.label)
+  }
+  return out.map(compactLine).filter(Boolean)
+}
+
+function collectDescriptionMap(value) {
+  const out = []
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return out
+  for (const entry of Object.values(value)) {
+    if (typeof entry === 'string') out.push(entry)
+    else if (entry && typeof entry === 'object') out.push(entry.value || entry.text || entry.description)
   }
   return out.map(compactLine).filter(Boolean)
 }
@@ -273,10 +284,29 @@ function sourceOf(doc) {
   if (ids.bangumiSubjectId) return 'bangumi'
   if (ids.wikidataQid) return 'wikidata'
   const sources = candidateSourceRows(doc).map((item) => val(item.source || item.label).toLowerCase()).filter(Boolean)
-  if (sources.includes('bangumi')) return 'bangumi'
-  if (sources.includes('wikidata')) return 'wikidata'
+  for (const source of ['bangumi', 'mangadex', 'ndl', 'steam', 'wikidata']) {
+    if (sources.includes(source)) return source
+  }
   if (sources[0]) return sources[0]
-  return val(doc?.originalSource || doc?.source || 'unknown').toLowerCase() || 'unknown'
+  return val(doc?.originalSource || doc?.source || doc?.siteId || 'unknown').toLowerCase() || 'unknown'
+}
+
+function higherPriorityMarkersOf(work) {
+  const markers = new Set()
+  const ids = externalIdsOf(work)
+  if (ids.bangumiSubjectId) markers.add('bangumi')
+  const sourceText = [
+    work?.siteId,
+    work?.originalSource,
+    work?.source,
+    ...candidateSourceRows(work).flatMap((item) => [item.source, item.label, item.externalId, item.url, item.note]),
+    ...sourceLinkRows(work).flatMap((item) => [item.label, item.url]),
+  ].map((item) => val(item).toLowerCase()).join('\n')
+
+  if (/bangumi|bgm\.tv|bangumi\.tv/u.test(sourceText)) markers.add('bangumi')
+  if (/mangadex/u.test(sourceText)) markers.add('mangadex')
+  if (/ndl|iss\.ndl\.go\.jp|id\.ndl\.go\.jp/u.test(sourceText)) markers.add('ndl')
+  return [...markers].filter((marker) => HIGHER_PRIORITY_MARKERS.has(marker))
 }
 
 function workYearLabels(work) {
@@ -327,7 +357,16 @@ function bangumiSubjectIdOf(row) {
   return ''
 }
 
+function titleLanguageBuckets(row) {
+  return {
+    zh: uniqueBy([row?.sourceTitleCn, row?.labels?.zh?.value, row?.labels?.['zh-cn']?.value, row?.labels?.['zh-hans']?.value, ...collectTextDeep(row?.titles?.zh), ...collectTextDeep(row?.names?.zh)].map(compactLine).filter(isUsefulTitle), normalizeText),
+    ja: uniqueBy([row?.labels?.ja?.value, row?.labels?.jp?.value, row?.japaneseTitle, row?.titleJa, ...collectTextDeep(row?.titles?.ja), ...collectTextDeep(row?.names?.ja), ...collectTextDeep(row?.sitelinks?.jawiki)].map(compactLine).filter(isUsefulTitle), normalizeText),
+    en: uniqueBy([row?.labels?.en?.value, row?.englishTitle, row?.titleEn, ...collectTextDeep(row?.titles?.en), ...collectTextDeep(row?.names?.en)].map(compactLine).filter(isUsefulTitle), normalizeText),
+  }
+}
+
 function titlesForRow(row) {
+  const buckets = titleLanguageBuckets(row)
   return uniqueBy([
     row?.query,
     row?.sourceTitle,
@@ -335,9 +374,9 @@ function titlesForRow(row) {
     row?.title,
     row?.name,
     row?.label,
-    row?.labels?.zh?.value,
-    row?.labels?.ja?.value,
-    row?.labels?.en?.value,
+    ...buckets.ja,
+    ...buckets.zh,
+    ...buckets.en,
     ...collectLabelMap(row?.labels),
     ...collectLabelMap(row?.sitelinks),
     ...collectTextDeep(row?.aliases),
@@ -345,6 +384,17 @@ function titlesForRow(row) {
     ...collectTextDeep(row?.titles),
     ...collectTextDeep(row?.names),
   ].map(compactLine).filter(isUsefulTitle), normalizeText)
+}
+
+function descriptionCandidates(row) {
+  return uniqueBy([
+    row?.description,
+    row?.summary,
+    row?.abstract,
+    row?.extract,
+    row?.labels?.description,
+    ...collectDescriptionMap(row?.descriptions),
+  ].map(compactLine).filter(Boolean), normalizeText)
 }
 
 function adultAdvisories(row) {
@@ -413,16 +463,17 @@ function matchRow(row, indexes) {
   const titleMatch = candidatesFromTitles(titles, indexes)
   if (titleMatch.candidates.length === 1) {
     const work = titleMatch.candidates[0]
-    const source = sourceOf(work)
+    const markers = higherPriorityMarkersOf(work)
     return {
-      status: source === 'bangumi' ? 'matched_by_title_with_bangumi_source' : 'matched_by_title_without_bangumi_source',
+      status: markers.length ? 'matched_by_title_with_higher_priority_marker' : 'matched_by_title_without_higher_priority_marker',
       work,
       candidates: titleMatch.candidates,
       matchedTitles: titleMatch.matchedTitles,
+      higherPriorityMarkers: markers,
     }
   }
-  if (titleMatch.candidates.length > 1) return { status: 'title_multi_match', work: null, candidates: titleMatch.candidates, matchedTitles: titleMatch.matchedTitles }
-  return { status: 'no_match', work: null, candidates: [], matchedTitles: [] }
+  if (titleMatch.candidates.length > 1) return { status: 'title_multi_match', work: null, candidates: titleMatch.candidates, matchedTitles: titleMatch.matchedTitles, higherPriorityMarkers: [] }
+  return { status: 'no_match', work: null, candidates: [], matchedTitles: [], higherPriorityMarkers: [] }
 }
 
 function differenceNormalized(incoming, existing) {
@@ -430,7 +481,7 @@ function differenceNormalized(incoming, existing) {
   return incoming.filter((item) => !existingKeys.has(normalizeText(item)))
 }
 
-function sourceLinkAdditionsFor(row, work, qid) {
+function sourceLinkAdditionsFor(work, qid) {
   const beforeLinks = work ? sourceLinkRows(work) : []
   const url = wikidataUrl(qid)
   if (!url) return []
@@ -438,7 +489,7 @@ function sourceLinkAdditionsFor(row, work, qid) {
   return beforeLinks.some((existing) => normalizeUrl(existing.url) === normalizeUrl(item.url)) ? [] : [item]
 }
 
-function candidateSourceAdditionsFor(row, work, qid) {
+function candidateSourceAdditionsFor(work, qid) {
   const beforeSources = work ? candidateSourceRows(work) : []
   const url = wikidataUrl(qid)
   if (!qid && !url) return []
@@ -453,11 +504,18 @@ function candidateSourceAdditionsFor(row, work, qid) {
   return beforeSources.some((existing) => [val(existing.source), val(existing.externalId), normalizeUrl(existing.url)].join('|') === key) ? [] : [item]
 }
 
+function primaryTitleForCreate(titles, buckets) {
+  return buckets.zh[0] || buckets.ja[0] || buckets.en[0] || titles[0] || ''
+}
+
 function buildPlan(row, indexes) {
   const qid = qidOf(row)
+  const buckets = titleLanguageBuckets(row)
   const titles = titlesForRow(row)
+  const descriptions = descriptionCandidates(row)
   const match = matchRow(row, indexes)
   const work = match.work
+  const markers = match.higherPriorityMarkers || (work ? higherPriorityMarkersOf(work) : [])
   const warnings = []
   const blockers = []
   const notes = []
@@ -465,9 +523,9 @@ function buildPlan(row, indexes) {
 
   if (!qid) blockers.push('missing_wikidata_qid')
   if (match.status === 'title_multi_match') blockers.push('title_multi_match')
-  if (match.status === 'no_match') blockers.push('no_existing_work_match')
-  if (match.status === 'matched_by_title_without_bangumi_source') blockers.push('matched_work_without_bangumi_source_review_required')
   if (advisories.length) warnings.push('content_advisory_present')
+  if (descriptions.length) notes.push('wikidata_description_available_preview_only')
+  if (markers.length) notes.push(`higher_priority_marker_present:${markers.join(',')}`)
 
   const existingNames = work ? searchableWorkNames(work) : []
   const searchTextAdditions = work ? differenceNormalized(titles, existingNames) : titles
@@ -482,8 +540,8 @@ function buildPlan(row, indexes) {
   if (officialUrl && work && !ids.officialUrl) externalIds.officialUrl = officialUrl
   else if (officialUrl && ids.officialUrl && normalizeUrl(ids.officialUrl) !== normalizeUrl(officialUrl)) warnings.push('official_url_diff_or_missing')
 
-  const sourceLinks = work ? sourceLinkAdditionsFor(row, work, qid) : []
-  const candidateSources = work ? candidateSourceAdditionsFor(row, work, qid) : []
+  const sourceLinks = work ? sourceLinkAdditionsFor(work, qid) : []
+  const candidateSources = work ? candidateSourceAdditionsFor(work, qid) : []
   if (sourceLinks.length || candidateSources.length) warnings.push('has_source_metadata_additions')
 
   const incomingYearLabels = incomingYears(row)
@@ -493,17 +551,56 @@ function buildPlan(row, indexes) {
   if (yearDiff.length) blockers.push('year_diff_requires_manual_review')
   if (incomingYearLabels.length && existingYears.length && sharedYear) notes.push('same_year_date_difference_merge_compatible_keep_existing_date')
 
+  let action = 'defer'
+  let planStatus = blockers.length ? 'blocked_or_review_required' : 'ready_for_apply_review'
+  let confidence = 'review'
+  let rewriteCandidatePreview = null
+  let createCandidatePreview = null
+
+  if (work && (match.status === 'matched_by_wikidata_qid' || match.status === 'matched_by_bangumi_id' || match.status === 'matched_by_title_with_higher_priority_marker')) {
+    action = 'enrich_search_text_for_marked_existing_work'
+    confidence = match.status === 'matched_by_title_with_higher_priority_marker' ? 'medium' : 'high'
+  } else if (work && match.status === 'matched_by_title_without_higher_priority_marker') {
+    action = 'propose_wikidata_rewrite_existing_unmarked_work'
+    confidence = 'manual_rewrite_candidate'
+    planStatus = 'blocked_or_review_required'
+    blockers.push('matched_existing_work_without_higher_priority_marker_rewrite_review_required')
+    rewriteCandidatePreview = {
+      currentTitle: val(work.title),
+      proposedTitle: primaryTitleForCreate(titles, buckets),
+      proposedOriginalTitle: buckets.ja[0] || titles[0] || '',
+      proposedSearchTextAdditions: searchTextAdditions,
+      descriptionPreview: descriptions.slice(0, 5),
+      note: 'Preview only. A separate guarded rewrite plan is required before changing primary fields.',
+    }
+  } else if (!work && match.status === 'no_match') {
+    action = 'propose_create_wikidata_work_candidate'
+    confidence = 'manual_create_candidate'
+    planStatus = 'blocked_or_review_required'
+    blockers.push('no_existing_work_match_create_review_required')
+    createCandidatePreview = {
+      title: primaryTitleForCreate(titles, buckets),
+      originalTitle: buckets.ja[0] || titles[0] || '',
+      localizedTitles: uniqueBy([...buckets.zh, ...buckets.en], normalizeText),
+      searchText: titles.join('\n'),
+      externalIds: Object.fromEntries(Object.entries({ wikidataQid: qid, officialUrl }).filter(([, value]) => value)),
+      sourceLinks: qid ? [{ label: 'Wikidata', url: wikidataUrl(qid) }] : [],
+      candidateSources: qid ? [{ source: 'wikidata', label: 'Wikidata', externalId: qid, url: wikidataUrl(qid), note: ['Wikidata work candidate preview', SOURCE_PRIORITY_NOTE].join('; ') }] : [],
+      descriptionPreview: descriptions.slice(0, 5),
+      note: 'Preview only. No Work is created by this audit.',
+    }
+  }
+
   const changedFields = []
   if (searchTextAdditions.length) changedFields.push('searchText')
   if (Object.keys(externalIds).length) changedFields.push('externalIds')
   if (sourceLinks.length) changedFields.push('sourceLinks')
   if (candidateSources.length) changedFields.push('candidateSources')
+  if (rewriteCandidatePreview) changedFields.push('rewriteCandidatePreview')
+  if (createCandidatePreview) changedFields.push('createCandidatePreview')
   if (!changedFields.length && !blockers.length) warnings.push('no_new_information_detected')
 
-  let action = 'defer'
-  if (work && (match.status === 'matched_by_wikidata_qid' || match.status === 'matched_by_bangumi_id')) action = 'enrich_existing_work'
-  else if (work && match.status === 'matched_by_title_with_bangumi_source') action = 'enrich_title_matched_bangumi_work'
-  else if (!work && qid) action = 'defer_wikidata_candidate_without_work_match'
+  if (blockers.length) planStatus = 'blocked_or_review_required'
 
   return {
     key: qid || `row:${normalizeText(titles[0] || '')}`,
@@ -511,21 +608,25 @@ function buildPlan(row, indexes) {
     wikidataUrl: wikidataUrl(qid),
     action,
     matchStatus: match.status,
-    planStatus: blockers.length ? 'blocked_or_review_required' : 'ready_for_apply_review',
-    confidence: match.status === 'matched_by_wikidata_qid' || match.status === 'matched_by_bangumi_id' ? 'high' : match.status === 'matched_by_title_with_bangumi_source' ? 'medium' : 'review',
+    planStatus,
+    confidence,
+    higherPriorityMarkers: markers,
     blockers: [...new Set(blockers)],
     warnings: [...new Set(warnings)],
     notes: [...new Set(notes)],
     changedFields,
     contentAdvisories: advisories,
     titleCandidates: titles,
+    titleLanguageBuckets: buckets,
+    descriptionCandidates: descriptions,
     matchedTitles: match.matchedTitles,
-    matchedCandidates: match.candidates.map((item) => ({ id: val(item.id), title: val(item.title), slug: val(item.slug), source: sourceOf(item), wikidataQid: externalIdsOf(item).wikidataQid || '', bangumiSubjectId: externalIdsOf(item).bangumiSubjectId || '' })),
+    matchedCandidates: match.candidates.map((item) => ({ id: val(item.id), title: val(item.title), slug: val(item.slug), source: sourceOf(item), higherPriorityMarkers: higherPriorityMarkersOf(item), wikidataQid: externalIdsOf(item).wikidataQid || '', bangumiSubjectId: externalIdsOf(item).bangumiSubjectId || '' })),
     work: work ? {
       id: val(work.id),
       title: val(work.title),
       slug: val(work.slug),
       source: sourceOf(work),
+      higherPriorityMarkers: markers,
       bangumiSubjectId: ids.bangumiSubjectId || '',
       wikidataQid: ids.wikidataQid || '',
     } : null,
@@ -535,6 +636,8 @@ function buildPlan(row, indexes) {
       sourceLinks,
       candidateSources,
     },
+    rewriteCandidatePreview,
+    createCandidatePreview,
     diffReport: {
       incomingYears: incomingYearLabels,
       existingYears,
@@ -548,7 +651,8 @@ function buildPlan(row, indexes) {
       createsWorks: false,
       deletesWorks: false,
       reportOnly: true,
-      proposedWritableFieldsForFuturePass: ['searchText', 'externalIds.wikidataQid', 'externalIds.officialUrl', 'sourceLinks', 'candidateSources'],
+      proposedWritableFieldsForFutureLowRiskPass: ['searchText', 'externalIds.wikidataQid', 'externalIds.officialUrl', 'sourceLinks', 'candidateSources'],
+      rewriteAndCreateArePreviewOnly: true,
       doesNotWriteDateFields: true,
       sameYearDateDiffDoesNotBlock: true,
       differentYearRequiresManualReview: true,
@@ -585,12 +689,16 @@ async function main() {
 
   const ready = plans.filter((row) => row.planStatus === 'ready_for_apply_review')
   const blocked = plans.filter((row) => row.planStatus !== 'ready_for_apply_review')
+  const rewriteCandidates = plans.filter((row) => row.rewriteCandidatePreview)
+  const createCandidates = plans.filter((row) => row.createCandidatePreview)
   fs.mkdirSync(outDir, { recursive: true })
 
   const outputs = {
     rows: `${outDir}/wikidata-work-integration-v01.rows.jsonl`,
     ready: `${outDir}/wikidata-work-integration-v01-ready.jsonl`,
     blocked: `${outDir}/wikidata-work-integration-v01-blocked.jsonl`,
+    rewriteCandidates: `${outDir}/wikidata-work-integration-v01-rewrite-candidates.jsonl`,
+    createCandidates: `${outDir}/wikidata-work-integration-v01-create-candidates.jsonl`,
     sample: `${outDir}/wikidata-work-integration-v01-sample.jsonl`,
     summary: `${outDir}/wikidata-work-integration-v01-summary.json`,
   }
@@ -607,10 +715,13 @@ async function main() {
     worksTotalDocs: works.totalDocs,
     readyRows: ready.length,
     blockedRows: blocked.length,
+    rewriteCandidateRows: rewriteCandidates.length,
+    createCandidateRows: createCandidates.length,
     byPlanStatus: countBy(plans, 'planStatus'),
     byAction: countBy(plans, 'action'),
     byMatchStatus: countBy(plans, 'matchStatus'),
     byConfidence: countBy(plans, 'confidence'),
+    byHigherPriorityMarker: countBy(plans.flatMap((row) => row.higherPriorityMarkers), (item) => item),
     byChangedField: countBy(plans.flatMap((row) => row.changedFields), (item) => item),
     byBlocker: countBy(plans.flatMap((row) => row.blockers), (item) => item),
     byWarning: countBy(plans.flatMap((row) => row.warnings), (item) => item),
@@ -624,19 +735,22 @@ async function main() {
       createsWorks: false,
       deletesWorks: false,
       reportOnly: true,
-      proposedWritableFieldsForFuturePass: ['searchText', 'externalIds.wikidataQid', 'externalIds.officialUrl', 'sourceLinks', 'candidateSources'],
+      proposedWritableFieldsForFutureLowRiskPass: ['searchText', 'externalIds.wikidataQid', 'externalIds.officialUrl', 'sourceLinks', 'candidateSources'],
+      rewriteAndCreateArePreviewOnly: true,
       doesNotWriteDateFields: true,
       sameYearDateDiffDoesNotBlock: true,
       differentYearRequiresManualReview: true,
       sourcePriority: SOURCE_PRIORITY_NOTE,
     },
-    nextStep: 'Review ready/blocked rows. Do not apply from this audit directly; create a guarded apply dry-run only after sampling ready rows.',
+    nextStep: 'Review ready rows first for safe searchText/title-alias enrichment. Review rewrite/create candidates separately; this audit never rewrites or creates Works directly.',
   }
 
   writeJsonl(outputs.rows, plans)
   writeJsonl(outputs.ready, ready)
   writeJsonl(outputs.blocked, blocked)
-  writeJsonl(outputs.sample, [...ready.slice(0, 20), ...blocked.slice(0, 20)])
+  writeJsonl(outputs.rewriteCandidates, rewriteCandidates)
+  writeJsonl(outputs.createCandidates, createCandidates)
+  writeJsonl(outputs.sample, [...ready.slice(0, 20), ...rewriteCandidates.slice(0, 20), ...createCandidates.slice(0, 20), ...blocked.slice(0, 20)])
   fs.writeFileSync(outputs.summary, JSON.stringify(summary, null, 2), 'utf8')
   console.log(JSON.stringify({ ok: source.failed === 0, summary, outputs }, null, 2))
 }
