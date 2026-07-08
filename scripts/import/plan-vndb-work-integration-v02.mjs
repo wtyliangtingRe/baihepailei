@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 
-const VERSION = 'vndb-work-integration-input-v0.3'
+const VERSION = 'vndb-work-integration-input-v0.4'
 const BASE_SCRIPT = 'scripts/import/plan-vndb-work-integration-v01.mjs'
 const DEFAULT_INPUTS = [
   'data_local/raw/vndb',
@@ -15,7 +15,7 @@ const DEFAULT_INPUTS = [
   'data_local/staging/vndb/vns.jsonl',
 ]
 const DEFAULT_OUT_DIR = 'data_local/staging/vndb-work-integration'
-const NORMALIZED_INPUT = 'data_local/staging/vndb/vndb-normalized-from-inputs-v01.jsonl'
+const NORMALIZED_INPUT = 'data_local/staging/vndb/vndb-normalized-from-inputs-v01.json'
 
 function val(value) {
   return String(value ?? '').trim()
@@ -145,9 +145,9 @@ function uniqueRows(rows) {
   return out
 }
 
-function writeJsonl(file, rows) {
+function writeJsonArray(file, rows) {
   fs.mkdirSync(path.dirname(file), { recursive: true })
-  fs.writeFileSync(file, rows.map((row) => JSON.stringify(row)).join('\n') + (rows.length ? '\n' : ''), 'utf8')
+  fs.writeFileSync(file, JSON.stringify(rows), 'utf8')
 }
 
 function stripInputArgs(argv) {
@@ -181,7 +181,7 @@ function main() {
     allRows.push(...rows)
   }
   const rows = uniqueRows(allRows)
-  writeJsonl(NORMALIZED_INPUT, rows)
+  writeJsonArray(NORMALIZED_INPUT, rows)
 
   const preSummary = {
     generatedAt: new Date().toISOString(),
@@ -192,9 +192,10 @@ function main() {
     rowsExtractedBeforeDedupe: allRows.length,
     rowsExtracted: rows.length,
     normalizedInput: NORMALIZED_INPUT,
+    normalizedInputFormat: 'json_array',
     sampleFilesWithRows: fileReports.filter((item) => item.rows > 0).slice(0, 20),
     sampleFilesWithoutRowsOrErrors: fileReports.filter((item) => item.rows === 0 || item.error).slice(0, 20),
-    note: 'This wrapper expands raw VNDB directories/files, including {request,response,fetchedAt} API captures, into a normalized JSONL input, then calls the v0.1 planner.',
+    note: 'This wrapper expands raw VNDB directories/files, including {request,response,fetchedAt} API captures, into a normalized JSON array input, then calls the v0.1 planner.',
   }
   writePreSummary(outDir, preSummary)
   console.log(JSON.stringify({ ok: true, inputSummary: preSummary }, null, 2))
