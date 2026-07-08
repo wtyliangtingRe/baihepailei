@@ -38,6 +38,7 @@
     "source:audit:mangadex-ndl-integration": "node scripts/import/audit-mangadex-ndl-work-integration-v01.mjs",
     "source:apply:mangadex-ndl-integration": "node scripts/import/apply-mangadex-ndl-work-integration-v01.mjs",
     "source:audit:wikidata-work-integration": "node scripts/import/audit-wikidata-work-integration-v01.mjs",
+    "source:refine:wikidata-work-integration": "node scripts/import/refine-wikidata-work-integration-v01.mjs",
     "test:source-import": "node --test tests/source-import.test.mjs",
     "test:source-bangumi": "node --test tests/bangumi-source.test.mjs",
     "test:source-bangumi-fetch": "node --test tests/bangumi-tag-fetcher.test.mjs",
