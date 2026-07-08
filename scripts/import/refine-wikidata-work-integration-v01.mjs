@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const VERSION = 'wikidata-work-integration-refine-v0.1'
+const VERSION = 'wikidata-work-integration-refine-v0.2'
 const DEFAULT_INPUT = 'data_local/staging/wikidata-work-integration/wikidata-work-integration-v01.rows.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/wikidata-work-integration'
 const MAX_STRICT_SEARCH_TEXT_ADDITIONS = 12
@@ -81,15 +81,20 @@ function isInternalMediaKey(value) {
   return /^(ANIME|MANGA|NOVEL|GAME)-\d+$/iu.test(val(value))
 }
 
-function hasInternalMediaKey(row) {
-  return [
+function internalMediaKeys(row) {
+  return uniqueBy([
     ...list(row.titleCandidates),
     ...list(row.fieldAdditions?.searchTextAdditions),
+    ...list(row.rewriteCandidatePreview?.proposedSearchTextAdditions),
     row.createCandidatePreview?.title,
     row.createCandidatePreview?.originalTitle,
     row.rewriteCandidatePreview?.proposedTitle,
     row.rewriteCandidatePreview?.proposedOriginalTitle,
-  ].filter(Boolean).some(isInternalMediaKey)
+  ].filter(isInternalMediaKey), (item) => item.toUpperCase())
+}
+
+function hasInternalMediaKey(row) {
+  return internalMediaKeys(row).length > 0
 }
 
 function cleanSearchTextAdditions(row) {
@@ -119,8 +124,7 @@ function strictBlockers(row) {
   if (!markers.length && row.matchStatus !== 'matched_by_wikidata_qid' && row.matchStatus !== 'matched_by_bangumi_id') blockers.push('missing_higher_priority_marker')
   if (list(row.blockers).length) blockers.push('original_row_has_blockers')
   if (list(row.contentAdvisories).length) blockers.push('content_advisory_requires_marked_content_flow')
-  if (hasInternalMediaKey(row)) blockers.push('internal_media_key_requires_filtering')
-  if (!additions.length) blockers.push('no_clean_search_text_additions')
+  if (!additions.length) blockers.push('no_clean_search_text_additions_after_internal_key_filter')
   if (additions.length > MAX_STRICT_SEARCH_TEXT_ADDITIONS) blockers.push('too_many_search_text_additions_for_strict_pass')
   if (warnings.length) blockers.push(...warnings.map((warning) => `disallowed_warning:${warning}`))
   if (row.candidateFlags?.bestMaybeCompany) blockers.push('candidate_maybe_company')
@@ -134,6 +138,7 @@ function refinedRow(row) {
   const cleanAdditions = cleanSearchTextAdditions(row)
   const cleanTitles = cleanTitleCandidates(row)
   const blockers = strictBlockers(row)
+  const filteredKeys = internalMediaKeys(row)
 
   return {
     ...row,
@@ -143,7 +148,8 @@ function refinedRow(row) {
       strictBlockers: blockers,
       originalSearchTextAdditionCount: list(row.fieldAdditions?.searchTextAdditions).length,
       cleanSearchTextAdditionCount: cleanAdditions.length,
-      internalMediaKeyFiltered: hasInternalMediaKey(row),
+      internalMediaKeyFiltered: filteredKeys.length > 0,
+      internalMediaKeysFiltered: filteredKeys,
       maxStrictSearchTextAdditions: MAX_STRICT_SEARCH_TEXT_ADDITIONS,
       allowedStrictWarnings: [...ALLOWED_STRICT_WARNINGS],
     },
@@ -175,7 +181,8 @@ function main() {
   const strictReady = rows.filter((row) => row.refinement.strictReady)
   const strictBlocked = rows.filter((row) => !row.refinement.strictReady)
   const adultOrMarked = rows.filter((row) => list(row.contentAdvisories).length)
-  const internalKeyRejected = rows.filter((row) => row.refinement.internalMediaKeyFiltered)
+  const internalKeyFiltered = rows.filter((row) => row.refinement.internalMediaKeyFiltered)
+  const internalKeyOnlyBlocked = rows.filter((row) => row.refinement.strictBlockers.includes('no_clean_search_text_additions_after_internal_key_filter'))
   const rewriteCandidates = rows.filter((row) => row.rewriteCandidatePreview)
   const createCandidates = rows.filter((row) => row.createCandidatePreview)
 
@@ -185,7 +192,8 @@ function main() {
     strictReady: `${outDir}/wikidata-work-integration-v01-strict-ready.jsonl`,
     strictBlocked: `${outDir}/wikidata-work-integration-v01-strict-blocked.jsonl`,
     adultOrMarked: `${outDir}/wikidata-work-integration-v01-adult-or-marked-candidates.jsonl`,
-    internalKeyRejected: `${outDir}/wikidata-work-integration-v01-title-key-rejected.rows.jsonl`,
+    internalKeyFiltered: `${outDir}/wikidata-work-integration-v01-title-key-filtered.rows.jsonl`,
+    internalKeyOnlyBlocked: `${outDir}/wikidata-work-integration-v01-title-key-only-blocked.rows.jsonl`,
     sample: `${outDir}/wikidata-work-integration-v01-refined-sample.jsonl`,
     summary: `${outDir}/wikidata-work-integration-v01-refined-summary.json`,
   }
@@ -198,7 +206,8 @@ function main() {
     strictReadyRows: strictReady.length,
     strictBlockedRows: strictBlocked.length,
     adultOrMarkedRows: adultOrMarked.length,
-    internalKeyRejectedRows: internalKeyRejected.length,
+    internalKeyFilteredRows: internalKeyFiltered.length,
+    internalKeyOnlyBlockedRows: internalKeyOnlyBlocked.length,
     rewriteCandidateRows: rewriteCandidates.length,
     createCandidateRows: createCandidates.length,
     byOriginalPlanStatus: countBy(rows, 'planStatus'),
@@ -217,19 +226,20 @@ function main() {
       strictReadyFutureWritableFields: ['searchText'],
       sourceMetadataDeferredFromStrictPass: true,
       rewriteAndCreateRemainPreviewOnly: true,
-      internalMediaKeysRejected: true,
+      internalMediaKeysFilteredNotBlocking: true,
       adultOrMarkedRowsExportedSeparately: true,
       maxStrictSearchTextAdditions: MAX_STRICT_SEARCH_TEXT_ADDITIONS,
     },
-    nextStep: 'Review strict-ready rows. Future guarded apply should read only strict-ready and write searchText only. Adult/marked, rewrite, create, and internal-key rows remain separate review flows.',
+    nextStep: 'Review strict-ready rows. Future guarded apply should read only strict-ready and write searchText only. Adult/marked, rewrite, create, and internal-key-only rows remain separate review flows.',
   }
 
   writeJsonl(outputs.refinedRows, rows)
   writeJsonl(outputs.strictReady, strictReady)
   writeJsonl(outputs.strictBlocked, strictBlocked)
   writeJsonl(outputs.adultOrMarked, adultOrMarked)
-  writeJsonl(outputs.internalKeyRejected, internalKeyRejected)
-  writeJsonl(outputs.sample, [...strictReady.slice(0, 30), ...adultOrMarked.slice(0, 20), ...internalKeyRejected.slice(0, 20), ...rewriteCandidates.slice(0, 20), ...createCandidates.slice(0, 20)])
+  writeJsonl(outputs.internalKeyFiltered, internalKeyFiltered)
+  writeJsonl(outputs.internalKeyOnlyBlocked, internalKeyOnlyBlocked)
+  writeJsonl(outputs.sample, [...strictReady.slice(0, 30), ...adultOrMarked.slice(0, 20), ...internalKeyOnlyBlocked.slice(0, 20), ...rewriteCandidates.slice(0, 20), ...createCandidates.slice(0, 20)])
   fs.writeFileSync(outputs.summary, JSON.stringify(summary, null, 2), 'utf8')
 
   console.log(JSON.stringify({ ok: true, summary, outputs }, null, 2))
