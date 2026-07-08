@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 
-const VERSION = 'vndb-work-integration-input-v0.2'
+const VERSION = 'vndb-work-integration-input-v0.3'
 const BASE_SCRIPT = 'scripts/import/plan-vndb-work-integration-v01.mjs'
 const DEFAULT_INPUTS = [
   'data_local/raw/vndb',
@@ -19,10 +19,6 @@ const NORMALIZED_INPUT = 'data_local/staging/vndb/vndb-normalized-from-inputs-v0
 
 function val(value) {
   return String(value ?? '').trim()
-}
-
-function list(value) {
-  return Array.isArray(value) ? value : []
 }
 
 function parseArgs(argv) {
@@ -70,8 +66,10 @@ function looksLikeVndbRow(row) {
   return false
 }
 
-function unwrapRows(value, sourceFile) {
+function unwrapRows(value, sourceFile, depth = 0) {
   const rows = []
+  if (depth > 8) return rows
+
   const push = (row) => {
     if (!row || typeof row !== 'object' || Array.isArray(row)) return
     const candidate = row.vn && vndbIdOf(row.vn) ? { ...row.vn, __wrapper: row } : row
@@ -79,33 +77,60 @@ function unwrapRows(value, sourceFile) {
   }
 
   if (Array.isArray(value)) {
-    for (const item of value) rows.push(...unwrapRows(item, sourceFile))
+    for (const item of value) rows.push(...unwrapRows(item, sourceFile, depth + 1))
     return rows
   }
   if (!value || typeof value !== 'object') return rows
 
-  for (const key of ['results', 'items', 'docs', 'data', 'vns', 'records']) {
+  if (looksLikeVndbRow(value)) {
+    push(value)
+    return rows
+  }
+
+  for (const key of ['response', 'body', 'payload', 'result']) {
+    if (value[key] && typeof value[key] === 'object') {
+      const nested = unwrapRows(value[key], sourceFile, depth + 1)
+      if (nested.length) rows.push(...nested)
+    }
+  }
+  if (rows.length) return rows
+
+  for (const key of ['results', 'items', 'docs', 'data', 'vns', 'records', 'rows']) {
     if (Array.isArray(value[key])) {
-      for (const item of value[key]) rows.push(...unwrapRows(item, sourceFile))
+      for (const item of value[key]) rows.push(...unwrapRows(item, sourceFile, depth + 1))
       return rows
     }
   }
+
+  const objectKeys = Object.keys(value)
+  if (objectKeys.length <= 8) {
+    for (const key of objectKeys) {
+      if (value[key] && typeof value[key] === 'object') {
+        const nested = unwrapRows(value[key], sourceFile, depth + 1)
+        if (nested.length) rows.push(...nested)
+      }
+    }
+  }
+  if (rows.length) return rows
+
   push(value)
   return rows
 }
 
-function readRowsFromFile(file) {
+function readJsonFile(file) {
   let raw = ''
-  try { raw = fs.readFileSync(file, 'utf8').trim() } catch { return [] }
-  if (!raw) return []
-  const rows = []
+  try { raw = fs.readFileSync(file, 'utf8').trim() } catch { return { rows: [], error: 'read_error' } }
+  if (!raw) return { rows: [], error: 'empty' }
   if (/\.jsonl$/iu.test(file)) {
+    const rows = []
+    let parseErrors = 0
     for (const line of raw.split(/\r?\n/u).filter(Boolean)) {
-      try { rows.push(...unwrapRows(JSON.parse(line), file)) } catch {}
+      try { rows.push(...unwrapRows(JSON.parse(line), file)) } catch { parseErrors += 1 }
     }
-    return rows
+    return { rows, error: parseErrors ? `jsonl_parse_errors:${parseErrors}` : '' }
   }
-  try { return unwrapRows(JSON.parse(raw), file) } catch { return [] }
+  try { return { rows: unwrapRows(JSON.parse(raw), file), error: '' } }
+  catch { return { rows: [], error: 'json_parse_error' } }
 }
 
 function uniqueRows(rows) {
@@ -148,7 +173,14 @@ function main() {
   const outDir = String(args['out-dir'] || DEFAULT_OUT_DIR)
   const inputs = args.input.length ? args.input : DEFAULT_INPUTS
   const files = inputs.flatMap(walkFiles)
-  const rows = uniqueRows(files.flatMap(readRowsFromFile))
+  const fileReports = []
+  const allRows = []
+  for (const file of files) {
+    const { rows, error } = readJsonFile(file)
+    if (rows.length || error) fileReports.push({ file, rows: rows.length, error })
+    allRows.push(...rows)
+  }
+  const rows = uniqueRows(allRows)
   writeJsonl(NORMALIZED_INPUT, rows)
 
   const preSummary = {
@@ -156,9 +188,13 @@ function main() {
     version: VERSION,
     inputs,
     filesScanned: files.length,
+    filesWithRows: fileReports.filter((item) => item.rows > 0).length,
+    rowsExtractedBeforeDedupe: allRows.length,
     rowsExtracted: rows.length,
     normalizedInput: NORMALIZED_INPUT,
-    note: 'This wrapper expands raw VNDB directories/files into a normalized JSONL input, then calls the v0.1 planner.',
+    sampleFilesWithRows: fileReports.filter((item) => item.rows > 0).slice(0, 20),
+    sampleFilesWithoutRowsOrErrors: fileReports.filter((item) => item.rows === 0 || item.error).slice(0, 20),
+    note: 'This wrapper expands raw VNDB directories/files, including {request,response,fetchedAt} API captures, into a normalized JSONL input, then calls the v0.1 planner.',
   }
   writePreSummary(outDir, preSummary)
   console.log(JSON.stringify({ ok: true, inputSummary: preSummary }, null, 2))
