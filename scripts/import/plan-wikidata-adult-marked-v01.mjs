@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const VERSION = 'wikidata-adult-marked-plan-v0.1'
+const VERSION = 'wikidata-adult-marked-plan-v0.2'
 const DEFAULT_INPUTS = [
   'data_local/staging/wikidata-work-integration/wikidata-work-integration-v01-adult-or-marked-candidates.jsonl',
   'data_local/staging/wikidata-rewrite-candidates/wikidata-rewrite-candidates-v01-adult-or-marked.jsonl',
@@ -39,15 +39,36 @@ function list(value) {
 }
 
 function cleanLine(value) {
-  return val(value).replace(/[\r\n\t]+/gu, ' ').replace(/\s+/gu, ' ')
+  return val(value).replace(/[\r\n\t]+/gu, ' ').replace(/\s+/gu, ' ').trim()
 }
 
 function repairInternalTitleSpaces(value) {
   return cleanLine(value)
+    .replace(/[\u200b\u200c\u200d\ufeff]/gu, '')
     .replace(/([\u3040-\u30ff\u31f0-\u31ffー])\s+([\u3040-\u30ff\u31f0-\u31ffー])/gu, '$1$2')
-    .replace(/([～〜・《「『【（])\s+([\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー])/gu, '$1$2')
-    .replace(/([\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー])\s+([）》」』】、。！？：；])/gu, '$1$2')
+    .replace(/([\u3400-\u9fff\uf900-\ufaff])\s+([\u3400-\u9fff\uf900-\ufaff])/gu, '$1$2')
+    .replace(/([\uac00-\ud7af])\s+([\uac00-\ud7af])/gu, '$1$2')
+    .replace(/([～〜・《「『【（(])\s+([\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af])/gu, '$1$2')
+    .replace(/([\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af])\s+([）》」』】、。！？：；,.!?])/gu, '$1$2')
     .replace(/([A-Za-z])\s+([級级])/gu, '$1$2')
+    .replace(/\s+([!！?？])/gu, '$1')
+    .trim()
+}
+
+function suspiciousTitleSpaceScore(value) {
+  const text = cleanLine(value)
+  let score = 0
+  score += (text.match(/[\u3040-\u30ff\u31f0-\u31ffー]\s+[\u3040-\u30ff\u31f0-\u31ffー]/gu) || []).length
+  score += (text.match(/[\u3400-\u9fff\uf900-\ufaff]\s+[\u3400-\u9fff\uf900-\ufaff]/gu) || []).length
+  score += (text.match(/[\uac00-\ud7af]\s+[\uac00-\ud7af]/gu) || []).length
+  score += (text.match(/[～〜・《「『【（(]\s+[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af]/gu) || []).length
+  score += (text.match(/[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af]\s+[）》」』】、。！？：；,.!?]/gu) || []).length
+  score += (text.match(/[A-Za-z]\s+[級级]/gu) || []).length
+  return score
+}
+
+function hasSuspiciousTitleSpacing(value) {
+  return suspiciousTitleSpaceScore(value) > 0
 }
 
 function isInternalMediaKey(value) {
@@ -270,6 +291,14 @@ function blockersFor(row, work, advisories, markers) {
   return uniqueBy(blockers, (item) => item)
 }
 
+function spacingBlockersForWriteFields(fieldUpdates, additions) {
+  const blockers = []
+  for (const item of [fieldUpdates.title, fieldUpdates.originalTitle, ...additions]) {
+    if (hasSuspiciousTitleSpacing(item)) blockers.push('suspicious_title_spacing_after_cleaning')
+  }
+  return uniqueBy(blockers, (item) => item)
+}
+
 function actionFor(row, work, markers, blockers) {
   if (!work?.id) return 'adult_create_candidate_preview'
   if (blockers.length) return 'adult_manual_review'
@@ -325,12 +354,15 @@ function planRow(row, work) {
   const advisories = advisoriesOf(row)
   const visibility = visibilityFromAdvisories(advisories)
   const markers = work ? sourceMarkersOf(work) : []
-  const blockers = blockersFor(row, work, advisories, markers)
-  const action = actionFor(row, work, markers, blockers)
-  const ready = !blockers.length && work?.id && action !== 'adult_create_candidate_preview'
   const existingIds = work ? externalIdsOf(work) : {}
   const additions = work ? searchTextAdditions(row, work) : candidateTitleValues(row)
-  const fieldUpdates = work && action === 'adult_overwrite_unmarked_existing_work' ? proposedPrimaryUpdates(row, work) : {}
+  const fieldUpdates = work && !markers.length ? proposedPrimaryUpdates(row, work) : {}
+  const blockers = uniqueBy([
+    ...blockersFor(row, work, advisories, markers),
+    ...spacingBlockersForWriteFields(fieldUpdates, additions),
+  ], (item) => item)
+  const action = actionFor(row, work, markers, blockers)
+  const ready = !blockers.length && work?.id && action !== 'adult_create_candidate_preview'
 
   return {
     key: planKey(row),
@@ -381,6 +413,7 @@ function planRow(row, work) {
       doesNotWriteDates: true,
       doesNotWriteMediaTypeOrRiskFields: true,
       adultOrRestrictedMarkerRequired: true,
+      rejectsSuspiciousTitleSpacingAfterCleaning: true,
     },
     raw: {
       inputFile: row.__inputFile,
@@ -468,8 +501,9 @@ async function main() {
       visibilityDerivedByCandidateSourceNote: true,
       sourceMarkersRecognizedForFutureImports: SOURCE_MARKERS,
       futureApplyMustBeGuarded: true,
+      rejectsSuspiciousTitleSpacingAfterCleaning: true,
     },
-    nextStep: 'Review ready/create/restricted samples before adding a guarded apply. Adult and restricted rows must carry contentRating notes so ordinary mode hides them.',
+    nextStep: 'Review v0.2 ready/create/blocked samples. Future guarded apply must re-clean titles and block suspicious spacing again.',
   }
 
   writeJsonl(outputs.rows, plans)
