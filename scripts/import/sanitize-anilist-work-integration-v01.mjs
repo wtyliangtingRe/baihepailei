@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 'anilist-work-integration-sanitize-v0.1'
+const VERSION = 'anilist-work-integration-sanitize-v0.2'
 const DEFAULT_OUT_DIR = 'data_local/staging/anilist-work-integration'
 const FILES = {
   rows: 'anilist-work-integration-v01.rows.jsonl',
@@ -13,12 +13,13 @@ const FILES = {
   sample: 'anilist-work-integration-v01-sample.jsonl',
 }
 const SUMMARY = 'anilist-work-integration-v01-summary.json'
-const TITLE_SEPARATOR_RE = /[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+/gu
+const TITLE_SEPARATOR_PATTERN = '[\\s\\u00a0\\u1680\\u180e\\u2000-\\u200d\\u2028\\u2029\\u202f\\u205f\\u2060\\u3000\\ufeff]+'
+const TITLE_SEPARATOR_RE = new RegExp(TITLE_SEPARATOR_PATTERN, 'gu')
 const INVISIBLE_RE = /[\u200b\u200c\u200d\u2060\ufeff]/gu
 const CJKISH = '\\u3400-\\u9fff\\uf900-\\ufaff\\u3040-\\u30ff\\u31f0-\\u31ffー\\uac00-\\ud7af'
-const CJKISH_SPACING_RE = new RegExp(`([${CJKISH}])${TITLE_SEPARATOR_RE.source}+([${CJKISH}])`, 'gu')
-const CJKISH_BEFORE_PUNCT_RE = new RegExp(`([${CJKISH}])${TITLE_SEPARATOR_RE.source}+([）》」』】、。！？：；,.!?])`, 'gu')
-const PUNCT_BEFORE_CJKISH_RE = new RegExp(`([（《「『【])${TITLE_SEPARATOR_RE.source}+([${CJKISH}])`, 'gu')
+const CJKISH_SPACING_RE = new RegExp(`([${CJKISH}])${TITLE_SEPARATOR_PATTERN}([${CJKISH}])`, 'gu')
+const CJKISH_BEFORE_PUNCT_RE = new RegExp(`([${CJKISH}])${TITLE_SEPARATOR_PATTERN}([）》」』】、。！？：；,.!?])`, 'gu')
+const PUNCT_BEFORE_CJKISH_RE = new RegExp(`([（《「『【])${TITLE_SEPARATOR_PATTERN}([${CJKISH}])`, 'gu')
 const ASCII_BEFORE_CJK_SUFFIX_RE = /([A-Za-z0-9])\s+([級级話集章部期季篇編卷巻回弾弹])\b/gu
 
 function val(value) { return String(value ?? '').trim() }
@@ -190,20 +191,20 @@ function main() {
   const summaryFile = path.join(outDir, SUMMARY)
   if (fs.existsSync(summaryFile)) {
     const summary = JSON.parse(fs.readFileSync(summaryFile, 'utf8'))
-    const ready = readJsonl(path.join(outDir, FILES.ready)).filter((row) => row.planStatus === 'ready_for_apply_review')
-    const blocked = readJsonl(path.join(outDir, FILES.blocked))
-    const rows = readJsonl(path.join(outDir, FILES.rows))
-    const allBlocked = rows.filter((row) => row.planStatus !== 'ready_for_apply_review')
+    const readyRows = readJsonl(path.join(outDir, FILES.ready))
+    const allRows = readJsonl(path.join(outDir, FILES.rows))
+    const ready = readyRows.filter((row) => row.planStatus === 'ready_for_apply_review')
+    const allBlocked = allRows.filter((row) => row.planStatus !== 'ready_for_apply_review')
     summary.version = `${summary.version}+sanitized`
     summary.sanitizedAt = stats.generatedAt
     summary.sanitizerVersion = VERSION
     summary.readyRows = ready.length
     summary.blockedRows = allBlocked.length
-    summary.byPlanStatus = countBy(rows, 'planStatus')
+    summary.byPlanStatus = countBy(allRows, 'planStatus')
     summary.byBlocker = countBy(allBlocked.flatMap((row) => row.blockers || []), (item) => item)
-    summary.byWarning = countBy(rows.flatMap((row) => row.warnings || []), (item) => item)
+    summary.byWarning = countBy(allRows.flatMap((row) => row.warnings || []), (item) => item)
     summary.byChangedField = countBy(ready.flatMap((row) => row.changedFields || []), (item) => item)
-    summary.sanitizer = { ...stats, sanitizedByFile, blockedFileRows: blocked.length }
+    summary.sanitizer = { ...stats, sanitizedByFile, readyFileRows: readyRows.length }
     summary.safety = {
       ...(summary.safety || {}),
       repairsCjkTitleSpacingBeforeApply: true,
