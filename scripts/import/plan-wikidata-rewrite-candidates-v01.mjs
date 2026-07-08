@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const VERSION = 'wikidata-rewrite-candidates-plan-v0.2'
+const VERSION = 'wikidata-rewrite-candidates-plan-v0.3'
 const DEFAULT_INPUT = 'data_local/staging/wikidata-work-integration/wikidata-work-integration-v01-rewrite-candidates.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/wikidata-rewrite-candidates'
 const PAGE_LIMIT = 200
@@ -43,6 +43,60 @@ function list(value) {
 
 function cleanLine(value) {
   return val(value).replace(/[\r\n\t]+/gu, ' ').replace(/\s+/gu, ' ')
+}
+
+function repairInternalTitleSpaces(value) {
+  return cleanLine(value)
+    .replace(/([\u3040-\u30ff\u31f0-\u31ffー])\s+([\u3040-\u30ff\u31f0-\u31ffー])/gu, '$1$2')
+    .replace(/([～〜・《「『【（])\s+([\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー])/gu, '$1$2')
+    .replace(/([\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー])\s+([）》」』】、。！？：；])/gu, '$1$2')
+    .replace(/([A-Za-z])\s+([級级])/gu, '$1$2')
+}
+
+function cleanTitleText(value) {
+  const out = repairInternalTitleSpaces(value)
+  if (!out || isInternalMediaKey(out)) return ''
+  return out
+}
+
+function suspiciousTitleSpaceScore(value) {
+  const text = cleanLine(value)
+  let score = 0
+  score += (text.match(/[\u3040-\u30ff\u31f0-\u31ffー]\s+[\u3040-\u30ff\u31f0-\u31ffー]/gu) || []).length
+  score += (text.match(/[～〜・《「『【（]\s+[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー]/gu) || []).length
+  score += (text.match(/[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー]\s+[）》」』】、。！？：；]/gu) || []).length
+  score += (text.match(/[A-Za-z]\s+[級级]/gu) || []).length
+  return score
+}
+
+function compactForTitleCompare(value) {
+  return cleanTitleText(value).normalize('NFKC').toLowerCase().replace(/\s+/gu, '')
+}
+
+function betterTitleValue(current, next) {
+  if (!current) return next
+  if (!next) return current
+  const currentScore = suspiciousTitleSpaceScore(current)
+  const nextScore = suspiciousTitleSpaceScore(next)
+  if (nextScore < currentScore) return next
+  return current
+}
+
+function uniqueTitleValues(values) {
+  const byCompact = new Map()
+  const order = []
+  for (const item of values || []) {
+    const text = cleanTitleText(item)
+    const key = compactForTitleCompare(text)
+    if (!text || !key) continue
+    if (!byCompact.has(key)) {
+      byCompact.set(key, text)
+      order.push(key)
+      continue
+    }
+    byCompact.set(key, betterTitleValue(byCompact.get(key), text))
+  }
+  return order.map((key) => byCompact.get(key)).filter(Boolean)
 }
 
 function normalizeText(value) {
@@ -107,7 +161,7 @@ function candidateSourceRows(doc) {
 }
 
 function aliasValues(doc) {
-  return list(doc?.aliases).map((item) => cleanLine(item?.value)).filter(Boolean)
+  return list(doc?.aliases).map((item) => cleanTitleText(item?.value)).filter(Boolean)
 }
 
 function sourceMarkerText(work) {
@@ -139,30 +193,50 @@ function isInternalMediaKey(value) {
   return /^(ANIME|MANGA|NOVEL|GAME)-\d+$/iu.test(val(value))
 }
 
-function cleanSearchTextAdditions(row, work) {
+function candidateTitleValues(row) {
   const preview = row?.rewriteCandidatePreview || {}
+  return [
+    ...list(row?.fieldAdditions?.searchTextAdditions),
+    ...list(preview.proposedSearchTextAdditions),
+    ...list(row?.titleCandidates),
+  ]
+}
+
+function chooseCleanerEquivalent(row, preferred) {
+  const base = cleanTitleText(preferred)
+  const key = compactForTitleCompare(base)
+  if (!base || !key) return ''
+  let best = base
+  for (const candidate of candidateTitleValues(row)) {
+    const clean = cleanTitleText(candidate)
+    if (!clean || compactForTitleCompare(clean) !== key) continue
+    best = betterTitleValue(best, clean)
+  }
+  return best
+}
+
+function cleanSearchTextAdditions(row, work) {
   const currentNames = [
     work?.title,
     work?.originalTitle,
     ...aliasValues(work),
   ]
-  return uniqueBy([
-    ...list(row?.fieldAdditions?.searchTextAdditions),
-    ...list(preview.proposedSearchTextAdditions),
+  return uniqueTitleValues([
+    ...candidateTitleValues(row),
     ...currentNames,
-  ].map(cleanLine).filter((item) => item && !isInternalMediaKey(item)), normalizeText)
+  ])
 }
 
-function cleanPrimaryText(value) {
-  const out = cleanLine(value)
+function cleanPrimaryText(row, value) {
+  const out = chooseCleanerEquivalent(row, value) || cleanTitleText(value)
   if (!out || isInternalMediaKey(out)) return ''
   return out
 }
 
 function proposedPrimaryUpdates(row, work) {
   const preview = row?.rewriteCandidatePreview || {}
-  const proposedTitle = cleanPrimaryText(preview.proposedTitle)
-  const proposedOriginalTitle = cleanPrimaryText(preview.proposedOriginalTitle || preview.proposedTitle)
+  const proposedTitle = cleanPrimaryText(row, preview.proposedTitle)
+  const proposedOriginalTitle = cleanPrimaryText(row, preview.proposedOriginalTitle || preview.proposedTitle)
   const updates = {}
   if (proposedTitle && normalizeText(proposedTitle) !== normalizeText(work?.title)) updates.title = proposedTitle
   if (proposedOriginalTitle && normalizeText(proposedOriginalTitle) !== normalizeText(work?.originalTitle)) updates.originalTitle = proposedOriginalTitle
@@ -300,9 +374,9 @@ function planRow(row, work) {
     confidence: validation.blockers.length ? 'manual_review' : 'high',
     blockers: validation.blockers,
     warnings: validation.warnings,
-    matchedTitles: list(row.matchedTitles),
-    titleCandidates: list(row.titleCandidates),
-    descriptionCandidates: list(row.descriptionCandidates),
+    matchedTitles: uniqueTitleValues(list(row.matchedTitles)),
+    titleCandidates: uniqueTitleValues(list(row.titleCandidates)),
+    descriptionCandidates: list(row.descriptionCandidates).map(cleanLine).filter(Boolean),
     rewriteCandidatePreview: row.rewriteCandidatePreview || null,
     fieldUpdates: validation.primaryUpdates,
     fieldAdditions: {
@@ -414,6 +488,7 @@ async function main() {
       doesNotWriteDates: true,
       sourceMarkersRecognizedForFutureImports: SOURCE_MARKERS,
       currentNamesPreservedInSearchText: true,
+      repairsInternalTitleSpacing: true,
     },
     nextStep: 'Review ready rows. Future guarded apply should overwrite unmarked low-confidence Works with Wikidata title/originalTitle, preserve current names in searchText, and attach Wikidata marker.',
   }
