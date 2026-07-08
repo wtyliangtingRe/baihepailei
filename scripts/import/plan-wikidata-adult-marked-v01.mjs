@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const VERSION = 'wikidata-adult-marked-plan-v0.2'
+const VERSION = 'wikidata-adult-marked-plan-v0.3'
 const DEFAULT_INPUTS = [
   'data_local/staging/wikidata-work-integration/wikidata-work-integration-v01-adult-or-marked-candidates.jsonl',
   'data_local/staging/wikidata-rewrite-candidates/wikidata-rewrite-candidates-v01-adult-or-marked.jsonl',
@@ -12,6 +12,9 @@ const SOURCE_MARKERS = ['bangumi', 'mangadex', 'ndl', 'wikidata']
 const ADULT_ADVISORIES = ['suggestive', 'erotica', 'pornographic', 'doujinshi_or_extra']
 const RESTRICTED_ADVISORIES = ['restricted']
 const MAX_SEARCH_TEXT_ADDITIONS = 20
+const TITLE_SEPARATOR_RE = /[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+/gu
+const INVISIBLE_TITLE_RE = /[\u200b\u200c\u200d\u2060\ufeff]/gu
+const CJKISH_TITLE_RE = /[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af]/u
 
 function val(value) {
   return String(value ?? '').trim()
@@ -39,31 +42,38 @@ function list(value) {
 }
 
 function cleanLine(value) {
-  return val(value).replace(/[\r\n\t]+/gu, ' ').replace(/\s+/gu, ' ').trim()
+  return val(value)
+    .normalize('NFKC')
+    .replace(INVISIBLE_TITLE_RE, '')
+    .replace(/[\r\n\t]+/gu, ' ')
+    .replace(TITLE_SEPARATOR_RE, ' ')
+    .trim()
 }
 
 function repairInternalTitleSpaces(value) {
-  return cleanLine(value)
-    .replace(/[\u200b\u200c\u200d\ufeff]/gu, '')
-    .replace(/([\u3040-\u30ff\u31f0-\u31ffー])\s+([\u3040-\u30ff\u31f0-\u31ffー])/gu, '$1$2')
-    .replace(/([\u3400-\u9fff\uf900-\ufaff])\s+([\u3400-\u9fff\uf900-\ufaff])/gu, '$1$2')
-    .replace(/([\uac00-\ud7af])\s+([\uac00-\ud7af])/gu, '$1$2')
-    .replace(/([～〜・《「『【（(])\s+([\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af])/gu, '$1$2')
-    .replace(/([\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af])\s+([）》」』】、。！？：；,.!?])/gu, '$1$2')
-    .replace(/([A-Za-z])\s+([級级])/gu, '$1$2')
-    .replace(/\s+([!！?？])/gu, '$1')
-    .trim()
+  let text = cleanLine(value)
+  for (let i = 0; i < 8; i += 1) {
+    const next = text
+      .replace(/([\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af])[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+([\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af])/gu, '$1$2')
+      .replace(/([～〜・《「『【（(])[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+([\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af])/gu, '$1$2')
+      .replace(/([\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af])[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+([）》」』】、。！？：；,.!?])/gu, '$1$2')
+      .replace(/([A-Za-z])[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+([級级])/gu, '$1$2')
+      .replace(/[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+([!！?？])/gu, '$1')
+      .replace(TITLE_SEPARATOR_RE, ' ')
+      .trim()
+    if (next === text) break
+    text = next
+  }
+  return text
 }
 
 function suspiciousTitleSpaceScore(value) {
   const text = cleanLine(value)
   let score = 0
-  score += (text.match(/[\u3040-\u30ff\u31f0-\u31ffー]\s+[\u3040-\u30ff\u31f0-\u31ffー]/gu) || []).length
-  score += (text.match(/[\u3400-\u9fff\uf900-\ufaff]\s+[\u3400-\u9fff\uf900-\ufaff]/gu) || []).length
-  score += (text.match(/[\uac00-\ud7af]\s+[\uac00-\ud7af]/gu) || []).length
-  score += (text.match(/[～〜・《「『【（(]\s+[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af]/gu) || []).length
-  score += (text.match(/[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af]\s+[）》」』】、。！？：；,.!?]/gu) || []).length
-  score += (text.match(/[A-Za-z]\s+[級级]/gu) || []).length
+  score += (text.match(/[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af][\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af]/gu) || []).length
+  score += (text.match(/[～〜・《「『【（(][\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af]/gu) || []).length
+  score += (text.match(/[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ffー\uac00-\ud7af][\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+[）》」』】、。！？：；,.!?]/gu) || []).length
+  score += (text.match(/[A-Za-z][\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+[級级]/gu) || []).length
   return score
 }
 
@@ -299,6 +309,21 @@ function spacingBlockersForWriteFields(fieldUpdates, additions) {
   return uniqueBy(blockers, (item) => item)
 }
 
+function unsafeOutputBlockersForPlan(plan) {
+  const blockers = []
+  const values = [
+    plan?.fieldUpdates?.title,
+    plan?.fieldUpdates?.originalTitle,
+    ...list(plan?.fieldAdditions?.searchTextAdditions),
+    ...list(plan?.titleCandidates),
+  ].map((item) => val(item)).filter(Boolean)
+  for (const item of values) {
+    if (hasSuspiciousTitleSpacing(item)) blockers.push('suspicious_title_spacing_after_cleaning')
+    if (CJKISH_TITLE_RE.test(item) && /^\s|\s$/u.test(item)) blockers.push('suspicious_title_edge_spacing_after_cleaning')
+  }
+  return uniqueBy(blockers, (item) => item)
+}
+
 function actionFor(row, work, markers, blockers) {
   if (!work?.id) return 'adult_create_candidate_preview'
   if (blockers.length) return 'adult_manual_review'
@@ -363,8 +388,7 @@ function planRow(row, work) {
   ], (item) => item)
   const action = actionFor(row, work, markers, blockers)
   const ready = !blockers.length && work?.id && action !== 'adult_create_candidate_preview'
-
-  return {
+  const initialPlan = {
     key: planKey(row),
     qid,
     wikidataUrl: wikidataUrl(qid),
@@ -424,6 +448,15 @@ function planRow(row, work) {
       rawAuditRow: row.rawAuditRow,
     },
   }
+
+  const finalBlockers = uniqueBy([...initialPlan.blockers, ...unsafeOutputBlockersForPlan(initialPlan)], (item) => item)
+  if (finalBlockers.length !== initialPlan.blockers.length) {
+    initialPlan.blockers = finalBlockers
+    initialPlan.action = work?.id ? 'adult_manual_review' : 'adult_create_candidate_preview'
+    initialPlan.planStatus = 'blocked_or_review_required'
+    initialPlan.confidence = 'manual_review'
+  }
+  return initialPlan
 }
 
 async function main() {
@@ -502,8 +535,9 @@ async function main() {
       sourceMarkersRecognizedForFutureImports: SOURCE_MARKERS,
       futureApplyMustBeGuarded: true,
       rejectsSuspiciousTitleSpacingAfterCleaning: true,
+      usesAggressiveUnicodeSeparatorCleanup: true,
     },
-    nextStep: 'Review v0.2 ready/create/blocked samples. Future guarded apply must re-clean titles and block suspicious spacing again.',
+    nextStep: 'Review v0.3 ready/create/blocked samples. Future guarded apply must re-clean titles and block suspicious spacing again.',
   }
 
   writeJsonl(outputs.rows, plans)
