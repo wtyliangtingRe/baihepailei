@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const VERSION = 'wikidata-rewrite-candidates-plan-v0.1'
+const VERSION = 'wikidata-rewrite-candidates-plan-v0.2'
 const DEFAULT_INPUT = 'data_local/staging/wikidata-work-integration/wikidata-work-integration-v01-rewrite-candidates.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/wikidata-rewrite-candidates'
 const PAGE_LIMIT = 200
@@ -15,7 +15,7 @@ const ALLOWED_ORIGINAL_WARNINGS = new Set([
   'has_search_text_additions',
   'has_source_metadata_additions',
 ])
-const MAX_SEARCH_TEXT_ADDITIONS = 12
+const MAX_SEARCH_TEXT_ADDITIONS = 16
 
 function val(value) {
   return String(value ?? '').trim()
@@ -106,6 +106,10 @@ function candidateSourceRows(doc) {
     .filter((item) => item.source || item.externalId || item.url)
 }
 
+function aliasValues(doc) {
+  return list(doc?.aliases).map((item) => cleanLine(item?.value)).filter(Boolean)
+}
+
 function sourceMarkerText(work) {
   return [
     work?.siteId,
@@ -135,8 +139,35 @@ function isInternalMediaKey(value) {
   return /^(ANIME|MANGA|NOVEL|GAME)-\d+$/iu.test(val(value))
 }
 
-function cleanSearchTextAdditions(row) {
-  return uniqueBy(list(row?.fieldAdditions?.searchTextAdditions).map(cleanLine).filter((item) => item && !isInternalMediaKey(item)), normalizeText)
+function cleanSearchTextAdditions(row, work) {
+  const preview = row?.rewriteCandidatePreview || {}
+  const currentNames = [
+    work?.title,
+    work?.originalTitle,
+    ...aliasValues(work),
+  ]
+  return uniqueBy([
+    ...list(row?.fieldAdditions?.searchTextAdditions),
+    ...list(preview.proposedSearchTextAdditions),
+    ...currentNames,
+  ].map(cleanLine).filter((item) => item && !isInternalMediaKey(item)), normalizeText)
+}
+
+function cleanPrimaryText(value) {
+  const out = cleanLine(value)
+  if (!out || isInternalMediaKey(out)) return ''
+  return out
+}
+
+function proposedPrimaryUpdates(row, work) {
+  const preview = row?.rewriteCandidatePreview || {}
+  const proposedTitle = cleanPrimaryText(preview.proposedTitle)
+  const proposedOriginalTitle = cleanPrimaryText(preview.proposedOriginalTitle || preview.proposedTitle)
+  const updates = {}
+  if (proposedTitle && normalizeText(proposedTitle) !== normalizeText(work?.title)) updates.title = proposedTitle
+  if (proposedOriginalTitle && normalizeText(proposedOriginalTitle) !== normalizeText(work?.originalTitle)) updates.originalTitle = proposedOriginalTitle
+  updates.chosenBaseSource = 'wikidata'
+  return updates
 }
 
 function buildWikiSourceLink(row) {
@@ -152,7 +183,7 @@ function buildWikiCandidateSource(row) {
     label: 'Wikidata',
     externalId: row.qid,
     url,
-    note: 'Wikidata rewrite candidate marker; source priority marker for future imports',
+    note: 'Wikidata rewrite candidate marker and overwrite base for unmarked Work',
   }]
 }
 
@@ -206,9 +237,10 @@ function validatePlan(row, work) {
   const originalWarnings = list(row.warnings)
   const disallowedOriginalBlockers = originalBlockers.filter((item) => !ALLOWED_ORIGINAL_BLOCKERS.has(item))
   const disallowedOriginalWarnings = originalWarnings.filter((item) => !ALLOWED_ORIGINAL_WARNINGS.has(item) && !String(item).startsWith('alignment_status_review:'))
-  const additions = cleanSearchTextAdditions(row)
+  const additions = cleanSearchTextAdditions(row, work)
   const currentMarkers = work ? sourceMarkersOf(work) : []
   const ids = work ? externalIdsOf(work) : {}
+  const primaryUpdates = work ? proposedPrimaryUpdates(row, work) : {}
 
   if (val(row.action) !== TARGET_ACTION) blockers.push('unexpected_action')
   if (val(row.matchStatus) !== TARGET_MATCH_STATUS) blockers.push('unexpected_match_status')
@@ -226,6 +258,7 @@ function validatePlan(row, work) {
   if (!list(row.matchedTitles).length) blockers.push('missing_exact_matched_title')
   if (!additions.length) blockers.push('no_clean_search_text_additions')
   if (additions.length > MAX_SEARCH_TEXT_ADDITIONS) blockers.push('too_many_search_text_additions')
+  if (!primaryUpdates.title && !primaryUpdates.originalTitle) warnings.push('no_primary_title_change_only_marker_and_search_text')
   if (ids.wikidataQid && ids.wikidataQid.toUpperCase() !== val(row.qid).toUpperCase()) blockers.push('current_wikidata_qid_conflict')
 
   if (currentMarkers.length) {
@@ -238,6 +271,7 @@ function validatePlan(row, work) {
     warnings: uniqueBy(warnings, (item) => item),
     currentMarkers,
     searchTextAdditions: additions,
+    primaryUpdates,
   }
 }
 
@@ -256,11 +290,12 @@ function planRow(row, work) {
     work: work ? {
       id: val(work.id),
       title: val(work.title),
+      originalTitle: val(work.originalTitle),
       slug: val(work.slug),
       sourceMarkers: validation.currentMarkers,
       currentWikidataQid: ids.wikidataQid || '',
     } : row.work || null,
-    action: 'attach_wikidata_marker_to_rewrite_candidate',
+    action: 'overwrite_unmarked_work_with_wikidata_candidate',
     planStatus: validation.blockers.length ? 'blocked_or_review_required' : 'ready_for_apply_review',
     confidence: validation.blockers.length ? 'manual_review' : 'high',
     blockers: validation.blockers,
@@ -269,11 +304,18 @@ function planRow(row, work) {
     titleCandidates: list(row.titleCandidates),
     descriptionCandidates: list(row.descriptionCandidates),
     rewriteCandidatePreview: row.rewriteCandidatePreview || null,
+    fieldUpdates: validation.primaryUpdates,
     fieldAdditions: {
       searchTextAdditions: validation.searchTextAdditions,
       externalIds,
       sourceLinks,
       candidateSources,
+    },
+    overwritePolicy: {
+      reason: 'Existing Work has no Bangumi / MangaDex / NDL / Wikidata marker; treat current primary fields as low-confidence and use high-confidence Wikidata candidate as base.',
+      preserveCurrentNamesInSearchText: true,
+      attachMarker: 'wikidata',
+      blockedIfAnyExistingSourceMarker: SOURCE_MARKERS,
     },
     sourceMarkerPolicy: {
       currentImportRecognizesMarkers: SOURCE_MARKERS,
@@ -287,9 +329,10 @@ function planRow(row, work) {
       createsWorks: false,
       deletesWorks: false,
       reportOnly: true,
-      futureApplyWrites: ['searchText', 'externalIds.wikidataQid', 'sourceLinks', 'candidateSources'],
-      doesNotWritePrimaryFields: true,
-      primaryRewritePreviewOnly: true,
+      futureApplyWrites: ['title', 'originalTitle', 'chosenBaseSource', 'searchText', 'externalIds.wikidataQid', 'sourceLinks', 'candidateSources'],
+      doesNotWriteMediaTypeOrRiskFields: true,
+      doesNotWriteDates: true,
+      wikiMarkerRequiredForFutureImports: true,
     },
     rawAuditRow: {
       key: row.key,
@@ -334,6 +377,12 @@ async function main() {
     sample: `${outDir}/wikidata-rewrite-candidates-v01-sample.jsonl`,
     summary: `${outDir}/wikidata-rewrite-candidates-v01-summary.json`,
   }
+  const changedFieldNames = plans.flatMap((row) => [
+    ...Object.keys(row.fieldUpdates || {}),
+    ...Object.entries(row.fieldAdditions || {})
+      .filter(([, value]) => Array.isArray(value) ? value.length : Object.keys(value || {}).length)
+      .map(([key]) => key),
+  ])
   const summary = {
     generatedAt: new Date().toISOString(),
     version: VERSION,
@@ -351,7 +400,7 @@ async function main() {
     byBlocker: countBy(plans.flatMap((row) => row.blockers), (item) => item),
     byWarning: countBy(plans.flatMap((row) => row.warnings), (item) => item),
     byCurrentSourceMarker: countBy(plans.flatMap((row) => row.work?.sourceMarkers || []), (item) => item),
-    byChangedField: countBy(plans.flatMap((row) => Object.entries(row.fieldAdditions).filter(([, value]) => Array.isArray(value) ? value.length : Object.keys(value || {}).length).map(([key]) => key)), (item) => item),
+    byChangedField: countBy(changedFieldNames, (item) => item),
     outputs,
     safety: {
       payloadRead: true,
@@ -360,11 +409,13 @@ async function main() {
       createsWorks: false,
       deletesWorks: false,
       reportOnly: true,
-      futureApplyWritableFields: ['searchText', 'externalIds.wikidataQid', 'sourceLinks', 'candidateSources'],
-      primaryRewritePreviewOnly: true,
+      futureApplyWritableFields: ['title', 'originalTitle', 'chosenBaseSource', 'searchText', 'externalIds.wikidataQid', 'sourceLinks', 'candidateSources'],
+      doesNotWriteMediaTypeOrRiskFields: true,
+      doesNotWriteDates: true,
       sourceMarkersRecognizedForFutureImports: SOURCE_MARKERS,
+      currentNamesPreservedInSearchText: true,
     },
-    nextStep: 'Review ready rows. Future guarded apply should attach Wikidata marker and searchText only; primary title rewrite remains preview-only.',
+    nextStep: 'Review ready rows. Future guarded apply should overwrite unmarked low-confidence Works with Wikidata title/originalTitle, preserve current names in searchText, and attach Wikidata marker.',
   }
 
   writeJsonl(outputs.rows, plans)
