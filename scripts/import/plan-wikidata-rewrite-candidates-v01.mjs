@@ -45,6 +45,9 @@ function cleanLine(value) {
   return val(value).replace(/[\r\n\t]+/gu, ' ').replace(/\s+/gu, ' ')
 }
 
+// Repairs obvious extraction artifacts such as `ドメステ ィック`,
+// `戦国乙女～ 桃色`, `ベヒーモス 》`, and `S 級`, while preserving
+// normal word spaces in English titles like `Vampire in the Garden`.
 function repairInternalTitleSpaces(value) {
   return cleanLine(value)
     .replace(/([\u3040-\u30ff\u31f0-\u31ffー])\s+([\u3040-\u30ff\u31f0-\u31ffー])/gu, '$1$2')
