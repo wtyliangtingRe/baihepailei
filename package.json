@@ -43,6 +43,7 @@
     "source:plan:wikidata-rewrite-candidates": "node scripts/import/plan-wikidata-rewrite-candidates-v01.mjs",
     "source:apply:wikidata-rewrite-candidates": "node scripts/import/apply-wikidata-rewrite-candidates-v01.mjs",
     "source:plan:wikidata-adult-marked": "node scripts/import/plan-wikidata-adult-marked-v01.mjs",
+    "source:apply:wikidata-adult-marked": "node scripts/import/apply-wikidata-adult-marked-v01.mjs",
     "test:source-import": "node --test tests/source-import.test.mjs",
     "test:source-bangumi": "node --test tests/bangumi-source.test.mjs",
     "test:source-bangumi-fetch": "node --test tests/bangumi-tag-fetcher.test.mjs",
