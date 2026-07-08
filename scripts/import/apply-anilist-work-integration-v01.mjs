@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 'anilist-work-integration-apply-v0.1'
+const VERSION = 'anilist-work-integration-apply-v0.2'
 const DEFAULT_INPUT = 'data_local/staging/anilist-work-integration/anilist-work-integration-v01-ready.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/anilist-work-integration'
 const CONFIRM = 'apply-anilist-work-integration-v01'
@@ -17,6 +17,10 @@ function writeJsonl(file, rows) { fs.mkdirSync(path.dirname(file), { recursive: 
 function countBy(rows, key) { const out = {}; for (const row of rows) { const value = typeof key === 'function' ? key(row) : row?.[key]; const name = val(value) || 'missing'; out[name] = (out[name] || 0) + 1 } return Object.fromEntries(Object.entries(out).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))) }
 function cleanLine(value) { return val(value).normalize('NFKC').replace(/[\r\n\t]+/gu, ' ').replace(/[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+/gu, ' ').trim() }
 function externalIdsOf(doc) { const ids = doc?.externalIds; if (!ids || Array.isArray(ids) || typeof ids !== 'object') return {}; return Object.fromEntries(Object.entries(ids).map(([key, value]) => [key, val(value)]).filter(([, value]) => value)) }
+function normalizeUrl(value) { return val(value).replace(/\/+$/u, '') }
+function normalizedSourceLinks(value) { return list(value).map((item) => ({ label: cleanLine(item?.label), url: normalizeUrl(item?.url) })).filter((item) => item.label || item.url).sort((a, b) => `${a.label}\n${a.url}`.localeCompare(`${b.label}\n${b.url}`)) }
+function normalizedCandidateSources(value) { return list(value).map((item) => ({ source: val(item?.source), label: cleanLine(item?.label), externalId: val(item?.externalId), url: normalizeUrl(item?.url), note: cleanLine(item?.note) })).filter((item) => item.source || item.label || item.externalId || item.url || item.note).sort((a, b) => `${a.source}\n${a.externalId}\n${a.url}\n${a.note}`.localeCompare(`${b.source}\n${b.externalId}\n${b.url}\n${b.note}`)) }
+function shallowEqual(a, b) { return JSON.stringify(a ?? null) === JSON.stringify(b ?? null) }
 async function requestJson(url, options = {}) { const response = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } }); const text = await response.text(); let payload = null; try { payload = text ? JSON.parse(text) : null } catch { payload = { raw: text } } if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}: ${text.slice(0, 800)}`); return payload }
 function authHeaders(token) { return token ? { Authorization: `JWT ${token}` } : {} }
 async function login(baseUrl) { const email = process.env.PAYLOAD_EXPORT_EMAIL || process.env.PAYLOAD_SEED_EMAIL; const password = process.env.PAYLOAD_EXPORT_PASSWORD || process.env.PAYLOAD_SEED_PASSWORD; if (!email || !password) throw new Error('Missing Payload login env vars'); const result = await requestJson(`${baseUrl}/api/users/login`, { method: 'POST', body: JSON.stringify({ email, password }) }); if (!result?.token) throw new Error('Payload login did not return a token'); return result.token }
@@ -34,17 +38,25 @@ function validatePlan(plan) {
   for (const key of keys) if (!WRITABLE_FIELDS.has(key)) blockers.push(`non_writable_field:${key}`)
   const ids = externalIdsOf(plan?.fieldUpdates)
   if (ids.anilistMediaId && ids.anilistMediaId !== val(plan?.anilistMediaId)) blockers.push('anilist_id_mismatch')
+  const searchText = val(plan?.fieldUpdates?.searchText)
+  if (/\[object Object\]/u.test(searchText)) blockers.push('object_object_search_text_artifact')
   return [...new Set(blockers)]
 }
-function shallowEqual(a, b) { return JSON.stringify(a ?? null) === JSON.stringify(b ?? null) }
 function changedFieldsForCurrent(work, patch) {
   const fields = []
   if (patch.externalIds && !shallowEqual(externalIdsOf(work), externalIdsOf(patch))) fields.push('externalIds')
-  if (patch.sourceLinks && !shallowEqual(list(work.sourceLinks), list(patch.sourceLinks))) fields.push('sourceLinks')
-  if (patch.candidateSources && !shallowEqual(list(work.candidateSources), list(patch.candidateSources))) fields.push('candidateSources')
+  if (patch.sourceLinks && !shallowEqual(normalizedSourceLinks(work.sourceLinks), normalizedSourceLinks(patch.sourceLinks))) fields.push('sourceLinks')
+  if (patch.candidateSources && !shallowEqual(normalizedCandidateSources(work.candidateSources), normalizedCandidateSources(patch.candidateSources))) fields.push('candidateSources')
   if ('searchText' in patch && val(work.searchText) !== val(patch.searchText)) fields.push('searchText')
   if ('summary' in patch && !work.summary) fields.push('summary')
   return fields
+}
+function minimalPatch(patch, fields) {
+  const out = {}
+  for (const field of fields) {
+    if (field in patch) out[field] = patch[field]
+  }
+  return out
 }
 
 async function main() {
@@ -74,7 +86,7 @@ async function main() {
       if (!row.status && !row.blockers.length) {
         if (apply) {
           payloadPatchRequests += 1
-          await requestJson(`${base}/api/works/${row.workId}?draft=true`, { method: 'PATCH', headers: auth, body: JSON.stringify(plan.fieldUpdates) })
+          await requestJson(`${base}/api/works/${row.workId}?draft=true`, { method: 'PATCH', headers: auth, body: JSON.stringify(minimalPatch(plan.fieldUpdates, row.changedFields)) })
           row.status = 'patched'
           patched += 1
         } else {
@@ -92,7 +104,7 @@ async function main() {
   }
   fs.mkdirSync(outDir, { recursive: true })
   const outputs = { rows: `${outDir}/anilist-work-integration-apply-v01.rows.jsonl`, wouldPatch: `${outDir}/anilist-work-integration-apply-v01-would-patch.jsonl`, patched: `${outDir}/anilist-work-integration-apply-v01-patched.jsonl`, blocked: `${outDir}/anilist-work-integration-apply-v01-blocked.jsonl`, summary: `${outDir}/anilist-work-integration-apply-v01-summary.json` }
-  const summary = { generatedAt: new Date().toISOString(), version: VERSION, mode: apply ? 'apply' : 'dry-run', payloadBaseUrl: base, input, planRowsRead: allPlans.length, planRowsProcessed: plans.length, wouldPatch, patched, alreadyCurrent, blocked, failed, byStatus: countBy(rows, 'status'), byAction: countBy(rows, 'action'), byChangedField: countBy(rows.flatMap((r) => r.changedFields), (x) => x), byBlocker: countBy(rows.flatMap((r) => r.blockers), (x) => x), outputs, safety: { applyRequested: apply, confirmMatched, payloadRead: true, payloadWrite: apply, payloadPatchRequests, directPostgresqlWrite: false, createsWorks: false, deletesWorks: false, inputMustBeReadyPlannerOutput: true, writableFields: [...WRITABLE_FIELDS], existingWorksOnly: true, adultRowsRequireSeparateReview: true, doesNotDownloadImages: true, doesNotWriteTagsOrCreators: true, confirmToken: CONFIRM } }
+  const summary = { generatedAt: new Date().toISOString(), version: VERSION, mode: apply ? 'apply' : 'dry-run', payloadBaseUrl: base, input, planRowsRead: allPlans.length, planRowsProcessed: plans.length, wouldPatch, patched, alreadyCurrent, blocked, failed, byStatus: countBy(rows, 'status'), byAction: countBy(rows, 'action'), byChangedField: countBy(rows.flatMap((r) => r.changedFields), (x) => x), byBlocker: countBy(rows.flatMap((r) => r.blockers), (x) => x), outputs, safety: { applyRequested: apply, confirmMatched, payloadRead: true, payloadWrite: apply, payloadPatchRequests, directPostgresqlWrite: false, createsWorks: false, deletesWorks: false, inputMustBeReadyPlannerOutput: true, writableFields: [...WRITABLE_FIELDS], writesOnlyChangedFields: true, comparesSourceArraysSemantically: true, blocksObjectObjectSearchTextArtifacts: true, existingWorksOnly: true, adultRowsRequireSeparateReview: true, doesNotDownloadImages: true, doesNotWriteTagsOrCreators: true, confirmToken: CONFIRM } }
   writeJsonl(outputs.rows, rows)
   writeJsonl(outputs.wouldPatch, rows.filter((r) => r.status === 'would_patch'))
   writeJsonl(outputs.patched, rows.filter((r) => r.status === 'patched'))
