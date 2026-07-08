@@ -2,9 +2,9 @@
 import fs from 'node:fs'
 import readline from 'node:readline'
 
-const VERSION = 'wikidata-work-integration-audit-v0.2'
+const VERSION = 'wikidata-work-integration-audit-v0.3'
 const PAGE_LIMIT = 200
-const DEFAULT_INPUT = 'data_local/raw/wikidata/index/wikidata-work-review.jsonl'
+const DEFAULT_INPUT = 'data_local/raw/wikidata/index/anilist-tagged-wikidata-best-candidates.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/wikidata-work-integration'
 const EXPORT_EMAIL_ENV = 'PAYLOAD_EXPORT_EMAIL'
 const EXPORT_SECRET_ENV = ['PAYLOAD_EXPORT', 'PASSWORD'].join('_')
@@ -33,12 +33,12 @@ function parseArgs(argv) {
   return args
 }
 
-function normalizeText(value) {
-  return val(value).normalize('NFKC').toLowerCase().replace(/\s+/gu, ' ')
-}
-
 function compactLine(value) {
   return val(value).replace(/[\r\n\t]+/gu, ' ').replace(/\s+/gu, ' ')
+}
+
+function normalizeText(value) {
+  return compactLine(value).normalize('NFKC').toLowerCase()
 }
 
 function normalizeUrl(value) {
@@ -88,24 +88,18 @@ function collectTextDeep(value, out = []) {
   return out
 }
 
-function collectLabelMap(value) {
+function collectMapValues(value) {
   const out = []
   if (!value || typeof value !== 'object' || Array.isArray(value)) return out
-  for (const entry of Object.values(value)) {
-    if (typeof entry === 'string') out.push(entry)
-    else if (entry && typeof entry === 'object') out.push(entry.value || entry.text || entry.label)
-  }
+  for (const entry of Object.values(value)) collectTextDeep(entry, out)
   return out.map(compactLine).filter(Boolean)
 }
 
-function collectDescriptionMap(value) {
-  const out = []
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return out
-  for (const entry of Object.values(value)) {
-    if (typeof entry === 'string') out.push(entry)
-    else if (entry && typeof entry === 'object') out.push(entry.value || entry.text || entry.description)
-  }
-  return out.map(compactLine).filter(Boolean)
+function splitLooseList(value) {
+  return collectTextDeep(value)
+    .flatMap((item) => item.split(/[|；;\n]+|\s+[／/]\s+/u))
+    .map(compactLine)
+    .filter(isUsefulTitle)
 }
 
 function isUsefulTitle(value) {
@@ -200,17 +194,18 @@ async function fetchAllWorks(baseUrl, token, depth = 1) {
 
 function qidOf(row) {
   const values = [
-    row?.wikidataQid,
+    row?.bestQid,
     row?.qid,
-    row?.id,
+    row?.wikidataQid,
     row?.entityId,
     row?.entity?.id,
     row?.wikidata?.id,
+    row?.wikidataConceptUri,
     row?.claims?.wikidataQid,
   ]
   for (const item of values) {
     const text = val(item).toUpperCase()
-    const match = text.match(/^Q\d+$/u) || text.match(/wikidata\.org\/wiki\/(Q\d+)/iu)
+    const match = text.match(/^Q\d+$/u) || text.match(/wikidata\.org\/(?:entity|wiki)\/(Q\d+)/iu)
     if (match) return match[1] || match[0]
   }
   return ''
@@ -236,15 +231,6 @@ function localizedTitleRows(doc) {
   return (Array.isArray(doc?.localizedTitles) ? doc.localizedTitles : [])
     .map((item) => val(typeof item === 'string' ? item : item?.title || item?.value || item?.text || item?.name))
     .filter(Boolean)
-}
-
-function splitLooseList(value) {
-  const text = compactLine(value)
-  if (!text) return []
-  return text
-    .split(/\s+[\/／]\s+|[|；;]+/u)
-    .map((item) => compactLine(item))
-    .filter(isUsefulTitle)
 }
 
 function searchTextRows(doc) {
@@ -325,6 +311,7 @@ function incomingYears(row) {
     row?.date,
     row?.publicationDate,
     row?.firstPublishedAt,
+    row?.startDate?.year,
     row?.claims?.publicationDate,
     row?.claims?.inception,
     ...collectTextDeep(row?.years),
@@ -333,15 +320,7 @@ function incomingYears(row) {
 }
 
 function officialUrlOf(row) {
-  const values = [
-    row?.officialUrl,
-    row?.officialWebsite,
-    row?.website,
-    row?.urlOfficial,
-    row?.claims?.officialWebsite,
-    row?.claims?.P856,
-  ]
-  for (const item of values.flatMap((value) => collectTextDeep(value))) {
+  for (const item of [row?.officialUrl, row?.officialWebsite, row?.website, row?.urlOfficial, row?.claims?.officialWebsite, row?.claims?.P856].flatMap((value) => collectTextDeep(value))) {
     const text = normalizeUrl(item)
     if (/^https?:\/\//iu.test(text)) return text
   }
@@ -359,9 +338,34 @@ function bangumiSubjectIdOf(row) {
 
 function titleLanguageBuckets(row) {
   return {
-    zh: uniqueBy([row?.sourceTitleCn, row?.labels?.zh?.value, row?.labels?.['zh-cn']?.value, row?.labels?.['zh-hans']?.value, ...collectTextDeep(row?.titles?.zh), ...collectTextDeep(row?.names?.zh)].map(compactLine).filter(isUsefulTitle), normalizeText),
-    ja: uniqueBy([row?.labels?.ja?.value, row?.labels?.jp?.value, row?.japaneseTitle, row?.titleJa, ...collectTextDeep(row?.titles?.ja), ...collectTextDeep(row?.names?.ja), ...collectTextDeep(row?.sitelinks?.jawiki)].map(compactLine).filter(isUsefulTitle), normalizeText),
-    en: uniqueBy([row?.labels?.en?.value, row?.englishTitle, row?.titleEn, ...collectTextDeep(row?.titles?.en), ...collectTextDeep(row?.names?.en)].map(compactLine).filter(isUsefulTitle), normalizeText),
+    zh: uniqueBy([
+      row?.sourceTitleCn,
+      row?.labels?.zh?.value,
+      row?.labels?.['zh-cn']?.value,
+      row?.labels?.['zh-hans']?.value,
+      ...collectTextDeep(row?.titles?.zh),
+      ...collectTextDeep(row?.names?.zh),
+    ].map(compactLine).filter(isUsefulTitle), normalizeText),
+    ja: uniqueBy([
+      row?.titleNative,
+      row?.labels?.ja?.value,
+      row?.labels?.jp?.value,
+      row?.japaneseTitle,
+      row?.titleJa,
+      ...collectTextDeep(row?.titles?.ja),
+      ...collectTextDeep(row?.names?.ja),
+      ...collectTextDeep(row?.sitelinks?.jawiki),
+    ].map(compactLine).filter(isUsefulTitle), normalizeText),
+    en: uniqueBy([
+      row?.titleEnglish,
+      row?.titleRomaji,
+      row?.titleUserPreferred,
+      row?.labels?.en?.value,
+      row?.englishTitle,
+      row?.titleEn,
+      ...collectTextDeep(row?.titles?.en),
+      ...collectTextDeep(row?.names?.en),
+    ].map(compactLine).filter(isUsefulTitle), normalizeText),
   }
 }
 
@@ -374,11 +378,19 @@ function titlesForRow(row) {
     row?.title,
     row?.name,
     row?.label,
+    row?.bestLabel,
+    row?.secondLabel,
+    row?.wikidataTitle,
+    row?.wikidataLabel,
+    row?.searchTerm,
+    row?.mediaKey,
     ...buckets.ja,
     ...buckets.zh,
     ...buckets.en,
-    ...collectLabelMap(row?.labels),
-    ...collectLabelMap(row?.sitelinks),
+    ...splitLooseList(row?.synonyms),
+    ...splitLooseList(row?.bestSearchTerms),
+    ...collectMapValues(row?.labels),
+    ...collectMapValues(row?.sitelinks),
     ...collectTextDeep(row?.aliases),
     ...collectTextDeep(row?.altLabels),
     ...collectTextDeep(row?.titles),
@@ -388,12 +400,14 @@ function titlesForRow(row) {
 
 function descriptionCandidates(row) {
   return uniqueBy([
+    row?.bestDescription,
+    row?.secondDescription,
+    row?.wikidataDescription,
     row?.description,
     row?.summary,
     row?.abstract,
     row?.extract,
-    row?.labels?.description,
-    ...collectDescriptionMap(row?.descriptions),
+    ...collectMapValues(row?.descriptions),
   ].map(compactLine).filter(Boolean), normalizeText)
 }
 
@@ -407,6 +421,7 @@ function adultAdvisories(row) {
     row?.nsfw ? 'nsfw' : '',
     ...collectTextDeep(row?.tags),
     ...collectTextDeep(row?.genres),
+    ...collectTextDeep(row?.sourceTags),
     ...collectTextDeep(row?.claims),
   ].map((item) => val(item).toLowerCase()).join('\n')
   const out = []
@@ -417,15 +432,23 @@ function adultAdvisories(row) {
   return uniqueBy(out, (item) => item)
 }
 
+function candidateFlags(row) {
+  return {
+    alignmentStatus: val(row?.alignmentStatus),
+    candidatesCount: Number(row?.candidatesCount || 0),
+    bestScore: Number(row?.bestScore || row?.matchScore || 0),
+    bestRank: Number(row?.bestRank || row?.rank || 0),
+    bestMaybeWork: row?.bestMaybeWork ?? row?.maybeWork,
+    bestMaybeCompany: row?.bestMaybeCompany ?? row?.maybeCompany,
+    bestMaybeRealPersonOrLiveAction: row?.bestMaybeRealPersonOrLiveAction ?? row?.maybeRealPersonOrLiveAction,
+  }
+}
+
 function buildWorkIndexes(works) {
   const byWikidataQid = new Map()
   const byBangumiId = new Map()
   const titleIndex = new Map()
-  const byId = new Map()
-
   for (const work of works) {
-    const id = val(work?.id)
-    if (id) byId.set(id, work)
     const ids = externalIdsOf(work)
     if (ids.wikidataQid && !byWikidataQid.has(ids.wikidataQid.toUpperCase())) byWikidataQid.set(ids.wikidataQid.toUpperCase(), work)
     if (ids.bangumiSubjectId && !byBangumiId.has(ids.bangumiSubjectId)) byBangumiId.set(ids.bangumiSubjectId, work)
@@ -436,8 +459,7 @@ function buildWorkIndexes(works) {
       titleIndex.get(key).push(work)
     }
   }
-
-  return { byId, byWikidataQid, byBangumiId, titleIndex }
+  return { byWikidataQid, byBangumiId, titleIndex }
 }
 
 function candidatesFromTitles(titles, indexes) {
@@ -456,11 +478,10 @@ function candidatesFromTitles(titles, indexes) {
 function matchRow(row, indexes) {
   const qid = qidOf(row)
   const bangumiSubjectId = bangumiSubjectIdOf(row)
-  if (qid && indexes.byWikidataQid.has(qid)) return { status: 'matched_by_wikidata_qid', work: indexes.byWikidataQid.get(qid), candidates: [], matchedTitles: [] }
-  if (bangumiSubjectId && indexes.byBangumiId.has(bangumiSubjectId)) return { status: 'matched_by_bangumi_id', work: indexes.byBangumiId.get(bangumiSubjectId), candidates: [], matchedTitles: [] }
+  if (qid && indexes.byWikidataQid.has(qid)) return { status: 'matched_by_wikidata_qid', work: indexes.byWikidataQid.get(qid), candidates: [], matchedTitles: [], higherPriorityMarkers: [] }
+  if (bangumiSubjectId && indexes.byBangumiId.has(bangumiSubjectId)) return { status: 'matched_by_bangumi_id', work: indexes.byBangumiId.get(bangumiSubjectId), candidates: [], matchedTitles: [], higherPriorityMarkers: [] }
 
-  const titles = titlesForRow(row)
-  const titleMatch = candidatesFromTitles(titles, indexes)
+  const titleMatch = candidatesFromTitles(titlesForRow(row), indexes)
   if (titleMatch.candidates.length === 1) {
     const work = titleMatch.candidates[0]
     const markers = higherPriorityMarkersOf(work)
@@ -516,13 +537,19 @@ function buildPlan(row, indexes) {
   const match = matchRow(row, indexes)
   const work = match.work
   const markers = match.higherPriorityMarkers || (work ? higherPriorityMarkersOf(work) : [])
+  const flags = candidateFlags(row)
   const warnings = []
   const blockers = []
   const notes = []
   const advisories = adultAdvisories(row)
 
   if (!qid) blockers.push('missing_wikidata_qid')
+  if (!titles.length) blockers.push('missing_title_candidates')
   if (match.status === 'title_multi_match') blockers.push('title_multi_match')
+  if (flags.bestMaybeCompany) blockers.push('best_candidate_maybe_company')
+  if (flags.bestMaybeRealPersonOrLiveAction) blockers.push('best_candidate_maybe_real_person_or_live_action')
+  if (flags.bestMaybeWork === false) warnings.push('best_candidate_not_marked_as_work')
+  if (flags.alignmentStatus && !/^high|exact|single/i.test(flags.alignmentStatus)) warnings.push(`alignment_status_review:${flags.alignmentStatus}`)
   if (advisories.length) warnings.push('content_advisory_present')
   if (descriptions.length) notes.push('wikidata_description_available_preview_only')
   if (markers.length) notes.push(`higher_priority_marker_present:${markers.join(',')}`)
@@ -610,6 +637,7 @@ function buildPlan(row, indexes) {
     matchStatus: match.status,
     planStatus,
     confidence,
+    candidateFlags: flags,
     higherPriorityMarkers: markers,
     blockers: [...new Set(blockers)],
     warnings: [...new Set(warnings)],
@@ -721,6 +749,7 @@ async function main() {
     byAction: countBy(plans, 'action'),
     byMatchStatus: countBy(plans, 'matchStatus'),
     byConfidence: countBy(plans, 'confidence'),
+    byAlignmentStatus: countBy(plans, (row) => row.candidateFlags?.alignmentStatus || 'missing'),
     byHigherPriorityMarker: countBy(plans.flatMap((row) => row.higherPriorityMarkers), (item) => item),
     byChangedField: countBy(plans.flatMap((row) => row.changedFields), (item) => item),
     byBlocker: countBy(plans.flatMap((row) => row.blockers), (item) => item),
@@ -740,6 +769,7 @@ async function main() {
       doesNotWriteDateFields: true,
       sameYearDateDiffDoesNotBlock: true,
       differentYearRequiresManualReview: true,
+      defaultInput: DEFAULT_INPUT,
       sourcePriority: SOURCE_PRIORITY_NOTE,
     },
     nextStep: 'Review ready rows first for safe searchText/title-alias enrichment. Review rewrite/create candidates separately; this audit never rewrites or creates Works directly.',
