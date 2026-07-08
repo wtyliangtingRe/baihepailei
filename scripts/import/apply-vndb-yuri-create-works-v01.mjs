@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
+import path from 'node:path'
 
-const VERSION = 'vndb-yuri-create-works-apply-v0.1'
+const VERSION = 'vndb-yuri-create-works-apply-v0.2'
 const DEFAULT_INPUT = 'data_local/staging/vndb-yuri-create-works/vndb-yuri-create-works-v01-ready.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/vndb-yuri-create-works'
 const CONFIRM = 'apply-vndb-yuri-create-works-v01'
@@ -51,6 +52,20 @@ function unique(values) {
   return [...new Set((values || []).filter(Boolean))]
 }
 
+function splitSearchText(value) {
+  return val(value).split(/[\r\n|]+/u).map(cleanLine).filter(Boolean)
+}
+
+function titleValidationValues(plan) {
+  const payload = plan?.payload || {}
+  return [
+    payload.title,
+    payload.originalTitle,
+    ...splitSearchText(payload.searchText),
+    ...list(plan?.sourceRow?.titleCandidates),
+  ].map(cleanLine).filter(Boolean)
+}
+
 function suspiciousTitleSpaceScore(value) {
   const text = cleanLine(value)
   let score = 0
@@ -67,7 +82,7 @@ function readJsonl(file) {
 }
 
 function writeJsonl(file, rows) {
-  fs.mkdirSync(DEFAULT_OUT_DIR, { recursive: true })
+  fs.mkdirSync(path.dirname(file), { recursive: true })
   fs.writeFileSync(file, rows.map((row) => JSON.stringify(row)).join('\n') + (rows.length ? '\n' : ''), 'utf8')
 }
 
@@ -91,7 +106,7 @@ function exactTitleSet(work) {
   return new Set([
     work?.title,
     work?.originalTitle,
-    ...(val(work?.searchText) ? val(work.searchText).split(/[\r\n|]+/u) : []),
+    ...splitSearchText(work?.searchText),
   ].map(normalizeText).filter(Boolean))
 }
 
@@ -155,7 +170,7 @@ function validatePlan(plan) {
   const vndbId = val(plan?.vndbId || payload?.externalIds?.vndbId).toLowerCase()
   const g97 = Number(plan?.sourceRow?.yuriCreateCandidateV2?.hasRomanceTag ? 1 : 0)
   const sensitiveReasons = list(plan?.sourceRow?.yuriCreateCandidateV2?.sensitiveReasons)
-  const values = [payload.title, payload.originalTitle, payload.searchText, ...list(plan?.sourceRow?.titleCandidates)]
+  const values = titleValidationValues(plan)
 
   if (!val(plan?.key)) blockers.push('missing_key')
   if (!vndbId) blockers.push('missing_vndb_id')
@@ -189,7 +204,7 @@ function duplicateBlockers(plan, indexes) {
   if (ids.wikidataQid && indexes.qid.has(ids.wikidataQid.toUpperCase())) blockers.push('existing_wikidata_qid')
   if (payload.slug && indexes.slug.has(val(payload.slug).toLowerCase())) blockers.push('existing_slug')
   if (payload.siteId && indexes.siteId.has(val(payload.siteId).toUpperCase())) blockers.push('existing_site_id')
-  const searchValues = [payload.title, payload.originalTitle, ...(val(payload.searchText) ? val(payload.searchText).split(/[\r\n|]+/u) : [])]
+  const searchValues = [payload.title, payload.originalTitle, ...splitSearchText(payload.searchText)]
   if (searchValues.some((item) => indexes.title.has(normalizeText(item)))) blockers.push('existing_exact_title_or_search_text')
   return unique(blockers)
 }
@@ -330,6 +345,7 @@ async function main() {
       doesNotWriteDates: true,
       doesNotDownloadImages: true,
       doesNotWriteCreatorsOrTags: true,
+      treatsSearchTextAsLineSeparatedTitles: true,
       confirmToken: CONFIRM,
     },
   }
