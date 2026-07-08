@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const VERSION = 'wikidata-work-integration-refine-v0.2'
+const VERSION = 'wikidata-work-integration-refine-v0.3'
 const DEFAULT_INPUT = 'data_local/staging/wikidata-work-integration/wikidata-work-integration-v01.rows.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/wikidata-work-integration'
 const MAX_STRICT_SEARCH_TEXT_ADDITIONS = 12
@@ -172,6 +172,72 @@ function refinedRow(row) {
   }
 }
 
+function strictReadyDedupeKey(row) {
+  if (row.work?.id) return `work:${row.work.id}`
+  if (row.qid) return `qid:${row.qid}`
+  return `row:${row.key}`
+}
+
+function groupRows(rows, getKey) {
+  const groups = new Map()
+  for (const row of rows) {
+    const key = getKey(row)
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push(row)
+  }
+  return groups
+}
+
+function mergeStrictReadyGroup(group) {
+  const sorted = [...group].sort((a, b) => {
+    const bCount = list(b.fieldAdditions?.searchTextAdditions).length
+    const aCount = list(a.fieldAdditions?.searchTextAdditions).length
+    if (bCount !== aCount) return bCount - aCount
+    if (a.confidence === 'high' && b.confidence !== 'high') return -1
+    if (b.confidence === 'high' && a.confidence !== 'high') return 1
+    return val(a.key).localeCompare(val(b.key))
+  })
+  const base = sorted[0]
+  const additions = uniqueBy(sorted.flatMap((row) => list(row.fieldAdditions?.searchTextAdditions)), normalizeText)
+  const titleCandidatesClean = uniqueBy(sorted.flatMap((row) => list(row.titleCandidatesClean)), normalizeText)
+  const internalKeys = uniqueBy(sorted.flatMap((row) => list(row.refinement?.internalMediaKeysFiltered)), (item) => item.toUpperCase())
+  const qids = uniqueBy(sorted.map((row) => row.qid).filter(Boolean), (item) => item)
+  const workIds = uniqueBy(sorted.map((row) => row.work?.id).filter(Boolean), (item) => item)
+  const blockers = []
+
+  if (qids.length > 1) blockers.push('multiple_wikidata_qids_for_same_work')
+  if (!additions.length) blockers.push('no_clean_search_text_additions_after_dedupe')
+  if (additions.length > MAX_STRICT_SEARCH_TEXT_ADDITIONS) blockers.push('too_many_search_text_additions_after_dedupe')
+
+  return {
+    ...base,
+    fieldAdditions: {
+      ...(base.fieldAdditions || {}),
+      searchTextAdditions: additions,
+    },
+    titleCandidatesClean,
+    refinement: {
+      ...(base.refinement || {}),
+      version: VERSION,
+      strictDedupeReady: blockers.length === 0,
+      strictDedupeBlockers: blockers,
+      strictDedupeKey: strictReadyDedupeKey(base),
+      duplicateStrictReadyRowsMerged: sorted.length,
+      sourceRowKeysMerged: sorted.map((row) => row.key),
+      qidsMerged: qids,
+      workIdsMerged: workIds,
+      cleanSearchTextAdditionCountAfterDedupe: additions.length,
+      internalMediaKeysFiltered: internalKeys,
+      internalMediaKeyFiltered: internalKeys.length > 0,
+    },
+    safety: {
+      ...(base.safety || {}),
+      futureApplyShouldUseStrictReadyDeduped: true,
+      futureApplyWritesSearchTextOnly: true,
+    },
+  }
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2))
   const input = String(args.input || DEFAULT_INPUT)
@@ -179,6 +245,9 @@ function main() {
   const rows = readJsonl(input).map(refinedRow)
 
   const strictReady = rows.filter((row) => row.refinement.strictReady)
+  const strictReadyDedupedAll = [...groupRows(strictReady, strictReadyDedupeKey).values()].map(mergeStrictReadyGroup)
+  const strictReadyDeduped = strictReadyDedupedAll.filter((row) => row.refinement.strictDedupeReady)
+  const strictReadyDedupeReview = strictReadyDedupedAll.filter((row) => !row.refinement.strictDedupeReady)
   const strictBlocked = rows.filter((row) => !row.refinement.strictReady)
   const adultOrMarked = rows.filter((row) => list(row.contentAdvisories).length)
   const internalKeyFiltered = rows.filter((row) => row.refinement.internalMediaKeyFiltered)
@@ -190,6 +259,8 @@ function main() {
   const outputs = {
     refinedRows: `${outDir}/wikidata-work-integration-v01-refined.rows.jsonl`,
     strictReady: `${outDir}/wikidata-work-integration-v01-strict-ready.jsonl`,
+    strictReadyDeduped: `${outDir}/wikidata-work-integration-v01-strict-ready-deduped.jsonl`,
+    strictReadyDedupeReview: `${outDir}/wikidata-work-integration-v01-strict-ready-dedupe-review.jsonl`,
     strictBlocked: `${outDir}/wikidata-work-integration-v01-strict-blocked.jsonl`,
     adultOrMarked: `${outDir}/wikidata-work-integration-v01-adult-or-marked-candidates.jsonl`,
     internalKeyFiltered: `${outDir}/wikidata-work-integration-v01-title-key-filtered.rows.jsonl`,
@@ -204,6 +275,9 @@ function main() {
     input,
     rowsRead: rows.length,
     strictReadyRows: strictReady.length,
+    strictReadyDedupedRows: strictReadyDeduped.length,
+    strictReadyDedupeReviewRows: strictReadyDedupeReview.length,
+    strictReadyDuplicateRowsMerged: strictReady.length - strictReadyDedupedAll.length,
     strictBlockedRows: strictBlocked.length,
     adultOrMarkedRows: adultOrMarked.length,
     internalKeyFilteredRows: internalKeyFiltered.length,
@@ -213,6 +287,7 @@ function main() {
     byOriginalPlanStatus: countBy(rows, 'planStatus'),
     byOriginalAction: countBy(rows, 'action'),
     byStrictBlocker: countBy(rows.flatMap((row) => row.refinement.strictBlockers), (item) => item),
+    byStrictDedupeBlocker: countBy(strictReadyDedupeReview.flatMap((row) => row.refinement.strictDedupeBlockers), (item) => item),
     byContentAdvisory: countBy(rows.flatMap((row) => row.contentAdvisories || []), (item) => item),
     byHigherPriorityMarker: countBy(rows.flatMap((row) => row.higherPriorityMarkers || []), (item) => item),
     outputs,
@@ -224,22 +299,26 @@ function main() {
       deletesWorks: false,
       reportOnly: true,
       strictReadyFutureWritableFields: ['searchText'],
+      futureApplyInput: outputs.strictReadyDeduped,
       sourceMetadataDeferredFromStrictPass: true,
       rewriteAndCreateRemainPreviewOnly: true,
       internalMediaKeysFilteredNotBlocking: true,
+      strictReadyRowsDedupedByWork: true,
       adultOrMarkedRowsExportedSeparately: true,
       maxStrictSearchTextAdditions: MAX_STRICT_SEARCH_TEXT_ADDITIONS,
     },
-    nextStep: 'Review strict-ready rows. Future guarded apply should read only strict-ready and write searchText only. Adult/marked, rewrite, create, and internal-key-only rows remain separate review flows.',
+    nextStep: 'Review strict-ready-deduped rows. Future guarded apply should read only strict-ready-deduped and write searchText only. Adult/marked, rewrite, create, internal-key-only, and dedupe-review rows remain separate review flows.',
   }
 
   writeJsonl(outputs.refinedRows, rows)
   writeJsonl(outputs.strictReady, strictReady)
+  writeJsonl(outputs.strictReadyDeduped, strictReadyDeduped)
+  writeJsonl(outputs.strictReadyDedupeReview, strictReadyDedupeReview)
   writeJsonl(outputs.strictBlocked, strictBlocked)
   writeJsonl(outputs.adultOrMarked, adultOrMarked)
   writeJsonl(outputs.internalKeyFiltered, internalKeyFiltered)
   writeJsonl(outputs.internalKeyOnlyBlocked, internalKeyOnlyBlocked)
-  writeJsonl(outputs.sample, [...strictReady.slice(0, 30), ...adultOrMarked.slice(0, 20), ...internalKeyOnlyBlocked.slice(0, 20), ...rewriteCandidates.slice(0, 20), ...createCandidates.slice(0, 20)])
+  writeJsonl(outputs.sample, [...strictReadyDeduped.slice(0, 30), ...strictReadyDedupeReview.slice(0, 20), ...adultOrMarked.slice(0, 20), ...internalKeyOnlyBlocked.slice(0, 20), ...rewriteCandidates.slice(0, 20), ...createCandidates.slice(0, 20)])
   fs.writeFileSync(outputs.summary, JSON.stringify(summary, null, 2), 'utf8')
 
   console.log(JSON.stringify({ ok: true, summary, outputs }, null, 2))
