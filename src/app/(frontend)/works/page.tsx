@@ -4,8 +4,7 @@ import MissingSearchIndex from '../_components/MissingSearchIndex'
 import { readSearchIndex, type SearchCoverImage, type SearchItem } from '../_lib/search-index'
 
 const rankOrder = ['AA', 'A', 'B', 'C', 'D', 'E', 'unknown']
-const defaultPageSize = 120
-const pageSizeOptions = [60, 120, 240]
+const defaultPageSize = 30
 
 const mediaGroupOptions = [
   { label: '动画', value: 'anime' },
@@ -65,12 +64,8 @@ function normalizePositiveInteger(value: string | undefined, fallback: number) {
   return Math.floor(numberValue)
 }
 
-function normalizePageSize(value: string | undefined) {
-  const requested = normalizePositiveInteger(value, defaultPageSize)
-  if (pageSizeOptions.includes(requested)) return requested
-  if (requested <= 60) return 60
-  if (requested <= 120) return 120
-  return 240
+function normalizePageSize() {
+  return defaultPageSize
 }
 
 function normalizeRank(value: string) {
@@ -198,7 +193,7 @@ function parseFilters(params: Record<string, string | string[] | undefined>): No
   }
 }
 
-function pageHref(filters: NormalizedFilters, page: number, pageSize: number) {
+function pageHref(filters: NormalizedFilters, page: number) {
   const params = new URLSearchParams()
   if (filters.q) params.set('q', filters.q)
   if (filters.rank !== 'all') params.set('rank', filters.rank)
@@ -207,7 +202,6 @@ function pageHref(filters: NormalizedFilters, page: number, pageSize: number) {
   if (filters.organization) params.set('organization', filters.organization)
   if (filters.evidence !== 'all') params.set('evidence', filters.evidence)
   if (page > 1) params.set('page', String(page))
-  if (pageSize !== defaultPageSize) params.set('perPage', String(pageSize))
 
   const query = params.toString()
   return query ? `/works?${query}` : '/works'
@@ -218,6 +212,19 @@ function paginationPages(currentPage: number, totalPages: number) {
   return [...pages]
     .filter((page) => page >= 1 && page <= totalPages)
     .sort((a, b) => a - b)
+}
+
+function HiddenFilterInputs({ filters }: { filters: NormalizedFilters }) {
+  return (
+    <>
+      {filters.q ? <input name="q" type="hidden" value={filters.q} /> : null}
+      {filters.rank !== 'all' ? <input name="rank" type="hidden" value={filters.rank} /> : null}
+      {filters.media !== 'all' ? <input name="media" type="hidden" value={filters.media} /> : null}
+      {filters.creator ? <input name="creator" type="hidden" value={filters.creator} /> : null}
+      {filters.organization ? <input name="organization" type="hidden" value={filters.organization} /> : null}
+      {filters.evidence !== 'all' ? <input name="evidence" type="hidden" value={filters.evidence} /> : null}
+    </>
+  )
 }
 
 function CoverThumb({ cover, title }: { cover?: SearchCoverImage; title: string }) {
@@ -312,19 +319,21 @@ function WorksPagination({ currentPage, filters, pageSize, totalItems, totalPage
     <nav className="collection-actions" aria-label="作品分页">
       <span>第 {currentPage} / {totalPages} 页</span>
       <span>显示 {firstItem}-{lastItem} / {totalItems} 条</span>
-      {currentPage > 1 ? <Link className="back-link" href={pageHref(filters, currentPage - 1, pageSize)}>上一页</Link> : <span>上一页</span>}
+      {currentPage > 1 ? <Link className="back-link" href={pageHref(filters, currentPage - 1)}>上一页</Link> : <span>上一页</span>}
       {pages.map((page) => (
         page === currentPage
           ? <span key={page}>{page}</span>
-          : <Link className="back-link" href={pageHref(filters, page, pageSize)} key={page}>{page}</Link>
+          : <Link className="back-link" href={pageHref(filters, page)} key={page}>{page}</Link>
       ))}
-      {currentPage < totalPages ? <Link className="back-link" href={pageHref(filters, currentPage + 1, pageSize)}>下一页</Link> : <span>下一页</span>}
-      <span>每页</span>
-      {pageSizeOptions.map((option) => (
-        option === pageSize
-          ? <span key={option}>{option}</span>
-          : <Link className="back-link" href={pageHref(filters, 1, option)} key={option}>{option}</Link>
-      ))}
+      {currentPage < totalPages ? <Link className="back-link" href={pageHref(filters, currentPage + 1)}>下一页</Link> : <span>下一页</span>}
+      <form action="/works" className="page-jump-form">
+        <HiddenFilterInputs filters={filters} />
+        <label>
+          跳到
+          <input aria-label="跳到页码" defaultValue={currentPage} min="1" max={totalPages} name="page" type="number" />
+        </label>
+        <button className="back-link" type="submit">跳转</button>
+      </form>
     </nav>
   )
 }
@@ -335,7 +344,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
 
   const params = searchParams ? await searchParams : {}
   const filters = parseFilters(params)
-  const pageSize = normalizePageSize(firstParam(params.perPage))
+  const pageSize = normalizePageSize()
   const requestedPage = normalizePositiveInteger(firstParam(params.page), 1)
 
   const allItems = index.items
