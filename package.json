@@ -63,6 +63,7 @@
     "source:rollback:anilist-adult-markers": "node scripts/import/rollback-anilist-adult-markers-v01.mjs",
     "source:plan:steam-work-integration": "node scripts/import/plan-steam-work-integration-v01.mjs",
     "source:apply:steam-work-integration": "node scripts/import/apply-steam-work-integration-v01.mjs",
+    "source:plan:steam-create-candidates-v02": "node scripts/import/plan-steam-create-candidates-v02.mjs",
     "source:apply:steam-create-candidates": "node scripts/import/apply-steam-create-candidates-v01.mjs",
     "test:source-import": "node --test tests/source-import.test.mjs",
     "test:source-bangumi": "node --test tests/bangumi-source.test.mjs",
