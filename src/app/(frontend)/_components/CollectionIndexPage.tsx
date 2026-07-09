@@ -9,7 +9,11 @@ type CollectionIndexConfig = {
   eyebrow: string
   title: string
   description: string
+  searchParams?: Record<string, string | string[] | undefined>
 }
+
+const defaultPageSize = 30
+const pageSizeOptions = [30, 60]
 
 const organizationTypeLabels: Record<string, string> = {
   publisher: '出版社',
@@ -32,6 +36,22 @@ const evidenceTypeLabels: Record<string, string> = {
   legacy_wiki: '旧站记录',
   platform_page: '平台页面',
   other: '其他证据',
+}
+
+function firstParam(value: string | string[] | undefined) {
+  if (Array.isArray(value)) return value[0] || ''
+  return value || ''
+}
+
+function normalizePositiveInteger(value: string | undefined, fallback: number) {
+  const numberValue = Number(value)
+  if (!Number.isFinite(numberValue) || numberValue < 1) return fallback
+  return Math.floor(numberValue)
+}
+
+function normalizePageSize(value: string | undefined) {
+  const requested = normalizePositiveInteger(value, defaultPageSize)
+  return requested === 60 ? 60 : defaultPageSize
 }
 
 function compactValues(values: string[] | undefined, limit = 3) {
@@ -100,14 +120,72 @@ function secondaryMeta(item: SearchItem) {
   return ''
 }
 
-export default function CollectionIndexPage({ collection, eyebrow, title, description }: CollectionIndexConfig) {
+function pageHref(collection: SearchCollection, page: number, pageSize: number) {
+  const params = new URLSearchParams()
+  if (page > 1) params.set('page', String(page))
+  if (pageSize !== defaultPageSize) params.set('perPage', String(pageSize))
+  const query = params.toString()
+  return query ? `/${collection}?${query}` : `/${collection}`
+}
+
+function paginationPages(currentPage: number, totalPages: number) {
+  const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1])
+  return [...pages]
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((a, b) => a - b)
+}
+
+function CollectionPagination({ collection, currentPage, pageSize, totalItems, totalPages }: { collection: SearchCollection; currentPage: number; pageSize: number; totalItems: number; totalPages: number }) {
+  if (totalItems === 0) return null
+
+  const firstItem = (currentPage - 1) * pageSize + 1
+  const lastItem = Math.min(totalItems, currentPage * pageSize)
+  const pages = paginationPages(currentPage, totalPages)
+
+  return (
+    <nav className="collection-actions" aria-label="分页">
+      <span>第 {currentPage} / {totalPages} 页</span>
+      <span>显示 {firstItem}-{lastItem} / {totalItems} 条</span>
+      {currentPage > 1 ? <Link className="back-link" href={pageHref(collection, currentPage - 1, pageSize)}>上一页</Link> : <span>上一页</span>}
+      {pages.map((page) => (
+        page === currentPage
+          ? <span key={page}>{page}</span>
+          : <Link className="back-link" href={pageHref(collection, page, pageSize)} key={page}>{page}</Link>
+      ))}
+      {currentPage < totalPages ? <Link className="back-link" href={pageHref(collection, currentPage + 1, pageSize)}>下一页</Link> : <span>下一页</span>}
+      <span>每页</span>
+      {pageSizeOptions.map((option) => (
+        option === pageSize
+          ? <span key={option}>{option}</span>
+          : <Link className="back-link" href={pageHref(collection, 1, option)} key={option}>{option}</Link>
+      ))}
+      <form action={`/${collection}`} className="page-jump-form">
+        {pageSize !== defaultPageSize ? <input name="perPage" type="hidden" value={pageSize} /> : null}
+        <label>
+          跳到
+          <input aria-label="跳到页码" defaultValue={currentPage} min="1" max={totalPages} name="page" type="number" />
+        </label>
+        <button className="back-link" type="submit">跳转</button>
+      </form>
+    </nav>
+  )
+}
+
+export default function CollectionIndexPage({ collection, eyebrow, title, description, searchParams = {} }: CollectionIndexConfig) {
   const index = readSearchIndex()
   if (!index) return <MissingSearchIndex />
+
+  const pageSize = normalizePageSize(firstParam(searchParams.perPage))
+  const requestedPage = normalizePositiveInteger(firstParam(searchParams.page), 1)
 
   const items = index.items
     .filter((item) => item.collection === collection)
     .sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
 
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
+  const currentPage = Math.min(requestedPage, totalPages)
+  const pageStart = (currentPage - 1) * pageSize
+  const pageItems = items.slice(pageStart, pageStart + pageSize)
   const markedItems = items.filter((item) => item.collection === 'works' && item.contentVisibility && item.contentVisibility !== 'ordinary')
 
   return (
@@ -124,12 +202,14 @@ export default function CollectionIndexPage({ collection, eyebrow, title, descri
             浏览全部
           </Link>
           <span>{items.length} 条</span>
+          <span>当前页 {pageItems.length} 条</span>
           {markedItems.length ? <span>普通模式隐藏 {markedItems.length} 条标记作品</span> : null}
         </div>
+        <CollectionPagination collection={collection} currentPage={currentPage} pageSize={pageSize} totalItems={items.length} totalPages={totalPages} />
       </section>
 
       <section className="collection-grid">
-        {items.map((item) => {
+        {pageItems.map((item) => {
           const secondary = secondaryMeta(item)
           const visibilityLabel = contentVisibilityLabel(item.contentVisibility)
 
@@ -143,6 +223,7 @@ export default function CollectionIndexPage({ collection, eyebrow, title, descri
           )
         })}
       </section>
+      <CollectionPagination collection={collection} currentPage={currentPage} pageSize={pageSize} totalItems={items.length} totalPages={totalPages} />
     </main>
   )
 }
