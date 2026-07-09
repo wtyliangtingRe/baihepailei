@@ -1,6 +1,10 @@
 import Link from 'next/link'
 
+import type { DetailCandidateSource, DetailCoverImage, DetailItem, DetailSourceLink } from '../_lib/detail-index'
 import type { SearchItem } from '../_lib/search-index'
+import CommentBlock from './CommentBlock'
+import WorkListControl from './WorkListControl'
+import WorkRiskMatrixCard from './WorkRiskMatrixCard'
 
 const organizationTypeLabels: Record<string, string> = {
   publisher: '出版社',
@@ -77,8 +81,14 @@ function displayRank(rank?: string) {
 }
 
 function mediaGroupLabel(value?: string) {
-  if (!value) return ''
+  if (!value || value === 'unknown') return ''
   return mediaGroupLabels[value] || value
+}
+
+function visibleMetadataValue(value?: string) {
+  const normalized = String(value || '').trim()
+  if (!normalized || normalized === 'unknown') return ''
+  return normalized
 }
 
 function organizationTypeLabel(value?: string) {
@@ -111,24 +121,44 @@ function advisoryLabel(value: string) {
   return advisoryLabels[value] || value
 }
 
-function compactLines(text: string) {
+function cleanLine(value?: string) {
+  return String(value || '').trim().replace(/\s+/g, ' ')
+}
+
+function linesOf(text?: string) {
   return String(text || '')
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
-    .slice(0, 18)
 }
 
-function visibleFieldsOf(fields: Array<[string, string | string[] | undefined]>) {
+function valuesOf(value: string | string[] | boolean | undefined) {
+  if (Array.isArray(value)) return value.filter(Boolean)
+  if (typeof value === 'boolean') return value ? ['是'] : []
+  return value ? [value] : []
+}
+
+function visibleFieldsOf(fields: Array<[string, string | string[] | boolean | undefined]>) {
   return fields
-    .map(([label, value]) => {
-      const values = Array.isArray(value) ? value.filter(Boolean) : value ? [value] : []
-      return [label, values] as const
-    })
+    .map(([label, value]) => [label, valuesOf(value)] as const)
     .filter(([, values]) => values.length > 0)
 }
 
-function FieldList({ fields }: { fields: Array<[string, string | string[] | undefined]> }) {
+function uniqueValues(values: Array<string | undefined>) {
+  const seen = new Set<string>()
+  const output: string[] = []
+  for (const raw of values) {
+    const value = cleanLine(raw)
+    if (!value) continue
+    const key = value.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    output.push(value)
+  }
+  return output
+}
+
+function FieldList({ fields }: { fields: Array<[string, string | string[] | boolean | undefined]> }) {
   const visibleFields = visibleFieldsOf(fields)
   if (visibleFields.length === 0) return null
 
@@ -144,43 +174,185 @@ function FieldList({ fields }: { fields: Array<[string, string | string[] | unde
   )
 }
 
+function SearchableTitleTable({ titles }: { titles: string[] }) {
+  if (titles.length === 0) return null
+
+  return (
+    <div className="detail-title-table-wrap">
+      <h3>可搜索作品名</h3>
+      <table className="detail-title-table">
+        <tbody>
+          {titles.map((title, index) => (
+            <tr key={`${title}-${index}`}>
+              <th scope="row">{index + 1}</th>
+              <td>{title}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 function BasicInfo({ item }: { item: SearchItem }) {
-  const fields: Array<[string, string | string[] | undefined]> = [
-    ['作品大类', mediaGroupLabel(item.mediaGroup)],
-    ['作品类型', item.mediaType],
-    ['作品形态', item.format],
-    ['首次发表', item.firstPublishedLabel],
-    ['创作者', item.creators],
-    ['相关机构', item.organizations],
+  const searchableTitles = uniqueValues([item.title, item.originalTitle, ...(item.localizedTitles || []), ...(item.localizedNames || []), ...(item.aliases || [])])
+  const fields: Array<[string, string | string[] | boolean | undefined]> = [
+    ['作品类型', mediaGroupLabel(item.mediaGroup)],
+    ['作品形态', visibleMetadataValue(item.format || item.mediaType)],
+    ['日期', item.firstPublishedLabel],
     ['复核状态', reviewStatusLabel(item.reviewStatus)],
     ['证据强度', evidenceStrengthLabel(item.evidenceStrength)],
     ['内容标记', contentVisibilityLabel(item.contentVisibility)],
     ['内容提示', item.contentAdvisories?.map(advisoryLabel)],
     ['机构类型', organizationTypeLabel(item.organizationType)],
     ['证据类型', evidenceTypeLabel(item.evidenceType)],
-    ['原名', item.originalTitle],
-    ['译名 / 地区名', item.localizedTitles || item.localizedNames],
-    ['别名', item.aliases],
-    ['关联作品', item.relatedWorks],
-    ['关联创作者', item.relatedCreators],
-    ['关联机构', item.relatedOrganizations],
+    ['创作者', item.creators],
+    ['相关机构', item.organizations],
     ['标签', item.tags],
     ['注意点', item.warnings],
     ['相关名词', item.relatedTerms],
     ['相关注意点', item.relatedWarnings],
+    ['关联作品', item.relatedWorks],
+    ['关联创作者', item.relatedCreators],
+    ['关联机构', item.relatedOrganizations],
+    ['状态', (item as { status?: string }).status],
   ]
-
-  if (visibleFieldsOf(fields).length === 0) return null
 
   return (
     <section className="detail-card">
       <h2>基础信息</h2>
-      <FieldList fields={fields} />
+      <SearchableTitleTable titles={searchableTitles} />
+      {visibleFieldsOf(fields).length > 0 ? <FieldList fields={fields} /> : <p className="muted">基础信息暂未补全。后续可在后台继续完善。</p>}
     </section>
   )
 }
 
+function WorkCover({ cover, title }: { cover?: DetailCoverImage; title: string }) {
+  if (cover?.url) {
+    return (
+      <figure className="detail-cover">
+        <img alt={cover.alt || `${title}封面`} src={cover.url} />
+      </figure>
+    )
+  }
+
+  return (
+    <figure className="detail-cover detail-cover-placeholder" aria-label="暂无封面">
+      <span>暂无封面</span>
+    </figure>
+  )
+}
+
+function sourceName(source?: string) {
+  const value = String(source || '').trim()
+  if (!value) return ''
+  if (value.toLowerCase() === 'bangumi') return 'Bangumi'
+  if (value.toLowerCase() === 'anilist') return 'AniList'
+  if (value.toLowerCase() === 'vndb') return 'VNDB'
+  if (value.toLowerCase() === 'steam') return 'Steam'
+  if (value.toLowerCase() === 'yurizukan') return 'Yurizukan'
+  return value
+}
+
+function hostnameLabel(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
+
+function inferFallbackSources(item: SearchItem) {
+  const lines = linesOf(item.searchText)
+  const sourceLinks: DetailSourceLink[] = []
+  const candidateSources: DetailCandidateSource[] = []
+  const externalIds: Record<string, string> = {}
+
+  const bangumiId = item.searchText.match(/(?:bangumiSubjectId|Bangumi)[:：]\s*(\d+)/i)?.[1]
+  if (bangumiId) {
+    externalIds.bangumiSubjectId = bangumiId
+    candidateSources.push({ source: 'bangumi', label: 'Bangumi', externalId: bangumiId, url: `https://bgm.tv/subject/${bangumiId}` })
+    sourceLinks.push({ label: 'Bangumi', url: `https://bgm.tv/subject/${bangumiId}` })
+  }
+
+  for (const [index, line] of lines.entries()) {
+    if (!/^https?:\/\//i.test(line)) continue
+    const previous = cleanLine(lines[index - 1])
+    const label = previous && !/^https?:\/\//i.test(previous) && previous.length <= 40 ? previous : hostnameLabel(line)
+    if (sourceLinks.some((link) => link.url === line)) continue
+    sourceLinks.push({ label, url: line })
+  }
+
+  return { sourceLinks, candidateSources, externalIds }
+}
+
+function SourceLinks({ item }: { item: SearchItem }) {
+  const { sourceLinks, candidateSources, externalIds } = inferFallbackSources(item)
+  const externalIdRows = Object.entries(externalIds).filter(([, value]) => value)
+
+  return (
+    <section className="detail-card">
+      <h2>公开来源</h2>
+      {sourceLinks.length || candidateSources.length || externalIdRows.length ? (
+        <>
+          <FieldList
+            fields={[
+              ['外部 ID', externalIdRows.map(([key, value]) => `${key}: ${value}`)],
+              ['候选来源', candidateSources.map((source) => [sourceName(source.source), source.label, source.externalId].filter(Boolean).join(' / '))],
+            ]}
+          />
+          {sourceLinks.length > 0 ? (
+            <ul className="source-links">
+              {sourceLinks.map((link) => (
+                <li key={link.url}>
+                  <a href={link.url} rel="noreferrer" target="_blank">
+                    {link.label || link.url}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </>
+      ) : (
+        <p className="muted">暂无公开来源。后续可补充来源链接或候选来源。</p>
+      )}
+    </section>
+  )
+}
+
+function WorkIntro() {
+  return (
+    <section className="detail-card">
+      <h2>作品简介</h2>
+      <p className="muted">作品简介暂未填写。后续可在后台摘要字段补充，用于搜索和推荐。</p>
+    </section>
+  )
+}
+
+function RelatedEvidencePlaceholder({ collection }: { collection: string }) {
+  if (!['works', 'creators', 'organizations'].includes(collection)) return null
+
+  return (
+    <section className="detail-card evidence-card-list">
+      <h2>材料留存</h2>
+      <p className="muted">暂无材料。后续可在证据材料中关联这个条目。</p>
+    </section>
+  )
+}
+
+function toDetailItem(item: SearchItem): DetailItem {
+  return {
+    ...item,
+    allTitles: uniqueValues([item.title, item.originalTitle, ...(item.localizedTitles || []), ...(item.localizedNames || []), ...(item.aliases || [])]),
+    sections: [],
+    sourceLinks: inferFallbackSources(item).sourceLinks,
+    candidateSources: inferFallbackSources(item).candidateSources,
+    externalIds: inferFallbackSources(item).externalIds,
+  }
+}
+
 export default function SearchIndexDetail({ item }: { item: SearchItem }) {
+  const detailLikeItem = toDetailItem(item)
   const rank = displayRank(item.rank)
   const mediaGroup = mediaGroupLabel(item.mediaGroup)
   const organizationType = organizationTypeLabel(item.organizationType)
@@ -188,7 +360,6 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
   const reviewStatus = reviewStatusLabel(item.reviewStatus)
   const evidenceStrength = evidenceStrengthLabel(item.evidenceStrength)
   const contentVisibility = contentVisibilityLabel(item.contentVisibility)
-  const searchLines = compactLines(item.searchText)
 
   return (
     <main className="page detail-page" data-content-visibility={item.contentVisibility || 'ordinary'}>
@@ -201,37 +372,35 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
             {collectionBackLabel(item.collection)}
           </Link>
         </div>
-        <p className="eyebrow">{collectionLabel(item.collection)}</p>
-        <h1>{item.title}</h1>
-        {contentVisibility ? <p className="content-visibility-note">此条目标记为「{contentVisibility}」。普通模式下不会出现在列表和搜索结果中。</p> : null}
-        <div className="detail-chips">
-          {rank ? <span>{rank}</span> : null}
-          {mediaGroup ? <span>{mediaGroup}</span> : null}
-          {item.mediaType ? <span>{item.mediaType}</span> : null}
-          {item.firstPublishedLabel ? <span>{item.firstPublishedLabel}</span> : null}
-          {contentVisibility ? <span>{contentVisibility}</span> : null}
-          {reviewStatus ? <span>{reviewStatus}</span> : null}
-          {evidenceStrength ? <span>{evidenceStrength}</span> : null}
-          {organizationType ? <span>{organizationType}</span> : null}
-          {evidenceType ? <span>{evidenceType}</span> : null}
-          {item.category ? <span>{item.category}</span> : null}
+        <div className="detail-hero-layout">
+          {item.collection === 'works' ? <WorkCover cover={item.cover} title={item.title} /> : null}
+          <div>
+            <p className="eyebrow">{collectionLabel(item.collection)}</p>
+            <h1>{item.title}</h1>
+            {contentVisibility ? <p className="content-visibility-note">此条目标记为「{contentVisibility}」。普通模式下不会出现在列表和搜索结果中。</p> : null}
+            <div className="detail-chips">
+              {rank ? <span>{rank}</span> : null}
+              {mediaGroup ? <span>{mediaGroup}</span> : null}
+              {visibleMetadataValue(item.mediaType) ? <span>{visibleMetadataValue(item.mediaType)}</span> : null}
+              {reviewStatus ? <span>{reviewStatus}</span> : null}
+              {evidenceStrength ? <span>{evidenceStrength}</span> : null}
+              {contentVisibility ? <span>{contentVisibility}</span> : null}
+              {organizationType ? <span>{organizationType}</span> : null}
+              {evidenceType ? <span>{evidenceType}</span> : null}
+              {item.category ? <span>{item.category}</span> : null}
+              {item.hasEvidence ? <span>有证据材料</span> : null}
+            </div>
+          </div>
         </div>
       </section>
 
       <BasicInfo item={item} />
-
-      <section className="detail-card">
-        <h2>搜索文本预览</h2>
-        {searchLines.length ? (
-          <ul className="search-text-preview">
-            {searchLines.map((line, index) => (
-              <li key={`${line}-${index}`}>{line}</li>
-            ))}
-          </ul>
-        ) : (
-          <p className="muted">暂无搜索文本。</p>
-        )}
-      </section>
+      <WorkRiskMatrixCard item={detailLikeItem} />
+      <WorkListControl item={detailLikeItem} />
+      {item.collection === 'works' ? <WorkIntro /> : null}
+      <RelatedEvidencePlaceholder collection={item.collection} />
+      <SourceLinks item={item} />
+      <CommentBlock item={detailLikeItem} />
     </main>
   )
 }
