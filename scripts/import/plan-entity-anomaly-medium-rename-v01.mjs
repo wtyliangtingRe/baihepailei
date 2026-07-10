@@ -2,17 +2,19 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 'entity-anomaly-medium-rename-plan-v0.4'
+const VERSION = 'entity-anomaly-medium-rename-plan-v0.5'
 const DEFAULT_INPUT = 'data_local/staging/entity-anomalies/entity-anomalies-v01-medium.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/entity-anomalies'
 const PAGE_LIMIT = 200
 const ROLE_PREFIXES = new Set(['仅有参加作品原作人物', '人物', '活动', '活動', '文案', '原案', '原作', '角色原画', '作画', '監督', '脚本', '製作協力', '出品', '出品人'])
 const GENERIC_CANDIDATE_NAMES = new Set(['舞台', '月刊', '人物', '活动', '活動', '文案', '原案', '原作', '作者', '著者', '作', '作品', 'ステージ'])
+const CJK_RANGES = '\\u3400-\\u4DBF\\u4E00-\\u9FFF\\uF900-\\uFAFF\\u3040-\\u309F\\u30A0-\\u30FF\\u31F0-\\u31FF'
+const CJK_SPACE_RE = new RegExp(`([${CJK_RANGES}])\\s+([${CJK_RANGES}])`, 'gu')
 
 function val(value) { return String(value ?? '').trim() }
 function list(value) { return Array.isArray(value) ? value : [] }
 function cleanLine(value) { return val(value).normalize('NFKC').replace(/[\r\n\t]+/gu, ' ').replace(/[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+/gu, ' ').trim() }
-function compactCjkSpaces(value) { return cleanLine(value).replace(/([\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}])\s+([\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}])/gu, '$1$2') }
+function compactCjkSpaces(value) { let text = cleanLine(value); let prev = ''; while (prev !== text) { prev = text; text = text.replace(CJK_SPACE_RE, '$1$2') } return text }
 function parseArgs(argv) { const args = {}; for (let i = 0; i < argv.length; i += 1) { const item = argv[i]; if (!item.startsWith('--')) continue; const key = item.slice(2); const next = argv[i + 1]; if (!next || next.startsWith('--')) args[key] = true; else { args[key] = next; i += 1 } } return args }
 function loadEnvFile(file) { if (!fs.existsSync(file)) return; const raw = fs.readFileSync(file, 'utf8'); for (const line of raw.split(/\r?\n/u)) { const trimmed = line.trim(); if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue; const idx = trimmed.indexOf('='); const key = trimmed.slice(0, idx).trim(); let value = trimmed.slice(idx + 1).trim(); if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1); if (key && process.env[key] == null) process.env[key] = value } }
 function loadEnv() { loadEnvFile(path.resolve('.env.local')); loadEnvFile(path.resolve('.env')) }
@@ -28,11 +30,7 @@ async function login(baseUrl) { const email = process.env.PAYLOAD_EXPORT_EMAIL |
 async function fetchAll(baseUrl, token, collection) { const docs = []; let page = 1, totalPages = 1; do { const params = new URLSearchParams(); params.set('limit', String(PAGE_LIMIT)); params.set('page', String(page)); params.set('depth', '0'); params.set('draft', 'true'); const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, { headers: authHeaders(token) }); docs.push(...(Array.isArray(result?.docs) ? result.docs : [])); totalPages = Number(result?.totalPages || 1); page += 1 } while (page <= totalPages); return docs }
 
 function firstQuoteIndex(text) { const indexes = ['「', '『', '《', '“', '"'].map((ch) => text.indexOf(ch)).filter((idx) => idx >= 0); return indexes.length ? Math.min(...indexes) : -1 }
-function normalizeCandidateName(value) {
-  return compactCjkSpaces(value)
-    .replace(/\s*([・·])\s*/gu, '$1')
-    .replace(/^\s+|\s+$/gu, '')
-}
+function normalizeCandidateName(value) { return compactCjkSpaces(value).replace(/\s*([・·])\s*/gu, '$1').replace(/^\s+|\s+$/gu, '') }
 function stripTrailingNoise(value) {
   return normalizeCandidateName(value)
     .replace(/[\s:：;；,，.。\-—–()（）【】\[\]<>＜＞]+$/u, '')
@@ -52,28 +50,15 @@ function inferCreatorRename(title, reasons) {
   const notes = []
   if (!text) return { candidate: '', method: '', notes: ['empty_title'] }
   const colon = text.match(/^([^:：]{1,18})[:：]\s*(.+)$/u)
-  if (colon && ROLE_PREFIXES.has(cleanLine(colon[1]))) {
-    return { candidate: normalizeCandidateName(stripTrailingNoise(colon[2])), method: 'role_prefix_after_colon', notes: [`role_prefix:${cleanLine(colon[1])}`, 'manual_by_default'] }
-  }
+  if (colon && ROLE_PREFIXES.has(cleanLine(colon[1]))) return { candidate: normalizeCandidateName(stripTrailingNoise(colon[2])), method: 'role_prefix_after_colon', notes: [`role_prefix:${cleanLine(colon[1])}`, 'manual_by_default'] }
   const parenIdx = text.search(/[（(]/u)
   const quoteIdx = firstQuoteIndex(text)
   let candidate = ''
   let method = ''
-  if (parenIdx > 0 && quoteIdx > parenIdx) {
-    candidate = stripTrailingNoise(text.slice(0, parenIdx))
-    method = 'prefix_before_parenthesized_work_context'
-  } else if (quoteIdx > 0) {
-    candidate = stripTrailingNoise(text.slice(0, quoteIdx))
-    method = 'prefix_before_work_quote'
-  } else if (quoteIdx === 0) {
-    candidate = ''
-    method = 'pure_or_work_first_title'
-    notes.push('work_quote_at_start')
-  }
-  if (!candidate && /[)）]$/u.test(text) && /[（(]/u.test(text)) {
-    candidate = stripTrailingNoise(text.replace(/[（(].*$/u, ''))
-    method = method || 'prefix_before_parenthesis'
-  }
+  if (parenIdx > 0 && quoteIdx > parenIdx) { candidate = stripTrailingNoise(text.slice(0, parenIdx)); method = 'prefix_before_parenthesized_work_context' }
+  else if (quoteIdx > 0) { candidate = stripTrailingNoise(text.slice(0, quoteIdx)); method = 'prefix_before_work_quote' }
+  else if (quoteIdx === 0) { candidate = ''; method = 'pure_or_work_first_title'; notes.push('work_quote_at_start') }
+  if (!candidate && /[)）]$/u.test(text) && /[（(]/u.test(text)) { candidate = stripTrailingNoise(text.replace(/[（(].*$/u, '')); method = method || 'prefix_before_parenthesis' }
   candidate = normalizeCandidateName(candidate)
   if (looksEmptyOrWorkOnly(text, candidate)) notes.push('no_clean_candidate')
   if (candidate && hasBadCharsForName(candidate)) notes.push('candidate_has_bad_chars')
@@ -97,20 +82,11 @@ function classify(row, duplicateTargets) {
 }
 function markPlanInternalDuplicateCandidates(rows) {
   const counts = new Map()
+  for (const row of rows) { if (row.status !== 'safe_rename') continue; const key = normalizeName(row.candidateName); if (key) counts.set(key, (counts.get(key) || 0) + 1) }
   for (const row of rows) {
     if (row.status !== 'safe_rename') continue
     const key = normalizeName(row.candidateName)
-    if (!key) continue
-    counts.set(key, (counts.get(key) || 0) + 1)
-  }
-  for (const row of rows) {
-    if (row.status !== 'safe_rename') continue
-    const key = normalizeName(row.candidateName)
-    if (key && counts.get(key) > 1) {
-      row.status = 'manual_review'
-      row.blockers = [...new Set([...row.blockers, 'candidate_duplicate_within_plan'])]
-      row.notes = [...new Set([...row.notes, 'candidate_duplicate_within_plan'])]
-    }
+    if (key && counts.get(key) > 1) { row.status = 'manual_review'; row.blockers = [...new Set([...row.blockers, 'candidate_duplicate_within_plan'])]; row.notes = [...new Set([...row.notes, 'candidate_duplicate_within_plan'])] }
   }
 }
 
@@ -132,65 +108,19 @@ async function main() {
     if (!creatorByNorm.has(key)) creatorByNorm.set(key, [])
     creatorByNorm.get(key).push({ id: doc.id, name: entityTitle(doc), slug: doc.slug, siteId: doc.siteId, isLiteVisible: doc.isLiteVisible, isFullVisible: doc.isFullVisible })
   }
-
   const rows = []
   for (const plan of plans) {
     const title = cleanLine(plan.title || plan.name || plan.rawTitle)
     const reasons = list(plan.reasons).map(cleanLine).filter(Boolean)
     const inferred = inferCreatorRename(title, reasons)
     const duplicateTargets = inferred.candidate ? list(creatorByNorm.get(normalizeName(inferred.candidate))).filter((x) => String(x.id) !== String(plan.id)) : []
-    const baseRow = {
-      collection: cleanLine(plan.collection),
-      id: String(plan.id ?? ''),
-      oldTitle: title,
-      candidateName: inferred.candidate,
-      method: inferred.method,
-      severity: cleanLine(plan.severity),
-      reasons,
-      notes: inferred.notes,
-      duplicateTargets,
-      sourceSlug: cleanLine(plan.slug),
-      siteId: cleanLine(plan.siteId),
-      safety: { planOnly: true, payloadWrite: false, directPostgresqlWrite: false, deletesEntities: false },
-    }
+    const baseRow = { collection: cleanLine(plan.collection), id: String(plan.id ?? ''), oldTitle: title, candidateName: inferred.candidate, method: inferred.method, severity: cleanLine(plan.severity), reasons, notes: inferred.notes, duplicateTargets, sourceSlug: cleanLine(plan.slug), siteId: cleanLine(plan.siteId), safety: { planOnly: true, payloadWrite: false, directPostgresqlWrite: false, deletesEntities: false } }
     const cls = classify(baseRow, duplicateTargets)
     rows.push({ ...baseRow, status: cls.status, blockers: cls.blockers, notes: cls.notes })
   }
   markPlanInternalDuplicateCandidates(rows)
-
-  const outputs = {
-    rows: `${outDir}/entity-anomaly-medium-rename-plan-v01.rows.jsonl`,
-    safeRename: `${outDir}/entity-anomaly-medium-rename-plan-v01-safe-rename.jsonl`,
-    duplicateTargetReview: `${outDir}/entity-anomaly-medium-rename-plan-v01-duplicate-target-review.jsonl`,
-    manualReview: `${outDir}/entity-anomaly-medium-rename-plan-v01-manual-review.jsonl`,
-    summary: `${outDir}/entity-anomaly-medium-rename-plan-v01-summary.json`,
-  }
-  const summary = {
-    generatedAt: new Date().toISOString(),
-    version: VERSION,
-    payloadBaseUrl: base,
-    input,
-    planRowsRead: allPlans.length,
-    planRowsProcessed: plans.length,
-    creatorsRead: creators.length,
-    organizationsRead: organizations.length,
-    byStatus: countBy(rows, 'status'),
-    byCollection: countBy(rows, 'collection'),
-    byMethod: countBy(rows, 'method'),
-    byBlocker: countBy(rows.flatMap((row) => row.blockers), (x) => x),
-    safeRename: rows.filter((r) => r.status === 'safe_rename').length,
-    duplicateTargetReview: rows.filter((r) => r.status === 'duplicate_target_review').length,
-    manualReview: rows.filter((r) => r.status === 'manual_review').length,
-    outputs,
-    safety: {
-      payloadRead: true,
-      payloadWrite: false,
-      directPostgresqlWrite: false,
-      deletesEntities: false,
-      renamesEntities: false,
-      planOnly: true,
-    },
-  }
+  const outputs = { rows: `${outDir}/entity-anomaly-medium-rename-plan-v01.rows.jsonl`, safeRename: `${outDir}/entity-anomaly-medium-rename-plan-v01-safe-rename.jsonl`, duplicateTargetReview: `${outDir}/entity-anomaly-medium-rename-plan-v01-duplicate-target-review.jsonl`, manualReview: `${outDir}/entity-anomaly-medium-rename-plan-v01-manual-review.jsonl`, summary: `${outDir}/entity-anomaly-medium-rename-plan-v01-summary.json` }
+  const summary = { generatedAt: new Date().toISOString(), version: VERSION, payloadBaseUrl: base, input, planRowsRead: allPlans.length, planRowsProcessed: plans.length, creatorsRead: creators.length, organizationsRead: organizations.length, byStatus: countBy(rows, 'status'), byCollection: countBy(rows, 'collection'), byMethod: countBy(rows, 'method'), byBlocker: countBy(rows.flatMap((row) => row.blockers), (x) => x), safeRename: rows.filter((r) => r.status === 'safe_rename').length, duplicateTargetReview: rows.filter((r) => r.status === 'duplicate_target_review').length, manualReview: rows.filter((r) => r.status === 'manual_review').length, outputs, safety: { payloadRead: true, payloadWrite: false, directPostgresqlWrite: false, deletesEntities: false, renamesEntities: false, planOnly: true } }
   writeJsonl(outputs.rows, rows)
   writeJsonl(outputs.safeRename, rows.filter((r) => r.status === 'safe_rename'))
   writeJsonl(outputs.duplicateTargetReview, rows.filter((r) => r.status === 'duplicate_target_review'))
