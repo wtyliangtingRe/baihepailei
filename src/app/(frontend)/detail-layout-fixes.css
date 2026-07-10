@@ -1,0 +1,68 @@
+.collection-grid-compact {
+  grid-template-columns: 1fr;
+}
+
+.collection-card-compact {
+  min-height: auto;
+  gap: 8px;
+  padding: 16px 18px;
+}
+
+.collection-card-compact h2 {
+  overflow: hidden;
+  max-width: 100%;
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.28;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collection-card-compact p {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collection-card-compact span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-list-card {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.work-list-card h2 {
+  font-size: clamp(20px, 2vw, 26px);
+}
+
+.detail-hero h1 {
+  overflow: hidden;
+  max-width: 100%;
+  font-size: clamp(32px, 5vw, 60px);
+  line-height: 1.12;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-hero-layout {
+  min-width: 0;
+}
+
+.detail-hero-layout > div:last-child {
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .detail-hero h1 {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .work-list-card {
+    grid-template-columns: 1fr;
+  }
+}
