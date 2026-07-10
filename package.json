@@ -74,6 +74,7 @@
     "source:apply:work-duplicates-medium-safe": "node scripts/import/apply-work-duplicates-medium-safe-v01.mjs",
     "source:audit:entity-anomalies": "node scripts/import/audit-entity-anomalies-v01.mjs",
     "source:apply:entity-anomaly-high-hide": "node scripts/import/apply-entity-anomaly-high-hide-v01.mjs",
+    "source:plan:entity-anomaly-medium-rename": "node scripts/import/plan-entity-anomaly-medium-rename-v01.mjs",
     "test:source-import": "node --test tests/source-import.test.mjs",
     "test:source-bangumi": "node --test tests/bangumi-source.test.mjs",
     "test:source-bangumi-fetch": "node --test tests/bangumi-tag-fetcher.test.mjs",
