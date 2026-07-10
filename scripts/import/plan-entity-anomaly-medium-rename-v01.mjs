@@ -2,19 +2,20 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 'entity-anomaly-medium-rename-plan-v0.5'
+const VERSION = 'entity-anomaly-medium-rename-plan-v0.6'
 const DEFAULT_INPUT = 'data_local/staging/entity-anomalies/entity-anomalies-v01-medium.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/entity-anomalies'
 const PAGE_LIMIT = 200
 const ROLE_PREFIXES = new Set(['仅有参加作品原作人物', '人物', '活动', '活動', '文案', '原案', '原作', '角色原画', '作画', '監督', '脚本', '製作協力', '出品', '出品人'])
 const GENERIC_CANDIDATE_NAMES = new Set(['舞台', '月刊', '人物', '活动', '活動', '文案', '原案', '原作', '作者', '著者', '作', '作品', 'ステージ'])
 const CJK_RANGES = '\\u3400-\\u4DBF\\u4E00-\\u9FFF\\uF900-\\uFAFF\\u3040-\\u309F\\u30A0-\\u30FF\\u31F0-\\u31FF'
-const CJK_SPACE_RE = new RegExp(`([${CJK_RANGES}])\\s+([${CJK_RANGES}])`, 'gu')
+const CJK_SPACE_RE = new RegExp(`([${CJK_RANGES}])[\\s\\u00a0\\u1680\\u180e\\u2000-\\u200d\\u2028\\u2029\\u202f\\u205f\\u2060\\u3000\\ufeff]+([${CJK_RANGES}])`, 'gu')
+const NON_ASCII_SPACE_RE = /([^\x00-\x7F])[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+([^\x00-\x7F])/gu
 
 function val(value) { return String(value ?? '').trim() }
 function list(value) { return Array.isArray(value) ? value : [] }
 function cleanLine(value) { return val(value).normalize('NFKC').replace(/[\r\n\t]+/gu, ' ').replace(/[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+/gu, ' ').trim() }
-function compactCjkSpaces(value) { let text = cleanLine(value); let prev = ''; while (prev !== text) { prev = text; text = text.replace(CJK_SPACE_RE, '$1$2') } return text }
+function compactCjkSpaces(value) { let text = cleanLine(value); let prev = ''; while (prev !== text) { prev = text; text = text.replace(CJK_SPACE_RE, '$1$2').replace(NON_ASCII_SPACE_RE, '$1$2') } return text }
 function parseArgs(argv) { const args = {}; for (let i = 0; i < argv.length; i += 1) { const item = argv[i]; if (!item.startsWith('--')) continue; const key = item.slice(2); const next = argv[i + 1]; if (!next || next.startsWith('--')) args[key] = true; else { args[key] = next; i += 1 } } return args }
 function loadEnvFile(file) { if (!fs.existsSync(file)) return; const raw = fs.readFileSync(file, 'utf8'); for (const line of raw.split(/\r?\n/u)) { const trimmed = line.trim(); if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue; const idx = trimmed.indexOf('='); const key = trimmed.slice(0, idx).trim(); let value = trimmed.slice(idx + 1).trim(); if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1); if (key && process.env[key] == null) process.env[key] = value } }
 function loadEnv() { loadEnvFile(path.resolve('.env.local')); loadEnvFile(path.resolve('.env')) }
@@ -113,8 +114,9 @@ async function main() {
     const title = cleanLine(plan.title || plan.name || plan.rawTitle)
     const reasons = list(plan.reasons).map(cleanLine).filter(Boolean)
     const inferred = inferCreatorRename(title, reasons)
-    const duplicateTargets = inferred.candidate ? list(creatorByNorm.get(normalizeName(inferred.candidate))).filter((x) => String(x.id) !== String(plan.id)) : []
-    const baseRow = { collection: cleanLine(plan.collection), id: String(plan.id ?? ''), oldTitle: title, candidateName: inferred.candidate, method: inferred.method, severity: cleanLine(plan.severity), reasons, notes: inferred.notes, duplicateTargets, sourceSlug: cleanLine(plan.slug), siteId: cleanLine(plan.siteId), safety: { planOnly: true, payloadWrite: false, directPostgresqlWrite: false, deletesEntities: false } }
+    const candidateName = normalizeCandidateName(inferred.candidate)
+    const duplicateTargets = candidateName ? list(creatorByNorm.get(normalizeName(candidateName))).filter((x) => String(x.id) !== String(plan.id)) : []
+    const baseRow = { collection: cleanLine(plan.collection), id: String(plan.id ?? ''), oldTitle: title, candidateName, method: inferred.method, severity: cleanLine(plan.severity), reasons, notes: inferred.notes, duplicateTargets, sourceSlug: cleanLine(plan.slug), siteId: cleanLine(plan.siteId), safety: { planOnly: true, payloadWrite: false, directPostgresqlWrite: false, deletesEntities: false } }
     const cls = classify(baseRow, duplicateTargets)
     rows.push({ ...baseRow, status: cls.status, blockers: cls.blockers, notes: cls.notes })
   }
