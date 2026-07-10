@@ -2,10 +2,12 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 'work-duplicates-audit-v0.2'
+const VERSION = 'work-duplicates-audit-v0.3'
 const DEFAULT_OUT_DIR = 'data_local/staging/work-duplicates'
 const PAGE_LIMIT = 200
 const CONFIDENCE_ORDER = { high: 0, medium: 1, low: 2, review: 3 }
+const HIGH_SOURCE_PREFIXES = new Set(['bangumiSubjectId', 'anilistMediaId', 'anilist', 'vndbId', 'vndb', 'steam', 'yurizukan'])
+const REVIEW_SOURCE_PREFIXES = new Set(['wikidataQid', 'wikidata'])
 
 function val(value) { return String(value ?? '').trim() }
 function list(value) { return Array.isArray(value) ? value : [] }
@@ -20,30 +22,42 @@ function normalizeUrl(value) { return val(value).replace(/\s+/gu, '').replace(/\
 function sourceRows(work) { return [...list(work.sourceLinks), ...list(work.candidateSources)].filter(Boolean) }
 function candidateSourceRows(work) { return list(work.candidateSources).filter(Boolean) }
 function sourceText(work) { return JSON.stringify({ externalIds: work.externalIds || {}, sourceLinks: work.sourceLinks || [], candidateSources: work.candidateSources || [], searchText: work.searchText || '' }) }
+function pushSourceKey(out, key, raw) {
+  const value = val(raw)
+  if (!value) return
+  if (key === 'malId' || key === 'idMal') return
+  out.push(`${key}:${value}`)
+}
 function sourceKeys(work) {
   const out = []
   const externalIds = work.externalIds || {}
-  for (const [key, raw] of Object.entries(externalIds)) {
-    const value = val(raw)
-    if (value) out.push(`${key}:${value}`)
-  }
+  for (const [key, raw] of Object.entries(externalIds)) pushSourceKey(out, key, raw)
   for (const source of candidateSourceRows(work)) {
-    if (source?.source && val(source.externalId)) out.push(`${source.source}:${val(source.externalId)}`)
+    const sourceName = val(source?.source)
+    const externalId = val(source?.externalId)
+    if (sourceName && externalId && sourceName !== 'malId') out.push(`${sourceName}:${externalId}`)
     const url = normalizeUrl(source?.url)
     if (/bgm\.tv\/subject\/(\d+)/iu.test(url)) out.push(`bangumiSubjectId:${url.match(/bgm\.tv\/subject\/(\d+)/iu)[1]}`)
+    if (/anilist\.co\/(?:anime|manga)\/(\d+)/iu.test(url)) out.push(`anilistMediaId:${url.match(/anilist\.co\/(?:anime|manga)\/(\d+)/iu)[1]}`)
     if (/vndb\.org\/v(\d+)/iu.test(url)) out.push(`vndbId:v${url.match(/vndb\.org\/v(\d+)/iu)[1]}`)
     if (/yurizukan\.com\/articles\/articleDetail\/(\d+)/iu.test(url)) out.push(`yurizukan:${url.match(/articleDetail\/(\d+)/iu)[1]}`)
     if (/store\.steampowered\.com\/app\/(\d+)/iu.test(url)) out.push(`steam:${url.match(/\/app\/(\d+)/iu)[1]}`)
+    if (/wikidata\.org\/wiki\/(Q\d+)/iu.test(url)) out.push(`wikidataQid:${url.match(/wikidata\.org\/wiki\/(Q\d+)/iu)[1].toUpperCase()}`)
   }
   for (const link of sourceRows(work)) {
     const url = normalizeUrl(link?.url)
     if (/bgm\.tv\/subject\/(\d+)/iu.test(url)) out.push(`bangumiSubjectId:${url.match(/bgm\.tv\/subject\/(\d+)/iu)[1]}`)
+    if (/anilist\.co\/(?:anime|manga)\/(\d+)/iu.test(url)) out.push(`anilistMediaId:${url.match(/anilist\.co\/(?:anime|manga)\/(\d+)/iu)[1]}`)
     if (/vndb\.org\/v(\d+)/iu.test(url)) out.push(`vndbId:v${url.match(/vndb\.org\/v(\d+)/iu)[1]}`)
     if (/yurizukan\.com\/articles\/articleDetail\/(\d+)/iu.test(url)) out.push(`yurizukan:${url.match(/articleDetail\/(\d+)/iu)[1]}`)
     if (/store\.steampowered\.com\/app\/(\d+)/iu.test(url)) out.push(`steam:${url.match(/\/app\/(\d+)/iu)[1]}`)
+    if (/wikidata\.org\/wiki\/(Q\d+)/iu.test(url)) out.push(`wikidataQid:${url.match(/wikidata\.org\/wiki\/(Q\d+)/iu)[1].toUpperCase()}`)
   }
   return [...new Set(out.filter(Boolean))]
 }
+function sourcePrefix(sourceKey) { return val(sourceKey).split(':', 1)[0] }
+function isHighSourceKey(sourceKey) { return HIGH_SOURCE_PREFIXES.has(sourcePrefix(sourceKey)) }
+function isReviewSourceKey(sourceKey) { return REVIEW_SOURCE_PREFIXES.has(sourcePrefix(sourceKey)) }
 function usefulSearchTitleLine(line) {
   if (!line || line.length > 120) return false
   if (/^https?:\/\//iu.test(line)) return false
@@ -71,7 +85,11 @@ function statusScore(status) { if (status === 'published') return 40; if (status
 function keepScore(work) { return statusScore(work.status) + (hasBangumi(work) ? 25 : 0) + Math.min(sourceKeys(work).length, 15) + (work.rank && work.rank !== 'unknown' ? 5 : 0) + (work.hasEvidence ? 5 : 0) }
 function chooseKeep(works) { return [...works].sort((a, b) => keepScore(b) - keepScore(a) || Number(a.id) - Number(b.id))[0] }
 function confidenceFor(kind, works, key) {
-  if (kind === 'source_key') return 'high'
+  if (kind === 'source_key') {
+    if (isHighSourceKey(key)) return 'high'
+    if (isReviewSourceKey(key)) return 'review'
+    return 'review'
+  }
   const mediaTypes = new Set(works.map((w) => val(w.mediaType || 'unknown')))
   const mediaGroups = new Set(works.map((w) => val(w.mediaGroup || 'unknown')))
   if (kind === 'alias_title_media' && mediaTypes.size === 1 && mediaGroups.size === 1) return 'medium'
@@ -112,8 +130,8 @@ async function main() {
     seen.add(key)
     deduped.push(row)
   }
-  const outputs = { rows: `${outDir}/work-duplicates-v01.rows.jsonl`, high: `${outDir}/work-duplicates-v01-high.jsonl`, medium: `${outDir}/work-duplicates-v01-medium.jsonl`, low: `${outDir}/work-duplicates-v01-low.jsonl`, review: `${outDir}/work-duplicates-v01-review.jsonl`, summary: `${outDir}/work-duplicates-v01-summary.json` }
-  const summary = { generatedAt: new Date().toISOString(), version: VERSION, payloadBaseUrl: base, worksRead: works.length, duplicateGroups: deduped.length, duplicateRows: deduped.reduce((sum, row) => sum + row.duplicateCount, 0), byKind: countBy(deduped, 'kind'), byConfidence: countBy(deduped, 'confidence'), outputs, safety: { payloadRead: true, payloadWrite: false, directPostgresqlWrite: false, deletesWorks: false, mergesWorks: false, auditOnly: true } }
+  const outputs = { rows: `${outDir}/work-duplicates-v02.rows.jsonl`, high: `${outDir}/work-duplicates-v02-high.jsonl`, medium: `${outDir}/work-duplicates-v02-medium.jsonl`, low: `${outDir}/work-duplicates-v02-low.jsonl`, review: `${outDir}/work-duplicates-v02-review.jsonl`, summary: `${outDir}/work-duplicates-v02-summary.json` }
+  const summary = { generatedAt: new Date().toISOString(), version: VERSION, payloadBaseUrl: base, worksRead: works.length, duplicateGroups: deduped.length, duplicateRows: deduped.reduce((sum, row) => sum + row.duplicateCount, 0), byKind: countBy(deduped, 'kind'), byConfidence: countBy(deduped, 'confidence'), sourceKeyPolicy: { ignored: ['malId', 'idMal'], highPrefixes: [...HIGH_SOURCE_PREFIXES], reviewPrefixes: [...REVIEW_SOURCE_PREFIXES] }, outputs, safety: { payloadRead: true, payloadWrite: false, directPostgresqlWrite: false, deletesWorks: false, mergesWorks: false, auditOnly: true } }
   writeJsonl(outputs.rows, deduped); writeJsonl(outputs.high, deduped.filter((row) => row.confidence === 'high')); writeJsonl(outputs.medium, deduped.filter((row) => row.confidence === 'medium')); writeJsonl(outputs.low, deduped.filter((row) => row.confidence === 'low')); writeJsonl(outputs.review, deduped.filter((row) => row.confidence === 'review')); writeJson(outputs.summary, summary)
   console.log(JSON.stringify(summary, null, 2)); console.log('\n==== high confidence sample ===='); for (const row of deduped.filter((r) => r.confidence === 'high').slice(0, 40)) console.log(JSON.stringify({ key: row.key, duplicateCount: row.duplicateCount, keep: row.keepCandidate.title, merge: row.mergeCandidates.map((x) => x.title) })); console.log('\n==== medium confidence sample ===='); for (const row of deduped.filter((r) => r.confidence === 'medium').slice(0, 40)) console.log(JSON.stringify({ key: row.key, duplicateCount: row.duplicateCount, keep: row.keepCandidate.title, merge: row.mergeCandidates.map((x) => x.title) }))
 }
