@@ -1,10 +1,11 @@
 import Link from 'next/link'
 
 import MissingSearchIndex from '../_components/MissingSearchIndex'
-import { readSearchIndex, type SearchCoverImage, type SearchItem } from '../_lib/search-index'
+import { readSearchIndex, type SearchItem } from '../_lib/search-index'
 
 const rankOrder = ['AA', 'A', 'B', 'C', 'D', 'E', 'unknown']
 const defaultPageSize = 30
+const pageSizeOptions = [30, 60]
 
 const mediaGroupOptions = [
   { label: '动画', value: 'anime' },
@@ -14,15 +15,6 @@ const mediaGroupOptions = [
   { label: '其他', value: 'other' },
   { label: '未知', value: 'unknown' },
 ]
-
-const mediaGroupLabels: Record<string, string> = {
-  anime: '动画',
-  manga: '漫画',
-  novel: '小说',
-  game: '游戏',
-  other: '其他',
-  unknown: '未知类型',
-}
 
 const rankDescriptions: Record<string, string> = {
   AA: '最高优先级关注项。前台统一显示为 S 级，通常需要优先阅读正文和材料。',
@@ -54,8 +46,12 @@ function firstParam(value: string | string[] | undefined) {
   return value || ''
 }
 
+function cleanLine(value: string | undefined) {
+  return String(value || '').normalize('NFKC').trim().replace(/\s+/g, ' ')
+}
+
 function normalizeText(value: string | undefined) {
-  return String(value || '').trim().toLowerCase()
+  return cleanLine(value).toLowerCase()
 }
 
 function normalizePositiveInteger(value: string | undefined, fallback: number) {
@@ -64,8 +60,9 @@ function normalizePositiveInteger(value: string | undefined, fallback: number) {
   return Math.floor(numberValue)
 }
 
-function normalizePageSize() {
-  return defaultPageSize
+function normalizePageSize(value: string | undefined) {
+  const requested = normalizePositiveInteger(value, defaultPageSize)
+  return requested === 60 ? 60 : defaultPageSize
 }
 
 function normalizeRank(value: string) {
@@ -82,17 +79,12 @@ function normalizeMediaGroup(value: string) {
   return mediaGroupOptions.some((option) => option.value === media) ? media : 'all'
 }
 
-function mediaGroupLabel(value?: string) {
-  if (!value) return ''
-  return mediaGroupLabels[value] || value
-}
-
 function hasEvidence(item: SearchItem) {
   return Boolean((item as WorksSearchItem).hasEvidence)
 }
 
 function rankLabel(rank?: string) {
-  if (!rank || rank === 'unknown') return '未分级'
+  if (!rank || rank === 'unknown') return 'E级'
   if (rank === 'AA') return 'S级'
   return `${rank}级`
 }
@@ -123,9 +115,43 @@ function uniqueValues(items: SearchItem[], key: 'creators' | 'organizations') {
 }
 
 function contentVisibilityLabel(value?: string) {
-  if (value === 'adult') return '标记内容'
+  if (value === 'adult') return '限制展示'
   if (value === 'restricted') return '限制展示'
   return ''
+}
+
+function isChineseTitle(value: string) {
+  const text = cleanLine(value)
+  if (!/[\p{Script=Han}]/u.test(text)) return false
+  return !/[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(text)
+}
+
+function isJapaneseTitle(value: string) {
+  return /[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(cleanLine(value))
+}
+
+function isEnglishTitle(value: string) {
+  const text = cleanLine(value)
+  return /[A-Za-z]/u.test(text) && !/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(text)
+}
+
+function uniqueTitleValues(values: Array<string | undefined>) {
+  const seen = new Set<string>()
+  const output: string[] = []
+  for (const raw of values) {
+    const value = cleanLine(raw)
+    if (!value) continue
+    const key = value.toLowerCase().replace(/[\s\u3000]+/gu, '').replace(/[\-‐‑‒–—―~〜～・:：;；,，.。!！?？'"“”‘’「」『』【】\[\]（）()]/gu, '')
+    if (seen.has(key)) continue
+    seen.add(key)
+    output.push(value)
+  }
+  return output
+}
+
+function displayTitle(item: SearchItem) {
+  const candidates = uniqueTitleValues([...(item.localizedTitles || []), item.title, item.originalTitle, ...(item.aliases || [])])
+  return candidates.find(isChineseTitle) || candidates.find(isJapaneseTitle) || candidates.find(isEnglishTitle) || candidates[0] || item.title
 }
 
 function itemMatchesQuery(item: SearchItem, query: string) {
@@ -173,7 +199,7 @@ function filterLabel(filters: NormalizedFilters) {
   const labels = []
   if (filters.q) labels.push(`关键词：${filters.q}`)
   if (filters.rank !== 'all') labels.push(`分级：${rankLabel(filters.rank)}`)
-  if (filters.media !== 'all') labels.push(`作品类型：${mediaGroupLabel(filters.media)}`)
+  if (filters.media !== 'all') labels.push(`作品类型：${filters.media}`)
   if (filters.creator) labels.push(`创作者：${filters.creator}`)
   if (filters.organization) labels.push(`机构：${filters.organization}`)
   if (filters.evidence === 'with') labels.push('只看有证据材料')
@@ -193,7 +219,7 @@ function parseFilters(params: Record<string, string | string[] | undefined>): No
   }
 }
 
-function pageHref(filters: NormalizedFilters, page: number) {
+function pageHref(filters: NormalizedFilters, page: number, pageSize: number) {
   const params = new URLSearchParams()
   if (filters.q) params.set('q', filters.q)
   if (filters.rank !== 'all') params.set('rank', filters.rank)
@@ -202,6 +228,7 @@ function pageHref(filters: NormalizedFilters, page: number) {
   if (filters.organization) params.set('organization', filters.organization)
   if (filters.evidence !== 'all') params.set('evidence', filters.evidence)
   if (page > 1) params.set('page', String(page))
+  if (pageSize !== defaultPageSize) params.set('perPage', String(pageSize))
 
   const query = params.toString()
   return query ? `/works?${query}` : '/works'
@@ -214,7 +241,7 @@ function paginationPages(currentPage: number, totalPages: number) {
     .sort((a, b) => a - b)
 }
 
-function HiddenFilterInputs({ filters }: { filters: NormalizedFilters }) {
+function HiddenFilterInputs({ filters, pageSize }: { filters: NormalizedFilters; pageSize: number }) {
   return (
     <>
       {filters.q ? <input name="q" type="hidden" value={filters.q} /> : null}
@@ -223,23 +250,8 @@ function HiddenFilterInputs({ filters }: { filters: NormalizedFilters }) {
       {filters.creator ? <input name="creator" type="hidden" value={filters.creator} /> : null}
       {filters.organization ? <input name="organization" type="hidden" value={filters.organization} /> : null}
       {filters.evidence !== 'all' ? <input name="evidence" type="hidden" value={filters.evidence} /> : null}
+      {pageSize !== defaultPageSize ? <input name="perPage" type="hidden" value={pageSize} /> : null}
     </>
-  )
-}
-
-function CoverThumb({ cover, title }: { cover?: SearchCoverImage; title: string }) {
-  if (cover?.url) {
-    return (
-      <div className="work-cover-thumb">
-        <img alt={cover.alt || `${title}封面`} src={cover.url} />
-      </div>
-    )
-  }
-
-  return (
-    <div className="work-cover-thumb work-cover-placeholder" aria-label="暂无封面">
-      <span>暂无封面</span>
-    </div>
   )
 }
 
@@ -270,7 +282,7 @@ function WorksFilterForm({ creators, filters, organizations }: { creators: strin
             <option value="C">C级</option>
             <option value="D">D级</option>
             <option value="E">E级</option>
-            <option value="unknown">未分级</option>
+            <option value="unknown">E级 / 未录入</option>
           </select>
         </label>
         <label>
@@ -319,15 +331,21 @@ function WorksPagination({ currentPage, filters, pageSize, totalItems, totalPage
     <nav className="collection-actions" aria-label="作品分页">
       <span>第 {currentPage} / {totalPages} 页</span>
       <span>显示 {firstItem}-{lastItem} / {totalItems} 条</span>
-      {currentPage > 1 ? <Link className="back-link" href={pageHref(filters, currentPage - 1)}>上一页</Link> : <span>上一页</span>}
+      {currentPage > 1 ? <Link className="back-link" href={pageHref(filters, currentPage - 1, pageSize)}>上一页</Link> : <span>上一页</span>}
       {pages.map((page) => (
         page === currentPage
           ? <span key={page}>{page}</span>
-          : <Link className="back-link" href={pageHref(filters, page)} key={page}>{page}</Link>
+          : <Link className="back-link" href={pageHref(filters, page, pageSize)} key={page}>{page}</Link>
       ))}
-      {currentPage < totalPages ? <Link className="back-link" href={pageHref(filters, currentPage + 1)}>下一页</Link> : <span>下一页</span>}
+      {currentPage < totalPages ? <Link className="back-link" href={pageHref(filters, currentPage + 1, pageSize)}>下一页</Link> : <span>下一页</span>}
+      <span>每页</span>
+      {pageSizeOptions.map((option) => (
+        option === pageSize
+          ? <span key={option}>{option}</span>
+          : <Link className="back-link" href={pageHref(filters, 1, option)} key={option}>{option}</Link>
+      ))}
       <form action="/works" className="page-jump-form">
-        <HiddenFilterInputs filters={filters} />
+        <HiddenFilterInputs filters={filters} pageSize={pageSize} />
         <label>
           跳到
           <input aria-label="跳到页码" defaultValue={currentPage} min="1" max={totalPages} name="page" type="number" />
@@ -344,12 +362,12 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
 
   const params = searchParams ? await searchParams : {}
   const filters = parseFilters(params)
-  const pageSize = normalizePageSize()
+  const pageSize = normalizePageSize(firstParam(params.perPage))
   const requestedPage = normalizePositiveInteger(firstParam(params.page), 1)
 
   const allItems = index.items
     .filter((item) => item.collection === 'works')
-    .sort((a, b) => rankSortValue(a.rank) - rankSortValue(b.rank) || a.title.localeCompare(b.title, 'zh-CN'))
+    .sort((a, b) => rankSortValue(a.rank) - rankSortValue(b.rank) || displayTitle(a).localeCompare(displayTitle(b), 'zh-CN'))
 
   const markedItems = allItems.filter((item) => item.contentVisibility && item.contentVisibility !== 'ordinary')
   const items = allItems.filter((item) => itemMatchesFilters(item, filters))
@@ -440,26 +458,15 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
                 <span>{group.items.length} 条</span>
               </div>
 
-              <div className="collection-grid">
+              <div className="collection-grid work-title-only-grid">
                 {group.items.map((item) => {
                   const visibilityLabel = contentVisibilityLabel(item.contentVisibility)
 
                   return (
-                    <Link className="collection-card work-card" data-content-visibility={item.contentVisibility || 'ordinary'} href={item.url} key={item.id}>
-                      <CoverThumb cover={item.cover} title={item.title} />
-                      <div className="work-card-body">
-                        <p>{[rankLabel(item.rank), mediaGroupLabel(item.mediaGroup)].filter(Boolean).join(' · ')}</p>
-                        <h2>{item.title}</h2>
-                        {visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}
-                        {item.originalTitle ? <span>原名：{item.originalTitle}</span> : null}
-                        {compactValues(item.localizedTitles).length ? <span>译名：{compactValues(item.localizedTitles).slice(0, 2).join(' / ')}</span> : null}
-                        {[item.mediaType, item.format, item.firstPublishedLabel].filter(Boolean).length ? (
-                          <span>基础信息：{[item.mediaType, item.format, item.firstPublishedLabel].filter(Boolean).join(' / ')}</span>
-                        ) : null}
-                        {compactValues(item.creators).length ? <span>创作者：{compactValues(item.creators).join(' / ')}</span> : null}
-                        {compactValues(item.organizations).length ? <span>机构：{compactValues(item.organizations).join(' / ')}</span> : null}
-                        {hasEvidence(item) ? <span>有证据材料</span> : null}
-                      </div>
+                    <Link className="collection-card work-card work-title-only-card" data-content-visibility={item.contentVisibility || 'ordinary'} href={item.url} key={item.id}>
+                      <p>{rankLabel(item.rank)}</p>
+                      <h2>{displayTitle(item)}</h2>
+                      {visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}
                     </Link>
                   )
                 })}
