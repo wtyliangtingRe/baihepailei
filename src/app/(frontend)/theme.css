@@ -35,6 +35,7 @@
 [data-theme='light'] .actions a,
 [data-theme='light'] .result-link,
 [data-theme='light'] .back-link,
+[data-theme='light'] .media-group-links a,
 [data-theme='light'] .rank-jump-list a,
 [data-theme='light'] .search-filters button,
 [data-theme='light'] .comment-compose-placeholder button {
@@ -53,6 +54,7 @@
 [data-theme='light'] .home-section-card,
 [data-theme='light'] .result-card,
 [data-theme='light'] .rank-explainer-card,
+[data-theme='light'] .works-filter-panel,
 [data-theme='light'] .update-card,
 [data-theme='light'] .feedback-type-card,
 [data-theme='light'] .feedback-guide,
@@ -82,7 +84,8 @@
 [data-theme='light'] .back-link,
 [data-theme='light'] .rich-text a,
 [data-theme='light'] .source-links a,
-[data-theme='light'] .detail-inline-link {
+[data-theme='light'] .detail-inline-link,
+[data-theme='light'] .works-filter-actions button {
   color: #b64178;
 }
 
@@ -108,12 +111,14 @@
 [data-theme='light'] .result-card-header,
 [data-theme='light'] .result-summary,
 [data-theme='light'] .detail-chips,
-[data-theme='light'] .detail-fields dt {
+[data-theme='light'] .detail-fields dt,
+[data-theme='light'] .works-filter-grid span {
   color: #766a61;
 }
 
 [data-theme='light'] .detail-fields div,
-[data-theme='light'] .rank-group-heading {
+[data-theme='light'] .rank-group-heading,
+[data-theme='light'] .works-filter-panel {
   border-top-color: #e2d6cc;
   border-bottom-color: #e2d6cc;
 }
@@ -128,7 +133,8 @@
 [data-theme='light'] .detail-chips span,
 [data-theme='light'] .search-suggestions li,
 [data-theme='light'] .related-work-item span,
-[data-theme='light'] .evidence-item span {
+[data-theme='light'] .evidence-item span,
+[data-theme='light'] .active-filter-list span {
   border-color: #e2d6cc;
   background: #fff0f7;
   color: #b64178;
@@ -136,6 +142,9 @@
 
 [data-theme='light'] .search-box input,
 [data-theme='light'] .search-box select,
+[data-theme='light'] .works-filter-grid input,
+[data-theme='light'] .works-filter-grid select,
+[data-theme='light'] .page-jump-form input,
 [data-theme='light'] .comment-compose-placeholder textarea {
   border-color: #d7c9bc;
   background: #fff;
@@ -143,7 +152,8 @@
 }
 
 [data-theme='light'] .rich-text code,
-[data-theme='light'] .empty-state pre {
+[data-theme='light'] .empty-state pre,
+[data-theme='light'] .search-text-preview li {
   background: #f0e7de;
   color: #9f3d6e;
 }
