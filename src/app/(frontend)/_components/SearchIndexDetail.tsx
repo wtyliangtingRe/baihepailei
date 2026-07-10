@@ -112,7 +112,7 @@ function evidenceStrengthLabel(value?: string) {
 }
 
 function contentVisibilityLabel(value?: string) {
-  if (value === 'adult') return '标记内容'
+  if (value === 'adult') return '限制展示'
   if (value === 'restricted') return '限制展示'
   return ''
 }
@@ -122,7 +122,7 @@ function advisoryLabel(value: string) {
 }
 
 function cleanLine(value?: string) {
-  return String(value || '').trim().replace(/\s+/g, ' ')
+  return String(value || '').normalize('NFKC').trim().replace(/\s+/g, ' ')
 }
 
 function linesOf(text?: string) {
@@ -130,6 +130,47 @@ function linesOf(text?: string) {
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
+}
+
+function normalizedTitleKey(value: string) {
+  return cleanLine(value)
+    .toLowerCase()
+    .replace(/[\s\u3000]+/gu, '')
+    .replace(/[\-‐‑‒–—―~〜～・:：;；,，.。!！?？'"“”‘’「」『』【】\[\]（）()]/gu, '')
+}
+
+function isChineseTitle(value: string) {
+  const text = cleanLine(value)
+  if (!/[\p{Script=Han}]/u.test(text)) return false
+  return !/[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(text)
+}
+
+function isJapaneseTitle(value: string) {
+  return /[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(cleanLine(value))
+}
+
+function isEnglishTitle(value: string) {
+  const text = cleanLine(value)
+  return /[A-Za-z]/u.test(text) && !/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(text)
+}
+
+function uniqueTitleValues(values: Array<string | undefined>) {
+  const seen = new Set<string>()
+  const output: string[] = []
+  for (const raw of values) {
+    const value = cleanLine(raw)
+    if (!value) continue
+    const key = normalizedTitleKey(value)
+    if (seen.has(key)) continue
+    seen.add(key)
+    output.push(value)
+  }
+  return output
+}
+
+function displayTitle(item: SearchItem) {
+  const candidates = uniqueTitleValues([...(item.localizedTitles || []), item.title, item.originalTitle, ...(item.localizedNames || []), ...(item.aliases || [])])
+  return candidates.find(isChineseTitle) || candidates.find(isJapaneseTitle) || candidates.find(isEnglishTitle) || candidates[0] || item.title
 }
 
 function valuesOf(value: string | string[] | boolean | undefined) {
@@ -142,20 +183,6 @@ function visibleFieldsOf(fields: Array<[string, string | string[] | boolean | un
   return fields
     .map(([label, value]) => [label, valuesOf(value)] as const)
     .filter(([, values]) => values.length > 0)
-}
-
-function uniqueValues(values: Array<string | undefined>) {
-  const seen = new Set<string>()
-  const output: string[] = []
-  for (const raw of values) {
-    const value = cleanLine(raw)
-    if (!value) continue
-    const key = value.toLowerCase()
-    if (seen.has(key)) continue
-    seen.add(key)
-    output.push(value)
-  }
-  return output
 }
 
 function FieldList({ fields }: { fields: Array<[string, string | string[] | boolean | undefined]> }) {
@@ -195,7 +222,7 @@ function SearchableTitleTable({ titles }: { titles: string[] }) {
 }
 
 function BasicInfo({ item }: { item: SearchItem }) {
-  const searchableTitles = uniqueValues([item.title, item.originalTitle, ...(item.localizedTitles || []), ...(item.localizedNames || []), ...(item.aliases || [])])
+  const searchableTitles = uniqueTitleValues([displayTitle(item), item.title, item.originalTitle, ...(item.localizedTitles || []), ...(item.localizedNames || []), ...(item.aliases || [])])
   const fields: Array<[string, string | string[] | boolean | undefined]> = [
     ['作品类型', mediaGroupLabel(item.mediaGroup)],
     ['作品形态', visibleMetadataValue(item.format || item.mediaType)],
@@ -251,6 +278,7 @@ function sourceName(source?: string) {
   if (value.toLowerCase() === 'vndb') return 'VNDB'
   if (value.toLowerCase() === 'steam') return 'Steam'
   if (value.toLowerCase() === 'yurizukan') return 'Yurizukan'
+  if (value.toLowerCase() === 'wikidata') return 'Wikidata'
   return value
 }
 
@@ -286,9 +314,25 @@ function inferFallbackSources(item: SearchItem) {
   return { sourceLinks, candidateSources, externalIds }
 }
 
+function allSourceLinks(item: SearchItem) {
+  const inferred = inferFallbackSources(item)
+  const rows: DetailSourceLink[] = []
+  for (const link of inferred.sourceLinks) if (link.url) rows.push({ label: link.label || hostnameLabel(link.url), url: link.url })
+  for (const source of inferred.candidateSources) if (source.url) rows.push({ label: [sourceName(source.source), source.label, source.externalId].filter(Boolean).join(' / ') || hostnameLabel(source.url), url: source.url })
+  const seen = new Set<string>()
+  return rows.filter((link) => {
+    const key = String(link.url || '').trim().replace(/\/+$/u, '')
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 function SourceLinks({ item }: { item: SearchItem }) {
-  const { sourceLinks, candidateSources, externalIds } = inferFallbackSources(item)
-  const externalIdRows = Object.entries(externalIds).filter(([, value]) => value)
+  const inferred = inferFallbackSources(item)
+  const sourceLinks = allSourceLinks(item)
+  const candidateSources = inferred.candidateSources
+  const externalIdRows = Object.entries(inferred.externalIds).filter(([, value]) => value)
 
   return (
     <section className="detail-card">
@@ -341,13 +385,15 @@ function RelatedEvidencePlaceholder({ collection }: { collection: string }) {
 }
 
 function toDetailItem(item: SearchItem): DetailItem {
+  const inferred = inferFallbackSources(item)
   return {
     ...item,
-    allTitles: uniqueValues([item.title, item.originalTitle, ...(item.localizedTitles || []), ...(item.localizedNames || []), ...(item.aliases || [])]),
+    title: displayTitle(item),
+    allTitles: uniqueTitleValues([displayTitle(item), item.title, item.originalTitle, ...(item.localizedTitles || []), ...(item.localizedNames || []), ...(item.aliases || [])]),
     sections: [],
-    sourceLinks: inferFallbackSources(item).sourceLinks,
-    candidateSources: inferFallbackSources(item).candidateSources,
-    externalIds: inferFallbackSources(item).externalIds,
+    sourceLinks: inferred.sourceLinks,
+    candidateSources: inferred.candidateSources,
+    externalIds: inferred.externalIds,
   }
 }
 
@@ -360,6 +406,7 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
   const reviewStatus = reviewStatusLabel(item.reviewStatus)
   const evidenceStrength = evidenceStrengthLabel(item.evidenceStrength)
   const contentVisibility = contentVisibilityLabel(item.contentVisibility)
+  const title = displayTitle(item)
 
   return (
     <main className="page detail-page" data-content-visibility={item.contentVisibility || 'ordinary'}>
@@ -373,10 +420,10 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
           </Link>
         </div>
         <div className="detail-hero-layout">
-          {item.collection === 'works' ? <WorkCover cover={item.cover} title={item.title} /> : null}
+          {item.collection === 'works' ? <WorkCover cover={item.cover} title={title} /> : null}
           <div>
             <p className="eyebrow">{collectionLabel(item.collection)}</p>
-            <h1>{item.title}</h1>
+            <h1>{title}</h1>
             {contentVisibility ? <p className="content-visibility-note">此条目标记为「{contentVisibility}」。普通模式下不会出现在列表和搜索结果中。</p> : null}
             <div className="detail-chips">
               {rank ? <span>{rank}</span> : null}
