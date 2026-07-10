@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 'entity-anomaly-medium-rename-plan-v0.7'
+const VERSION = 'entity-anomaly-medium-rename-plan-v0.8'
 const DEFAULT_INPUT = 'data_local/staging/entity-anomalies/entity-anomalies-v01-medium.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/entity-anomalies'
 const PAGE_LIMIT = 200
@@ -11,7 +11,8 @@ const GENERIC_CANDIDATE_NAMES = new Set(['舞台', '月刊', '人物', '活动',
 const CJK_RANGES = '\\u3400-\\u4DBF\\u4E00-\\u9FFF\\uF900-\\uFAFF\\u3040-\\u309F\\u30A0-\\u30FF\\u31F0-\\u31FF'
 const CJK_SPACE_RE = new RegExp(`([${CJK_RANGES}])[\\s\\u00a0\\u1680\\u180e\\u2000-\\u200d\\u2028\\u2029\\u202f\\u205f\\u2060\\u3000\\ufeff]+([${CJK_RANGES}])`, 'gu')
 const NON_ASCII_SPACE_RE = /([^\x00-\x7F])[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+([^\x00-\x7F])/gu
-const INTERNAL_NON_ASCII_SPACE_RE = /[^\x00-\x7F][\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+[^\x00-\x7F]/u
+const ANY_SPACE_RE = /[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]/u
+const HAS_NON_ASCII_RE = /[^\x00-\x7F]/u
 
 function val(value) { return String(value ?? '').trim() }
 function list(value) { return Array.isArray(value) ? value : [] }
@@ -39,7 +40,7 @@ function looksMultiPersonOrRole(value) { return /(?:著|訳|译|原作|角色原
 function looksOrgLike(value) { return /(?:株式会社|有限会社|会社|製作|制作|委员会|委員会|出品|出版社|テレビ|アニメーション|ホールディングス|网络|網絡|Production|Productions|Studio|Studios|NETWORK|networks?|Games?|Soft|SOFT|Company|Inc\.?|LLC|\bPoint\b|\bTeam\b|\bProject\b|\bCircle\b|\bGroup\b)/iu.test(value) }
 function looksGenericCandidate(value) { return GENERIC_CANDIDATE_NAMES.has(cleanLine(value)) }
 function looksShortSymbolicLatin(value) { return /^[A-Za-z0-9+&._-]{1,4}$/u.test(cleanLine(value)) }
-function looksUnsafeInternalNonAsciiSpace(value) { return INTERNAL_NON_ASCII_SPACE_RE.test(cleanLine(value)) }
+function looksUnsafeSpacedNonAsciiName(value) { const text = cleanLine(value); return HAS_NON_ASCII_RE.test(text) && ANY_SPACE_RE.test(text) }
 function looksEmptyOrWorkOnly(title, candidate) { return !candidate || normalizeName(title) === normalizeName(candidate) || candidate.length < 1 }
 function inferCreatorRename(title, reasons) {
   const text = cleanLine(title)
@@ -63,7 +64,7 @@ function inferCreatorRename(title, reasons) {
   if (candidate && looksOrgLike(candidate)) notes.push('candidate_organization_like')
   if (candidate && looksGenericCandidate(candidate)) notes.push('candidate_generic_word')
   if (candidate && looksShortSymbolicLatin(candidate)) notes.push('candidate_short_symbolic_latin')
-  if (candidate && looksUnsafeInternalNonAsciiSpace(candidate)) notes.push('candidate_internal_nonascii_space')
+  if (candidate && looksUnsafeSpacedNonAsciiName(candidate)) notes.push('candidate_spaced_nonascii_name')
   if (!hasWorkQuote(text) && !reasons.includes('title_unbalanced_brackets')) notes.push('missing_work_quote_signal')
   return { candidate, method, notes }
 }
@@ -72,7 +73,7 @@ function classify(row, duplicateTargets) {
   if (row.collection !== 'creators') return { status: 'manual_review', blockers: ['not_creator_collection'], notes }
   if (row.method === 'role_prefix_after_colon') return { status: 'manual_review', blockers: ['role_prefix_needs_manual_review'], notes }
   if (!row.candidateName) return { status: 'manual_review', blockers: ['missing_candidate_name'], notes }
-  const blockingNotes = notes.filter((x) => ['candidate_has_bad_chars', 'candidate_too_long', 'candidate_multiperson_or_role_mixed', 'candidate_organization_like', 'candidate_generic_word', 'candidate_short_symbolic_latin', 'candidate_internal_nonascii_space', 'no_clean_candidate'].includes(x))
+  const blockingNotes = notes.filter((x) => ['candidate_has_bad_chars', 'candidate_too_long', 'candidate_multiperson_or_role_mixed', 'candidate_organization_like', 'candidate_generic_word', 'candidate_short_symbolic_latin', 'candidate_spaced_nonascii_name', 'no_clean_candidate'].includes(x))
   if (blockingNotes.length) return { status: 'manual_review', blockers: blockingNotes, notes }
   if (duplicateTargets.length) return { status: 'duplicate_target_review', blockers: ['existing_same_name_entity'], notes }
   return { status: 'safe_rename', blockers: [], notes }
@@ -110,8 +111,9 @@ async function main() {
     const reasons = list(plan.reasons).map(cleanLine).filter(Boolean)
     const inferred = inferCreatorRename(title, reasons)
     const candidateName = normalizeCandidateName(inferred.candidate)
+    const notes = [...new Set([...inferred.notes, ...(looksUnsafeSpacedNonAsciiName(candidateName) ? ['candidate_spaced_nonascii_name'] : [])])]
     const duplicateTargets = candidateName ? list(creatorByNorm.get(normalizeName(candidateName))).filter((x) => String(x.id) !== String(plan.id)) : []
-    const baseRow = { collection: cleanLine(plan.collection), id: String(plan.id ?? ''), oldTitle: title, candidateName, method: inferred.method, severity: cleanLine(plan.severity), reasons, notes: inferred.notes, duplicateTargets, sourceSlug: cleanLine(plan.slug), siteId: cleanLine(plan.siteId), safety: { planOnly: true, payloadWrite: false, directPostgresqlWrite: false, deletesEntities: false } }
+    const baseRow = { collection: cleanLine(plan.collection), id: String(plan.id ?? ''), oldTitle: title, candidateName, method: inferred.method, severity: cleanLine(plan.severity), reasons, notes, duplicateTargets, sourceSlug: cleanLine(plan.slug), siteId: cleanLine(plan.siteId), safety: { planOnly: true, payloadWrite: false, directPostgresqlWrite: false, deletesEntities: false } }
     const cls = classify(baseRow, duplicateTargets)
     rows.push({ ...baseRow, status: cls.status, blockers: cls.blockers, notes: cls.notes })
   }
