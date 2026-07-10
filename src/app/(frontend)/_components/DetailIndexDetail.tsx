@@ -155,6 +155,20 @@ function isEnglishTitle(value: string) {
   return /[A-Za-z]/u.test(text) && !/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(text)
 }
 
+function uniqueValues(values: Array<string | undefined>) {
+  const seen = new Set<string>()
+  const output: string[] = []
+  for (const raw of values) {
+    const value = cleanLine(raw)
+    if (!value) continue
+    const key = value.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    output.push(value)
+  }
+  return output
+}
+
 function uniqueTitleValues(values: Array<string | undefined>) {
   const seen = new Set<string>()
   const output: string[] = []
@@ -175,7 +189,7 @@ function displayTitle(item: DetailItem) {
 }
 
 function valuesOf(value: string | string[] | boolean | undefined) {
-  if (Array.isArray(value)) return value.filter(Boolean)
+  if (Array.isArray(value)) return uniqueValues(value)
   if (typeof value === 'boolean') return value ? ['是'] : []
   return value ? [value] : []
 }
@@ -184,20 +198,6 @@ function visibleFieldsOf(fields: Array<[string, string | string[] | boolean | un
   return fields
     .map(([label, value]) => [label, valuesOf(value)] as const)
     .filter(([, values]) => values.length > 0)
-}
-
-function uniqueValues(values: Array<string | undefined>) {
-  const seen = new Set<string>()
-  const output: string[] = []
-  for (const raw of values) {
-    const value = cleanLine(raw)
-    if (!value) continue
-    const key = value.toLowerCase()
-    if (seen.has(key)) continue
-    seen.add(key)
-    output.push(value)
-  }
-  return output
 }
 
 function relationCollection(label: string) {
@@ -235,7 +235,7 @@ function FieldList({ fields }: { fields: Array<[string, string | string[] | bool
             <dt>{label}</dt>
             <dd className={collection ? 'detail-inline-values' : undefined}>
               {values.map((value, index) => (
-                <span key={`${label}-${value}`}>
+                <span key={`${label}-${index}-${normalizedTitleKey(value) || value}`}>
                   {index > 0 ? <span className="detail-inline-separator">/</span> : null}
                   <InlineValue collection={collection} value={value} />
                 </span>
@@ -257,7 +257,7 @@ function SearchableTitleTable({ titles }: { titles: string[] }) {
       <table className="detail-title-table">
         <tbody>
           {titles.map((title, index) => (
-            <tr key={`${title}-${index}`}>
+            <tr key={`${index}-${normalizedTitleKey(title)}`}>
               <th scope="row">{index + 1}</th>
               <td>{title}</td>
             </tr>
@@ -356,8 +356,8 @@ function SourceLinks({ item }: { item: DetailItem }) {
       />
       {links.length > 0 ? (
         <ul className="source-links">
-          {links.map((link) => (
-            <li key={link.url}>
+          {links.map((link, index) => (
+            <li key={`${index}-${link.url}`}>
               <a href={link.url} rel="noreferrer" target="_blank">
                 {link.label || link.url}
               </a>
@@ -426,13 +426,14 @@ function RelatedEvidence({ evidence, showPlaceholder }: { evidence: DetailItem[]
         <div className="evidence-list">
           {evidence.map((item) => {
             const evidenceItem = item as ExtendedDetailItem
+            const title = displayTitle(item)
             return (
               <Link className="evidence-item" href={item.url || `/evidence/${item.slug}`} key={item.id}>
-                <EvidenceImage image={evidenceItem.image} title={item.title} />
+                <EvidenceImage image={evidenceItem.image} title={title} />
                 <div>
                   <span>{evidenceTypeLabel(evidenceItem.evidenceType) || '证据材料'}</span>
                   {evidenceItem.evidenceStrength ? <span>{evidenceStrengthLabel(evidenceItem.evidenceStrength)}</span> : null}
-                  <strong>{displayTitle(item)}</strong>
+                  <strong>{title}</strong>
                   {evidenceItem.description ? <p>{evidenceItem.description}</p> : null}
                 </div>
               </Link>
