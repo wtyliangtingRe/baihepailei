@@ -2,16 +2,34 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 'work-duplicates-audit-v0.3'
+const VERSION = 'work-duplicates-audit-v0.4'
 const DEFAULT_OUT_DIR = 'data_local/staging/work-duplicates'
 const PAGE_LIMIT = 200
 const CONFIDENCE_ORDER = { high: 0, medium: 1, low: 2, review: 3 }
 const HIGH_SOURCE_PREFIXES = new Set(['bangumiSubjectId', 'anilistMediaId', 'anilist', 'vndbId', 'vndb', 'steam', 'yurizukan'])
 const REVIEW_SOURCE_PREFIXES = new Set(['wikidataQid', 'wikidata'])
+const ENV_FILES = ['.env.local', '.env']
 
 function val(value) { return String(value ?? '').trim() }
 function list(value) { return Array.isArray(value) ? value : [] }
 function parseArgs(argv) { const args = {}; for (let i = 0; i < argv.length; i += 1) { const item = argv[i]; if (!item.startsWith('--')) continue; const key = item.slice(2); const next = argv[i + 1]; if (!next || next.startsWith('--')) args[key] = true; else { args[key] = next; i += 1 } } return args }
+function loadDotenv() {
+  for (const file of ENV_FILES) {
+    const full = path.resolve(process.cwd(), file)
+    if (!fs.existsSync(full)) continue
+    for (const line of fs.readFileSync(full, 'utf8').split(/\r?\n/u)) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) continue
+      const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/u)
+      if (!match) continue
+      const key = match[1]
+      if (process.env[key]) continue
+      let value = match[2].trim()
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1)
+      process.env[key] = value
+    }
+  }
+}
 function cleanLine(value) { return val(value).normalize('NFKC').replace(/[\r\n\t]+/gu, ' ').replace(/[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+/gu, ' ').trim() }
 function normalizedTitle(value) { return cleanLine(value).toLowerCase().replace(/[\s\u3000]+/gu, '').replace(/[\-‐‑‒–—―~〜～・:：;；,，.。!！?？'"“”‘’「」『』【】\[\]（）()<>＜＞]/gu, '') }
 function searchLines(value) { return val(value).split(/[\r\n|]+/u).map(cleanLine).filter(Boolean) }
@@ -35,7 +53,7 @@ function sourceKeys(work) {
   for (const source of candidateSourceRows(work)) {
     const sourceName = val(source?.source)
     const externalId = val(source?.externalId)
-    if (sourceName && externalId && sourceName !== 'malId') out.push(`${sourceName}:${externalId}`)
+    if (sourceName && externalId && sourceName !== 'malId' && sourceName !== 'idMal') out.push(`${sourceName}:${externalId}`)
     const url = normalizeUrl(source?.url)
     if (/bgm\.tv\/subject\/(\d+)/iu.test(url)) out.push(`bangumiSubjectId:${url.match(/bgm\.tv\/subject\/(\d+)/iu)[1]}`)
     if (/anilist\.co\/(?:anime|manga)\/(\d+)/iu.test(url)) out.push(`anilistMediaId:${url.match(/anilist\.co\/(?:anime|manga)\/(\d+)/iu)[1]}`)
@@ -102,9 +120,10 @@ function groupRow(kind, key, works) { const keep = chooseKeep(works); const conf
 function addGroup(map, key, work) { if (!key) return; if (!map.has(key)) map.set(key, []); map.get(key).push(work) }
 async function requestJson(url, options = {}) { const response = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } }); const text = await response.text(); let payload = null; try { payload = text ? JSON.parse(text) : null } catch { payload = { raw: text } } if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}: ${text.slice(0, 800)}`); return payload }
 function authHeaders(token) { return token ? { Authorization: `JWT ${token}` } : {} }
-async function login(baseUrl) { const email = process.env.PAYLOAD_EXPORT_EMAIL || process.env.PAYLOAD_SEED_EMAIL; const password = process.env.PAYLOAD_EXPORT_PASSWORD || process.env.PAYLOAD_SEED_PASSWORD; if (!email || !password) throw new Error('Missing Payload login env vars'); const result = await requestJson(`${baseUrl}/api/users/login`, { method: 'POST', body: JSON.stringify({ email, password }) }); if (!result?.token) throw new Error('Payload login did not return a token'); return result.token }
+async function login(baseUrl) { const email = process.env.PAYLOAD_EXPORT_EMAIL || process.env.PAYLOAD_SEED_EMAIL; const password = process.env.PAYLOAD_EXPORT_PASSWORD || process.env.PAYLOAD_SEED_PASSWORD; if (!email || !password) throw new Error('Missing Payload login env vars. Set PAYLOAD_EXPORT_EMAIL/PAYLOAD_EXPORT_PASSWORD or PAYLOAD_SEED_EMAIL/PAYLOAD_SEED_PASSWORD, or put them in .env.local/.env.'); const result = await requestJson(`${baseUrl}/api/users/login`, { method: 'POST', body: JSON.stringify({ email, password }) }); if (!result?.token) throw new Error('Payload login did not return a token'); return result.token }
 async function fetchAllWorks(baseUrl, token) { const docs = []; let page = 1, totalPages = 1; do { const params = new URLSearchParams(); params.set('limit', String(PAGE_LIMIT)); params.set('page', String(page)); params.set('depth', '0'); params.set('draft', 'true'); const result = await requestJson(`${baseUrl}/api/works?${params.toString()}`, { headers: authHeaders(token) }); docs.push(...(Array.isArray(result?.docs) ? result.docs : [])); totalPages = Number(result?.totalPages || 1); page += 1 } while (page <= totalPages); return docs }
 async function main() {
+  loadDotenv()
   const args = parseArgs(process.argv.slice(2)); const base = String(args.url || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/+$/u, ''); const outDir = String(args['out-dir'] || DEFAULT_OUT_DIR); const token = await login(base); const works = await fetchAllWorks(base, token)
   const bySource = new Map(); const byPrimaryTitleMedia = new Map(); const byPrimaryTitleOnly = new Map(); const byAliasTitleMedia = new Map(); const byAliasTitleOnly = new Map()
   for (const work of works) {
