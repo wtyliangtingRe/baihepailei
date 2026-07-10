@@ -2,11 +2,12 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 'entity-anomaly-medium-rename-plan-v0.1'
+const VERSION = 'entity-anomaly-medium-rename-plan-v0.2'
 const DEFAULT_INPUT = 'data_local/staging/entity-anomalies/entity-anomalies-v01-medium.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/entity-anomalies'
 const PAGE_LIMIT = 200
-const ROLE_PREFIXES = new Set(['仅有参加作品原作人物', '人物', '活动', '文案', '原案', '原作', '角色原画', '作画', '監督', '脚本', '製作協力', '出品', '出品人'])
+const ROLE_PREFIXES = new Set(['仅有参加作品原作人物', '人物', '活动', '活動', '文案', '原案', '原作', '角色原画', '作画', '監督', '脚本', '製作協力', '出品', '出品人'])
+const GENERIC_CANDIDATE_NAMES = new Set(['舞台', '月刊', '人物', '活动', '活動', '文案', '原案', '原作', '作者', '著者', '作', '作品', 'ステージ'])
 
 function val(value) { return String(value ?? '').trim() }
 function list(value) { return Array.isArray(value) ? value : [] }
@@ -29,11 +30,18 @@ function firstQuoteIndex(text) {
   const indexes = ['「', '『', '《', '“', '"'].map((ch) => text.indexOf(ch)).filter((idx) => idx >= 0)
   return indexes.length ? Math.min(...indexes) : -1
 }
-function stripTrailingNoise(value) { return cleanLine(value).replace(/[\s:：;；,，.。\-—–()（）【】\[\]<>＜＞]+$/u, '').replace(/^(?:原作|作者|著者|作)[:：]/u, '').trim() }
+function stripTrailingNoise(value) {
+  return cleanLine(value)
+    .replace(/[\s:：;；,，.。\-—–()（）【】\[\]<>＜＞]+$/u, '')
+    .replace(/^(?:原作|作者|著者|作)[:：]/u, '')
+    .replace(/(?:\s*(?:月刊|連載|连载|掲載|掲載誌|シリーズ|より|から))$/u, '')
+    .trim()
+}
 function hasWorkQuote(value) { return /[「『《“"].+[」』》”"]/u.test(value) || /[「『《]/u.test(value) }
 function hasBadCharsForName(value) { return /[「」『』《》【】\[\]{}]/u.test(value) || /[:：;]/u.test(value) }
 function looksMultiPersonOrRole(value) { return /(?:著|訳|译|原作|角色原案|脚本).*[・、,，].*(?:著|訳|译|原作|角色原案|脚本)/u.test(value) || /[;；]/u.test(value) }
-function looksOrgLike(value) { return /(?:株式会社|有限会社|会社|製作|制作|委员会|委員会|出品|出版社|テレビ|アニメーション|Production|Productions|Studio|NETWORK|networks?)/iu.test(value) }
+function looksOrgLike(value) { return /(?:株式会社|有限会社|会社|製作|制作|委员会|委員会|出品|出版社|テレビ|アニメーション|ホールディングス|网络|網絡|Production|Productions|Studio|Studios|NETWORK|networks?|Games?|Soft|SOFT|Company|Inc\.?|LLC)/iu.test(value) }
+function looksGenericCandidate(value) { return GENERIC_CANDIDATE_NAMES.has(cleanLine(value)) }
 function looksEmptyOrWorkOnly(title, candidate) { return !candidate || normalizeName(title) === normalizeName(candidate) || candidate.length < 1 }
 function inferCreatorRename(title, reasons) {
   const text = cleanLine(title)
@@ -67,6 +75,7 @@ function inferCreatorRename(title, reasons) {
   if (candidate && candidate.length > 64) notes.push('candidate_too_long')
   if (candidate && looksMultiPersonOrRole(candidate)) notes.push('candidate_multiperson_or_role_mixed')
   if (candidate && looksOrgLike(candidate)) notes.push('candidate_organization_like')
+  if (candidate && looksGenericCandidate(candidate)) notes.push('candidate_generic_word')
   if (!hasWorkQuote(text) && !reasons.includes('title_unbalanced_brackets')) notes.push('missing_work_quote_signal')
   return { candidate, method, notes }
 }
@@ -75,10 +84,28 @@ function classify(row, duplicateTargets) {
   if (row.collection !== 'creators') return { status: 'manual_review', blockers: ['not_creator_collection'], notes }
   if (row.method === 'role_prefix_after_colon') return { status: 'manual_review', blockers: ['role_prefix_needs_manual_review'], notes }
   if (!row.candidateName) return { status: 'manual_review', blockers: ['missing_candidate_name'], notes }
-  const blockingNotes = notes.filter((x) => ['candidate_has_bad_chars', 'candidate_too_long', 'candidate_multiperson_or_role_mixed', 'candidate_organization_like', 'no_clean_candidate'].includes(x))
+  const blockingNotes = notes.filter((x) => ['candidate_has_bad_chars', 'candidate_too_long', 'candidate_multiperson_or_role_mixed', 'candidate_organization_like', 'candidate_generic_word', 'no_clean_candidate'].includes(x))
   if (blockingNotes.length) return { status: 'manual_review', blockers: blockingNotes, notes }
   if (duplicateTargets.length) return { status: 'duplicate_target_review', blockers: ['existing_same_name_entity'], notes }
   return { status: 'safe_rename', blockers: [], notes }
+}
+function markPlanInternalDuplicateCandidates(rows) {
+  const counts = new Map()
+  for (const row of rows) {
+    if (row.status !== 'safe_rename') continue
+    const key = normalizeName(row.candidateName)
+    if (!key) continue
+    counts.set(key, (counts.get(key) || 0) + 1)
+  }
+  for (const row of rows) {
+    if (row.status !== 'safe_rename') continue
+    const key = normalizeName(row.candidateName)
+    if (key && counts.get(key) > 1) {
+      row.status = 'manual_review'
+      row.blockers = [...new Set([...row.blockers, 'candidate_duplicate_within_plan'])]
+      row.notes = [...new Set([...row.notes, 'candidate_duplicate_within_plan'])]
+    }
+  }
 }
 
 async function main() {
@@ -123,6 +150,7 @@ async function main() {
     const cls = classify(baseRow, duplicateTargets)
     rows.push({ ...baseRow, status: cls.status, blockers: cls.blockers, notes: cls.notes })
   }
+  markPlanInternalDuplicateCandidates(rows)
 
   const outputs = {
     rows: `${outDir}/entity-anomaly-medium-rename-plan-v01.rows.jsonl`,
