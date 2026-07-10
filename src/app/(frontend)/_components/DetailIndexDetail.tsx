@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-import { readDetailIndex, type DetailCoverImage, type DetailItem } from '../_lib/detail-index'
+import { readDetailIndex, type DetailCoverImage, type DetailItem, type DetailSourceLink } from '../_lib/detail-index'
 import CommentBlock from './CommentBlock'
 import ContentCallout, { type ContentCalloutItem } from './ContentCallout'
 import RichTextRenderer from './RichTextRenderer'
@@ -125,8 +125,53 @@ function visibleMetadataValue(value?: string) {
   return normalized
 }
 
+function cleanLine(value?: string) {
+  return String(value || '').normalize('NFKC').trim().replace(/\s+/g, ' ')
+}
+
 function normalizeKey(value: string) {
-  return String(value || '').trim().toLowerCase()
+  return cleanLine(value).toLowerCase()
+}
+
+function normalizedTitleKey(value: string) {
+  return cleanLine(value)
+    .toLowerCase()
+    .replace(/[\s\u3000]+/gu, '')
+    .replace(/[\-‐‑‒–—―~〜～・:：;；,，.。!！?？'"“”‘’「」『』【】\[\]（）()]/gu, '')
+}
+
+function isChineseTitle(value: string) {
+  const text = cleanLine(value)
+  if (!/[\p{Script=Han}]/u.test(text)) return false
+  return !/[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(text)
+}
+
+function isJapaneseTitle(value: string) {
+  return /[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(cleanLine(value))
+}
+
+function isEnglishTitle(value: string) {
+  const text = cleanLine(value)
+  return /[A-Za-z]/u.test(text) && !/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(text)
+}
+
+function uniqueTitleValues(values: Array<string | undefined>) {
+  const seen = new Set<string>()
+  const output: string[] = []
+  for (const raw of values) {
+    const value = cleanLine(raw)
+    if (!value) continue
+    const key = normalizedTitleKey(value)
+    if (seen.has(key)) continue
+    seen.add(key)
+    output.push(value)
+  }
+  return output
+}
+
+function displayTitle(item: DetailItem) {
+  const candidates = uniqueTitleValues([...(item.localizedTitles || []), item.title, item.originalTitle, ...(item.aliases || []), ...(item.allTitles || [])])
+  return candidates.find(isChineseTitle) || candidates.find(isJapaneseTitle) || candidates.find(isEnglishTitle) || candidates[0] || item.title
 }
 
 function valuesOf(value: string | string[] | boolean | undefined) {
@@ -145,7 +190,7 @@ function uniqueValues(values: Array<string | undefined>) {
   const seen = new Set<string>()
   const output: string[] = []
   for (const raw of values) {
-    const value = String(raw || '').trim()
+    const value = cleanLine(raw)
     if (!value) continue
     const key = value.toLowerCase()
     if (seen.has(key)) continue
@@ -225,7 +270,7 @@ function SearchableTitleTable({ titles }: { titles: string[] }) {
 
 function BasicInfo({ item }: { item: DetailItem }) {
   const extendedItem = item as ExtendedDetailItem
-  const searchableTitles = uniqueValues([item.title, item.originalTitle, ...(item.localizedTitles || []), ...(item.aliases || []), ...(item.allTitles || [])])
+  const searchableTitles = uniqueTitleValues([displayTitle(item), item.title, item.originalTitle, ...(item.localizedTitles || []), ...(item.aliases || []), ...(item.allTitles || [])])
   const fields: Array<[string, string | string[] | boolean | undefined]> = [
     ['作品类型', mediaGroupLabel(extendedItem.mediaGroup)],
     ['作品形态', visibleMetadataValue(extendedItem.format)],
@@ -265,11 +310,36 @@ function sourceName(source?: string) {
   if (!value) return ''
   if (value.toLowerCase() === 'bangumi') return 'Bangumi'
   if (value.toLowerCase() === 'anilist') return 'AniList'
+  if (value.toLowerCase() === 'vndb') return 'VNDB'
+  if (value.toLowerCase() === 'steam') return 'Steam'
+  if (value.toLowerCase() === 'yurizukan') return 'Yurizukan'
+  if (value.toLowerCase() === 'wikidata') return 'Wikidata'
   return value
 }
 
+function hostnameLabel(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./u, '')
+  } catch {
+    return url
+  }
+}
+
+function allSourceLinks(item: DetailItem) {
+  const rows: DetailSourceLink[] = []
+  for (const link of item.sourceLinks || []) if (link.url) rows.push({ label: link.label || hostnameLabel(link.url), url: link.url })
+  for (const source of item.candidateSources || []) if (source.url) rows.push({ label: [sourceName(source.source), source.label, source.externalId].filter(Boolean).join(' / ') || hostnameLabel(source.url), url: source.url })
+  const seen = new Set<string>()
+  return rows.filter((link) => {
+    const key = String(link.url || '').trim().replace(/\/+$/u, '')
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 function SourceLinks({ item }: { item: DetailItem }) {
-  const links = (item.sourceLinks || []).filter((link) => link.url)
+  const links = allSourceLinks(item)
   const externalIds = Object.entries(item.externalIds || {}).filter(([, value]) => value)
   const candidateSources = (item.candidateSources || []).filter((source) => source.source || source.label || source.externalId || source.url)
 
@@ -362,7 +432,7 @@ function RelatedEvidence({ evidence, showPlaceholder }: { evidence: DetailItem[]
                 <div>
                   <span>{evidenceTypeLabel(evidenceItem.evidenceType) || '证据材料'}</span>
                   {evidenceItem.evidenceStrength ? <span>{evidenceStrengthLabel(evidenceItem.evidenceStrength)}</span> : null}
-                  <strong>{item.title}</strong>
+                  <strong>{displayTitle(item)}</strong>
                   {evidenceItem.description ? <p>{evidenceItem.description}</p> : null}
                 </div>
               </Link>
@@ -384,7 +454,7 @@ function RelatedWorks({ works }: { works: DetailItem[] }) {
         {works.map((work) => (
           <Link className="related-work-item" href={work.url} key={work.id}>
             <span>{displayRank(work.rank) || '未分级'}</span>
-            <strong>{work.title}</strong>
+            <strong>{displayTitle(work)}</strong>
             {work.originalTitle ? <em>{work.originalTitle}</em> : null}
           </Link>
         ))}
@@ -436,6 +506,7 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
   const reviewStatus = reviewStatusLabel(extendedItem.reviewStatus)
   const evidenceStrength = evidenceStrengthLabel(extendedItem.evidenceStrength)
   const showEvidencePlaceholder = ['works', 'creators', 'organizations'].includes(item.collection)
+  const title = displayTitle(item)
 
   return (
     <main className="page detail-page">
@@ -449,11 +520,11 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
           </Link>
         </div>
         <div className="detail-hero-layout">
-          {item.collection === 'works' ? <WorkCover cover={item.cover} title={item.title} /> : null}
-          {item.collection === 'evidence' ? <EvidenceImage image={extendedItem.image} title={item.title} /> : null}
+          {item.collection === 'works' ? <WorkCover cover={item.cover} title={title} /> : null}
+          {item.collection === 'evidence' ? <EvidenceImage image={extendedItem.image} title={title} /> : null}
           <div>
             <p className="eyebrow">{collectionLabel(item.collection)}</p>
-            <h1>{item.title}</h1>
+            <h1>{title}</h1>
             <div className="detail-chips">
               {rank ? <span>{rank}</span> : null}
               {mediaGroup ? <span>{mediaGroup}</span> : null}
