@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 'entity-anomaly-medium-rename-plan-v0.3'
+const VERSION = 'entity-anomaly-medium-rename-plan-v0.4'
 const DEFAULT_INPUT = 'data_local/staging/entity-anomalies/entity-anomalies-v01-medium.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/entity-anomalies'
 const PAGE_LIMIT = 200
@@ -27,12 +27,14 @@ function authHeaders(token) { return token ? { Authorization: `JWT ${token}` } :
 async function login(baseUrl) { const email = process.env.PAYLOAD_EXPORT_EMAIL || process.env.PAYLOAD_SEED_EMAIL; const password = process.env.PAYLOAD_EXPORT_PASSWORD || process.env.PAYLOAD_SEED_PASSWORD; if (!email || !password) throw new Error('Missing Payload login env vars'); const result = await requestJson(`${baseUrl}/api/users/login`, { method: 'POST', body: JSON.stringify({ email, password }) }); if (!result?.token) throw new Error('Payload login did not return a token'); return result.token }
 async function fetchAll(baseUrl, token, collection) { const docs = []; let page = 1, totalPages = 1; do { const params = new URLSearchParams(); params.set('limit', String(PAGE_LIMIT)); params.set('page', String(page)); params.set('depth', '0'); params.set('draft', 'true'); const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, { headers: authHeaders(token) }); docs.push(...(Array.isArray(result?.docs) ? result.docs : [])); totalPages = Number(result?.totalPages || 1); page += 1 } while (page <= totalPages); return docs }
 
-function firstQuoteIndex(text) {
-  const indexes = ['「', '『', '《', '“', '"'].map((ch) => text.indexOf(ch)).filter((idx) => idx >= 0)
-  return indexes.length ? Math.min(...indexes) : -1
+function firstQuoteIndex(text) { const indexes = ['「', '『', '《', '“', '"'].map((ch) => text.indexOf(ch)).filter((idx) => idx >= 0); return indexes.length ? Math.min(...indexes) : -1 }
+function normalizeCandidateName(value) {
+  return compactCjkSpaces(value)
+    .replace(/\s*([・·])\s*/gu, '$1')
+    .replace(/^\s+|\s+$/gu, '')
 }
 function stripTrailingNoise(value) {
-  return compactCjkSpaces(value)
+  return normalizeCandidateName(value)
     .replace(/[\s:：;；,，.。\-—–()（）【】\[\]<>＜＞]+$/u, '')
     .replace(/^(?:原作|作者|著者|作)[:：]/u, '')
     .replace(/(?:\s*(?:月刊|連載|连载|掲載|掲載誌|シリーズ|より|から))$/u, '')
@@ -51,7 +53,7 @@ function inferCreatorRename(title, reasons) {
   if (!text) return { candidate: '', method: '', notes: ['empty_title'] }
   const colon = text.match(/^([^:：]{1,18})[:：]\s*(.+)$/u)
   if (colon && ROLE_PREFIXES.has(cleanLine(colon[1]))) {
-    return { candidate: stripTrailingNoise(colon[2]), method: 'role_prefix_after_colon', notes: [`role_prefix:${cleanLine(colon[1])}`, 'manual_by_default'] }
+    return { candidate: normalizeCandidateName(stripTrailingNoise(colon[2])), method: 'role_prefix_after_colon', notes: [`role_prefix:${cleanLine(colon[1])}`, 'manual_by_default'] }
   }
   const parenIdx = text.search(/[（(]/u)
   const quoteIdx = firstQuoteIndex(text)
@@ -72,6 +74,7 @@ function inferCreatorRename(title, reasons) {
     candidate = stripTrailingNoise(text.replace(/[（(].*$/u, ''))
     method = method || 'prefix_before_parenthesis'
   }
+  candidate = normalizeCandidateName(candidate)
   if (looksEmptyOrWorkOnly(text, candidate)) notes.push('no_clean_candidate')
   if (candidate && hasBadCharsForName(candidate)) notes.push('candidate_has_bad_chars')
   if (candidate && candidate.length > 64) notes.push('candidate_too_long')
