@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 'entity-anomaly-medium-rename-plan-v0.6'
+const VERSION = 'entity-anomaly-medium-rename-plan-v0.7'
 const DEFAULT_INPUT = 'data_local/staging/entity-anomalies/entity-anomalies-v01-medium.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/entity-anomalies'
 const PAGE_LIMIT = 200
@@ -11,6 +11,7 @@ const GENERIC_CANDIDATE_NAMES = new Set(['舞台', '月刊', '人物', '活动',
 const CJK_RANGES = '\\u3400-\\u4DBF\\u4E00-\\u9FFF\\uF900-\\uFAFF\\u3040-\\u309F\\u30A0-\\u30FF\\u31F0-\\u31FF'
 const CJK_SPACE_RE = new RegExp(`([${CJK_RANGES}])[\\s\\u00a0\\u1680\\u180e\\u2000-\\u200d\\u2028\\u2029\\u202f\\u205f\\u2060\\u3000\\ufeff]+([${CJK_RANGES}])`, 'gu')
 const NON_ASCII_SPACE_RE = /([^\x00-\x7F])[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+([^\x00-\x7F])/gu
+const INTERNAL_NON_ASCII_SPACE_RE = /[^\x00-\x7F][\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+[^\x00-\x7F]/u
 
 function val(value) { return String(value ?? '').trim() }
 function list(value) { return Array.isArray(value) ? value : [] }
@@ -29,22 +30,16 @@ async function requestJson(url, options = {}) { const response = await fetch(url
 function authHeaders(token) { return token ? { Authorization: `JWT ${token}` } : {} }
 async function login(baseUrl) { const email = process.env.PAYLOAD_EXPORT_EMAIL || process.env.PAYLOAD_SEED_EMAIL; const password = process.env.PAYLOAD_EXPORT_PASSWORD || process.env.PAYLOAD_SEED_PASSWORD; if (!email || !password) throw new Error('Missing Payload login env vars'); const result = await requestJson(`${baseUrl}/api/users/login`, { method: 'POST', body: JSON.stringify({ email, password }) }); if (!result?.token) throw new Error('Payload login did not return a token'); return result.token }
 async function fetchAll(baseUrl, token, collection) { const docs = []; let page = 1, totalPages = 1; do { const params = new URLSearchParams(); params.set('limit', String(PAGE_LIMIT)); params.set('page', String(page)); params.set('depth', '0'); params.set('draft', 'true'); const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, { headers: authHeaders(token) }); docs.push(...(Array.isArray(result?.docs) ? result.docs : [])); totalPages = Number(result?.totalPages || 1); page += 1 } while (page <= totalPages); return docs }
-
 function firstQuoteIndex(text) { const indexes = ['「', '『', '《', '“', '"'].map((ch) => text.indexOf(ch)).filter((idx) => idx >= 0); return indexes.length ? Math.min(...indexes) : -1 }
 function normalizeCandidateName(value) { return compactCjkSpaces(value).replace(/\s*([・·])\s*/gu, '$1').replace(/^\s+|\s+$/gu, '') }
-function stripTrailingNoise(value) {
-  return normalizeCandidateName(value)
-    .replace(/[\s:：;；,，.。\-—–()（）【】\[\]<>＜＞]+$/u, '')
-    .replace(/^(?:原作|作者|著者|作)[:：]/u, '')
-    .replace(/(?:\s*(?:月刊|連載|连载|掲載|掲載誌|シリーズ|より|から))$/u, '')
-    .trim()
-}
+function stripTrailingNoise(value) { return normalizeCandidateName(value).replace(/[\s:：;；,，.。\-—–()（）【】\[\]<>＜＞]+$/u, '').replace(/^(?:原作|作者|著者|作)[:：]/u, '').replace(/(?:\s*(?:月刊|連載|连载|掲載|掲載誌|シリーズ|より|から))$/u, '').trim() }
 function hasWorkQuote(value) { return /[「『《“"].+[」』》”"]/u.test(value) || /[「『《]/u.test(value) }
 function hasBadCharsForName(value) { return /[「」『』《》【】\[\]{}]/u.test(value) || /[:：;]/u.test(value) }
 function looksMultiPersonOrRole(value) { return /(?:著|訳|译|原作|角色原案|脚本).*[・、,，].*(?:著|訳|译|原作|角色原案|脚本)/u.test(value) || /[;；]/u.test(value) }
 function looksOrgLike(value) { return /(?:株式会社|有限会社|会社|製作|制作|委员会|委員会|出品|出版社|テレビ|アニメーション|ホールディングス|网络|網絡|Production|Productions|Studio|Studios|NETWORK|networks?|Games?|Soft|SOFT|Company|Inc\.?|LLC|\bPoint\b|\bTeam\b|\bProject\b|\bCircle\b|\bGroup\b)/iu.test(value) }
 function looksGenericCandidate(value) { return GENERIC_CANDIDATE_NAMES.has(cleanLine(value)) }
 function looksShortSymbolicLatin(value) { return /^[A-Za-z0-9+&._-]{1,4}$/u.test(cleanLine(value)) }
+function looksUnsafeInternalNonAsciiSpace(value) { return INTERNAL_NON_ASCII_SPACE_RE.test(cleanLine(value)) }
 function looksEmptyOrWorkOnly(title, candidate) { return !candidate || normalizeName(title) === normalizeName(candidate) || candidate.length < 1 }
 function inferCreatorRename(title, reasons) {
   const text = cleanLine(title)
@@ -68,6 +63,7 @@ function inferCreatorRename(title, reasons) {
   if (candidate && looksOrgLike(candidate)) notes.push('candidate_organization_like')
   if (candidate && looksGenericCandidate(candidate)) notes.push('candidate_generic_word')
   if (candidate && looksShortSymbolicLatin(candidate)) notes.push('candidate_short_symbolic_latin')
+  if (candidate && looksUnsafeInternalNonAsciiSpace(candidate)) notes.push('candidate_internal_nonascii_space')
   if (!hasWorkQuote(text) && !reasons.includes('title_unbalanced_brackets')) notes.push('missing_work_quote_signal')
   return { candidate, method, notes }
 }
@@ -76,7 +72,7 @@ function classify(row, duplicateTargets) {
   if (row.collection !== 'creators') return { status: 'manual_review', blockers: ['not_creator_collection'], notes }
   if (row.method === 'role_prefix_after_colon') return { status: 'manual_review', blockers: ['role_prefix_needs_manual_review'], notes }
   if (!row.candidateName) return { status: 'manual_review', blockers: ['missing_candidate_name'], notes }
-  const blockingNotes = notes.filter((x) => ['candidate_has_bad_chars', 'candidate_too_long', 'candidate_multiperson_or_role_mixed', 'candidate_organization_like', 'candidate_generic_word', 'candidate_short_symbolic_latin', 'no_clean_candidate'].includes(x))
+  const blockingNotes = notes.filter((x) => ['candidate_has_bad_chars', 'candidate_too_long', 'candidate_multiperson_or_role_mixed', 'candidate_organization_like', 'candidate_generic_word', 'candidate_short_symbolic_latin', 'candidate_internal_nonascii_space', 'no_clean_candidate'].includes(x))
   if (blockingNotes.length) return { status: 'manual_review', blockers: blockingNotes, notes }
   if (duplicateTargets.length) return { status: 'duplicate_target_review', blockers: ['existing_same_name_entity'], notes }
   return { status: 'safe_rename', blockers: [], notes }
@@ -90,7 +86,6 @@ function markPlanInternalDuplicateCandidates(rows) {
     if (key && counts.get(key) > 1) { row.status = 'manual_review'; row.blockers = [...new Set([...row.blockers, 'candidate_duplicate_within_plan'])]; row.notes = [...new Set([...row.notes, 'candidate_duplicate_within_plan'])] }
   }
 }
-
 async function main() {
   loadEnv()
   const args = parseArgs(process.argv.slice(2))
@@ -130,5 +125,4 @@ async function main() {
   writeJson(outputs.summary, summary)
   console.log(JSON.stringify(summary, null, 2))
 }
-
 main().catch((error) => { console.error(error); process.exitCode = 1 })
