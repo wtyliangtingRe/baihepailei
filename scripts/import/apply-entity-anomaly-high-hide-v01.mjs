@@ -2,12 +2,12 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 'entity-anomaly-high-hide-v0.1'
+const VERSION = 'entity-anomaly-high-hide-v0.2'
 const DEFAULT_INPUT = 'data_local/staging/entity-anomalies/entity-anomalies-v01-high.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/entity-anomalies'
 const CONFIRM = 'apply-entity-anomaly-high-hide-v01'
 const ALLOWED_COLLECTIONS = new Set(['creators', 'organizations'])
-const PATCH_FIELDS = new Set(['isLiteVisible', 'isFullVisible', 'status', 'searchText'])
+const PATCH_FIELDS = new Set(['isLiteVisible', 'isFullVisible', 'searchText'])
 
 function val(value) { return String(value ?? '').trim() }
 function cleanLine(value) { return val(value).normalize('NFKC').replace(/[\r\n\t]+/gu, ' ').replace(/[\s\u00a0\u1680\u180e\u2000-\u200d\u2028\u2029\u202f\u205f\u2060\u3000\ufeff]+/gu, ' ').trim() }
@@ -31,7 +31,6 @@ function makePatch(doc, row) { const marker = `entityAnomalyHidden=true; hiddenB
   return {
     isLiteVisible: false,
     isFullVisible: false,
-    status: 'archived',
     searchText: uniqueLines([doc.searchText, marker]),
   }
 }
@@ -130,7 +129,7 @@ async function main() {
       deletesEntities: false,
       physicallyMergesOrDeletesEntities: false,
       hidesEntitiesFromLiteIndexes: true,
-      marksEntityStatusArchived: true,
+      marksEntityStatusArchived: false,
       patchFields: [...PATCH_FIELDS],
       confirmToken: CONFIRM,
     },
