@@ -59,8 +59,12 @@ function compactValues(values: string[] | undefined, limit = 3) {
   return values.filter(Boolean).slice(0, limit).join(' / ')
 }
 
+function cleanLine(value?: string) {
+  return String(value || '').normalize('NFKC').trim().replace(/\s+/g, ' ')
+}
+
 function displayRank(rank?: string) {
-  if (!rank || rank === 'unknown') return ''
+  if (!rank || rank === 'unknown') return '未分级'
   if (rank === 'AA') return 'S级'
   return `${rank}级`
 }
@@ -82,42 +86,27 @@ function contentVisibilityLabel(value?: string) {
 }
 
 function primaryMeta(item: SearchItem) {
-  if (item.collection === 'works') {
-    return displayRank(item.rank) || item.slug
-  }
-
-  if (item.collection === 'creators') {
-    return displayRank(item.rank) || item.slug
-  }
-
-  if (item.collection === 'organizations') {
-    return organizationTypeLabel(item.organizationType) || item.slug
-  }
-
-  if (item.collection === 'evidence') {
-    return evidenceTypeLabel(item.evidenceType) || item.slug
-  }
-
-  if (item.collection === 'terms') {
-    const relatedTerms = compactValues(item.relatedTerms)
-    return relatedTerms ? `相关：${relatedTerms}` : item.slug
-  }
-
-  if (item.collection === 'rules') {
-    return item.category || item.slug
-  }
-
-  return item.slug
+  if (item.collection === 'works') return displayRank(item.rank)
+  if (item.collection === 'creators') return '创作者'
+  if (item.collection === 'organizations') return organizationTypeLabel(item.organizationType) || '机构'
+  if (item.collection === 'evidence') return evidenceTypeLabel(item.evidenceType) || '证据材料'
+  if (item.collection === 'terms') return '名词解释'
+  if (item.collection === 'rules') return item.category || '规则'
+  return ''
 }
 
 function secondaryMeta(item: SearchItem) {
-  if (item.collection === 'works') return item.originalTitle || compactValues(item.creators)
+  if (item.collection === 'works') return ''
   if (item.collection === 'creators') return compactValues(item.aliases)
   if (item.collection === 'organizations') return compactValues(item.aliases)
   if (item.collection === 'evidence') return compactValues(item.relatedWorks) || compactValues(item.relatedOrganizations)
   if (item.collection === 'terms') return compactValues(item.relatedWarnings)
   if (item.collection === 'rules') return compactValues(item.relatedWarnings)
   return ''
+}
+
+function cardClassName(item: SearchItem) {
+  return item.collection === 'works' ? 'collection-card collection-card-compact work-list-card' : 'collection-card collection-card-compact'
 }
 
 function pageHref(collection: SearchCollection, page: number, pageSize: number) {
@@ -208,15 +197,17 @@ export default function CollectionIndexPage({ collection, eyebrow, title, descri
         <CollectionPagination collection={collection} currentPage={currentPage} pageSize={pageSize} totalItems={items.length} totalPages={totalPages} />
       </section>
 
-      <section className="collection-grid">
+      <section className="collection-grid collection-grid-compact">
         {pageItems.map((item) => {
           const secondary = secondaryMeta(item)
           const visibilityLabel = contentVisibilityLabel(item.contentVisibility)
+          const meta = primaryMeta(item)
+          const titleText = cleanLine(item.title)
 
           return (
-            <Link className="collection-card" data-content-visibility={item.contentVisibility || 'ordinary'} href={item.url} key={item.id}>
-              <p>{primaryMeta(item)}</p>
-              <h2>{item.title}</h2>
+            <Link className={cardClassName(item)} data-content-visibility={item.contentVisibility || 'ordinary'} href={item.url} key={item.id}>
+              {meta ? <p>{meta}</p> : null}
+              <h2 title={titleText}>{titleText}</h2>
               {visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}
               {secondary ? <span>{secondary}</span> : null}
             </Link>
