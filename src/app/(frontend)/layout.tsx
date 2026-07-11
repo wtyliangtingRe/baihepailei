@@ -34,7 +34,7 @@ const navItems = [
   { href: '/works', label: '作品' },
   { href: '/creators', label: '创作者' },
   { href: '/organizations', label: '机构' },
-  { href: '/terms', label: '名词解释' },
+  { href: '/terms', label: '页面提示' },
   { href: '/rules', label: '规则' },
   { href: '/recommendations', label: '推荐' },
   { href: '/me/lists', label: '我的列表' },
