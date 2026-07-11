@@ -28,17 +28,10 @@ const rankDescriptions: Record<string, string> = {
 
 type WorksSearchParams = Promise<Record<string, string | string[] | undefined>>
 
-type WorksSearchItem = SearchItem & {
-  hasEvidence?: boolean
-}
-
 type NormalizedFilters = {
   q: string
   rank: string
   media: string
-  creator: string
-  organization: string
-  evidence: string
 }
 
 function firstParam(value: string | string[] | undefined) {
@@ -79,10 +72,6 @@ function normalizeMediaGroup(value: string) {
   return mediaGroupOptions.some((option) => option.value === media) ? media : 'all'
 }
 
-function hasEvidence(item: SearchItem) {
-  return Boolean((item as WorksSearchItem).hasEvidence)
-}
-
 function rankLabel(rank?: string) {
   if (!rank || rank === 'unknown') return 'E级'
   if (rank === 'AA') return 'S级'
@@ -99,19 +88,6 @@ function rankSortValue(rank?: string) {
   const normalizedRank = rank || 'unknown'
   const index = rankOrder.indexOf(normalizedRank)
   return index === -1 ? rankOrder.length : index
-}
-
-function compactValues(values?: string[]) {
-  if (!Array.isArray(values)) return []
-  return values.filter(Boolean)
-}
-
-function uniqueValues(items: SearchItem[], key: 'creators' | 'organizations') {
-  const values = new Set<string>()
-  for (const item of items) {
-    for (const value of compactValues(item[key])) values.add(value)
-  }
-  return [...values].sort((a, b) => a.localeCompare(b, 'zh-CN'))
 }
 
 function contentVisibilityLabel(value?: string) {
@@ -188,10 +164,6 @@ function itemMatchesFilters(item: SearchItem, filters: NormalizedFilters) {
   const mediaGroup = item.mediaGroup || 'unknown'
   if (filters.rank !== 'all' && rank !== filters.rank) return false
   if (filters.media !== 'all' && mediaGroup !== filters.media) return false
-  if (filters.creator && !compactValues(item.creators).includes(filters.creator)) return false
-  if (filters.organization && !compactValues(item.organizations).includes(filters.organization)) return false
-  if (filters.evidence === 'with' && !hasEvidence(item)) return false
-  if (filters.evidence === 'without' && hasEvidence(item)) return false
   return itemMatchesQuery(item, filters.q)
 }
 
@@ -200,22 +172,14 @@ function filterLabel(filters: NormalizedFilters) {
   if (filters.q) labels.push(`关键词：${filters.q}`)
   if (filters.rank !== 'all') labels.push(`分级：${rankLabel(filters.rank)}`)
   if (filters.media !== 'all') labels.push(`作品类型：${filters.media}`)
-  if (filters.creator) labels.push(`创作者：${filters.creator}`)
-  if (filters.organization) labels.push(`机构：${filters.organization}`)
-  if (filters.evidence === 'with') labels.push('只看有证据材料')
-  if (filters.evidence === 'without') labels.push('只看暂无证据材料')
   return labels
 }
 
 function parseFilters(params: Record<string, string | string[] | undefined>): NormalizedFilters {
-  const evidence = firstParam(params.evidence)
   return {
     q: firstParam(params.q).trim(),
     rank: normalizeRank(firstParam(params.rank)),
     media: normalizeMediaGroup(firstParam(params.media)),
-    creator: firstParam(params.creator).trim(),
-    organization: firstParam(params.organization).trim(),
-    evidence: evidence === 'with' || evidence === 'without' ? evidence : 'all',
   }
 }
 
@@ -224,9 +188,6 @@ function pageHref(filters: NormalizedFilters, page: number, pageSize: number) {
   if (filters.q) params.set('q', filters.q)
   if (filters.rank !== 'all') params.set('rank', filters.rank)
   if (filters.media !== 'all') params.set('media', filters.media)
-  if (filters.creator) params.set('creator', filters.creator)
-  if (filters.organization) params.set('organization', filters.organization)
-  if (filters.evidence !== 'all') params.set('evidence', filters.evidence)
   if (page > 1) params.set('page', String(page))
   if (pageSize !== defaultPageSize) params.set('perPage', String(pageSize))
 
@@ -247,15 +208,12 @@ function HiddenFilterInputs({ filters, pageSize }: { filters: NormalizedFilters;
       {filters.q ? <input name="q" type="hidden" value={filters.q} /> : null}
       {filters.rank !== 'all' ? <input name="rank" type="hidden" value={filters.rank} /> : null}
       {filters.media !== 'all' ? <input name="media" type="hidden" value={filters.media} /> : null}
-      {filters.creator ? <input name="creator" type="hidden" value={filters.creator} /> : null}
-      {filters.organization ? <input name="organization" type="hidden" value={filters.organization} /> : null}
-      {filters.evidence !== 'all' ? <input name="evidence" type="hidden" value={filters.evidence} /> : null}
       {pageSize !== defaultPageSize ? <input name="perPage" type="hidden" value={pageSize} /> : null}
     </>
   )
 }
 
-function WorksFilterForm({ creators, filters, organizations }: { creators: string[]; filters: NormalizedFilters; organizations: string[] }) {
+function WorksFilterForm({ filters }: { filters: NormalizedFilters }) {
   return (
     <form action="/works" className="works-filter-panel">
       <div className="works-filter-grid">
@@ -283,32 +241,6 @@ function WorksFilterForm({ creators, filters, organizations }: { creators: strin
             <option value="D">D级</option>
             <option value="E">E级</option>
             <option value="unknown">E级 / 未录入</option>
-          </select>
-        </label>
-        <label>
-          <span>创作者</span>
-          <select defaultValue={filters.creator} name="creator">
-            <option value="">全部创作者</option>
-            {creators.map((creator) => (
-              <option key={creator} value={creator}>{creator}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>机构</span>
-          <select defaultValue={filters.organization} name="organization">
-            <option value="">全部机构</option>
-            {organizations.map((organization) => (
-              <option key={organization} value={organization}>{organization}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>证据材料</span>
-          <select defaultValue={filters.evidence} name="evidence">
-            <option value="all">全部作品</option>
-            <option value="with">只看有证据材料</option>
-            <option value="without">只看暂无证据材料</option>
           </select>
         </label>
       </div>
@@ -376,8 +308,6 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
   const pageStart = (currentPage - 1) * pageSize
   const pageItems = items.slice(pageStart, pageStart + pageSize)
   const activeFilterLabels = filterLabel(filters)
-  const creators = uniqueValues(allItems, 'creators')
-  const organizations = uniqueValues(allItems, 'organizations')
 
   const groups = rankOrder
     .map((rank) => ({
@@ -391,7 +321,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
       <section className="page-heading collection-heading">
         <p className="eyebrow">作品</p>
         <h1>作品</h1>
-        <p>浏览轻量搜索索引中的作品条目，并按作品类型、排雷分级、创作者、机构和证据材料状态筛选。</p>
+        <p>浏览轻量搜索索引中的作品条目，并按作品类型和排雷分级筛选。</p>
         <div className="collection-actions">
           <Link className="back-link" href="/search?collection=works">搜索作品</Link>
           <Link className="back-link" href="/browse">浏览全部</Link>
@@ -405,7 +335,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
             <Link href={`/works?media=${option.value}`} key={option.value}>{option.label}</Link>
           ))}
         </nav>
-        <WorksFilterForm creators={creators} filters={filters} organizations={organizations} />
+        <WorksFilterForm filters={filters} />
         {activeFilterLabels.length ? (
           <div className="active-filter-list" aria-label="当前筛选条件">
             {activeFilterLabels.map((label) => <span key={label}>{label}</span>)}
@@ -447,7 +377,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
         {groups.length === 0 ? (
           <section className="empty-state small">
             <h2>没有符合条件的作品</h2>
-            <p>可以放宽作品类型、分级、创作者、机构或证据材料筛选条件。</p>
+            <p>可以放宽作品类型、分级或关键词筛选条件。</p>
             <Link className="result-link" href="/works">清除筛选</Link>
           </section>
         ) : (
