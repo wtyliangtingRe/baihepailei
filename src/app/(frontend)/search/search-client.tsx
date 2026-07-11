@@ -55,8 +55,9 @@ type SearchResult = SearchItem & {
   score: number
 }
 
-const searchSuggestions = ['作品中文名或日文名', '作者 / 社团 / 制作组 / 机构', '证据类型或来源页面', '旧站关键词或别名']
-const validCollections = new Set(['all', 'works', 'creators', 'organizations', 'evidence', 'terms', 'rules'])
+const searchSuggestions = ['作品中文名或日文名', '作者 / 社团 / 制作组 / 机构', '旧站关键词或别名']
+const validCollections = new Set(['all', 'works', 'creators', 'organizations'])
+const publicSearchCollections = new Set(['works', 'creators', 'organizations'])
 
 function indexModeLabel(mode: string) {
   if (mode === 'include-drafts') return '含草稿'
@@ -70,6 +71,7 @@ function readContentScope(): ContentScope {
 }
 
 function itemAllowedByScope(item: SearchItem, scope: ContentScope) {
+  if (!publicSearchCollections.has(item.collection)) return false
   if (item.collection !== 'works') return true
   if (scope === 'all') return true
   return !item.contentVisibility || item.contentVisibility === 'ordinary'
@@ -206,7 +208,7 @@ export default function SearchClient() {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="例如：樱trick、タチ、分级、作者名、机构名、证据类型"
+          placeholder="例如：樱trick、タチ、作者名、机构名、旧站关键词"
         />
       </label>
 
@@ -214,14 +216,14 @@ export default function SearchClient() {
         <button className={activeCollection === 'all' ? 'active' : ''} onClick={() => setActiveCollection('all')} type="button">
           全部 {visibleItems.length}
         </button>
-        {Object.entries(collectionCounts).map(([collection, count]) => (
+        {['works', 'creators', 'organizations'].map((collection) => (
           <button
             className={activeCollection === collection ? 'active' : ''}
             key={collection}
             onClick={() => setActiveCollection(collection)}
             type="button"
           >
-            {getCollectionLabel(collection)} {count}
+            {getCollectionLabel(collection)} {collectionCounts[collection] || 0}
           </button>
         ))}
       </div>
