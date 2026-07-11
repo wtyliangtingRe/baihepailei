@@ -45,7 +45,7 @@ export default function RulesIndexPage() {
         </p>
         <div className="collection-actions">
           <Link className="back-link" href="/search?collection=rules">搜索旧规则条目</Link>
-          <Link className="back-link" href="/terms">页面提示</Link>
+          <Link className="back-link" href="/terms">站点说明</Link>
           <span>{RADAR_RATING_POLICY_ID}</span>
           <span>{classEntries.length} 条细则</span>
         </div>
