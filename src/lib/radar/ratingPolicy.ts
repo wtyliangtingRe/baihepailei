@@ -1,4 +1,4 @@
-export const RADAR_RATING_POLICY_ID = 'radar-rating-policy-v0.3-draft' as const
+export const RADAR_RATING_POLICY_ID = 'radar-rating-policy-v0.4-draft' as const
 
 export type RadarGrade = 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X'
 
@@ -19,6 +19,7 @@ export type RadarRatingClass =
   | 'C-FRIENDSHIP'
   | 'C-SIDE-CP'
   | 'C-CONTEXT-RISK'
+  | 'C-FANWORK-NON-INHERITED'
   | 'C-MALE-MAIN-CAST'
   | 'C-FUTURE-HET-HINT'
   | 'C-STRAIGHT-GIRL-HINT'
@@ -44,6 +45,7 @@ export type RadarRatingClass =
   | 'E-OFFICIAL-DENIAL'
   | 'E-TOKEN-YURI'
   | 'E-SETTING-SEVERE'
+  | 'E-CREATOR-MALICIOUS-HISTORY'
   | 'E-SPECIAL'
   | 'F-HET-END'
   | 'F-MALE-INTIMACY'
@@ -51,6 +53,7 @@ export type RadarRatingClass =
   | 'F-YURI-BAIT'
   | 'F-SETTING-BAIT'
   | 'F-PROJECT-CONTAMINATION'
+  | 'F-CREATOR-HIGH-RISK-SPEECH'
   | 'X-PREPAID-FRAUD'
   | 'X-REPEATED-BAIT'
   | 'X-MALICIOUS-CREATOR'
@@ -94,14 +97,15 @@ export const radarClassDefinitions: Record<RadarRatingClass, {
 
   'B-LIGHT': { grade: 'B', label: '轻百合 / 恋爱未确立', keywords: ['light_yuri'] },
   'B-MALE-NOISE': { grade: 'B', label: '男性或疑似男性干扰观感', keywords: ['male_noise'] },
-  'B-CRITIQUE-RADAR': { grade: 'B', label: '作品批判雷点而描写雷点', keywords: ['critique_radar'] },
+  'B-CRITIQUE-RADAR': { grade: 'B', label: '作品主旨意在批判某一雷点，而不得不对其描写', keywords: ['critique_radar'] },
   'B-POWER-IMBALANCE': { grade: 'B', label: '全女性关系中的不对等关系', keywords: ['power_imbalance'] },
   'B-FEMALE-NTR': { grade: 'B', label: '女性之间 NTR / 党争 / 胃疼', keywords: ['female_ntr', 'love_triangle'] },
   'B-UNFINISHED-CREATOR-RISK': { grade: 'B', label: '作者主要一般向且作品未完结', keywords: ['unfinished_creator_risk'] },
 
   'C-FRIENDSHIP': { grade: 'C', label: '友情以上难确认', keywords: ['friendship_unclear'] },
   'C-SIDE-CP': { grade: 'C', label: '非百合作品中的百合配角 / 群像', keywords: ['side_cp'] },
-  'C-CONTEXT-RISK': { grade: 'C', label: '企划 / 作者 / 地区 / 连载上下文风险', keywords: ['context_risk'] },
+  'C-CONTEXT-RISK': { grade: 'C', label: '不具继承关系的多元企划中其他部分为非百合作品，但本作暂无其他雷点', keywords: ['context_risk', 'non_inherited_project_context'] },
+  'C-FANWORK-NON-INHERITED': { grade: 'C', label: '任何原作的不具继承关系的二次创作，但本作暂无其他雷点', keywords: ['fanwork_non_inherited'] },
   'C-MALE-MAIN-CAST': { grade: 'C', label: '主要角色中有男性但女性 CP 成立', keywords: ['male_main_cast'] },
   'C-FUTURE-HET-HINT': { grade: 'D', label: '未来异性恋婚育暗示', keywords: ['future_het_hint'] },
   'C-STRAIGHT-GIRL-HINT': { grade: 'C', label: '直女发言或非百合主要角色风险', keywords: ['straight_girl_hint'] },
@@ -129,6 +133,7 @@ export const radarClassDefinitions: Record<RadarRatingClass, {
   'E-OFFICIAL-DENIAL': { grade: 'E', label: '官方 / 创作者拒绝百合雷', keywords: ['official_denial'], requiresHumanReview: true },
   'E-TOKEN-YURI': { grade: 'E', label: '非百合作品中的时尚单品雷', keywords: ['token_yuri'], requiresHumanReview: true },
   'E-SETTING-SEVERE': { grade: 'E', label: '设定分区中的重度雷', keywords: ['setting_severe'], requiresHumanReview: true },
+  'E-CREATOR-MALICIOUS-HISTORY': { grade: 'E', label: '创作者已创作大量恶意作品或对作品进行恶意干涉', keywords: ['creator_malicious_history', 'creator_interference'], requiresHumanReview: true },
   'E-SPECIAL': { grade: 'E', label: '特殊重度排雷', keywords: ['special_e'], requiresHumanReview: true },
 
   'F-HET-END': { grade: 'F', label: '男性结婚 / 生子结局', keywords: ['het_end'], requiresHumanReview: true },
@@ -137,10 +142,11 @@ export const radarClassDefinitions: Record<RadarRatingClass, {
   'F-YURI-BAIT': { grade: 'F', label: '官方百合欺诈', keywords: ['yuri_bait'], requiresHumanReview: true },
   'F-SETTING-BAIT': { grade: 'F', label: '设定欺诈', keywords: ['setting_bait'], requiresHumanReview: true },
   'F-PROJECT-CONTAMINATION': { grade: 'F', label: '企划继承污染', keywords: ['project_contamination'], requiresHumanReview: true },
+  'F-CREATOR-HIGH-RISK-SPEECH': { grade: 'F', label: '创作者发表高危言论', keywords: ['creator_high_risk_speech'], requiresHumanReview: true },
 
   'X-PREPAID-FRAUD': { grade: 'X', label: '预付费 / 众筹 / 付费作品百合欺诈', keywords: ['prepaid_fraud'], requiresHumanReview: true },
   'X-REPEATED-BAIT': { grade: 'X', label: '官方或创作者反复误导', keywords: ['repeated_bait'], requiresHumanReview: true },
-  'X-MALICIOUS-CREATOR': { grade: 'X', label: '创作者明确恶意', keywords: ['malicious_creator'], requiresHumanReview: true },
+  'X-MALICIOUS-CREATOR': { grade: 'X', label: '创作者明确创作大量恶意作品，并且发表恶意言论', keywords: ['malicious_creator', 'creator_malicious_works_and_speech'], requiresHumanReview: true },
   'X-SPECIAL': { grade: 'X', label: '其他严重黑名单情况', keywords: ['special_x'], requiresHumanReview: true },
 }
 
