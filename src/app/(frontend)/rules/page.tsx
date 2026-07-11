@@ -8,17 +8,17 @@ import {
   type RadarGrade,
   type RadarRatingClass,
 } from '@/lib/radar/ratingPolicy'
-import { warningTemplates } from '@/lib/radar/warningTemplates'
 
 const gradeOrder: RadarGrade[] = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X']
 
 const safetyLabels: Record<keyof typeof radarPolicySafety, string> = {
   doNotOverwriteHumanVerified: '不覆盖人工已确认结论',
-  doNotPublishAutoSuggestedFOrX: '自动建议的 F / X 不直接公开为最终评级',
+  severeRatingsRemainPublic: '重雷、高危与黑名单等级保持公开展示',
   doNotAutoAssignX: '不自动分配 X 黑名单等级',
   preserveConflictingEvidence: '保留冲突证据与来源差异',
   storePolicyVersion: '记录规则版本',
   autoSuggestionsAreNotFinalPublicRatings: '自动建议不是最终公开评级',
+  reviewNoticeUsesPageTemplates: '复核状态使用页面提示模板展示',
 }
 
 const classEntries = Object.entries(radarClassDefinitions) as Array<[
@@ -30,12 +30,8 @@ function classesForGrade(grade: RadarGrade) {
   return classEntries.filter(([, definition]) => definition.grade === grade)
 }
 
-function policyBadges(code: RadarRatingClass, definition: (typeof radarClassDefinitions)[RadarRatingClass]) {
-  return [
-    code,
-    definition.requiresHumanReview ? '需人工复核' : '',
-    definition.doNotAutoPublish ? '不自动公开' : '',
-  ].filter(Boolean)
+function policyBadges(code: RadarRatingClass) {
+  return [code]
 }
 
 export default function RulesIndexPage() {
@@ -45,14 +41,13 @@ export default function RulesIndexPage() {
         <p className="eyebrow">排雷规则</p>
         <h1>排雷规则</h1>
         <p>
-          恢复完整排雷分级细则、警示模板与安全原则。资料库可以先收录未知作品，排雷结论必须标明来源、证据状态与复核状态。
+          展示完整排雷分级细则与公开原则。资料库可以先收录未知作品，排雷结论必须标明来源、证据状态与页面提示状态。
         </p>
         <div className="collection-actions">
           <Link className="back-link" href="/search?collection=rules">搜索旧规则条目</Link>
-          <Link className="back-link" href="/terms">名词解释</Link>
+          <Link className="back-link" href="/terms">页面提示</Link>
           <span>{RADAR_RATING_POLICY_ID}</span>
           <span>{classEntries.length} 条细则</span>
-          <span>{warningTemplates.length} 个警示模板</span>
         </div>
       </section>
 
@@ -60,7 +55,7 @@ export default function RulesIndexPage() {
         <div>
           <h2>守夜人原则</h2>
           <p>
-            排雷不是把作品从资料库里删除，而是在公开资料库中尽可能保留来源、争议、未知状态与证据链。AI 综合、外部来源与人工结论需要明确区分。
+            排雷不是把作品从资料库里删除，而是在公开资料库中尽可能保留来源、争议、未知状态与证据链。AI 综合、外部来源与人工结论需要明确区分；F 级与 X 级也应公开展示，真正需要隐藏的只有非法、侵权或不适合公开的材料本身。
           </p>
         </div>
         <div className="rank-explainer-grid">
@@ -87,7 +82,7 @@ export default function RulesIndexPage() {
                   <article className="collection-card collection-card-compact" key={code}>
                     <p>{definition.grade} 级</p>
                     <h2>{definition.label}</h2>
-                    <span>{policyBadges(code, definition).join(' / ')}</span>
+                    <span>{policyBadges(code).join(' / ')}</span>
                     <span>关键词：{definition.keywords.join('、')}</span>
                   </article>
                 ))}
@@ -95,27 +90,6 @@ export default function RulesIndexPage() {
             </section>
           )
         })}
-      </section>
-
-      <section className="rank-explainer">
-        <div>
-          <h2>页面警示模板</h2>
-          <p>
-            警示模板用于在作品、证据或资料页提示信息状态。它们和排雷等级相关，但不等同于最终评级。
-          </p>
-        </div>
-        <div className="collection-grid collection-grid-compact">
-          {warningTemplates.map((template) => (
-            <article className="collection-card collection-card-compact" key={template.id}>
-              <p>{template.style} / {template.severity}</p>
-              <h2>{template.title}</h2>
-              <span>{template.text}</span>
-              {template.relatedRatingClasses?.length ? (
-                <span>关联细则：{template.relatedRatingClasses.join('、')}</span>
-              ) : null}
-            </article>
-          ))}
-        </div>
       </section>
     </main>
   )
