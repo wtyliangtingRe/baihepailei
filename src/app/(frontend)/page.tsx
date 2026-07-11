@@ -8,7 +8,7 @@ const sections = [
     href: '/works',
     eyebrow: '作品',
     title: '作品',
-    description: '浏览轻量索引里的作品条目、分级、创作者、机构和材料状态。',
+    description: '浏览轻量索引里的作品条目、分级和材料状态。',
   },
   {
     kind: 'creators',
@@ -25,23 +25,16 @@ const sections = [
     description: '查看出版社、制作公司、平台、品牌、制作委员会等机构资料。',
   },
   {
-    kind: 'terms',
+    kind: 'site-explanation',
     href: '/terms',
-    eyebrow: '名词解释',
-    title: '名词解释',
-    description: '查看术语、概念和搜索中常见的说明条目。',
-  },
-  {
-    kind: 'rules',
-    href: '/rules',
-    eyebrow: '排雷规则',
-    title: '排雷规则',
-    description: '查看分级原则、排雷说明和判断边界。',
+    eyebrow: '站点说明',
+    title: '站点说明',
+    description: '查看页面提示、用语说明入口和完整排雷规则入口。',
   },
 ]
 
 function countLabel(count?: number) {
-  if (typeof count !== 'number') return '待生成索引'
+  if (typeof count !== 'number') return '查看说明'
   return `${count} 条`
 }
 
@@ -55,11 +48,11 @@ export default function HomePage() {
           <p className="eyebrow">百合排雷 · 轻量版</p>
           <h1>百合作品排雷资料库</h1>
           <p>
-            这里会重做为结构化资料站。前台优先提供作品、创作者、机构和排雷规则的轻量浏览，证据材料和术语条目会在详情页与搜索中辅助呈现。
+            这里会重做为结构化资料站。前台优先提供作品、创作者、机构和站点说明的轻量浏览，证据材料与页面提示会在详情页中辅助呈现。
           </p>
           <form action="/search" className="search-box" role="search">
             <span>快速搜索</span>
-            <input id="home-search-input" name="q" placeholder="输入作品名、作者、机构、证据、分级或关键词" type="search" />
+            <input id="home-search-input" name="q" placeholder="输入作品名、作者、机构、分级或关键词" type="search" />
             <label className="home-search-scope" htmlFor="home-search-collection">
               <span>搜索范围</span>
               <select defaultValue="all" id="home-search-collection" name="collection">
@@ -67,9 +60,6 @@ export default function HomePage() {
                 <option value="works">只搜作品</option>
                 <option value="creators">只搜创作者</option>
                 <option value="organizations">只搜机构</option>
-                <option value="evidence">只搜证据材料</option>
-                <option value="terms">只搜名词解释</option>
-                <option value="rules">只搜排雷规则</option>
               </select>
             </label>
             <button className="result-link" type="submit">搜索资料</button>
