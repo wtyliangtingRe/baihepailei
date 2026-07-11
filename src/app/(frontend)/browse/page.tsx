@@ -29,30 +29,19 @@ const sections = [
     actionLabel: '浏览机构',
   },
   {
-    kind: 'evidence',
-    href: '/evidence',
-    eyebrow: '证据材料',
-    title: '证据材料',
-    description: '查看原作截图、官方页面、平台页面、旧站记录等支撑材料。',
-    actionLabel: '浏览证据材料',
-  },
-  {
-    kind: 'terms',
+    kind: 'site-explanation',
     href: '/terms',
-    eyebrow: '名词解释',
-    title: '名词解释',
-    description: '集中浏览旧站迁移出的概念、术语和解释性条目。',
-    actionLabel: '浏览名词解释',
-  },
-  {
-    kind: 'rules',
-    href: '/rules',
-    eyebrow: '排雷规则',
-    title: '排雷规则',
-    description: '整理旧站中的原则、说明与轻量规则内容。',
-    actionLabel: '浏览排雷规则',
+    eyebrow: '站点说明',
+    title: '站点说明',
+    description: '统一查看页面提示、用语说明入口与完整排雷规则入口。',
+    actionLabel: '查看站点说明',
   },
 ]
+
+function countLabel(index: ReturnType<typeof readSearchIndex>, kind: string) {
+  if (kind === 'site-explanation') return '说明入口'
+  return `${index?.counts[kind] || 0} 条`
+}
 
 export default function BrowsePage() {
   const index = readSearchIndex()
@@ -78,7 +67,7 @@ export default function BrowsePage() {
           <article className="result-card" key={section.kind}>
             <div className="result-card-header">
               <p>{section.eyebrow}</p>
-              <span>{index.counts[section.kind] || 0} 条</span>
+              <span>{countLabel(index, section.kind)}</span>
             </div>
             <h2>{section.title}</h2>
             <p className="result-text">{section.description}</p>
