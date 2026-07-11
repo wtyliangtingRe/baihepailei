@@ -1,4 +1,4 @@
-export const RADAR_RATING_POLICY_ID = 'radar-rating-policy-v0.2-draft' as const
+export const RADAR_RATING_POLICY_ID = 'radar-rating-policy-v0.3-draft' as const
 
 export type RadarGrade = 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X'
 
@@ -103,7 +103,7 @@ export const radarClassDefinitions: Record<RadarRatingClass, {
   'C-SIDE-CP': { grade: 'C', label: '非百合作品中的百合配角 / 群像', keywords: ['side_cp'] },
   'C-CONTEXT-RISK': { grade: 'C', label: '企划 / 作者 / 地区 / 连载上下文风险', keywords: ['context_risk'] },
   'C-MALE-MAIN-CAST': { grade: 'C', label: '主要角色中有男性但女性 CP 成立', keywords: ['male_main_cast'] },
-  'C-FUTURE-HET-HINT': { grade: 'C', label: '未来异性恋婚育暗示', keywords: ['future_het_hint'] },
+  'C-FUTURE-HET-HINT': { grade: 'D', label: '未来异性恋婚育暗示', keywords: ['future_het_hint'] },
   'C-STRAIGHT-GIRL-HINT': { grade: 'C', label: '直女发言或非百合主要角色风险', keywords: ['straight_girl_hint'] },
   'C-SPECIAL': { grade: 'C', label: '特殊自由裁量保留', keywords: ['special_case'], requiresHumanReview: true },
 
@@ -114,7 +114,7 @@ export const radarClassDefinitions: Record<RadarRatingClass, {
   'D-SIDE-SEVERE-RADAR': { grade: 'D', label: '重雷只发生在配角', keywords: ['side_severe_radar'] },
   'D-TS': { grade: 'D', label: 'TS / 变百 / 变身分区作品', keywords: ['ts', 'transformation'] },
   'D-FUTA': { grade: 'D', label: '扶她分区作品', keywords: ['futa'] },
-  'D-ABO': { grade: 'D', label: 'ABO 分区作品', keywords: ['abo'] },
+  'D-ABO': { grade: 'E', label: 'ABO 分区作品', keywords: ['abo'] },
   'D-CROSSDRESSING': { grade: 'D', label: '女装少年 / 性别表现暧昧分区作品', keywords: ['crossdressing', 'otokonoko'] },
   'D-QUEER-GENERAL': { grade: 'D', label: '泛 LGBTQ+ 但非核心百合', keywords: ['queer_general'] },
   'D-UNCLEAR': { grade: 'D', label: '过于抽象或证据不足', keywords: ['unclear', 'insufficient_evidence'], requiresHumanReview: true },
@@ -131,24 +131,25 @@ export const radarClassDefinitions: Record<RadarRatingClass, {
   'E-SETTING-SEVERE': { grade: 'E', label: '设定分区中的重度雷', keywords: ['setting_severe'], requiresHumanReview: true },
   'E-SPECIAL': { grade: 'E', label: '特殊重度排雷', keywords: ['special_e'], requiresHumanReview: true },
 
-  'F-HET-END': { grade: 'F', label: '男性结婚 / 生子结局', keywords: ['het_end'], requiresHumanReview: true, doNotAutoPublish: true },
-  'F-MALE-INTIMACY': { grade: 'F', label: '百合向中的男性亲密接触欺诈', keywords: ['fraud_male_intimacy'], requiresHumanReview: true, doNotAutoPublish: true },
-  'F-MALE-NTR': { grade: 'F', label: '男性 NTR', keywords: ['male_ntr'], requiresHumanReview: true, doNotAutoPublish: true },
-  'F-YURI-BAIT': { grade: 'F', label: '官方百合欺诈', keywords: ['yuri_bait'], requiresHumanReview: true, doNotAutoPublish: true },
-  'F-SETTING-BAIT': { grade: 'F', label: '设定欺诈', keywords: ['setting_bait'], requiresHumanReview: true, doNotAutoPublish: true },
-  'F-PROJECT-CONTAMINATION': { grade: 'F', label: '企划继承污染', keywords: ['project_contamination'], requiresHumanReview: true, doNotAutoPublish: true },
+  'F-HET-END': { grade: 'F', label: '男性结婚 / 生子结局', keywords: ['het_end'], requiresHumanReview: true },
+  'F-MALE-INTIMACY': { grade: 'F', label: '百合向中的男性亲密接触欺诈', keywords: ['fraud_male_intimacy'], requiresHumanReview: true },
+  'F-MALE-NTR': { grade: 'F', label: '男性 NTR', keywords: ['male_ntr'], requiresHumanReview: true },
+  'F-YURI-BAIT': { grade: 'F', label: '官方百合欺诈', keywords: ['yuri_bait'], requiresHumanReview: true },
+  'F-SETTING-BAIT': { grade: 'F', label: '设定欺诈', keywords: ['setting_bait'], requiresHumanReview: true },
+  'F-PROJECT-CONTAMINATION': { grade: 'F', label: '企划继承污染', keywords: ['project_contamination'], requiresHumanReview: true },
 
-  'X-PREPAID-FRAUD': { grade: 'X', label: '预付费 / 众筹 / 付费作品百合欺诈', keywords: ['prepaid_fraud'], requiresHumanReview: true, doNotAutoPublish: true },
-  'X-REPEATED-BAIT': { grade: 'X', label: '官方或创作者反复误导', keywords: ['repeated_bait'], requiresHumanReview: true, doNotAutoPublish: true },
-  'X-MALICIOUS-CREATOR': { grade: 'X', label: '创作者明确恶意', keywords: ['malicious_creator'], requiresHumanReview: true, doNotAutoPublish: true },
-  'X-SPECIAL': { grade: 'X', label: '其他严重黑名单情况', keywords: ['special_x'], requiresHumanReview: true, doNotAutoPublish: true },
+  'X-PREPAID-FRAUD': { grade: 'X', label: '预付费 / 众筹 / 付费作品百合欺诈', keywords: ['prepaid_fraud'], requiresHumanReview: true },
+  'X-REPEATED-BAIT': { grade: 'X', label: '官方或创作者反复误导', keywords: ['repeated_bait'], requiresHumanReview: true },
+  'X-MALICIOUS-CREATOR': { grade: 'X', label: '创作者明确恶意', keywords: ['malicious_creator'], requiresHumanReview: true },
+  'X-SPECIAL': { grade: 'X', label: '其他严重黑名单情况', keywords: ['special_x'], requiresHumanReview: true },
 }
 
 export const radarPolicySafety = {
   doNotOverwriteHumanVerified: true,
-  doNotPublishAutoSuggestedFOrX: true,
+  severeRatingsRemainPublic: true,
   doNotAutoAssignX: true,
   preserveConflictingEvidence: true,
   storePolicyVersion: true,
   autoSuggestionsAreNotFinalPublicRatings: true,
+  reviewNoticeUsesPageTemplates: true,
 } as const
