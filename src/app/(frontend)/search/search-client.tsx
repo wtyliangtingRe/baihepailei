@@ -55,7 +55,7 @@ type SearchResult = SearchItem & {
   score: number
 }
 
-const searchSuggestions = ['作品中文名或日文名', '作者 / 社团 / 制作组 / 机构', '旧站关键词或别名']
+const searchSuggestions = ['作品中文名或日文名', '作者 / 社团 / 制作组 / 机构', '历史名称、简称或别名']
 const validCollections = new Set(['all', 'works', 'creators', 'organizations'])
 const publicSearchCollections = new Set(['works', 'creators', 'organizations'])
 
@@ -217,7 +217,7 @@ export default function SearchClient() {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="例如：樱trick、タチ、作者名、机构名、旧站关键词"
+          placeholder="例如：樱trick、タチ、作者名、机构名、别名"
         />
       </label>
 
@@ -246,7 +246,7 @@ export default function SearchClient() {
           <div className="empty-state small">
             <SearchEmptyArtwork />
             <h2>没有搜到</h2>
-            <p>可以换一个角度搜索，尤其是旧站内容可能存在简称、日文名或不同译名。</p>
+            <p>可以换一个角度搜索，条目可能存在简称、日文名、历史名称或不同译名。</p>
             <ul className="search-suggestions">
               {searchSuggestions.map((suggestion) => (
                 <li key={suggestion}>{suggestion}</li>
