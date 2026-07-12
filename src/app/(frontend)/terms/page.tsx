@@ -17,15 +17,6 @@ const severityLabels: Record<string, string> = {
   critical: '关键',
 }
 
-const featureNoticeImages: Record<string, string> = {
-  'ai-synthesized-pending-review': '/ui/notices/feature-ai-synthesized-pending-review.webp',
-  'neutral-stance': '/ui/notices/feature-neutral-stance.webp',
-  'heavy-radar-warning': '/ui/notices/feature-heavy-radar-warning.webp',
-  'identity-conflict': '/ui/notices/feature-identity-conflict.webp',
-  'info-insufficient': '/ui/notices/feature-info-insufficient.webp',
-  'adult-visibility-warning': '/ui/notices/feature-adult-visibility-warning.webp',
-}
-
 const noticeSections = [
   {
     id: 'site-language',
@@ -52,7 +43,7 @@ function templateById(id: string) {
 }
 
 function noticeImagePath(id: string) {
-  return featureNoticeImages[id] || `/ui/notices/${id}.webp`
+  return `/ui/notices/${id}.webp`
 }
 
 export default function TermsIndexPage() {
@@ -95,7 +86,7 @@ export default function TermsIndexPage() {
               </div>
               <span>{section.templateIds.length} 条</span>
             </div>
-            <div className="collection-grid collection-grid-compact">
+            <div className="collection-grid collection-grid-compact notice-template-grid">
               {section.templateIds.map((id) => {
                 const template = templateById(id)
                 if (!template) return null
@@ -105,7 +96,7 @@ export default function TermsIndexPage() {
                     <img
                       alt=""
                       aria-hidden="true"
-                      className="notice-template-media"
+                      className="notice-template-icon"
                       loading="lazy"
                       src={noticeImagePath(template.id)}
                     />
