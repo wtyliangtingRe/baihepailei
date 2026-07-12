@@ -23,6 +23,7 @@ import './detail-title-table.css'
 import './content-scope.css'
 import './theme.css'
 import './detail-layout-fixes.css'
+import './ui-visual-assets.css'
 
 export const metadata: Metadata = {
   title: 'Baihepailei',
