@@ -8,14 +8,14 @@ const sections = [
     href: '/works',
     eyebrow: '作品',
     title: '作品',
-    description: '浏览轻量索引里的作品条目、分级和材料状态。',
+    description: '浏览作品条目、排雷分级、页面提示与资料状态。',
   },
   {
     kind: 'creators',
     href: '/creators',
     eyebrow: '创作者',
     title: '创作者',
-    description: '查看从旧站整理出的创作者资料。创作者暂不做单独评级。',
+    description: '查看创作者资料、别名与关联条目。创作者暂不做单独评级。',
   },
   {
     kind: 'organizations',
@@ -45,10 +45,10 @@ export default function HomePage() {
     <main className="home">
       <div className="home-stack">
         <section className="hero">
-          <p className="eyebrow">百合排雷 · 轻量版</p>
+          <p className="eyebrow">百合排雷 · 资料库</p>
           <h1>百合作品排雷资料库</h1>
           <p>
-            这里会重做为结构化资料站。前台优先提供作品、创作者、机构和站点说明的轻量浏览，证据材料与页面提示会在详情页中辅助呈现。
+            这里整理作品、创作者、机构、排雷分级与页面提示。读者可以通过结构化条目、公开资料和证据说明，更快判断作品是否适合自己。
           </p>
           <form action="/search" className="search-box" role="search">
             <span>快速搜索</span>
@@ -76,7 +76,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="home-section-grid" aria-label="轻量资料分类">
+        <section className="home-section-grid" aria-label="资料分类">
           {sections.map((section) => (
             <Link className="home-section-card" href={section.href} key={section.href}>
               <div className="home-section-card-header">
