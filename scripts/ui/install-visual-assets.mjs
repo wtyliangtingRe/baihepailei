@@ -123,17 +123,17 @@ async function cropNoticeIcons() {
   for (let index = 0; index < noticeTemplateIds.length; index += 1) {
     const column = index % 5
     const row = Math.floor(index / 5)
-    const left = Math.round((18 + column * 307) * scaleX)
-    const top = Math.round((145 + row * 341) * scaleY)
-    const width = Math.round(270 * scaleX)
-    const height = Math.round(180 * scaleY)
+    const left = Math.round((8 + column * 307) * scaleX)
+    const top = Math.round((96 + row * 330) * scaleY)
+    const width = Math.round(288 * scaleX)
+    const height = Math.round(226 * scaleY)
     const id = noticeTemplateIds[index]
     const relativeOutput = `notices/${id}.webp`
     const output = path.join(outputDir, relativeOutput)
     ensureDir(path.dirname(output))
     await sharp(input)
       .extract({ left, top, width, height })
-      .resize({ width: 420, height: 280, fit: 'contain', background: { r: 6, g: 5, b: 18, alpha: 1 } })
+      .resize({ width: 320, height: 252, fit: 'contain', background: { r: 6, g: 5, b: 18, alpha: 1 } })
       .webp({ quality: 88, alphaQuality: 90 })
       .toFile(output)
     outputs.push(relativeOutput)
