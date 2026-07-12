@@ -17,6 +17,15 @@ const severityLabels: Record<string, string> = {
   critical: '关键',
 }
 
+const featureNoticeImages: Record<string, string> = {
+  'ai-synthesized-pending-review': '/ui/notices/feature-ai-synthesized-pending-review.webp',
+  'neutral-stance': '/ui/notices/feature-neutral-stance.webp',
+  'heavy-radar-warning': '/ui/notices/feature-heavy-radar-warning.webp',
+  'identity-conflict': '/ui/notices/feature-identity-conflict.webp',
+  'info-insufficient': '/ui/notices/feature-info-insufficient.webp',
+  'adult-visibility-warning': '/ui/notices/feature-adult-visibility-warning.webp',
+}
+
 const noticeSections = [
   {
     id: 'site-language',
@@ -42,10 +51,14 @@ function templateById(id: string) {
   return warningTemplates.find((template) => template.id === id)
 }
 
+function noticeImagePath(id: string) {
+  return featureNoticeImages[id] || `/ui/notices/${id}.webp`
+}
+
 export default function TermsIndexPage() {
   return (
     <main className="page collection-page">
-      <section className="page-heading collection-heading">
+      <section className="page-heading collection-heading site-guide-heading">
         <p className="eyebrow">站点说明</p>
         <h1>站点说明</h1>
         <p>
@@ -69,7 +82,6 @@ export default function TermsIndexPage() {
         </div>
         <div className="collection-actions">
           <Link className="back-link" href="/rules">打开排雷规则</Link>
-          <Link className="back-link" href="/search?collection=rules">搜索旧规则条目</Link>
         </div>
       </section>
 
@@ -89,14 +101,23 @@ export default function TermsIndexPage() {
                 if (!template) return null
 
                 return (
-                  <article className="collection-card collection-card-compact" key={template.id}>
-                    <p>{categoryLabels[template.category] || template.category}</p>
-                    <h2>{template.title}</h2>
-                    <span>{template.text}</span>
-                    <span>样式：{template.style} / 强度：{severityLabels[template.severity] || template.severity}</span>
-                    {template.relatedRatingClasses?.length ? (
-                      <span>关联细则：{template.relatedRatingClasses.join('、')}</span>
-                    ) : null}
+                  <article className="collection-card collection-card-compact notice-template-card" key={template.id}>
+                    <img
+                      alt=""
+                      aria-hidden="true"
+                      className="notice-template-media"
+                      loading="lazy"
+                      src={noticeImagePath(template.id)}
+                    />
+                    <div className="notice-template-copy">
+                      <p>{categoryLabels[template.category] || template.category}</p>
+                      <h2>{template.title}</h2>
+                      <span>{template.text}</span>
+                      <span>样式：{template.style} / 强度：{severityLabels[template.severity] || template.severity}</span>
+                      {template.relatedRatingClasses?.length ? (
+                        <span>关联细则：{template.relatedRatingClasses.join('、')}</span>
+                      ) : null}
+                    </div>
                   </article>
                 )
               })}
