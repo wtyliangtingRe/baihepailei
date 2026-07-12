@@ -2,12 +2,16 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 'manual-creator-anomaly-hide-v0.1'
+const VERSION = 'manual-creator-anomaly-hide-v0.2'
 const DEFAULT_OUT_DIR = 'data_local/staging/entity-anomalies'
 const CONFIRM = 'apply-manual-creator-anomaly-hide-v01'
 const PATCH_FIELDS = new Set(['isLiteVisible', 'isFullVisible', 'searchText'])
 
 const MANUAL_TITLES = [
+  '《魔法少女小圆 scene0》：下倉バイオ',
+  '《魔法少女小圆 scene0》: 下倉バイオ',
+  '「女子かう生」若井ケン',
+  '「女子かう生」 若井ケン',
   '「アイドルマスター シンデレラガールズ U149」井之',
   '「アイドルマスター シンデレラガールズ U149」 井之',
   '「バーナード嬢曰く。」',
