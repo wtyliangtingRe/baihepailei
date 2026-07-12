@@ -3,7 +3,7 @@ import Link from 'next/link'
 import MissingSearchIndex from '../_components/MissingSearchIndex'
 import { readSearchIndex, type SearchItem } from '../_lib/search-index'
 
-const rankOrder = ['AA', 'A', 'B', 'C', 'D', 'E', 'unknown']
+const rankOrder = ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'unknown']
 const defaultPageSize = 30
 const pageSizeOptions = [30, 60]
 
@@ -17,13 +17,15 @@ const mediaGroupOptions = [
 ]
 
 const rankDescriptions: Record<string, string> = {
-  AA: '最高优先级关注项。前台统一显示为 S 级，通常需要优先阅读正文和材料。',
-  A: '整体风险较低或关系较明确，但仍建议先看条目说明再决定是否深入。',
-  B: '存在明确注意点，需要结合标签、正文和上下文判断。',
-  C: '中等注意级别，适合作为补充参考，不宜只看分级下结论。',
-  D: '较低注意级别，多用于轻量标记、边缘情况或待复核条目。',
-  E: '最低注意级别，通常只保留基础记录，后续可再整理。',
-  unknown: '暂时没有明确分级，等待后续整理或复核。',
+  AA: '高度稳定的百合作品。核心关系明确，整体风险极低，通常适合作为优先阅读对象。',
+  A: '整体较安全。可能存在轻微注意点，但通常不影响其作为百合作品的基本判断。',
+  B: '仍可作为百合作品参考，但已存在明确注意点，建议结合条目正文、标签和上下文进一步理解。',
+  C: '中度注意级别。不宜只看分级下结论，需要结合页面提示、正文与证据材料综合判断。',
+  D: '边界项、特殊设定项或低优先级参考项，需进一步查看说明与具体原因。',
+  E: '重雷级别。已存在较明显的不适内容、恶意要素或显著风险，设立该级是为了公开展示并帮助避雷。',
+  F: '高危排雷。用于标记严重结局雷、明显高危内容或其他需要强提示的情况。',
+  X: '黑名单级别。用于标记极端恶意或超出普通整理框架的高风险对象，并保持公开展示。',
+  unknown: '暂时没有明确分级，等待后续整理、补充证据或复核。',
 }
 
 type WorksSearchParams = Promise<Record<string, string | string[] | undefined>>
@@ -73,7 +75,7 @@ function normalizeMediaGroup(value: string) {
 }
 
 function rankLabel(rank?: string) {
-  if (!rank || rank === 'unknown') return 'E级'
+  if (!rank || rank === 'unknown') return '未录入'
   if (rank === 'AA') return 'S级'
   return `${rank}级`
 }
@@ -240,7 +242,9 @@ function WorksFilterForm({ filters }: { filters: NormalizedFilters }) {
             <option value="C">C级</option>
             <option value="D">D级</option>
             <option value="E">E级</option>
-            <option value="unknown">E级 / 未录入</option>
+            <option value="F">F级</option>
+            <option value="X">X级</option>
+            <option value="unknown">未录入</option>
           </select>
         </label>
       </div>
@@ -321,7 +325,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
       <section className="page-heading collection-heading">
         <p className="eyebrow">作品</p>
         <h1>作品</h1>
-        <p>浏览轻量搜索索引中的作品条目，并按作品类型和排雷分级筛选。</p>
+        <p>浏览作品条目、排雷分级与页面提示，并按作品类型、分级或关键词筛选。</p>
         <div className="collection-actions">
           <Link className="back-link" href="/search?collection=works">搜索作品</Link>
           <Link className="back-link" href="/browse">浏览全部</Link>
@@ -358,7 +362,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
           <span>分级说明</span>
           <strong>如何理解这些分级？</strong>
         </summary>
-        <p>分级用于帮助快速定位阅读优先级，不等于最终结论。具体判断仍以条目正文、标签、材料和完整排雷原则为准。</p>
+        <p>分级用于帮助读者快速判断作品的大致排雷风险与阅读优先级，但不等于完整结论。实际判断仍应结合作品正文、标签、证据材料、页面提示与完整排雷规则综合理解。</p>
         <div className="rank-explainer-grid">
           {rankOrder.map((rank) => (
             <article className="rank-explainer-card" key={rank}>
@@ -367,8 +371,8 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
             </article>
           ))}
           <Link className="rank-explainer-card rank-explainer-link" href="/rules">
-            <h3>完整原则</h3>
-            <p>查看排雷原则全文，了解 S / A / B / C / D / E 各级的完整判断边界。</p>
+            <h3>完整规则</h3>
+            <p>查看排雷规则全文，了解 S / A / B / C / D / E / F / X 各级的完整判断边界。</p>
           </Link>
         </div>
       </details>
