@@ -39,6 +39,53 @@ function Get-DotEnvValue {
   return $null
 }
 
+function Get-RelativePathCompat {
+  param(
+    [string]$BasePath,
+    [string]$TargetPath
+  )
+
+  $baseFull = [System.IO.Path]::GetFullPath($BasePath)
+  $separator = [string][System.IO.Path]::DirectorySeparatorChar
+  if (-not $baseFull.EndsWith($separator)) {
+    $baseFull += $separator
+  }
+
+  $baseUri = New-Object System.Uri($baseFull)
+  $targetUri = New-Object System.Uri([System.IO.Path]::GetFullPath($TargetPath))
+  $relativeUri = $baseUri.MakeRelativeUri($targetUri)
+  return [System.Uri]::UnescapeDataString($relativeUri.ToString()).Replace('/', [System.IO.Path]::DirectorySeparatorChar)
+}
+
+function Get-Sha256Compat {
+  param([string]$FilePath)
+
+  $stream = [System.IO.File]::OpenRead($FilePath)
+  $sha256 = [System.Security.Cryptography.SHA256]::Create()
+  try {
+    $bytes = $sha256.ComputeHash($stream)
+    return (($bytes | ForEach-Object { $_.ToString('x2') }) -join '').ToUpperInvariant()
+  }
+  finally {
+    $sha256.Dispose()
+    $stream.Dispose()
+  }
+}
+
+function Write-CheckpointStatus {
+  param(
+    [string]$FilePath,
+    [string]$State,
+    [string]$Message = ''
+  )
+
+  [ordered]@{
+    updatedAt = (Get-Date).ToString('o')
+    state = $State
+    message = $Message
+  } | ConvertTo-Json -Depth 3 | Set-Content -Encoding UTF8 $FilePath
+}
+
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $backupRootFull = [System.IO.Path]::GetFullPath($BackupRoot)
 $repoRootFull = [System.IO.Path]::GetFullPath($repoRoot)
@@ -52,8 +99,10 @@ $checkpointName = "Baihepailei-$timestamp"
 $checkpointDir = Join-Path $backupRootFull $checkpointName
 $workspaceDir = Join-Path $checkpointDir 'workspace'
 $metadataDir = Join-Path $checkpointDir 'metadata'
+$statusFile = Join-Path $checkpointDir 'checkpoint-status.json'
 
 New-Item -ItemType Directory -Force -Path $workspaceDir, $metadataDir | Out-Null
+Write-CheckpointStatus -FilePath $statusFile -State 'in-progress' -Message 'Checkpoint creation started.'
 
 Push-Location $repoRoot
 try {
@@ -140,21 +189,23 @@ try {
     includesDatabase = [bool]$IncludeDatabase
     databaseDump = if ($databaseDump) { Split-Path -Leaf $databaseDump } else { $null }
     excludedDirectories = @('.git', 'node_modules', '.next')
+    generatedIndexesCopiedToWorkspace = [bool]((Test-Path (Join-Path $workspaceDir 'public\search-index.json')) -and (Test-Path (Join-Path $workspaceDir 'public\detail-index.json')))
   }
 
   $manifest | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 (Join-Path $checkpointDir 'checkpoint-manifest.json')
 
   $checksumRows = Get-ChildItem -LiteralPath $checkpointDir -Recurse -File |
-    Where-Object { $_.Name -ne 'sha256-checksums.csv' } |
+    Where-Object { $_.Name -notin @('sha256-checksums.csv', 'checkpoint-status.json') } |
     ForEach-Object {
-      $hash = Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256
       [pscustomobject]@{
-        RelativePath = [System.IO.Path]::GetRelativePath($checkpointDir, $_.FullName)
+        RelativePath = Get-RelativePathCompat -BasePath $checkpointDir -TargetPath $_.FullName
         Length = $_.Length
-        SHA256 = $hash.Hash
+        SHA256 = Get-Sha256Compat -FilePath $_.FullName
       }
     }
   $checksumRows | Export-Csv -NoTypeInformation -Encoding UTF8 (Join-Path $checkpointDir 'sha256-checksums.csv')
+
+  Write-CheckpointStatus -FilePath $statusFile -State 'complete' -Message 'Checkpoint backup completed successfully.'
 
   Write-Host ""
   Write-Host 'Checkpoint backup completed:' -ForegroundColor Green
@@ -163,6 +214,11 @@ try {
   Write-Host "Branch: $branch"
   Write-Host "Secrets included: $([bool]$IncludeSecrets)"
   Write-Host "Database included: $([bool]$IncludeDatabase)"
+  Write-Host "Generated indexes copied: $($manifest.generatedIndexesCopiedToWorkspace)"
+}
+catch {
+  Write-CheckpointStatus -FilePath $statusFile -State 'failed' -Message $_.Exception.Message
+  throw
 }
 finally {
   Pop-Location
