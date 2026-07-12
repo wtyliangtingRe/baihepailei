@@ -1,0 +1,300 @@
+/* Generated visual assets are installed locally with `pnpm ui:install-visual-assets`. */
+
+.home .hero,
+.search-page > .page-heading,
+.site-guide-heading {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, #d565ae 42%, transparent);
+  background-color: #080818;
+  box-shadow: 0 28px 80px rgb(18 7 42 / 28%);
+}
+
+.home .hero::before,
+.search-page > .page-heading::before,
+.site-guide-heading::before {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  content: '';
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+.home .hero::after,
+.search-page > .page-heading::after,
+.site-guide-heading::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+}
+
+.home .hero {
+  min-height: clamp(500px, 62vw, 720px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  color: #fff8fd;
+}
+
+.home .hero::before {
+  background-image: url('/ui/hero-home.webp');
+}
+
+.home .hero::after {
+  background:
+    linear-gradient(90deg, rgb(4 4 16 / 92%) 0%, rgb(7 5 22 / 72%) 44%, rgb(7 5 22 / 18%) 76%),
+    linear-gradient(0deg, rgb(5 4 18 / 94%) 0%, transparent 52%);
+}
+
+.home .hero h1,
+.home .hero p,
+.home .hero span,
+.home .hero label {
+  color: inherit;
+}
+
+.home .hero > p,
+.home .hero > h1,
+.home .hero > .search-box,
+.home .hero > .home-stats,
+.home .hero > .actions {
+  width: min(760px, 100%);
+}
+
+.home .hero .search-box {
+  border-color: rgb(238 137 204 / 34%);
+  background: rgb(8 7 24 / 72%);
+  box-shadow: 0 18px 52px rgb(0 0 0 / 24%);
+  backdrop-filter: blur(14px);
+}
+
+.home .hero .search-box input,
+.home .hero .search-box select {
+  color: #fff;
+  border-color: rgb(255 255 255 / 18%);
+  background: rgb(2 2 10 / 62%);
+}
+
+.home .hero .search-box option {
+  color: #fff;
+  background: #11111d;
+}
+
+.home .hero .actions a,
+.home .hero .result-link {
+  color: #fff;
+  border-color: rgb(243 124 195 / 44%);
+  background: rgb(18 11 34 / 78%);
+}
+
+.search-page > .page-heading,
+.site-guide-heading {
+  min-height: clamp(280px, 31vw, 410px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  color: #fff8fd;
+}
+
+.search-page > .page-heading::before {
+  background-image: url('/ui/hero-search.webp');
+}
+
+.search-page > .page-heading::after {
+  background: linear-gradient(90deg, rgb(5 5 18 / 78%), rgb(5 5 18 / 34%) 62%, rgb(5 5 18 / 66%));
+}
+
+.site-guide-heading::before {
+  background-image: url('/ui/hero-site-guide.webp');
+}
+
+.site-guide-heading::after {
+  background: linear-gradient(90deg, rgb(5 5 18 / 90%) 0%, rgb(5 5 18 / 50%) 58%, rgb(5 5 18 / 18%) 100%);
+}
+
+.search-page > .page-heading h1,
+.search-page > .page-heading p,
+.search-page > .page-heading .eyebrow,
+.site-guide-heading h1,
+.site-guide-heading p,
+.site-guide-heading .eyebrow,
+.site-guide-heading .collection-actions,
+.site-guide-heading .collection-actions a,
+.site-guide-heading .collection-actions span {
+  color: inherit;
+}
+
+.site-guide-heading .collection-actions a,
+.site-guide-heading .collection-actions span {
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(10 7 24 / 62%);
+  backdrop-filter: blur(10px);
+}
+
+.search-empty-visual {
+  width: min(520px, 100%);
+  margin: 0 auto 1.4rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, #c56ec8 28%, transparent);
+  border-radius: 24px;
+  background: #070714;
+  box-shadow: 0 22px 58px rgb(20 8 43 / 20%);
+}
+
+.search-empty-visual img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.notice-template-card {
+  overflow: hidden;
+  padding: 0;
+}
+
+.notice-template-media {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  object-position: center;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  background: #070714;
+}
+
+.notice-template-copy {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1.25rem;
+}
+
+.notice-template-copy > p,
+.notice-template-copy > h2,
+.notice-template-copy > span {
+  margin: 0;
+}
+
+/* Give title-only work cards a compact visual anchor without turning them into poster walls. */
+.work-title-only-card {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-areas:
+    'cover meta'
+    'cover title'
+    'cover status';
+  column-gap: 1rem;
+  align-items: center;
+  min-height: 132px;
+}
+
+.work-title-only-card::before {
+  grid-area: cover;
+  align-self: stretch;
+  width: 76px;
+  min-height: 108px;
+  content: '';
+  border: 1px solid rgb(218 117 192 / 26%);
+  border-radius: 12px;
+  background-color: #090815;
+  background-image: url('/ui/covers/placeholder-floral.webp');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  box-shadow: 0 12px 28px rgb(10 3 24 / 18%);
+}
+
+.work-title-only-grid .work-title-only-card:nth-child(even)::before {
+  background-image: url('/ui/covers/placeholder-radar.webp');
+}
+
+.work-title-only-card[data-content-visibility='adult']::before,
+.work-title-only-card[data-content-visibility='restricted']::before {
+  background-image: url('/ui/covers/placeholder-restricted.webp');
+}
+
+.work-title-only-card > p {
+  grid-area: meta;
+}
+
+.work-title-only-card > h2 {
+  grid-area: title;
+}
+
+.work-title-only-card > .content-visibility-chip {
+  grid-area: status;
+  justify-self: start;
+}
+
+/* The generated badge sheet is cropped into independent assets by the installer. */
+.rank-group-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.rank-group-heading h2::before {
+  display: none;
+  flex: 0 0 auto;
+  width: 82px;
+  aspect-ratio: 255 / 145;
+  content: '';
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+#grade-S .rank-group-heading h2::before,
+#rank-s .rank-group-heading h2::before { display: block; background-image: url('/ui/ranks/rank-s.webp'); }
+#grade-A .rank-group-heading h2::before,
+#rank-a .rank-group-heading h2::before { display: block; background-image: url('/ui/ranks/rank-a.webp'); }
+#grade-B .rank-group-heading h2::before,
+#rank-b .rank-group-heading h2::before { display: block; background-image: url('/ui/ranks/rank-b.webp'); }
+#grade-C .rank-group-heading h2::before,
+#rank-c .rank-group-heading h2::before { display: block; background-image: url('/ui/ranks/rank-c.webp'); }
+#grade-D .rank-group-heading h2::before,
+#rank-d .rank-group-heading h2::before { display: block; background-image: url('/ui/ranks/rank-d.webp'); }
+#grade-E .rank-group-heading h2::before,
+#rank-e .rank-group-heading h2::before { display: block; background-image: url('/ui/ranks/rank-e.webp'); }
+#grade-F .rank-group-heading h2::before,
+#rank-f .rank-group-heading h2::before { display: block; background-image: url('/ui/ranks/rank-f.webp'); }
+#grade-X .rank-group-heading h2::before,
+#rank-x .rank-group-heading h2::before { display: block; background-image: url('/ui/ranks/rank-x.webp'); }
+
+@media (max-width: 760px) {
+  .home .hero {
+    min-height: 620px;
+  }
+
+  .home .hero::before {
+    background-position: 58% center;
+  }
+
+  .home .hero::after {
+    background: linear-gradient(0deg, rgb(5 4 18 / 96%) 0%, rgb(5 4 18 / 72%) 64%, rgb(5 4 18 / 30%) 100%);
+  }
+
+  .search-page > .page-heading,
+  .site-guide-heading {
+    min-height: 310px;
+  }
+
+  .work-title-only-card {
+    grid-template-columns: 58px minmax(0, 1fr);
+    column-gap: 0.8rem;
+    min-height: 112px;
+  }
+
+  .work-title-only-card::before {
+    width: 58px;
+    min-height: 86px;
+  }
+
+  .rank-group-heading h2::before {
+    width: 62px;
+  }
+}
