@@ -57,15 +57,15 @@ function visibilityParams(collection, includeDrafts) {
   params.set('depth', '0')
   if (includeDrafts) {
     params.set('draft', 'true')
-    return params
-  }
-  if (collection === 'evidence') {
+  } else if (collection === 'evidence') {
     params.set('where[status][equals]', 'confirmed')
     params.set('where[isPublic][equals]', 'true')
-    return params
+  } else {
+    params.set('where[status][equals]', 'published')
   }
-  params.set('where[status][equals]', 'published')
-  params.set('where[isLiteVisible][not_equals]', 'false')
+  if (collection !== 'evidence') {
+    params.set('where[isLiteVisible][not_equals]', 'false')
+  }
   return params
 }
 
@@ -84,6 +84,15 @@ async function fetchCollection(baseUrl, token, collection, includeDrafts) {
     page += 1
   } while (page <= totalPages)
   return docs
+}
+
+async function fetchOptionalCollection(baseUrl, token, collection, includeDrafts) {
+  try {
+    return await fetchCollection(baseUrl, token, collection, includeDrafts)
+  } catch (error) {
+    console.warn(`[warn] skipped optional review enrichment collection ${collection}: ${String(error?.message || error).split('\n')[0]}`)
+    return []
+  }
 }
 
 function readJson(filePath) {
@@ -119,12 +128,18 @@ async function main() {
   if (email && credential) token = await login(baseUrl, email, credential)
 
   const works = await fetchCollection(baseUrl, token, 'works', includeDrafts)
-  const evidence = await fetchCollection(baseUrl, token, 'evidence', includeDrafts)
+  const evidence = await fetchOptionalCollection(baseUrl, token, 'evidence', includeDrafts)
   const reviewById = new Map()
 
-  for (const doc of [...works, ...evidence]) {
-    const collection = works.includes(doc) ? 'works' : 'evidence'
-    reviewById.set(`${collection}:${doc.slug}`, {
+  for (const doc of works) {
+    reviewById.set(`works:${doc.slug}`, {
+      reviewStatus: defaultReviewStatus(doc.reviewStatus),
+      evidenceStrength: defaultEvidenceStrength(doc.evidenceStrength),
+    })
+  }
+
+  for (const doc of evidence) {
+    reviewById.set(`evidence:${doc.slug}`, {
       reviewStatus: defaultReviewStatus(doc.reviewStatus),
       evidenceStrength: defaultEvidenceStrength(doc.evidenceStrength),
     })
