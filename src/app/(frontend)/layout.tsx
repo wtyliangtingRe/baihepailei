@@ -24,6 +24,7 @@ import './content-scope.css'
 import './theme.css'
 import './detail-layout-fixes.css'
 import './ui-visual-assets.css'
+import './ui-visual-polish.css'
 
 export const metadata: Metadata = {
   title: 'Baihepailei',
