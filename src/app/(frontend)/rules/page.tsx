@@ -32,8 +32,7 @@ export default function RulesIndexPage() {
           展示完整排雷分级细则。资料库可以先收录未知作品，排雷结论必须标明来源、证据状态与页面提示状态。
         </p>
         <div className="collection-actions">
-          <Link className="back-link" href="/terms">站点说明</Link>
-          <Link className="back-link" href="/search?collection=rules">搜索旧规则条目</Link>
+          <Link className="back-link" href="/terms">返回站点说明</Link>
         </div>
       </section>
 
