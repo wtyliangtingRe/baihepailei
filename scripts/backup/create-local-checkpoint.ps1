@@ -86,6 +86,58 @@ function Write-CheckpointStatus {
   } | ConvertTo-Json -Depth 3 | Set-Content -Encoding UTF8 $FilePath
 }
 
+function Invoke-RobocopyChecked {
+  param(
+    [string]$Source,
+    [string]$Destination,
+    [string]$LogFile,
+    [switch]$ExcludeJunctions,
+    [string[]]$ExcludedDirectories = @(),
+    [string[]]$ExcludedFiles = @()
+  )
+
+  if (-not (Test-Path -LiteralPath $Source)) {
+    return $false
+  }
+
+  New-Item -ItemType Directory -Force -Path $Destination | Out-Null
+
+  $arguments = @(
+    $Source,
+    $Destination,
+    '/E',
+    '/COPY:DAT',
+    '/DCOPY:T',
+    '/R:1',
+    '/W:1',
+    '/NFL',
+    '/NDL',
+    '/NP'
+  )
+
+  if ($ExcludeJunctions) {
+    $arguments += '/XJ'
+  }
+
+  if ($ExcludedDirectories.Count -gt 0) {
+    $arguments += '/XD'
+    $arguments += $ExcludedDirectories
+  }
+
+  if ($ExcludedFiles.Count -gt 0) {
+    $arguments += '/XF'
+    $arguments += $ExcludedFiles
+  }
+
+  & robocopy @arguments | Set-Content -Encoding UTF8 $LogFile
+  $exitCode = $LASTEXITCODE
+  if ($exitCode -gt 7) {
+    throw "robocopy failed with exit code $exitCode; source=$Source; destination=$Destination"
+  }
+
+  return $true
+}
+
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $backupRootFull = [System.IO.Path]::GetFullPath($BackupRoot)
 $repoRootFull = [System.IO.Path]::GetFullPath($repoRoot)
@@ -123,32 +175,60 @@ try {
   git bundle create $bundlePath --all
   if ($LASTEXITCODE -ne 0) { throw 'git bundle creation failed.' }
 
-  $robocopyArgs = @(
-    $repoRoot,
-    $workspaceDir,
-    '/E',
-    '/COPY:DAT',
-    '/DCOPY:T',
-    '/R:1',
-    '/W:1',
-    '/XJ',
-    '/NFL',
-    '/NDL',
-    '/NP',
-    '/XD',
+  $excludedDirectories = @(
     (Join-Path $repoRoot '.git'),
     (Join-Path $repoRoot 'node_modules'),
     (Join-Path $repoRoot '.next')
   )
-
+  $excludedFiles = @()
   if (-not $IncludeSecrets) {
-    $robocopyArgs += @('/XF', '.env', '.env.local')
+    $excludedFiles = @('.env', '.env.local')
   }
 
-  & robocopy @robocopyArgs | Set-Content -Encoding UTF8 (Join-Path $metadataDir 'robocopy.log')
-  $robocopyExit = $LASTEXITCODE
-  if ($robocopyExit -gt 7) {
-    throw "robocopy failed with exit code $robocopyExit"
+  Invoke-RobocopyChecked `
+    -Source $repoRoot `
+    -Destination $workspaceDir `
+    -LogFile (Join-Path $metadataDir 'robocopy-workspace.log') `
+    -ExcludeJunctions `
+    -ExcludedDirectories $excludedDirectories `
+    -ExcludedFiles $excludedFiles | Out-Null
+
+  # data_local may itself be a junction. Copy it explicitly so /XJ on the main
+  # workspace pass cannot silently omit local staging data and original assets.
+  $localDataSource = Join-Path $repoRoot 'data_local'
+  $localDataDestination = Join-Path $workspaceDir 'data_local'
+  $localDataSourcePresent = Test-Path -LiteralPath $localDataSource
+  if ($localDataSourcePresent) {
+    Invoke-RobocopyChecked `
+      -Source $localDataSource `
+      -Destination $localDataDestination `
+      -LogFile (Join-Path $metadataDir 'robocopy-data-local.log') `
+      -ExcludeJunctions | Out-Null
+  }
+
+  # uipic may also be a junction under data_local. Copy it once more without
+  # /XJ so the original PNG sources are guaranteed to enter the checkpoint.
+  $uiSourceDir = Join-Path $localDataSource 'uipic'
+  $uiDestinationDir = Join-Path $localDataDestination 'uipic'
+  $uiSourcePresent = Test-Path -LiteralPath $uiSourceDir
+  if ($uiSourcePresent) {
+    Invoke-RobocopyChecked `
+      -Source $uiSourceDir `
+      -Destination $uiDestinationDir `
+      -LogFile (Join-Path $metadataDir 'robocopy-ui-sources.log') | Out-Null
+  }
+
+  $localDataCopied = (-not $localDataSourcePresent) -or (Test-Path -LiteralPath $localDataDestination)
+  $originalUiPngsCopied = (-not $uiSourcePresent) -or (
+    (Test-Path -LiteralPath $uiDestinationDir) -and
+    ((Get-ChildItem -LiteralPath $uiDestinationDir -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0)
+  )
+
+  if (-not $localDataCopied) {
+    throw 'data_local exists in the repository but was not copied into the checkpoint workspace.'
+  }
+  if (-not $originalUiPngsCopied) {
+    throw 'data_local\uipic exists but its original UI image files were not copied into the checkpoint workspace.'
   }
 
   $databaseDump = $null
@@ -190,6 +270,10 @@ try {
     databaseDump = if ($databaseDump) { Split-Path -Leaf $databaseDump } else { $null }
     excludedDirectories = @('.git', 'node_modules', '.next')
     generatedIndexesCopiedToWorkspace = [bool]((Test-Path (Join-Path $workspaceDir 'public\search-index.json')) -and (Test-Path (Join-Path $workspaceDir 'public\detail-index.json')))
+    localDataSourcePresent = [bool]$localDataSourcePresent
+    localDataCopiedToWorkspace = [bool]$localDataCopied
+    originalUiSourcePresent = [bool]$uiSourcePresent
+    originalUiPngsCopiedToWorkspace = [bool]$originalUiPngsCopied
   }
 
   $manifest | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 (Join-Path $checkpointDir 'checkpoint-manifest.json')
@@ -207,7 +291,7 @@ try {
 
   Write-CheckpointStatus -FilePath $statusFile -State 'complete' -Message 'Checkpoint backup completed successfully.'
 
-  Write-Host ""
+  Write-Host ''
   Write-Host 'Checkpoint backup completed:' -ForegroundColor Green
   Write-Host $checkpointDir
   Write-Host "Commit: $head"
@@ -215,6 +299,8 @@ try {
   Write-Host "Secrets included: $([bool]$IncludeSecrets)"
   Write-Host "Database included: $([bool]$IncludeDatabase)"
   Write-Host "Generated indexes copied: $($manifest.generatedIndexesCopiedToWorkspace)"
+  Write-Host "Local data copied: $($manifest.localDataCopiedToWorkspace)"
+  Write-Host "Original UI sources copied: $($manifest.originalUiPngsCopiedToWorkspace)"
 }
 catch {
   Write-CheckpointStatus -FilePath $statusFile -State 'failed' -Message $_.Exception.Message
