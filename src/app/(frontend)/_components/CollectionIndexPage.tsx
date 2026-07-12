@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 import MissingSearchIndex from './MissingSearchIndex'
+import { isPublicSearchItem } from '../_lib/public-entity-guards'
 import type { SearchCollection, SearchItem } from '../_lib/search-index'
 import { readSearchIndex } from '../_lib/search-index'
 
@@ -33,7 +34,7 @@ const evidenceTypeLabels: Record<string, string> = {
   official_page: '官方页面',
   interview: '访谈',
   social_media: '社交媒体',
-  legacy_wiki: '旧站记录',
+  legacy_wiki: '历史记录',
   platform_page: '平台页面',
   other: '其他证据',
 }
@@ -168,7 +169,7 @@ export default function CollectionIndexPage({ collection, eyebrow, title, descri
   const requestedPage = normalizePositiveInteger(firstParam(searchParams.page), 1)
 
   const items = index.items
-    .filter((item) => item.collection === collection)
+    .filter((item) => item.collection === collection && isPublicSearchItem(item))
     .sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
 
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
