@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 
+import { isPublicSearchItem } from '../_lib/public-entity-guards'
 import {
   filterAndRankItems,
   getCollectionLabel,
@@ -72,6 +73,7 @@ function readContentScope(): ContentScope {
 
 function itemAllowedByScope(item: SearchItem, scope: ContentScope) {
   if (!publicSearchCollections.has(item.collection)) return false
+  if (!isPublicSearchItem(item)) return false
   if (item.collection !== 'works') return true
   if (scope === 'all') return true
   return !item.contentVisibility || item.contentVisibility === 'ordinary'
