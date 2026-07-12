@@ -82,17 +82,19 @@ function visibilityParams(collection, includeDrafts) {
 
   if (includeDrafts) {
     params.set('draft', 'true')
-    return params
-  }
-
-  if (collection === 'evidence') {
+  } else if (collection === 'evidence') {
     params.set('where[status][equals]', 'confirmed')
     params.set('where[isPublic][equals]', 'true')
-    return params
+  } else {
+    params.set('where[status][equals]', 'published')
   }
 
-  params.set('where[status][equals]', 'published')
-  params.set('where[isLiteVisible][not_equals]', 'false')
+  // Visibility flags must still apply when draft records are included.
+  // Otherwise manually hidden creator/organization anomalies leak back into Lite indexes.
+  if (collection !== 'evidence') {
+    params.set('where[isLiteVisible][not_equals]', 'false')
+  }
+
   return params
 }
 
