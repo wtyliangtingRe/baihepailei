@@ -115,6 +115,14 @@ function HighlightedText({ query, text }: { query: string; text: string }) {
   )
 }
 
+function SearchEmptyArtwork() {
+  return (
+    <div aria-hidden="true" className="search-empty-visual">
+      <img alt="" src="/ui/empty-search.webp" />
+    </div>
+  )
+}
+
 export default function SearchClient() {
   const [index, setIndex] = useState<SearchIndex | null>(null)
   const [query, setQuery] = useState('')
@@ -185,6 +193,7 @@ export default function SearchClient() {
   if (error || !index) {
     return (
       <section className="search-panel empty-state">
+        <SearchEmptyArtwork />
         <h2>还没有可用的搜索索引</h2>
         <p>请先在本地生成 public/search-index.json。</p>
         <pre>pnpm export:lite-search -- --url "http://localhost:3000" --include-drafts</pre>
@@ -235,6 +244,7 @@ export default function SearchClient() {
       <div className="results-list">
         {results.length === 0 ? (
           <div className="empty-state small">
+            <SearchEmptyArtwork />
             <h2>没有搜到</h2>
             <p>可以换一个角度搜索，尤其是旧站内容可能存在简称、日文名或不同译名。</p>
             <ul className="search-suggestions">
