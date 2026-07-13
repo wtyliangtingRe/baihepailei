@@ -91,6 +91,7 @@ function main() {
   const changedRows = results.filter((result) => result.changed)
   const statusChangedRows = results.filter((result) => result.statusChanged)
   const sourceCountChangedRows = results.filter((result) => result.sourceCountChanged)
+  const annotationOnlyRows = results.filter((result) => result.changed && !result.statusChanged && !result.sourceCountChanged)
   const blockedAfter = results.filter((result) => result.auditAfter.auditStatus === 'blocked')
   const warningsAfter = results.filter((result) => result.auditAfter.auditStatus === 'warning')
   const cleanAfter = results.filter((result) => result.auditAfter.auditStatus === 'ok')
@@ -110,6 +111,7 @@ function main() {
     unchanged: rows.length - changedRows.length,
     evidenceStatusDowngraded: statusChangedRows.length,
     sourceCountCorrected: sourceCountChangedRows.length,
+    annotationOnly: annotationOnlyRows.length,
     byEvidenceStatusTransition: countBy(statusChangedRows.map((result) => {
       const metadata = result.row.sourceProvenanceNormalization
       return `${metadata.originalEvidenceStatus}->${metadata.normalizedEvidenceStatus}`
