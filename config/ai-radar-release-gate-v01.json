@@ -1,0 +1,30 @@
+{
+  "version": "ai-radar-release-gate-v0.1",
+  "batchId": "ai-radar-first-100-v01",
+  "expectedRows": 100,
+  "writeEnabled": false,
+  "userApprovalRequired": true,
+  "approvalToken": null,
+  "requirements": {
+    "allRowsHaveAssessment": true,
+    "allMissingEvidenceRowsResearched": true,
+    "allIdentityConflictsReviewedOrExplicitlyBlocked": true,
+    "allRowsHaveConfidence": true,
+    "allRowsHaveEvidenceCoverage": true,
+    "allRowsHaveEvidenceStatus": true,
+    "allRowsHavePageNotice": true,
+    "allRowsHaveSourceSummary": true,
+    "allRowsHaveReviewStatus": true,
+    "allRuleConflictsAudited": true,
+    "humanVerifiedRowsRemainProtected": true,
+    "xRowsRequireHumanAdjudication": true,
+    "payloadPatchPlanReviewed": true,
+    "payloadApplyDryRunReviewed": true
+  },
+  "notes": [
+    "Do not write any AI radar result to Payload or PostgreSQL before all 100 rows are complete.",
+    "External research results must be merged before release review.",
+    "The user must explicitly approve the final reviewed batch before writeEnabled can become true.",
+    "Changing writeEnabled alone is insufficient; the release checker also requires a matching approval token and complete metrics."
+  ]
+}
