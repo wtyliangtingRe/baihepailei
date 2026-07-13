@@ -82,6 +82,7 @@
     "radar:build-input": "node scripts/radar/build-ai-radar-input-v01.mjs",
     "radar:audit-input": "node scripts/radar/audit-ai-radar-input-v01.mjs && node scripts/radar/guard-ai-radar-exact-summary-duplicates-v01.mjs",
     "radar:resolve": "node scripts/radar/resolve-ai-radar-assessments-v01.mjs",
+    "radar:check-release": "node scripts/radar/check-ai-radar-release-gate-v01.mjs",
     "test:radar-input-audit": "node --test tests/ai-radar-input-audit.test.mjs",
     "test:radar-duplicate-guard": "node --test tests/ai-radar-exact-summary-duplicate-guard.test.mjs",
     "test:radar-assessment": "node --test tests/ai-radar-assessment-resolver.test.mjs",
