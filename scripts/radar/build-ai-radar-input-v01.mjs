@@ -161,6 +161,9 @@ function buildEvidencePacket(work) {
       importBatch: val(work?.importBatch),
       humanVerified: work?.humanVerified === true,
       locked: work?.locked === true,
+      radarAssessment: work?.radarAssessment && typeof work.radarAssessment === 'object'
+        ? work.radarAssessment
+        : null,
     },
     writeProtection: protection,
     summaryText,
