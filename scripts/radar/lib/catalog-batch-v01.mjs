@@ -55,9 +55,31 @@ function hasManualProtection(row) {
     || val(row?.existingState?.ratingNotice) === 'manual_reviewed'
 }
 
-function alreadyAiAssessed(row) {
+function hasAiMarker(row) {
   return val(row?.existingState?.ratingNotice) === 'ai_synthesized_pending_review'
     || list(row?.existingState?.reviewReasons).map(val).includes('radar_seed_attached')
+}
+
+export function hasCompleteRadarAssessment(row) {
+  const assessment = row?.existingState?.radarAssessment
+  if (!assessment || typeof assessment !== 'object' || Array.isArray(assessment)) return false
+  return [
+    assessment.assessmentBatch,
+    assessment.policyVersion,
+    assessment.suggestedGrade,
+    assessment.decisiveRuleCode,
+    assessment.assessedAt,
+  ].every((item) => val(item))
+}
+
+function alreadyAiAssessed(row) {
+  return hasAiMarker(row) && hasCompleteRadarAssessment(row)
+}
+
+function legacyAiMarkerReason(row) {
+  return hasAiMarker(row) && !hasCompleteRadarAssessment(row)
+    ? ['legacy_ai_marker_without_complete_assessment']
+    : []
 }
 
 export function classifyCatalogRow(row) {
@@ -66,40 +88,57 @@ export function classifyCatalogRow(row) {
   const siteId = val(row?.siteId)
   const readiness = val(row?.inputAudit?.assessmentReadiness)
 
-  if (!workId || !siteId) {
-    reasons.push(!workId ? 'missing_work_id' : '', !siteId ? 'missing_site_id' : '')
-    return { queue: 'invalid_record', reasons: unique(reasons), actionable: false }
-  }
-
-  if (alreadyAiAssessed(row)) {
-    return { queue: 'already_ai_assessed', reasons: ['existing_ai_radar_marker'], actionable: false }
+  if (!workId) {
+    return { queue: 'invalid_record', reasons: ['missing_work_id'], actionable: false }
   }
 
   if (hasManualProtection(row)) {
     return { queue: 'protected_or_manual_review', reasons: ['manual_or_human_protection'], actionable: false }
   }
 
+  if (!siteId) {
+    return { queue: 'invalid_record', reasons: ['missing_site_id'], actionable: false }
+  }
+
+  if (alreadyAiAssessed(row)) {
+    return { queue: 'already_ai_assessed', reasons: ['complete_existing_ai_radar_assessment'], actionable: false }
+  }
+
+  const legacyReasons = legacyAiMarkerReason(row)
+
   if (readiness === 'needs_identity_or_series_review' || hasIdentityReason(row)) {
-    return { queue: 'identity_review', reasons: ['identity_or_series_review_required'], actionable: true }
+    return {
+      queue: 'identity_review',
+      reasons: unique(['identity_or_series_review_required', ...legacyReasons]),
+      actionable: true,
+    }
   }
 
   if (row?.writeProtection?.protected === true) {
     return {
       queue: 'protected_or_manual_review',
-      reasons: unique(['write_protected', ...list(row?.writeProtection?.reasons)]),
+      reasons: unique(['write_protected', ...list(row?.writeProtection?.reasons), ...legacyReasons]),
       actionable: false,
     }
   }
 
   if (readiness === 'needs_external_research') {
-    return { queue: 'external_research', reasons: ['content_evidence_missing'], actionable: true }
+    return {
+      queue: 'external_research',
+      reasons: unique(['content_evidence_missing', ...legacyReasons]),
+      actionable: true,
+    }
   }
 
   if (readiness === 'ready_for_ai_assessment_with_warnings') {
-    return { queue: 'ready_for_ai_assessment', reasons: [], actionable: true }
+    return { queue: 'ready_for_ai_assessment', reasons: legacyReasons, actionable: true }
   }
 
-  return { queue: 'unclassified', reasons: ['unexpected_assessment_readiness'], actionable: false }
+  return {
+    queue: 'unclassified',
+    reasons: unique(['unexpected_assessment_readiness', ...legacyReasons]),
+    actionable: false,
+  }
 }
 
 function seriesKey(row) {
