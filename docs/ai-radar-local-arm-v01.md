@@ -103,21 +103,24 @@ Allowed range:
 
 ## Armed readiness
 
-Armed readiness is still read-only. It must use a separate output directory so it cannot overwrite the disarmed readiness summary bound into the candidate manifest.
+Armed readiness is still read-only. Use the dedicated wrapper, which rejects execute flags and fixes its output to a separate directory so it cannot overwrite the disarmed readiness summary bound into the candidate manifest.
 
 ```powershell
 $Manifest = "data_local\staging\ai-radar\release-candidate-v01\ai-radar-release-candidate-manifest-v01.json"
 $ArmedGate = "data_local\staging\ai-radar\release-arm-v01\ai-radar-release-gate-local-armed-v01.json"
-$ArmedOut = "data_local\staging\ai-radar\payload-apply-armed-readiness-v01"
 
-pnpm radar:apply-readiness -- `
+pnpm radar:armed-readiness -- `
   --url http://localhost:3000 `
   --checkpoint $Checkpoint `
   --gate $ArmedGate `
   --candidate-manifest $Manifest `
-  --approval-token $ApprovalToken `
-  --require-execution-ready `
-  --out-dir $ArmedOut
+  --approval-token $ApprovalToken
+```
+
+The fixed output directory is:
+
+```text
+data_local/staging/ai-radar/payload-apply-armed-readiness-v01
 ```
 
 Expected stopping state:
