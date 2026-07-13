@@ -27,6 +27,10 @@ export function stableJson(value) {
   return JSON.stringify(stableValue(value))
 }
 
+export function normalizedPath(value) {
+  return val(value).replace(/\\/gu, '/').replace(/\/+$/u, '').toLowerCase()
+}
+
 export function approvalTokenFingerprint(planHash) {
   return sha256Text(approvalTokenFor(planHash, RELEASE_CANDIDATE_BATCH_ID))
 }
@@ -34,7 +38,9 @@ export function approvalTokenFingerprint(planHash) {
 export function validateReleaseCandidateInputs({
   planHash,
   dryRunSummary,
+  readinessSummary,
   sourceAuditSummary,
+  checkpointPath,
   checkpointManifest,
   checkpointStatus,
   checkpointDumpSize,
@@ -60,6 +66,26 @@ export function validateReleaseCandidateInputs({
   if (dryRunSummary?.safety?.payloadWrite !== false || Number(dryRunSummary?.safety?.payloadPatchRequests) !== 0) {
     blockers.push('dryrun_write_safety_mismatch')
   }
+
+  if (val(readinessSummary?.version) !== 'ai-radar-payload-apply-v0.1') blockers.push('unexpected_readiness_version')
+  if (val(readinessSummary?.mode) !== 'readiness') blockers.push('readiness_not_in_readiness_mode')
+  if (val(readinessSummary?.currentBranch) !== val(currentBranch)) blockers.push('readiness_branch_mismatch')
+  if (val(readinessSummary?.currentCommit) !== val(currentCommit)) blockers.push('readiness_commit_mismatch')
+  if (val(readinessSummary?.planSha256) !== val(planHash)) blockers.push('readiness_plan_hash_mismatch')
+  if (normalizedPath(readinessSummary?.checkpointPath) !== normalizedPath(checkpointPath)) blockers.push('readiness_checkpoint_path_mismatch')
+  if (Number(readinessSummary?.planRowsRead) !== expectedRows) blockers.push('readiness_row_count_mismatch')
+  if (Number(readinessSummary?.readyPlanRows) !== expectedWrites) blockers.push('readiness_ready_count_mismatch')
+  if (Number(readinessSummary?.protectedPlanRows) !== expectedProtected) blockers.push('readiness_protected_count_mismatch')
+  if (Number(readinessSummary?.preflightRowsChecked) !== expectedWrites) blockers.push('readiness_preflight_checked_count_mismatch')
+  if (Number(readinessSummary?.preflightReadyRows) !== expectedWrites) blockers.push('readiness_preflight_ready_count_mismatch')
+  if (Number(readinessSummary?.preflightBlockedRows) !== 0) blockers.push('readiness_has_blocked_rows')
+  if (readinessSummary?.preflightReady !== true) blockers.push('readiness_preflight_not_ready')
+  if (readinessSummary?.executionReady !== false) blockers.push('readiness_should_remain_disarmed')
+  if (Number(readinessSummary?.payloadPatchRequests) !== 0 || Number(readinessSummary?.appliedAndVerified) !== 0) {
+    blockers.push('readiness_write_detected')
+  }
+  if ((readinessSummary?.staticBlockers || []).length !== 0) blockers.push('readiness_static_blockers_present')
+  if (readinessSummary?.safety?.payloadWrite !== false) blockers.push('readiness_payload_write_safety_mismatch')
 
   if (Number(sourceAuditSummary?.rowsRead) !== expectedRows) blockers.push('source_audit_row_count_mismatch')
   if (Number(sourceAuditSummary?.blocked) !== 0) blockers.push('source_audit_has_blockers')
@@ -116,6 +142,9 @@ export function buildReleaseCandidateManifest({
   planHash,
   dryRunFile,
   dryRunHash,
+  readinessFile,
+  readinessHash,
+  readinessSummary,
   sourceAuditFile,
   sourceAuditHash,
   checkpointPath,
@@ -136,6 +165,7 @@ export function buildReleaseCandidateManifest({
   const candidateMaterial = stableJson({
     planHash,
     dryRunHash,
+    readinessHash,
     sourceAuditHash,
     checkpointManifestHash,
     checkpointStatusHash,
@@ -159,10 +189,12 @@ export function buildReleaseCandidateManifest({
       protected: 6,
       alreadyCurrent: 0,
       sourceAuditBlocked: 0,
+      preflightBlocked: 0,
     },
     files: {
       plan: { path: planFile, sha256: planHash },
       dryRunSummary: { path: dryRunFile, sha256: dryRunHash },
+      readinessSummary: { path: readinessFile, sha256: readinessHash },
       sourceAuditSummary: { path: sourceAuditFile, sha256: sourceAuditHash },
       checkpointManifest: { path: `${checkpointPath}/checkpoint-manifest.json`, sha256: checkpointManifestHash },
       checkpointStatus: { path: `${checkpointPath}/checkpoint-status.json`, sha256: checkpointStatusHash },
@@ -176,6 +208,14 @@ export function buildReleaseCandidateManifest({
         wouldUpdate: Number(dryRunSummary?.wouldUpdate),
         protected: Number(dryRunSummary?.blocked),
         alreadyCurrent: Number(dryRunSummary?.alreadyCurrent),
+      },
+      readiness: {
+        rowsChecked: Number(readinessSummary?.preflightRowsChecked),
+        readyRows: Number(readinessSummary?.preflightReadyRows),
+        blockedRows: Number(readinessSummary?.preflightBlockedRows),
+        preflightReady: readinessSummary?.preflightReady === true,
+        executionReady: readinessSummary?.executionReady === true,
+        payloadPatchRequests: Number(readinessSummary?.payloadPatchRequests),
       },
       sourceProvenance: {
         rows: Number(sourceAuditSummary?.rowsRead),
@@ -202,6 +242,7 @@ export function buildReleaseCandidateManifest({
       checkedInGateRemainsDisabled: true,
       localGateGeneratedDisarmed: true,
       requiresFreshCheckpointForThisCommit: true,
+      requiresFinalReadinessForThisCommit: true,
       requiresSeparateExplicitFinalApproval: true,
     },
   }
@@ -210,6 +251,7 @@ export function buildReleaseCandidateManifest({
 export function loadReleaseCandidateFiles({
   planFile,
   dryRunFile,
+  readinessFile,
   sourceAuditFile,
   checkpointPath,
   restoreVerificationFile,
@@ -223,6 +265,7 @@ export function loadReleaseCandidateFiles({
 
   return {
     dryRunSummary: readJson(dryRunFile),
+    readinessSummary: readJson(readinessFile),
     sourceAuditSummary: readJson(sourceAuditFile),
     checkpointManifest,
     checkpointStatus,
@@ -230,6 +273,7 @@ export function loadReleaseCandidateFiles({
     hashes: {
       plan: sha256File(planFile),
       dryRun: sha256File(dryRunFile),
+      readiness: sha256File(readinessFile),
       sourceAudit: sha256File(sourceAuditFile),
       checkpointManifest: sha256File(checkpointManifestFile),
       checkpointStatus: sha256File(checkpointStatusFile),
