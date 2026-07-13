@@ -125,6 +125,8 @@ async function main() {
         row.status = 'pending_original_snapshot'
       } else {
         row.status = 'drifted_or_partially_applied'
+        row.currentState = current
+        row.plannedPatch = plan?.patch || null
         if (row.currentHash !== row.expectedBeforeHash) row.blockers.push('current_snapshot_differs_from_original_plan')
         if (!sameSet(row.remainingChangedFields, row.expectedChangedFields)) row.blockers.push('remaining_changed_field_set_differs_from_original_plan')
       }
