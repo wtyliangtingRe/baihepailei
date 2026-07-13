@@ -100,6 +100,10 @@ test('full catalog preparation contains no Payload PATCH path', () => {
 
 test('resume safety wrapper creates its parent root before spawning the incident script', () => {
   const source = fs.readFileSync('scripts/radar/run-ai-radar-resume-first100-safe-v01.mjs', 'utf8')
-  assert.ok(source.indexOf('mkdirSync') < source.indexOf('spawnSync'))
+  const mkdirCall = source.indexOf('fs.mkdirSync(OUTPUT_ROOT')
+  const spawnCall = source.indexOf('const result = spawnSync(')
+  assert.ok(mkdirCall >= 0)
+  assert.ok(spawnCall >= 0)
+  assert.ok(mkdirCall < spawnCall)
   assert.match(source, /recursive:\s*true/u)
 })
