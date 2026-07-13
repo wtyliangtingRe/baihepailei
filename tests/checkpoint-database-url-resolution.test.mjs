@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs'
 const payloadConfig = readFileSync('payload.config.ts', 'utf8')
 const wrapper = readFileSync('scripts/backup/create-local-database-checkpoint.ps1', 'utf8')
 const dockerShim = readFileSync('scripts/backup/pg_dump.ps1', 'utf8')
+const dockerShimCommand = readFileSync('scripts/backup/pg_dump.cmd', 'utf8')
 
 test('database checkpoint recognizes the canonical Payload DATABASE_URL', () => {
   assert.match(payloadConfig, /process\.env\['DATABASE_URL'\]/u)
@@ -29,6 +30,8 @@ test('database checkpoint can use the running project PostgreSQL container', () 
   assert.match(wrapper, /Test-RunningContainer/u)
   assert.match(wrapper, /BAIHEPAILEI_PG_DUMP_CONTAINER/u)
   assert.match(wrapper, /pg_dump\.ps1/u)
+  assert.match(dockerShimCommand, /pg_dump\.ps1/u)
+  assert.match(dockerShimCommand, /ExecutionPolicy Bypass/u)
   assert.match(dockerShim, /docker[\s\S]*exec/u)
   assert.match(dockerShim, /docker[\s\S]*cp/u)
   assert.match(dockerShim, /--format=custom/u)
