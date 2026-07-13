@@ -120,12 +120,16 @@ When eventually approved, writes are:
 - fetched and verified after each PATCH;
 - stopped on the first failure.
 
-Each successful row immediately appends:
+Immediately before every PATCH, a rollback-intent row containing the reviewed previous values is appended to disk. This closes the ambiguous network-failure gap where the server may have accepted a PATCH before the client receives confirmation.
 
-- an apply journal entry;
-- a rollback-plan entry containing its reviewed previous values.
+After successful verification:
 
-Automatic rollback is intentionally disabled. A partial failure must be inspected before deciding whether to continue or restore applied rows.
+- the apply journal records `applied_and_verified`;
+- the rollback row is finalized with the verified post-write hash.
+
+If PATCH or verification fails, processing stops and the prepared rollback row remains available for inspection.
+
+Automatic rollback is intentionally disabled. A partial or ambiguous failure must be inspected before deciding whether to continue or restore an attempted row.
 
 ## Outputs
 
@@ -156,5 +160,6 @@ creates works: false
 deletes works: false
 stops on first failure: true
 verifies every patch: true
-rollback row per successful patch: true
+rollback intent persisted before PATCH: true
+automatic rollback: false
 ```
