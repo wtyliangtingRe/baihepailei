@@ -19,6 +19,14 @@ import {
   validateExecutionGate,
   verifyCurrentSnapshot,
 } from './lib/payload-apply-v01.mjs'
+import {
+  DEFAULT_ARM_TTL_MINUTES,
+  LOCAL_ARM_CONFIRMATION,
+  expectedExecuteConfirmation,
+  manifestActualHashes,
+  validateArmInputs,
+  validateArmedLocalGate,
+} from './lib/local-arm-v01.mjs'
 import { currentStateOf, snapshotHash, unique, val } from './lib/payload-plan-v01.mjs'
 
 const DEFAULT_PLAN = 'data_local/staging/ai-radar/payload-plan-honest-v01/ai-radar-payload-patch-plan-v01.jsonl'
@@ -119,6 +127,7 @@ async function main() {
   const dryRunFile = String(args.dryrun || DEFAULT_DRYRUN)
   const gateFile = String(args.gate || DEFAULT_GATE)
   const checkpointPath = val(args.checkpoint)
+  const candidateManifestFile = val(args['candidate-manifest'])
   const outDir = String(args['out-dir'] || DEFAULT_OUT_DIR)
   const baseUrl = String(args.url || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/+$/u, '')
   const expectedRows = Number(args['expected-rows'] || 100)
@@ -131,9 +140,17 @@ async function main() {
   const planHash = sha256File(planFile)
   const expectedApprovalToken = approvalTokenFor(planHash, APPLY_BATCH_ID)
   const suppliedApprovalToken = val(args['approval-token'])
+  const suppliedExecuteConfirmation = val(args['execute-confirmation'])
   const plans = readJsonl(planFile)
   const dryRunSummary = readJson(dryRunFile)
   const gate = readJson(gateFile)
+  const localGateRequested = gate?.localOnly === true
+  const requireExecutionReady = localGateRequested || args['require-execution-ready'] === true
+
+  let candidateManifest = null
+  let candidateManifestHash = ''
+  let expectedExecuteConfirmationValue = ''
+  let candidateActualHashes = null
 
   const readyPlans = plans.filter((row) => row.planStatus === 'ready_for_payload_dry_run')
   const protectedPlans = plans.filter((row) => row.planStatus === 'blocked')
@@ -158,8 +175,48 @@ async function main() {
   staticBlockers.push(...checkpoint.blockers)
 
   const executionGateBlockers = validateExecutionGate(gate, suppliedApprovalToken)
+  if (localGateRequested) {
+    if (!candidateManifestFile) {
+      executionGateBlockers.push('local_gate_candidate_manifest_required')
+    } else if (!fs.existsSync(candidateManifestFile)) {
+      executionGateBlockers.push('local_gate_candidate_manifest_missing')
+    } else if (checkpointPath) {
+      try {
+        candidateManifest = readJson(candidateManifestFile)
+        candidateManifestHash = sha256File(candidateManifestFile)
+        candidateActualHashes = manifestActualHashes(candidateManifest, checkpointPath)
+        expectedExecuteConfirmationValue = expectedExecuteConfirmation(candidateManifest?.candidateId)
+        executionGateBlockers.push(...validateArmInputs({
+          manifest: candidateManifest,
+          manifestHash: candidateManifestHash,
+          actualHashes: candidateActualHashes.hashes,
+          checkpointPath,
+          currentBranch,
+          currentCommit,
+          approvalToken: suppliedApprovalToken,
+          confirmation: LOCAL_ARM_CONFIRMATION,
+          ttlMinutes: DEFAULT_ARM_TTL_MINUTES,
+        }))
+        executionGateBlockers.push(...validateArmedLocalGate({
+          gate,
+          manifest: candidateManifest,
+          manifestHash: candidateManifestHash,
+          planHash,
+          checkpointPath,
+          currentBranch,
+          currentCommit,
+          approvalToken: suppliedApprovalToken,
+        }))
+      } catch (error) {
+        executionGateBlockers.push(`local_gate_candidate_validation_error:${String(error?.message || error).slice(0, 700)}`)
+      }
+    }
+  }
+
+  if (execute && !localGateRequested) executionGateBlockers.push('execute_requires_local_armed_gate')
   if (execute && suppliedApprovalToken !== expectedApprovalToken) executionGateBlockers.push('explicit_approval_token_mismatch')
   if (execute && !suppliedApprovalToken) executionGateBlockers.push('explicit_approval_token_missing')
+  if (execute && suppliedExecuteConfirmation !== expectedExecuteConfirmationValue) executionGateBlockers.push('explicit_execute_confirmation_mismatch')
 
   const outputs = {
     preflightRows: path.join(outDir, 'ai-radar-payload-apply-preflight-v01.jsonl'),
@@ -287,11 +344,14 @@ async function main() {
 
   writeJsonl(outputs.applied, appliedRows)
   writeJsonl(outputs.rollback, rollbackRows)
+  const commandOk = execute
+    ? executionReady && !stoppedAfterFailure
+    : (requireExecutionReady ? executionReady : preflightReady)
   const summary = {
     generatedAt: new Date().toISOString(),
     version: APPLY_VERSION,
     batchId: APPLY_BATCH_ID,
-    mode: execute ? 'execute' : 'readiness',
+    mode: execute ? 'execute' : (localGateRequested ? 'armed_readiness' : 'readiness'),
     currentBranch,
     currentCommit,
     payloadBaseUrl: baseUrl,
@@ -299,9 +359,16 @@ async function main() {
     planSha256: planHash,
     dryRunFile,
     gateFile,
+    gateLocalOnly: localGateRequested,
+    armedGateExpiresAt: localGateRequested ? val(gate?.expiresAt) : null,
     checkpointPath: checkpointPath || null,
+    candidateManifestFile: candidateManifestFile || null,
+    candidateManifestSha256: candidateManifestHash || null,
+    candidateId: val(candidateManifest?.candidateId) || null,
     expectedApprovalToken,
     suppliedApprovalTokenMatched: suppliedApprovalToken === expectedApprovalToken,
+    expectedExecuteConfirmation: expectedExecuteConfirmationValue || null,
+    suppliedExecuteConfirmationMatched: Boolean(expectedExecuteConfirmationValue) && suppliedExecuteConfirmation === expectedExecuteConfirmationValue,
     planRowsRead: plans.length,
     readyPlanRows: readyPlans.length,
     protectedPlanRows: protectedPlans.length,
@@ -333,16 +400,23 @@ async function main() {
       requiresExactPlanHashFromDryRun: true,
       requiresExplicitApprovalToken: true,
       releaseGateMustBeEnabled: true,
+      executeRequiresLocalArmedGate: true,
+      localArmedGateRequiresCandidateManifest: true,
+      revalidatesCandidateFileHashes: true,
+      armedGateAutoExpires: true,
+      executeRequiresCandidateBoundConfirmation: true,
     },
     nextStep: execute
       ? (stoppedAfterFailure ? 'Inspect the journal and rollback plan before any further action.' : 'Inspect the applied journal and verify selected work pages.')
-      : 'Review readiness output. Do not execute until the release gate and exact approval token are explicitly enabled.',
+      : (executionReady
+          ? 'Armed readiness passed. Do not execute without a separate explicit final approval.'
+          : 'Review readiness output. Do not execute until the release gate and exact approval token are explicitly enabled.'),
   }
   writeJson(outputs.summary, summary)
-  console.log(JSON.stringify({ ok: execute ? executionReady && !stoppedAfterFailure : preflightReady, summary }, null, 2))
+  console.log(JSON.stringify({ ok: commandOk, summary }, null, 2))
 
   if (!preflightReady) process.exitCode = 2
-  else if (execute && !executionReady) process.exitCode = 3
+  else if ((execute || requireExecutionReady) && !executionReady) process.exitCode = 3
   else if (stoppedAfterFailure) process.exitCode = 4
 }
 
