@@ -14,6 +14,7 @@ import { unique, val } from './lib/payload-plan-v01.mjs'
 
 const DEFAULT_PLAN = 'data_local/staging/ai-radar/payload-plan-honest-v01/ai-radar-payload-patch-plan-v01.jsonl'
 const DEFAULT_DRYRUN = 'data_local/staging/ai-radar/payload-dryrun-honest-v01/ai-radar-payload-patch-dryrun-v01-summary.json'
+const DEFAULT_READINESS = 'data_local/staging/ai-radar/payload-apply-v01/ai-radar-payload-apply-summary-v01.json'
 const DEFAULT_SOURCE_AUDIT = 'data_local/staging/ai-radar/source-provenance-audit-honest-v01/ai-radar-source-provenance-audit-v01-summary.json'
 const DEFAULT_RESTORE_VERIFICATION = 'data_local/staging/ai-radar/release-candidate-v01/database-restore-verification-v01.json'
 const DEFAULT_GATE = 'config/ai-radar-release-gate-v01.json'
@@ -53,6 +54,7 @@ function main() {
 
   const planFile = String(args.plan || DEFAULT_PLAN)
   const dryRunFile = String(args.dryrun || DEFAULT_DRYRUN)
+  const readinessFile = String(args.readiness || DEFAULT_READINESS)
   const sourceAuditFile = String(args['source-audit'] || DEFAULT_SOURCE_AUDIT)
   const checkpointPath = val(args.checkpoint)
   const restoreVerificationFile = String(args['restore-verification'] || DEFAULT_RESTORE_VERIFICATION)
@@ -62,6 +64,7 @@ function main() {
   if (!checkpointPath) throw new Error('--checkpoint is required')
   requireFile(planFile, 'Plan')
   requireFile(dryRunFile, 'Dry-run summary')
+  requireFile(readinessFile, 'Final readiness summary')
   requireFile(sourceAuditFile, 'Source provenance audit summary')
   requireFile(restoreVerificationFile, 'Database restore verification')
   requireFile(gateFile, 'Checked-in release gate')
@@ -71,6 +74,7 @@ function main() {
   const loaded = loadReleaseCandidateFiles({
     planFile,
     dryRunFile,
+    readinessFile,
     sourceAuditFile,
     checkpointPath,
     restoreVerificationFile,
@@ -79,7 +83,9 @@ function main() {
   const blockers = validateReleaseCandidateInputs({
     planHash: loaded.hashes.plan,
     dryRunSummary: loaded.dryRunSummary,
+    readinessSummary: loaded.readinessSummary,
     sourceAuditSummary: loaded.sourceAuditSummary,
+    checkpointPath,
     checkpointManifest: loaded.checkpointManifest,
     checkpointStatus: loaded.checkpointStatus,
     checkpointDumpSize: loaded.checkpointDumpSize,
@@ -133,6 +139,9 @@ function main() {
     planHash: loaded.hashes.plan,
     dryRunFile,
     dryRunHash: loaded.hashes.dryRun,
+    readinessFile,
+    readinessHash: loaded.hashes.readiness,
+    readinessSummary: loaded.readinessSummary,
     sourceAuditFile,
     sourceAuditHash: loaded.hashes.sourceAudit,
     checkpointPath,
@@ -163,8 +172,11 @@ function main() {
     currentBranch,
     currentCommit,
     planSha256: loaded.hashes.plan,
+    finalReadinessSha256: loaded.hashes.readiness,
     checkpointDumpSha256: loaded.hashes.checkpointDump,
     databaseRestoreListEntries: loaded.restoreVerification.listEntryCount,
+    preflightReadyRows: loaded.readinessSummary.preflightReadyRows,
+    preflightBlockedRows: loaded.readinessSummary.preflightBlockedRows,
     localGateWriteEnabled: localGate.writeEnabled,
     approvalTokenStored: Boolean(localGate.approvalToken),
     outputs,
