@@ -1,0 +1,18 @@
+{
+  "version": "ai-radar-source-provenance-normalization-v0.1",
+  "rows": 100,
+  "changed": 27,
+  "unchanged": 73,
+  "evidenceStatusDowngraded": 19,
+  "sourceCountCorrected": 25,
+  "annotationOnly": 2,
+  "byEvidenceStatusTransition": {
+    "multiple_secondary_supported->single_secondary_supported": 18,
+    "single_secondary_supported->insufficient_evidence": 1
+  },
+  "auditAfter": {
+    "blocked": 0,
+    "warningsOnly": 6,
+    "clean": 94
+  }
+}
