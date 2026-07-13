@@ -116,6 +116,7 @@ function defaultEvidenceStrength(value) {
 }
 
 function optionalPercent(value) {
+  if (value === null || value === undefined || value === '') return undefined
   const number = Number(value)
   if (!Number.isFinite(number)) return undefined
   return Math.min(100, Math.max(0, number))
