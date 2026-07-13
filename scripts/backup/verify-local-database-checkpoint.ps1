@@ -113,7 +113,7 @@ if ($localPgRestore) {
     throw 'Local pg_restore --list rejected the checkpoint dump.'
   }
 }
-elif (Test-RunningContainer -Name $PostgresContainer) {
+elseif (Test-RunningContainer -Name $PostgresContainer) {
   $method = 'docker_pg_restore'
   $docker = Get-Command docker -ErrorAction Stop
   $containerDump = "/tmp/baihepailei-verify-$([guid]::NewGuid().ToString('N')).dump"
