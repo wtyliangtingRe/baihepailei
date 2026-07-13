@@ -28,7 +28,11 @@ export function stableJson(value) {
 }
 
 export function normalizedPath(value) {
-  return val(value).replace(/\\/gu, '/').replace(/\/+$/u, '').toLowerCase()
+  return val(value)
+    .replace(/\\/gu, '/')
+    .replace(/\/{2,}/gu, '/')
+    .replace(/\/+$/u, '')
+    .toLowerCase()
 }
 
 export function approvalTokenFingerprint(planHash) {
