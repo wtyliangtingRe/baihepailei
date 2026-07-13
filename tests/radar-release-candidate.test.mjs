@@ -12,6 +12,9 @@ import {
 const planHash = 'a'.repeat(64)
 const dumpHash = 'b'.repeat(64)
 const checksumHash = 'c'.repeat(64)
+const branch = 'wm-ai-radar-release-candidate-v01'
+const commit = 'abc123'
+const checkpointPath = 'D:\\Baihepailei-backups\\Baihepailei-test'
 
 function validInputs(overrides = {}) {
   return {
@@ -25,6 +28,26 @@ function validInputs(overrides = {}) {
       alreadyCurrent: 0,
       safety: { payloadWrite: false, payloadPatchRequests: 0 },
     },
+    readinessSummary: {
+      version: 'ai-radar-payload-apply-v0.1',
+      mode: 'readiness',
+      currentBranch: branch,
+      currentCommit: commit,
+      planSha256: planHash,
+      checkpointPath,
+      planRowsRead: 100,
+      readyPlanRows: 94,
+      protectedPlanRows: 6,
+      preflightRowsChecked: 94,
+      preflightReadyRows: 94,
+      preflightBlockedRows: 0,
+      preflightReady: true,
+      executionReady: false,
+      payloadPatchRequests: 0,
+      appliedAndVerified: 0,
+      staticBlockers: [],
+      safety: { payloadWrite: false },
+    },
     sourceAuditSummary: {
       rowsRead: 100,
       blocked: 0,
@@ -32,12 +55,13 @@ function validInputs(overrides = {}) {
       clean: 94,
       rowsWithDeclaredCountMismatch: 0,
     },
+    checkpointPath,
     checkpointManifest: {
       includesDatabase: true,
       includesWorkspace: true,
       includesGitBundle: true,
-      branch: 'wm-ai-radar-release-candidate-v01',
-      commit: 'abc123',
+      branch,
+      commit,
     },
     checkpointStatus: { state: 'complete' },
     checkpointDumpSize: 12345,
@@ -49,13 +73,13 @@ function validInputs(overrides = {}) {
       listEntryCount: 123,
       pgRestoreVersion: 'pg_restore (PostgreSQL) 17.10',
     },
-    currentBranch: 'wm-ai-radar-release-candidate-v01',
-    currentCommit: 'abc123',
+    currentBranch: branch,
+    currentCommit: commit,
     ...overrides,
   }
 }
 
-test('release candidate accepts the reviewed 100/94/6 state with a readable dump archive', () => {
+test('release candidate accepts the reviewed 100/94/6 state with final readiness and a readable dump archive', () => {
   assert.deepEqual(validateReleaseCandidateInputs(validInputs()), [])
 })
 
@@ -81,9 +105,26 @@ test('release candidate blocks source provenance regressions and unreadable dump
   assert.ok(blockers.includes('restore_verification_has_no_entries'))
 })
 
-test('release candidate requires the checkpoint branch and commit to match', () => {
+test('release candidate requires checkpoint and readiness to match the final branch and commit', () => {
   const result = validateReleaseCandidateInputs(validInputs({ currentCommit: 'different' }))
   assert.ok(result.includes('checkpoint_commit_mismatch'))
+  assert.ok(result.includes('readiness_commit_mismatch'))
+})
+
+test('release candidate refuses a readiness summary with writes or blocked preflight rows', () => {
+  const invalid = validInputs({
+    readinessSummary: {
+      ...validInputs().readinessSummary,
+      preflightBlockedRows: 1,
+      preflightReadyRows: 93,
+      payloadPatchRequests: 1,
+      safety: { payloadWrite: true },
+    },
+  })
+  const blockers = validateReleaseCandidateInputs(invalid)
+  assert.ok(blockers.includes('readiness_has_blocked_rows'))
+  assert.ok(blockers.includes('readiness_write_detected'))
+  assert.ok(blockers.includes('readiness_payload_write_safety_mismatch'))
 })
 
 test('generated local release gate is always disarmed and stores no approval token', () => {
@@ -100,12 +141,15 @@ test('generated local release gate is always disarmed and stores no approval tok
   assert.equal(gate.planSha256, planHash)
 })
 
-test('release manifest stores only the approval-token fingerprint', () => {
+test('release manifest binds final readiness and stores only the approval-token fingerprint', () => {
   const manifest = buildReleaseCandidateManifest({
     planFile: 'plan.jsonl',
     planHash,
     dryRunFile: 'dryrun.json',
     dryRunHash: 'd'.repeat(64),
+    readinessFile: 'readiness.json',
+    readinessHash: '3'.repeat(64),
+    readinessSummary: validInputs().readinessSummary,
     sourceAuditFile: 'source.json',
     sourceAuditHash: 'e'.repeat(64),
     checkpointPath: 'checkpoint',
@@ -118,8 +162,8 @@ test('release manifest stores only the approval-token fingerprint', () => {
     restoreVerificationFile: 'restore.json',
     restoreVerificationHash: '2'.repeat(64),
     restoreVerification: validInputs().restoreVerification,
-    currentBranch: 'wm-ai-radar-release-candidate-v01',
-    currentCommit: 'abc123',
+    currentBranch: branch,
+    currentCommit: commit,
     dryRunSummary: validInputs().dryRunSummary,
     sourceAuditSummary: validInputs().sourceAuditSummary,
   })
@@ -127,6 +171,9 @@ test('release manifest stores only the approval-token fingerprint', () => {
   assert.equal(manifest.approval.tokenStored, false)
   assert.equal(manifest.approval.tokenFingerprintSha256, approvalTokenFingerprint(planHash))
   assert.equal(JSON.stringify(manifest).includes('APPLY-AI-RADAR-FIRST-100'), false)
+  assert.equal(manifest.files.readinessSummary.sha256, '3'.repeat(64))
+  assert.equal(manifest.reviewedState.readiness.readyRows, 94)
+  assert.equal(manifest.reviewedState.readiness.executionReady, false)
   assert.equal(manifest.safety.payloadWrite, false)
 })
 
