@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
 import test from 'node:test'
 
 import {
@@ -12,6 +13,19 @@ test('policy registry contains the complete v0.4 rule set', () => {
   assert.equal(RADAR_RULES.length, 55)
   assert.equal(RADAR_RULES.find((rule) => rule.code === 'C-FUTURE-HET-HINT')?.grade, 'D')
   assert.equal(RADAR_RULES.find((rule) => rule.code === 'D-ABO')?.grade, 'E')
+})
+
+test('script policy codes and grades stay aligned with the frontend policy', () => {
+  const source = fs.readFileSync('src/lib/radar/ratingPolicy.ts', 'utf8')
+  const frontendRules = new Map()
+  for (const match of source.matchAll(/^\s+'([^']+)': \{ grade: '([SABCDEXF])'/gmu)) {
+    frontendRules.set(match[1], match[2])
+  }
+
+  assert.equal(frontendRules.size, RADAR_RULES.length)
+  for (const rule of RADAR_RULES) {
+    assert.equal(frontendRules.get(rule.code), rule.grade, `Policy drift for ${rule.code}`)
+  }
 })
 
 test('lower safety grade overrides positive matches while preserving every match', () => {
