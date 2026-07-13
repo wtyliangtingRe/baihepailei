@@ -115,6 +115,25 @@ function defaultEvidenceStrength(value) {
   return value || 'unassessed'
 }
 
+function optionalPercent(value) {
+  const number = Number(value)
+  if (!Number.isFinite(number)) return undefined
+  return Math.min(100, Math.max(0, number))
+}
+
+function normalizeRadarAssessment(value) {
+  if (!value || typeof value !== 'object') return undefined
+  const assessment = {
+    confidencePercent: optionalPercent(value.confidencePercent),
+    evidenceCoveragePercent: optionalPercent(value.evidenceCoveragePercent),
+    evidenceStatus: String(value.evidenceStatus || '').trim() || undefined,
+    sourceSummary: String(value.sourceSummary || '').trim() || undefined,
+    policyVersion: String(value.policyVersion || '').trim() || undefined,
+    assessedAt: String(value.assessedAt || '').trim() || undefined,
+  }
+  return Object.values(assessment).some((item) => item !== undefined) ? assessment : undefined
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   const file = String(args.file || args.out || DEFAULT_FILE)
@@ -135,6 +154,8 @@ async function main() {
     reviewById.set(`works:${doc.slug}`, {
       reviewStatus: defaultReviewStatus(doc.reviewStatus),
       evidenceStrength: defaultEvidenceStrength(doc.evidenceStrength),
+      ratingNotice: doc.ratingNotice || '',
+      radarAssessment: normalizeRadarAssessment(doc.radarAssessment),
     })
   }
 
@@ -148,15 +169,20 @@ async function main() {
   const items = (index.items || []).map((item) => {
     if (!['works', 'evidence'].includes(item.collection)) return item
     const fields = reviewById.get(item.id) || {}
-    return {
+    const enriched = {
       ...item,
       reviewStatus: defaultReviewStatus(fields.reviewStatus || item.reviewStatus),
       evidenceStrength: defaultEvidenceStrength(fields.evidenceStrength || item.evidenceStrength),
     }
+    if (item.collection === 'works') {
+      enriched.ratingNotice = fields.ratingNotice || item.ratingNotice || ''
+      enriched.radarAssessment = fields.radarAssessment || item.radarAssessment
+    }
+    return enriched
   })
 
   writeJson(file, { ...index, items })
-  console.log('Lite review fields enriched')
+  console.log('Lite review and radar assessment fields enriched')
   console.log(JSON.stringify({ file: path.resolve(file), works: works.length, evidence: evidence.length }, null, 2))
 }
 
