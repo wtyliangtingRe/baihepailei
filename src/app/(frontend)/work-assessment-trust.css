@@ -1,0 +1,204 @@
+.work-assessment-trust-card {
+  display: grid;
+  gap: 18px;
+}
+
+.work-assessment-trust-head {
+  display: grid;
+  gap: 8px;
+}
+
+.work-assessment-trust-head h2 {
+  margin: 0;
+}
+
+.work-assessment-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.work-assessment-metric {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgb(255 181 215 / 0.3);
+  border-radius: 16px;
+  background: #151515;
+}
+
+.work-assessment-metric[data-calculated='false'] {
+  border-style: dashed;
+  border-color: #3a3a3a;
+}
+
+.work-assessment-metric-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.work-assessment-metric-heading span {
+  color: #aaa;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.work-assessment-metric-heading strong {
+  color: #fff;
+  font-size: 1.45rem;
+}
+
+.work-assessment-metric progress {
+  width: 100%;
+  height: 9px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: #303030;
+  accent-color: #ffb5d7;
+}
+
+.work-assessment-metric progress::-webkit-progress-bar {
+  border-radius: 999px;
+  background: #303030;
+}
+
+.work-assessment-metric progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c977a3, #ffb5d7);
+}
+
+.work-assessment-metric progress::-moz-progress-bar {
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c977a3, #ffb5d7);
+}
+
+.work-assessment-progress-placeholder {
+  height: 9px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(135deg, #292929 0 8px, #222 8px 16px);
+}
+
+.work-assessment-metric p,
+.work-assessment-source-summary p,
+.work-assessment-disclaimer {
+  margin: 0;
+  color: #cfcfcf;
+  line-height: 1.7;
+}
+
+.work-assessment-statuses {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.work-assessment-statuses > div {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid #303030;
+  border-radius: 14px;
+  background: #111;
+}
+
+.work-assessment-statuses dt {
+  color: #aaa;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.work-assessment-statuses dd {
+  margin: 0;
+  color: #fff;
+  font-weight: 750;
+}
+
+.work-assessment-statuses dd[data-tone='strong'] {
+  color: #8fe3a2;
+}
+
+.work-assessment-statuses dd[data-tone='medium'] {
+  color: #ffb5d7;
+}
+
+.work-assessment-statuses dd[data-tone='caution'] {
+  color: #ffb16d;
+}
+
+.work-assessment-statuses dd[data-tone='danger'] {
+  color: #ff786e;
+}
+
+.work-assessment-source-summary {
+  padding: 12px 14px;
+  border: 1px solid rgb(255 181 215 / 0.24);
+  border-radius: 14px;
+  background: #111;
+}
+
+.work-assessment-source-summary summary {
+  cursor: pointer;
+  color: #ffb5d7;
+  font-weight: 800;
+}
+
+.work-assessment-source-summary[open] summary {
+  margin-bottom: 10px;
+}
+
+.work-assessment-disclaimer {
+  padding-top: 12px;
+  border-top: 1px solid #303030;
+  font-size: 0.9rem;
+}
+
+[data-theme='light'] .work-assessment-metric,
+[data-theme='light'] .work-assessment-statuses > div,
+[data-theme='light'] .work-assessment-source-summary {
+  border-color: #e2d6cc;
+  background: #fff7f2;
+}
+
+[data-theme='light'] .work-assessment-metric[data-calculated='false'] {
+  border-color: #d7cbc1;
+}
+
+[data-theme='light'] .work-assessment-metric-heading span,
+[data-theme='light'] .work-assessment-statuses dt {
+  color: #766a61;
+}
+
+[data-theme='light'] .work-assessment-metric-heading strong,
+[data-theme='light'] .work-assessment-statuses dd {
+  color: #191716;
+}
+
+[data-theme='light'] .work-assessment-metric p,
+[data-theme='light'] .work-assessment-source-summary p,
+[data-theme='light'] .work-assessment-disclaimer {
+  color: #342d29;
+}
+
+[data-theme='light'] .work-assessment-metric progress,
+[data-theme='light'] .work-assessment-metric progress::-webkit-progress-bar {
+  background: #eadfd7;
+}
+
+[data-theme='light'] .work-assessment-progress-placeholder {
+  background: repeating-linear-gradient(135deg, #eadfd7 0 8px, #f5ece6 8px 16px);
+}
+
+[data-theme='light'] .work-assessment-disclaimer {
+  border-color: #e2d6cc;
+}
+
+@media (max-width: 640px) {
+  .work-assessment-metrics,
+  .work-assessment-statuses {
+    grid-template-columns: 1fr;
+  }
+}
