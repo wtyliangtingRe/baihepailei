@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const VERSION = 'ai-radar-input-audit-v0.1'
 const DEFAULT_INPUT = 'data_local/staging/ai-radar/ai-radar-input-v01.jsonl'
@@ -280,6 +281,6 @@ function main() {
   console.log(JSON.stringify({ ok: true, summary }, null, 2))
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try { main() } catch (error) { console.error(error?.stack || error); process.exitCode = 1 }
 }
