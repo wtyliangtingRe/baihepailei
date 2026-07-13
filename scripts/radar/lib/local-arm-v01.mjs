@@ -11,7 +11,8 @@ import { unique, val } from './payload-plan-v01.mjs'
 
 export const LOCAL_ARM_VERSION = 'ai-radar-local-release-gate-armed-v0.1'
 export const LOCAL_ARM_CONFIRMATION = 'ARM-AI-RADAR-FIRST-100-LOCAL-GATE-ONLY'
-export const DEFAULT_ARM_TTL_MINUTES = 30
+export const DEFAULT_ARM_TTL_MINUTES = 120
+export const MAX_ARM_TTL_MINUTES = 720
 
 export function localRuntimePath(value) {
   const raw = val(value)
@@ -107,7 +108,9 @@ export function validateArmInputs({
   if (expectedToken && val(manifest?.approval?.tokenFingerprintSha256) !== approvalTokenFingerprint(planHash)) {
     blockers.push('candidate_token_fingerprint_mismatch')
   }
-  if (!Number.isInteger(Number(ttlMinutes)) || Number(ttlMinutes) < 5 || Number(ttlMinutes) > 60) blockers.push('local_arm_ttl_out_of_range')
+  if (!Number.isInteger(Number(ttlMinutes)) || Number(ttlMinutes) < 5 || Number(ttlMinutes) > MAX_ARM_TTL_MINUTES) {
+    blockers.push('local_arm_ttl_out_of_range')
+  }
 
   return unique(blockers)
 }
@@ -152,6 +155,7 @@ export function buildArmedLocalGate(manifest, {
       'Local armed gate. Never commit this file.',
       'This gate does not execute writes by itself.',
       'Run an armed readiness without --execute before any separately approved execution.',
+      'Expiration is checked before execution begins; a started sequential batch may finish after the timestamp.',
     ],
   }
 }
@@ -191,7 +195,13 @@ export function validateArmedLocalGate({
   if (!Number.isFinite(expiresAt)) blockers.push('local_gate_expires_at_invalid')
   if (Number.isFinite(armedAt) && armedAt > now + 5 * 60 * 1000) blockers.push('local_gate_armed_in_future')
   if (Number.isFinite(expiresAt) && expiresAt <= now) blockers.push('local_gate_expired')
-  if (Number.isFinite(armedAt) && Number.isFinite(expiresAt) && expiresAt - armedAt > 60 * 60 * 1000) blockers.push('local_gate_ttl_too_long')
+  if (
+    Number.isFinite(armedAt)
+    && Number.isFinite(expiresAt)
+    && expiresAt - armedAt > MAX_ARM_TTL_MINUTES * 60 * 1000
+  ) {
+    blockers.push('local_gate_ttl_too_long')
+  }
 
   return unique(blockers)
 }
