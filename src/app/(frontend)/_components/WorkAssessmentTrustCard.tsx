@@ -81,7 +81,7 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
       ) : null}
 
       <p className="work-assessment-disclaimer">
-        置信度反映“当前判断有多可靠”，并不表示作品有多少概率安全；资料不足或来源冲突时，请优先阅读雷点说明与公开来源。
+        置信度反映“当前判断有多可靠”，不等同于作品安全概率；资料不足或来源冲突时，请优先阅读雷点说明与公开来源。
       </p>
     </section>
   )
