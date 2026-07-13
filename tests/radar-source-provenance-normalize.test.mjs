@@ -39,16 +39,19 @@ test('zero traceable URLs becomes insufficient evidence without blocking publica
   assert.equal(result.auditAfter.auditStatus, 'warning')
 })
 
-test('two distinct traceable URLs retain multiple secondary support', () => {
-  const result = normalizeSourceProvenance(row({
+test('two distinct traceable URLs retain multiple secondary support without a meaningless diff', () => {
+  const original = row({
     researchSources: [
       { sourceType: 'secondary_web', label: '来源一', url: 'https://example.com/a/' },
       { sourceType: 'secondary_web', label: '来源二', url: 'https://example.com/b' },
     ],
-  }))
+  })
+  const result = normalizeSourceProvenance(original)
   assert.equal(result.row.evidenceStatus, 'multiple_secondary_supported')
   assert.equal(result.row.sourceCount, 2)
-  assert.equal(result.statusChanged, false)
+  assert.equal(result.changed, false)
+  assert.equal(result.row.sourceSummary, original.sourceSummary)
+  assert.equal(result.row.sourceProvenanceNormalization, undefined)
 })
 
 test('unlinked context is preserved but not counted as a source', () => {
@@ -59,9 +62,10 @@ test('unlinked context is preserved but not counted as a source', () => {
 })
 
 test('normalization is idempotent and does not duplicate the honesty note', () => {
-  const once = normalizeSourceProvenance(row()).row
-  const twice = normalizeSourceProvenance(once).row
-  assert.equal((twice.sourceSummary.match(/来源可追溯性说明：/gu) || []).length, 1)
-  assert.equal(twice.evidenceStatus, once.evidenceStatus)
-  assert.equal(twice.sourceCount, once.sourceCount)
+  const once = normalizeSourceProvenance(row())
+  const twice = normalizeSourceProvenance(once.row)
+  assert.equal((twice.row.sourceSummary.match(/来源可追溯性说明：/gu) || []).length, 1)
+  assert.equal(twice.row.evidenceStatus, once.row.evidenceStatus)
+  assert.equal(twice.row.sourceCount, once.row.sourceCount)
+  assert.equal(twice.changed, false)
 })
