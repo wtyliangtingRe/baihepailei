@@ -92,6 +92,8 @@
     "radar:prepare-release-candidate": "node scripts/radar/prepare-ai-radar-release-candidate-v01.mjs",
     "radar:arm-local": "node scripts/radar/arm-ai-radar-release-candidate-v01.mjs",
     "radar:armed-readiness": "node scripts/radar/run-ai-radar-armed-readiness-v01.mjs",
+    "radar:reconcile-apply": "node scripts/radar/reconcile-ai-radar-payload-state-v01.mjs",
+    "radar:execute-once": "node scripts/radar/run-ai-radar-execute-once-v01.mjs",
     "test:radar-input-audit": "node --test tests/ai-radar-input-audit.test.mjs",
     "test:radar-duplicate-guard": "node --test tests/ai-radar-exact-summary-duplicate-guard.test.mjs",
     "test:radar-assessment": "node --test tests/ai-radar-assessment-resolver.test.mjs",
