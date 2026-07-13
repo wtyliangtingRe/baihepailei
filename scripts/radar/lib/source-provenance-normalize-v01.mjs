@@ -30,22 +30,48 @@ export function honestEvidenceStatus(evidenceStatus, traceableSourceCount) {
 
 export function normalizeSourceProvenance(row) {
   const auditBefore = auditSourceProvenance(row)
-  const originalEvidenceStatus = val(row?.evidenceStatus) || 'unknown'
-  const evidenceStatus = honestEvidenceStatus(originalEvidenceStatus, auditBefore.traceableSourceCount)
+  const existing = row?.sourceProvenanceNormalization || null
+  const currentEvidenceStatus = val(row?.evidenceStatus) || 'unknown'
+  const currentSourceCount = Number(row?.sourceCount || 0)
+  const originalEvidenceStatus = val(existing?.originalEvidenceStatus) || currentEvidenceStatus
+  const originalSourceCount = Number.isFinite(Number(existing?.originalSourceCount))
+    ? Number(existing.originalSourceCount)
+    : currentSourceCount
+  const evidenceStatus = honestEvidenceStatus(currentEvidenceStatus, auditBefore.traceableSourceCount)
   const sourceCount = auditBefore.traceableSourceCount
-  const statusChanged = evidenceStatus !== originalEvidenceStatus
-  const sourceCountChanged = Number(row?.sourceCount || 0) !== sourceCount
+  const statusChanged = evidenceStatus !== currentEvidenceStatus
+  const sourceCountChanged = currentSourceCount !== sourceCount
   const blockers = unique([
     ...list(row?.blockers),
     ...(evidenceStatus === 'insufficient_evidence' && sourceCount === 0 ? ['external_research_insufficient'] : []),
   ])
+  const blockersChanged = JSON.stringify(blockers) !== JSON.stringify(list(row?.blockers))
   const normalizationReasons = unique([
-    ...(statusChanged ? [`evidence_status:${originalEvidenceStatus}->${evidenceStatus}`] : []),
-    ...(sourceCountChanged ? [`source_count:${Number(row?.sourceCount || 0)}->${sourceCount}`] : []),
+    ...(originalEvidenceStatus !== evidenceStatus ? [`evidence_status:${originalEvidenceStatus}->${evidenceStatus}`] : []),
+    ...(originalSourceCount !== sourceCount ? [`source_count:${originalSourceCount}->${sourceCount}`] : []),
     ...(auditBefore.unlinkedSecondarySources.length ? ['unlinked_context_preserved_but_not_counted'] : []),
   ])
+  const shouldAnnotate = Boolean(existing) || normalizationReasons.length > 0
   const baseSummary = withoutExistingHonestNote(row?.sourceSummary)
-  const sourceSummary = [baseSummary, honestSourceNote(auditBefore)].filter(Boolean).join('\n')
+  const sourceSummary = shouldAnnotate
+    ? [baseSummary, honestSourceNote(auditBefore)].filter(Boolean).join('\n')
+    : row?.sourceSummary
+  const summaryChanged = sourceSummary !== row?.sourceSummary
+  const metadata = shouldAnnotate
+    ? {
+        version: 'ai-radar-source-provenance-normalization-v0.1',
+        changed: true,
+        originalEvidenceStatus,
+        normalizedEvidenceStatus: evidenceStatus,
+        originalSourceCount,
+        traceableSourceCount: sourceCount,
+        traceableUrls: auditBefore.traceableUrls,
+        unlinkedSecondarySources: auditBefore.unlinkedSecondarySources,
+        reasons: normalizationReasons,
+      }
+    : undefined
+  const metadataChanged = shouldAnnotate && JSON.stringify(metadata) !== JSON.stringify(existing)
+  const changed = statusChanged || sourceCountChanged || blockersChanged || summaryChanged || metadataChanged
 
   const normalized = {
     ...row,
@@ -53,22 +79,12 @@ export function normalizeSourceProvenance(row) {
     sourceCount,
     sourceSummary,
     blockers,
-    sourceProvenanceNormalization: {
-      version: 'ai-radar-source-provenance-normalization-v0.1',
-      changed: statusChanged || sourceCountChanged,
-      originalEvidenceStatus,
-      normalizedEvidenceStatus: evidenceStatus,
-      originalSourceCount: Number(row?.sourceCount || 0),
-      traceableSourceCount: sourceCount,
-      traceableUrls: auditBefore.traceableUrls,
-      unlinkedSecondarySources: auditBefore.unlinkedSecondarySources,
-      reasons: normalizationReasons,
-    },
+    ...(metadata ? { sourceProvenanceNormalization: metadata } : {}),
   }
 
   return {
     row: normalized,
-    changed: statusChanged || sourceCountChanged,
+    changed,
     statusChanged,
     sourceCountChanged,
     auditBefore,
