@@ -2,6 +2,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { sha256File } from './lib/payload-apply-v01.mjs'
 import { buildWorkIndexes, dryRunPlanRow, val } from './lib/payload-plan-v01.mjs'
 
 const VERSION = 'ai-radar-payload-patch-dryrun-v0.1'
@@ -98,6 +99,7 @@ async function main() {
   const outDir = String(args['out-dir'] || DEFAULT_OUT_DIR)
   const baseUrl = String(args.url || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/+$/u, '')
   const expectedRows = Number(args['expected-rows'] || 100)
+  const inputSha256 = sha256File(input)
   const plans = readRows(input)
   if (expectedRows > 0 && plans.length !== expectedRows) throw new Error(`Expected ${expectedRows} plan rows, found ${plans.length}`)
   const loaded = await loadWorks(args, baseUrl)
@@ -133,6 +135,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     version: VERSION,
     input,
+    inputSha256,
     worksSource: loaded.source,
     planRowsRead: plans.length,
     payloadWorksRead: loaded.works.length,
@@ -151,6 +154,7 @@ async function main() {
       applyModeExists: false,
       staleSnapshotsBlocked: true,
       titleOnlyMatchingAllowed: false,
+      exactPlanHashRecorded: true,
     },
     nextStep: 'Review this dry-run output. A separate, explicitly guarded apply stage may be designed only after approval.',
   }
