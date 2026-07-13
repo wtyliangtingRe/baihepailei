@@ -177,7 +177,7 @@ test('release manifest binds final readiness and stores only the approval-token 
   assert.equal(manifest.safety.payloadWrite, false)
 })
 
-test('release preparation and restore verification remain read-only', () => {
+test('release preparation and restore verification remain read-only and PowerShell-compatible', () => {
   const prepare = readFileSync('scripts/radar/prepare-ai-radar-release-candidate-v01.mjs', 'utf8')
   const verify = readFileSync('scripts/backup/verify-local-database-checkpoint.ps1', 'utf8')
 
@@ -186,5 +186,7 @@ test('release preparation and restore verification remain read-only', () => {
   assert.match(verify, /pg_restore --list/u)
   assert.match(verify, /restoreExecuted = \$false/u)
   assert.match(verify, /elseif \(Test-RunningContainer/u)
+  assert.match(verify, /function Get-Sha256Compat/u)
+  assert.doesNotMatch(verify, /\bGet-FileHash\b/u)
   assert.doesNotMatch(verify, /\belif\b/u)
 })
