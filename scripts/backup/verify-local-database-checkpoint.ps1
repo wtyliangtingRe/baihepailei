@@ -39,6 +39,21 @@ function Find-LocalPgRestore {
     Select-Object -First 1 -ExpandProperty FullName
 }
 
+function Get-Sha256Compat {
+  param([string]$FilePath)
+
+  $stream = [System.IO.File]::OpenRead($FilePath)
+  $sha256 = [System.Security.Cryptography.SHA256]::Create()
+  try {
+    $bytes = $sha256.ComputeHash($stream)
+    return (($bytes | ForEach-Object { $_.ToString('x2') }) -join '').ToLowerInvariant()
+  }
+  finally {
+    $sha256.Dispose()
+    $stream.Dispose()
+  }
+}
+
 function Test-RunningContainer {
   param([string]$Name)
 
@@ -83,7 +98,7 @@ if ($dumpItem.Length -le 0) {
   throw 'Checkpoint database dump is empty.'
 }
 
-$dumpHash = (Get-FileHash -LiteralPath $dumpFile -Algorithm SHA256).Hash.ToLowerInvariant()
+$dumpHash = Get-Sha256Compat -FilePath $dumpFile
 $checksumRows = Import-Csv -LiteralPath $checksumsFile
 $checksumRow = $checksumRows | Where-Object {
   ([string]$_.RelativePath).Replace('/', '\') -eq ([string]$manifest.databaseDump).Replace('/', '\')
