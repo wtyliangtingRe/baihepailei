@@ -22,6 +22,24 @@ Within each file, `DATABASE_URL` is preferred over `DATABASE_URI`.
 
 The connection value is never printed. Only the source key/file name is shown.
 
+## pg_dump resolution
+
+The wrapper resolves `pg_dump` in this order:
+
+1. an existing `pg_dump.exe` in `PATH`;
+2. common PostgreSQL, Scoop, and Chocolatey installation directories;
+3. the running project PostgreSQL container, defaulting to `baihepailei-postgres`.
+
+For the Docker fallback, the wrapper runs the PostgreSQL image's own `pg_dump`, writes a custom-format dump to a temporary path inside the container, copies it into the checkpoint, verifies that the host file is non-empty, and removes the temporary container file. The system `PATH` is changed only for the lifetime of the wrapper process.
+
+A different container name can be supplied explicitly:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File ".\scripts\backup\create-local-database-checkpoint.ps1" `
+  -PostgresContainer "another-postgres-container"
+```
+
 The wrapper then calls `create-local-checkpoint.ps1` with database inclusion enabled. The resulting checkpoint must contain:
 
 ```text
@@ -32,4 +50,4 @@ payload-postgresql.dump
 repository.bundle
 ```
 
-If `pg_dump` is not available in `PATH`, install or expose the PostgreSQL client tools before retrying. A failed/incomplete checkpoint must never be used by radar apply readiness.
+A failed or incomplete checkpoint must never be used by radar apply readiness.
