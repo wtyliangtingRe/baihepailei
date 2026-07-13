@@ -128,12 +128,23 @@ export function validateApplyPlanRow(plan) {
   return unique(blockers)
 }
 
+export function payloadComparable(value) {
+  if (Array.isArray(value)) return value.map(payloadComparable)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).flatMap(([key, item]) => {
+      if (key === 'id') return []
+      return [[key, payloadComparable(item)]]
+    }))
+  }
+  return value
+}
+
 export function changedFieldsAgainstCurrent(work, plan) {
   const current = currentStateOf(work)
   const patch = canonical(plan?.patch || {})
   const fields = []
   for (const key of ALLOWED_PATCH_FIELDS) {
-    if (key in patch && !equal(current?.[key], patch?.[key])) fields.push(key)
+    if (key in patch && !equal(payloadComparable(current?.[key]), payloadComparable(patch?.[key]))) fields.push(key)
   }
   return fields
 }
