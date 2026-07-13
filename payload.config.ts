@@ -14,12 +14,15 @@ import { UserLists } from './src/collections/UserLists'
 import { Users } from './src/collections/Users'
 import { Warnings } from './src/collections/Warnings'
 import { Works } from './src/collections/Works'
+import { withRadarAssessmentFields } from './src/collections/fields/radarAssessment'
+
+const WorksWithRadarAssessment = withRadarAssessmentFields(Works)
 
 export default buildConfig({
   admin: {
     user: Users.slug,
   },
-  collections: [Users, Media, Works, Creators, Organizations, Evidence, Comments, UserLists, Terms, Warnings, Tags, Rules],
+  collections: [Users, Media, WorksWithRadarAssessment, Creators, Organizations, Evidence, Comments, UserLists, Terms, Warnings, Tags, Rules],
   db: postgresAdapter({
     pool: {
       connectionString: String(process.env['DATABASE_URL'] || ''),
