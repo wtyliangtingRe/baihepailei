@@ -19,11 +19,13 @@
     "humanVerifiedRowsRemainProtected": true,
     "xRowsRequireHumanAdjudication": true,
     "payloadPatchPlanReviewed": true,
-    "payloadApplyDryRunReviewed": true
+    "payloadApplyDryRunReviewed": true,
+    "sourceProvenanceAuditReviewed": false
   },
   "notes": [
     "Do not write any AI radar result to Payload or PostgreSQL before all 100 rows are complete.",
     "External research results must be merged before release review.",
+    "Source counts and evidence-status claims must be checked against traceable source URLs before release.",
     "The user must explicitly approve the final reviewed batch before writeEnabled can become true.",
     "Changing writeEnabled alone is insufficient; the release checker also requires a matching approval token and complete metrics."
   ]
