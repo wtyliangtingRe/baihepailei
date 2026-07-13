@@ -38,17 +38,17 @@ test('series summary outlier is isolated from ready assessment rows', () => {
   const rows = [
     {
       workId: '1', title: '示例作品 (1)', media: { mediaType: 'manga' },
-      summaryText: '純夏和汐在学校里逐渐确认彼此的恋爱心意，二人的关系成为故事中心。她们在同学与家庭面前学习如何诚实面对感情，并继续共同生活。',
+      summaryText: '純夏と汐は互いの恋心を少しずつ自覚し、友人たちに見守られながら二人の関係を深めていく。純夏は汐に本当の気持ちを伝えるため勇気を出し、将来も一緒に歩むことを考え始める。',
       evidenceSignals: [{ type: 'summary', text: 'one' }], candidateSources: [],
     },
     {
       workId: '2', title: '示例作品 (2)', media: { mediaType: 'manga' },
-      summaryText: '精灵研究会为了获得活动室而召集成员，任田与伙伴开始召唤精灵的喜剧故事。新的成员加入以后，大家为了完成研究会任务展开校园冒险。',
+      summaryText: '遠い宇宙基地で機械技師たちが壊れた航行装置を修理する。隊長は未知の惑星から届いた信号を解析し、巨大な宇宙船の秘密を追うため仲間と危険な探査任務へ出発する。調査班は基地の事故原因も究明する。',
       evidenceSignals: [{ type: 'summary', text: 'two' }], candidateSources: [],
     },
     {
       workId: '3', title: '示例作品 (3)', media: { mediaType: 'manga' },
-      summaryText: '純夏终于向汐表达心意，两位少女继续面对学校生活与恋爱关系的变化。她们决定珍惜彼此，在毕业与未来选择中维持共同生活。',
+      summaryText: '純夏はついに汐へ恋心を告白し、汐も隠していた本当の気持ちを伝える。二人は互いを大切な恋人として受け入れ、卒業後の将来について一緒に話し合いながら関係を深めていく。',
       evidenceSignals: [{ type: 'summary', text: 'three' }], candidateSources: [],
     },
   ]
