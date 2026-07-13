@@ -177,6 +177,22 @@
   color: #191716;
 }
 
+[data-theme='light'] .work-assessment-statuses dd[data-tone='strong'] {
+  color: #297c3c;
+}
+
+[data-theme='light'] .work-assessment-statuses dd[data-tone='medium'] {
+  color: #9e3f72;
+}
+
+[data-theme='light'] .work-assessment-statuses dd[data-tone='caution'] {
+  color: #a95d1f;
+}
+
+[data-theme='light'] .work-assessment-statuses dd[data-tone='danger'] {
+  color: #c73a2e;
+}
+
 [data-theme='light'] .work-assessment-metric p,
 [data-theme='light'] .work-assessment-source-summary p,
 [data-theme='light'] .work-assessment-disclaimer {
