@@ -38,17 +38,17 @@ test('series summary outlier is isolated from ready assessment rows', () => {
   const rows = [
     {
       workId: '1', title: '示例作品 (1)', media: { mediaType: 'manga' },
-      summaryText: '純夏和汐在学校里逐渐确认彼此的恋爱心意，二人的关系成为故事中心。',
+      summaryText: '純夏和汐在学校里逐渐确认彼此的恋爱心意，二人的关系成为故事中心。她们在同学与家庭面前学习如何诚实面对感情，并继续共同生活。',
       evidenceSignals: [{ type: 'summary', text: 'one' }], candidateSources: [],
     },
     {
       workId: '2', title: '示例作品 (2)', media: { mediaType: 'manga' },
-      summaryText: '精灵研究会为了获得活动室而召集成员，任田与伙伴开始召唤精灵的喜剧故事。',
+      summaryText: '精灵研究会为了获得活动室而召集成员，任田与伙伴开始召唤精灵的喜剧故事。新的成员加入以后，大家为了完成研究会任务展开校园冒险。',
       evidenceSignals: [{ type: 'summary', text: 'two' }], candidateSources: [],
     },
     {
       workId: '3', title: '示例作品 (3)', media: { mediaType: 'manga' },
-      summaryText: '純夏终于向汐表达心意，两位少女继续面对学校生活与恋爱关系的变化。',
+      summaryText: '純夏终于向汐表达心意，两位少女继续面对学校生活与恋爱关系的变化。她们决定珍惜彼此，在毕业与未来选择中维持共同生活。',
       evidenceSignals: [{ type: 'summary', text: 'three' }], candidateSources: [],
     },
   ]
