@@ -1,0 +1,18 @@
+{
+  "version": "ai-radar-source-provenance-audit-fixture-v0.1",
+  "batchId": "ai-radar-first-100-v01",
+  "rows": 100,
+  "blocked": 19,
+  "warningsOnly": 8,
+  "clean": 73,
+  "combinedWithExistingPayloadPlan": {
+    "existingBlocked": 6,
+    "additionalSourceProvenanceBlocked": 19,
+    "eligibleAfterBothGuards": 75
+  },
+  "safety": {
+    "payloadWrite": false,
+    "directPostgresqlWrite": false,
+    "fixtureOnly": true
+  }
+}
