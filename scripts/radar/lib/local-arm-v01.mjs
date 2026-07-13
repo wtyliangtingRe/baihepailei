@@ -18,7 +18,7 @@ export function localRuntimePath(value) {
   if (process.platform === 'win32') {
     return raw.replace(/\/{1,}/gu, '\\').replace(/\\{2,}/gu, '\\')
   }
-  return raw.replace(/\\/gu, '/')
+  return raw.replace(/\\/gu, '/').replace(/\/{2,}/gu, '/')
 }
 
 export function expectedExecuteConfirmation(candidateId) {
