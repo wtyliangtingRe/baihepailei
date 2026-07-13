@@ -233,6 +233,7 @@ async function main() {
         changedFields: [],
         blockers: [],
       }
+      let rollback = null
       try {
         const work = await fetchWork(baseUrl, token, targetId)
         const snapshot = verifyCurrentSnapshot(work, plan)
@@ -241,33 +242,42 @@ async function main() {
         const patch = minimalPatch(plan, journalRow.changedFields)
         if (!Object.keys(patch).length) throw new Error('no_changed_fields_at_apply_time')
 
-        payloadPatchRequests += 1
-        await patchWork(baseUrl, token, targetId, patch)
-        const verified = await fetchWork(baseUrl, token, targetId)
-        const remaining = changedFieldsAgainstCurrent(verified, plan)
-        if (remaining.length) throw new Error(`post_patch_verification_failed:${remaining.join(',')}`)
-
-        journalRow.status = 'applied_and_verified'
-        journalRow.afterHash = snapshotHash(currentStateOf(verified))
-        const rollback = {
+        rollback = {
           version: 'ai-radar-payload-rollback-plan-v0.1',
           action: 'restore_ai_radar_payload_fields',
           workId: val(plan?.workId),
           siteId: val(plan?.siteId),
           title: val(plan?.title),
           target: plan.target,
-          expectedCurrentHash: journalRow.afterHash,
+          expectedCurrentHash: null,
           changedFields: journalRow.changedFields,
           patch: rollbackPatchFor(plan, journalRow.changedFields),
+          patchRequestCompleted: false,
+          verificationCompleted: false,
           automaticallyExecuted: false,
         }
-        appliedRows.push(journalRow)
         rollbackRows.push(rollback)
-        appendJsonl(outputs.journal, journalRow)
         appendJsonl(outputs.rollback, rollback)
+
+        payloadPatchRequests += 1
+        await patchWork(baseUrl, token, targetId, patch)
+        rollback.patchRequestCompleted = true
+
+        const verified = await fetchWork(baseUrl, token, targetId)
+        const remaining = changedFieldsAgainstCurrent(verified, plan)
+        if (remaining.length) throw new Error(`post_patch_verification_failed:${remaining.join(',')}`)
+
+        journalRow.status = 'applied_and_verified'
+        journalRow.afterHash = snapshotHash(currentStateOf(verified))
+        rollback.expectedCurrentHash = journalRow.afterHash
+        rollback.verificationCompleted = true
+        appliedRows.push(journalRow)
+        appendJsonl(outputs.journal, journalRow)
       } catch (error) {
-        journalRow.status = 'failed_stop'
-        journalRow.blockers.push(String(error?.message || error).slice(0, 800))
+        const message = String(error?.message || error).slice(0, 800)
+        journalRow.status = rollback ? 'patch_attempt_failed_or_unverified_stop' : 'failed_before_patch_stop'
+        journalRow.blockers.push(message)
+        if (rollback) rollback.failure = message
         appendJsonl(outputs.journal, journalRow)
         stoppedAfterFailure = true
         break
@@ -276,6 +286,7 @@ async function main() {
   }
 
   writeJsonl(outputs.applied, appliedRows)
+  writeJsonl(outputs.rollback, rollbackRows)
   const summary = {
     generatedAt: new Date().toISOString(),
     version: APPLY_VERSION,
@@ -316,7 +327,7 @@ async function main() {
       sequentialPatchOnly: true,
       stopsOnFirstFailure: true,
       verifiesEveryPatch: true,
-      rollbackPlanGeneratedPerSuccess: true,
+      rollbackIntentPersistedBeforePatch: true,
       automaticRollback: false,
       requiresDatabaseCheckpoint: true,
       requiresExactPlanHashFromDryRun: true,
