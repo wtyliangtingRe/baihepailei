@@ -196,23 +196,9 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 ## 当前 Radar 进度
 
-完整目录已经核算 35,611 条 Works。v0.6 交付包覆盖 10,805 条本地证据评估，其中当前真实 Payload planning 结果为：
+完整目录已经核算 35,611 条 Works。v0.6 交付包覆盖 10,805 条本地证据评估，其中 9,364 条已进入 generalized dry-run 计划，1,441 条因来源可追溯性不足保持阻断。
 
-```text
-9,364 ready for generalized dry-run
-1,441 blocked by source-provenance honesty checks
-0 already current
-```
-
-相关命令：
-
-```powershell
-pnpm radar:import-v06-package -- --package-dir <extracted-package-root>
-pnpm radar:plan-v06-payload -- --url http://localhost:3000
-pnpm radar:dryrun-v06-payload -- --url http://localhost:3000
-```
-
-这些阶段都不会写入 Payload。通用写入流程必须在完整 dry-run 结果复核之后单独设计和批准。
+详细流程见 `docs/ai-radar-v06-package-import-v01.md`。这些阶段不会写入 Payload；通用写入流程必须在完整 dry-run 结果复核之后单独设计和批准。
 
 ## 当前开发重点
 
