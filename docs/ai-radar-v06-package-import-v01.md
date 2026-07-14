@@ -102,7 +102,17 @@ pnpm radar:dryrun-v06-payload -- `
   --batch-id RADAR-ASSESS-0001
 ```
 
-Do not use `radar:resume-first100`; it is permanently bound to the completed first-100 incident state.
+The aggregate dry-run must be reviewed before a generalized apply stage is implemented. In particular, confirm:
+
+```text
+complete: true
+planRowsRead: 10,805
+wouldUpdate + blocked + alreadyCurrent: 10,805
+integrityBlockers: []
+payloadPatchRequests: 0
+```
+
+Any new stale snapshot, identity mismatch, or human-protection blocker must remain blocked. Do not use `radar:resume-first100`; it is permanently bound to the completed first-100 incident state.
 
 ## Publication semantics
 
