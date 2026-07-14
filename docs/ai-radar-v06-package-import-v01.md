@@ -50,9 +50,59 @@ $env:RADAR_PAYLOAD_PASSWORD="<Payload password>"
 pnpm radar:plan-v06-payload -- --url http://localhost:3000
 ```
 
-This reads current Payload once, protects reviewed/locked rows, and creates one isolated plan directory per `RADAR-ASSESS-####` batch. Each batch summary contains its exact dry-run command.
+This reads current Payload once, protects reviewed/locked rows, and creates one isolated plan directory per `RADAR-ASSESS-####` batch.
 
-Run dry-runs batch by batch. Do not use `radar:resume-first100`; it is permanently bound to the completed first-100 incident state.
+The first real run on the corrected 35,611-work catalog reported:
+
+```text
+assessment rows: 10,805
+ready for dry-run: 9,364
+blocked before dry-run: 1,441
+already current: 0
+
+multiple_secondary_requires_two_traceable_sources: 1,238
+missing_source_summary: 203
+```
+
+The blocked rows remain in the review outputs and are not forced into a patch plan.
+
+## Run all 44 dry-runs once
+
+```powershell
+pnpm radar:dryrun-v06-payload -- --url http://localhost:3000
+```
+
+This command:
+
+- verifies the batch manifest and every per-batch plan SHA-256;
+- loads the current 35,611-work Payload catalog once, not 44 times;
+- re-resolves every target by stable Payload `id` and `siteId`;
+- rechecks human-review protection;
+- blocks stale snapshots created by any change after planning;
+- writes isolated results for every batch plus one aggregate summary;
+- has no PATCH path and rejects execute/apply/write flags.
+
+Default aggregate summary:
+
+```text
+data_local/staging/ai-radar/v06-payload-dryrun-v01/
+  ai-radar-v06-payload-dryrun-v01-summary.json
+  ai-radar-v06-payload-dryrun-v01-batches.json
+  ai-radar-v06-payload-dryrun-v01-would-update.jsonl
+  ai-radar-v06-payload-dryrun-v01-blocked.jsonl
+  ai-radar-v06-payload-dryrun-v01-already-current.jsonl
+  batches/
+```
+
+A single batch can be rerun for investigation:
+
+```powershell
+pnpm radar:dryrun-v06-payload -- `
+  --url http://localhost:3000 `
+  --batch-id RADAR-ASSESS-0001
+```
+
+Do not use `radar:resume-first100`; it is permanently bound to the completed first-100 incident state.
 
 ## Publication semantics
 
@@ -73,6 +123,16 @@ radar_guard_<reason>
 
 The guard does not erase the provisional grade. It prevents the system from presenting weak evidence as a final human-reviewed conclusion.
 
+## Credential hygiene
+
+Do not paste a real Payload password into logs or chat. If a credential is exposed, rotate it immediately and clear the current PowerShell process variables:
+
+```powershell
+Remove-Item Env:RADAR_PAYLOAD_PASSWORD -ErrorAction SilentlyContinue
+Remove-Item Env:PAYLOAD_EXPORT_PASSWORD -ErrorAction SilentlyContinue
+Remove-Item Env:PAYLOAD_SEED_PASSWORD -ErrorAction SilentlyContinue
+```
+
 ## Safety
 
 ```text
@@ -80,11 +140,15 @@ package import Payload read: false
 package import Payload write: false
 planning Payload read: true
 planning Payload write: false
+dry-run Payload read: true
+dry-run Payload write: false
 Payload PATCH requests: 0
 PostgreSQL write: false
 title-only matching: false
 human-reviewed overwrite: false
+plan hashes revalidated: true
+stale snapshots blocked: true
 first-100 resume path reused: false
 ```
 
-A generalized apply/release candidate should be added only after the real per-batch dry-run counts and blockers are reviewed.
+A generalized apply/release candidate should be added only after the aggregate and per-batch dry-run counts and blockers are reviewed.
