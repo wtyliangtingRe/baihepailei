@@ -18,6 +18,10 @@ function val(value) {
   return String(value ?? '').trim()
 }
 
+function list(value) {
+  return Array.isArray(value) ? value : []
+}
+
 function parseArgs(argv) {
   const args = {}
   for (let index = 0; index < argv.length; index += 1) {
@@ -54,6 +58,18 @@ function writeJson(file, value) {
   const text = `${JSON.stringify(value, null, 2)}\n`
   fs.writeFileSync(file, text, 'utf8')
   return { file, sha256: sha256Text(text) }
+}
+
+function countClassificationReasons(inventory) {
+  const counts = {}
+  for (const row of inventory) {
+    for (const reason of list(row?.catalogQueue?.reasons).map(val).filter(Boolean)) {
+      counts[reason] = (counts[reason] || 0) + 1
+    }
+  }
+  return Object.fromEntries(
+    Object.entries(counts).sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])),
+  )
 }
 
 function padded(index) {
@@ -148,6 +164,7 @@ function main() {
     accountedRows,
     allRowsAccountedFor: accountedRows === rows.length,
     byQueue,
+    byClassificationReason: countClassificationReasons(built.inventory),
     batchSizes: { assessmentBatchSize, researchBatchSize, identityBatchSize },
     batchCounts: {
       readyForAiAssessment: built.batches.ready_for_ai_assessment.length,
