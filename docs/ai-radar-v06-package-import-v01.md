@@ -10,6 +10,15 @@ The existing resolver imports the v0.4 policy registry and would recalculate the
 
 The v0.4 registry is used only as the stable 55-rule code/grade dictionary. In particular, the historical mapping `D-ABO -> E` remains enforced.
 
+## Tests
+
+```powershell
+pnpm test:radar-v06-package
+pnpm test:radar-v06-dryrun
+pnpm test:radar-payload-plan
+pnpm exec tsc --noEmit
+```
+
 ## Extract the package
 
 Keep the ZIP out of Git. Extract it under ignored `data_local`:
