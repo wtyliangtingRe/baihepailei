@@ -194,10 +194,31 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 输出会写到本地 `OutDir`，不要直接提交到 GitHub。
 
+## 当前 Radar 进度
+
+完整目录已经核算 35,611 条 Works。v0.6 交付包覆盖 10,805 条本地证据评估，其中当前真实 Payload planning 结果为：
+
+```text
+9,364 ready for generalized dry-run
+1,441 blocked by source-provenance honesty checks
+0 already current
+```
+
+相关命令：
+
+```powershell
+pnpm radar:import-v06-package -- --package-dir <extracted-package-root>
+pnpm radar:plan-v06-payload -- --url http://localhost:3000
+pnpm radar:dryrun-v06-payload -- --url http://localhost:3000
+```
+
+这些阶段都不会写入 Payload。通用写入流程必须在完整 dry-run 结果复核之后单独设计和批准。
+
 ## 当前开发重点
 
 短期目标：
 
+- 完成 v0.6 全批次 dry-run，并设计独立的 generalized release/apply 流程。
 - 继续清洗旧 XWiki 正文，让少量真实资料更可读。
 - 完善作品、机构、证据材料之间的关系。
 - 让前台保持简洁，优先服务普通浏览者。
