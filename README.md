@@ -108,7 +108,7 @@ infra/      部署模板，不含真实密钥
 启动 PostgreSQL 与 Next.js / Payload 开发服务：
 
 ```powershell
-cd "D:\0GitHubtest\Baihepailei\_repo"
+cd "D:\0GitHubtest\Baihepailei"
 
 docker compose up -d postgres
 pnpm dev
@@ -134,7 +134,7 @@ pnpm dev
 清洗后的真实数据 seed 只保存在本地，不提交到 GitHub。导入示例：
 
 ```powershell
-cd "D:\0GitHubtest\Baihepailei\_repo"
+cd "D:\0GitHubtest\Baihepailei"
 
 pnpm import:clean-seed -- --file "D:\0GitHubtest\Baihepailei\_clean_real_data\payload_seed_direct_v2_clean.json" --url "http://localhost:3000" --update-existing
 ```
@@ -144,7 +144,7 @@ pnpm import:clean-seed -- --file "D:\0GitHubtest\Baihepailei\_clean_real_data\pa
 前台搜索和详情页需要本地生成索引文件：
 
 ```powershell
-cd "D:\0GitHubtest\Baihepailei\_repo"
+cd "D:\0GitHubtest\Baihepailei"
 
 $env:PAYLOAD_EXPORT_EMAIL="你的Payload后台邮箱"
 $env:PAYLOAD_EXPORT_PASSWORD="你的Payload后台密码"
@@ -167,7 +167,7 @@ public/detail-index.json
 前台聚合测试与构建：
 
 ```powershell
-cd "D:\0GitHubtest\Baihepailei\_repo"
+cd "D:\0GitHubtest\Baihepailei"
 
 node scripts/test-frontend.mjs
 pnpm build
