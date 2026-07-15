@@ -147,3 +147,40 @@ test('generalized dry-run command has no Payload PATCH path', () => {
   assert.match(source, /Execute\/apply\/write flags are rejected/u)
   assert.match(source, /payloadPatchRequests:\s*0/u)
 })
+
+test('recognizes Payload-generated array row ids as already current', () => {
+  const original = work()
+  const readyPlan = buildPlanRow(
+    assessment(),
+    buildIndexes([original]),
+    {
+      assessedAt: '2026-07-14T00:00:00.000Z',
+    },
+  )
+
+  const applied = work({
+    ...readyPlan.patch,
+    radarAssessment: {
+      ...readyPlan.patch.radarAssessment,
+      matchedRules:
+        readyPlan.patch.radarAssessment.matchedRules.map(
+          (rule, index) => ({
+            id: `payload-generated-${index}`,
+            ...rule,
+          }),
+        ),
+    },
+  })
+
+  const [result] = dryRunBatchPlans(
+    [readyPlan],
+    buildIndexes([applied]),
+  )
+
+  assert.equal(result.status, 'already_current')
+  assert.deepEqual(result.remainingChangedFields, [])
+  assert.equal(
+    result.blockers.includes('stale_payload_snapshot_since_plan'),
+    false,
+  )
+})
