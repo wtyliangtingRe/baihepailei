@@ -138,7 +138,9 @@
     "test:work-entity-link-plan": "node --test tests/bangumi-work-entity-link-patch-plan.test.mjs",
     "test:bangumi-media-subject-preview": "node --test tests/bangumi-media-subject-preview.test.mjs",
     "test:search": "node --test tests/search-utils.test.mjs",
-    "test:frontend-polish": "pnpm test:frontend-polish && pnpm test:works-rank && pnpm test:search"
+    "test:frontend-polish": "pnpm test:frontend-polish && pnpm test:works-rank && pnpm test:search",
+    "radar:orchestrate-v06-remaining": "node scripts/radar/run-ai-radar-v06-remaining-batches-v01.mjs",
+    "test:radar-v06-orchestrator": "node --test tests/radar-v06-remaining-orchestrator.test.mjs"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "latest",
