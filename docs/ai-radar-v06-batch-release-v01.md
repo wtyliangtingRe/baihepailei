@@ -71,10 +71,10 @@ pnpm exec tsc --noEmit
 
 ## 2. Create and verify a fresh checkpoint
 
-Create the checkpoint only after switching to the exact release branch/commit:
+Create the checkpoint only after switching to the exact release branch/commit. The ordinary `backup:checkpoint` command does not include PostgreSQL, so the release workflow must use the database-specific command:
 
 ```powershell
-pnpm backup:checkpoint
+pnpm backup:checkpoint:database
 ```
 
 Use the path printed by the command:
