@@ -21,9 +21,9 @@ import {
   unique,
   val,
   validateCandidate,
-  validateReadinessForArm,
   writeJson,
 } from './lib/v06-batch-release-v01.mjs'
+import { validateReadinessForArmMode } from './lib/v06-batch-resume-v01.mjs'
 
 const DEFAULT_OUT_ROOT = 'data_local/staging/ai-radar/v06-batch-arms-v01'
 
@@ -49,6 +49,7 @@ function main() {
   if (args.execute || args.apply || args.write || args.patch || args.confirm) {
     throw new Error('This command only arms a local v0.6 batch gate. Execute/write flags are rejected.')
   }
+  const resume = args.resume === true
   const candidateManifestFile = val(args['candidate-manifest'])
   const readinessFile = val(args.readiness)
   const checkpointPath = val(args.checkpoint)
@@ -85,10 +86,11 @@ function main() {
       currentCommit,
     }),
     ...checkpoint.blockers,
-    ...validateReadinessForArm(readiness, manifest, {
+    ...validateReadinessForArmMode(readiness, manifest, {
       manifestHash,
       currentBranch,
       currentCommit,
+      resume,
     }),
     ...(approvalToken !== expectedToken ? ['local_arm_approval_token_mismatch'] : []),
     ...(val(manifest?.approval?.tokenFingerprintSha256) !== approvalTokenFingerprint(planHash, batchId) ? ['candidate_token_fingerprint_mismatch'] : []),
@@ -103,7 +105,8 @@ function main() {
   const summary = {
     generatedAt: new Date().toISOString(),
     version: 'ai-radar-v06-batch-arm-v0.1',
-    mode: 'local_arm_only',
+    mode: resume ? 'local_resume_arm_only' : 'local_arm_only',
+    resume,
     batchId,
     candidateId: val(manifest?.candidateId),
     candidateManifestFile,
@@ -114,6 +117,8 @@ function main() {
     currentBranch,
     currentCommit,
     planSha256: planHash,
+    readinessPendingOriginal: Number(readiness?.pendingOriginal || 0),
+    readinessAlreadyApplied: Number(readiness?.alreadyApplied || 0),
     approvalTokenMatched: approvalToken === expectedToken,
     approvalTokenFingerprintSha256: sha256Text(approvalToken),
     confirmationMatched: confirmation === V06_BATCH_ARM_CONFIRMATION,
@@ -129,6 +134,8 @@ function main() {
       localFileWriteOnly: true,
       approvalTokenPrinted: false,
       gateExpiresAutomatically: true,
+      resumeRequiresAlreadyAppliedAndPendingRows: resume,
+      resumeRequiresZeroDrift: true,
       executeModeExists: false,
     },
   }
@@ -159,6 +166,7 @@ function main() {
   console.log(JSON.stringify({
     ok: true,
     armed: true,
+    resume,
     batchId,
     candidateId: gate.candidateId,
     gateFile: outputs.gate,
