@@ -15,6 +15,7 @@
     "dev:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev.ps1",
     "ui:install-visual-assets": "node scripts/ui/install-visual-assets.mjs",
     "backup:checkpoint": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/backup/create-local-checkpoint.ps1",
+    "backup:checkpoint:database": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/backup/create-database-checkpoint.ps1",
     "backup:verify-database-checkpoint": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/backup/verify-local-database-checkpoint.ps1",
     "import:audit-candidates": "node scripts/import/audit-payload-candidates.mjs",
     "import:prepare-target": "node scripts/import/prepare-target-content.mjs",
