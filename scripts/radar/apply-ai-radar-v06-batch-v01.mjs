@@ -176,11 +176,13 @@ async function main() {
     journal: path.join(outDir, 'journal.jsonl'),
     applied: path.join(outDir, 'applied.jsonl'),
     rollback: path.join(outDir, 'rollback.jsonl'),
+    rollbackStatus: path.join(outDir, 'rollback-status.jsonl'),
     summary: path.join(outDir, 'summary.json'),
   }
   fs.mkdirSync(outDir, { recursive: true })
   fs.writeFileSync(outputs.journal, '', 'utf8')
   fs.writeFileSync(outputs.rollback, '', 'utf8')
+  fs.writeFileSync(outputs.rollbackStatus, '', 'utf8')
 
   let token = ''
   const preflight = []
@@ -266,6 +268,12 @@ async function main() {
         payloadPatchRequests += 1
         await patchWork(baseUrl, token, targetId, patch)
         rollback.patchRequestCompleted = true
+        appendJsonl(outputs.rollbackStatus, {
+          ...rollback,
+          status: 'patch_request_completed',
+          recordedAt: new Date().toISOString(),
+        })
+
         const verified = await fetchWork(baseUrl, token, targetId)
         const after = classifyPlanAgainstWork(plan, verified)
         if (after.status !== 'already_applied') throw new Error(`post_patch_verification_failed:${after.status}:${after.blockers.join('|')}`)
@@ -273,10 +281,26 @@ async function main() {
         journal.afterHash = snapshotHash(currentStateOf(verified))
         rollback.expectedCurrentHash = journal.afterHash
         rollback.verificationCompleted = true
+        appendJsonl(outputs.rollbackStatus, {
+          ...rollback,
+          status: 'verification_completed',
+          recordedAt: new Date().toISOString(),
+        })
+
         appliedRows.push(journal)
         appendJsonl(outputs.journal, journal)
       } catch (error) {
         const message = String(error?.message || error).slice(0, 800)
+        if (rollback) {
+          appendJsonl(outputs.rollbackStatus, {
+            ...rollback,
+            status: rollback.patchRequestCompleted
+              ? 'patch_failed_or_unverified'
+              : 'patch_request_failed',
+            error: message,
+            recordedAt: new Date().toISOString(),
+          })
+        }
         journal.status = rollback ? 'patch_attempt_failed_or_unverified_stop' : 'failed_before_patch_stop'
         journal.blockers.push(message)
         appendJsonl(outputs.journal, journal)
@@ -330,6 +354,7 @@ async function main() {
       stopsOnFirstFailure: true,
       verifiesEveryPatch: true,
       rollbackIntentPersistedBeforePatch: true,
+      rollbackStatusPersistedAfterPatchOutcome: true,
       automaticRollback: false,
       supportsSafeResumeByStateClassification: true,
       requiresDatabaseCheckpoint: true,

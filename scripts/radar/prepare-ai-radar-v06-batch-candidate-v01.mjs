@@ -89,6 +89,8 @@ function main() {
     },
   }
   if (blockers.length) {
+    fs.rmSync(outputs.manifest, { force: true })
+    fs.rmSync(outputs.disarmedGate, { force: true })
     writeJson(outputs.summary, summary)
     console.log(JSON.stringify({ ok: false, summary }, null, 2))
     process.exitCode = 2

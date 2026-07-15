@@ -198,7 +198,14 @@ test('Payload review-reason and matched-rule enums are validated before PATCH', 
   const supported = plan({
     patch: {
       ...plan().patch,
-      reviewReasons: ['radar_seed_attached', 'radar_v06_package_import'],
+      reviewReasons: [
+        'radar_seed_attached',
+        'radar_v06_package_import',
+        'radar_publication_guard',
+        'radar_guard_low_evidence_coverage',
+        'radar_guard_weak_or_conflicting_source',
+        'radar_guard_unclear_provisional_grade',
+      ],
     },
   })
   assert.deepEqual(validateApplyPlanRow(supported), [])

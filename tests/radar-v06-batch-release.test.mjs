@@ -222,3 +222,58 @@ test('readiness wrapper rejects execute mode before invoking the engine', () => 
   assert.notEqual(result.status, 0)
   assert.match(result.stderr, /cannot execute writes/u)
 })
+
+test('failed candidate preparation removes stale candidate artifacts', () => {
+  const source = fs.readFileSync(
+    path.join(
+      ROOT,
+      'scripts/radar/prepare-ai-radar-v06-batch-candidate-v01.mjs',
+    ),
+    'utf8',
+  )
+
+  assert.match(
+    source,
+    /fs\.rmSync\(outputs\.manifest, \{ force: true \}\)/u,
+  )
+  assert.match(
+    source,
+    /fs\.rmSync\(outputs\.disarmedGate, \{ force: true \}\)/u,
+  )
+})
+
+test('v0.6 execution persists rollback outcome status after PATCH', () => {
+  const source = fs.readFileSync(
+    path.join(ROOT, 'scripts/radar/apply-ai-radar-v06-batch-v01.mjs'),
+    'utf8',
+  )
+
+  const intentWrite = source.indexOf(
+    'appendJsonl(outputs.rollback, rollback)',
+  )
+  const patchRequest = source.indexOf(
+    'await patchWork(baseUrl, token, targetId, patch)',
+  )
+  const patchStatus = source.indexOf(
+    "status: 'patch_request_completed'",
+  )
+  const verificationStatus = source.indexOf(
+    "status: 'verification_completed'",
+  )
+
+  assert.ok(intentWrite >= 0)
+  assert.ok(patchRequest > intentWrite)
+  assert.ok(patchStatus > patchRequest)
+  assert.ok(verificationStatus > patchStatus)
+
+  assert.match(
+    source,
+    /rollbackStatus: path\.join\(outDir, 'rollback-status\.jsonl'\)/u,
+  )
+  assert.match(source, /'patch_request_failed'/u)
+  assert.match(source, /'patch_failed_or_unverified'/u)
+  assert.match(
+    source,
+    /rollbackStatusPersistedAfterPatchOutcome: true/u,
+  )
+})
