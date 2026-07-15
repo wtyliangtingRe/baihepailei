@@ -71,9 +71,15 @@ export function validateCheckpoint(checkpointPath, {
   const manifest = readJson(files.manifest)
   const status = readJson(files.status)
   if (val(status?.state) !== 'complete') blockers.push('checkpoint_not_complete')
+  const checkpointProfile = val(manifest?.checkpointProfile) || 'full_workspace'
   if (manifest?.includesDatabase !== true) blockers.push('checkpoint_database_not_included')
-  if (manifest?.includesWorkspace !== true) blockers.push('checkpoint_workspace_not_included')
-  if (manifest?.includesGitBundle !== true) blockers.push('checkpoint_git_bundle_not_included')
+  if (checkpointProfile === 'database_only') {
+    if (manifest?.includesWorkspace !== false) blockers.push('checkpoint_database_only_workspace_flag_invalid')
+    if (manifest?.includesGitBundle !== false) blockers.push('checkpoint_database_only_git_bundle_flag_invalid')
+  } else {
+    if (manifest?.includesWorkspace !== true) blockers.push('checkpoint_workspace_not_included')
+    if (manifest?.includesGitBundle !== true) blockers.push('checkpoint_git_bundle_not_included')
+  }
 
   const databaseDumpName = val(manifest?.databaseDump)
   const databaseDump = databaseDumpName ? path.join(files.root, databaseDumpName) : ''

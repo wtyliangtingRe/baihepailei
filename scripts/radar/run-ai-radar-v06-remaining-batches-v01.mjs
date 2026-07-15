@@ -11,7 +11,7 @@ import {
   safeBatchId,
 } from './lib/v06-batch-release-v01.mjs'
 
-const VERSION = 'ai-radar-v06-remaining-batches-orchestrator-v0.1'
+const VERSION = 'ai-radar-v06-remaining-batches-orchestrator-v0.2'
 const DEFAULT_ROOT = 'data_local/staging/ai-radar/v06-remaining-batches-v01'
 const DEFAULT_BACKUP_ROOT = 'D:\\Baihepailei-backups'
 const DEFAULT_URL = 'http://localhost:3000'
@@ -191,9 +191,9 @@ function createCheckpoint(backupRoot, branch, commit) {
   fs.mkdirSync(backupRoot, { recursive: true })
   const before = new Set(listDirectories(backupRoot))
   runPowerShell(
-    'scripts/backup/create-database-checkpoint.ps1',
+    'scripts/backup/create-database-only-checkpoint.ps1',
     ['-BackupRoot', backupRoot],
-    'Create database checkpoint',
+    'Create lightweight database checkpoint',
   )
   const created = listDirectories(backupRoot).filter((item) => !before.has(item))
   if (created.length !== 1) {
@@ -204,6 +204,12 @@ function createCheckpoint(backupRoot, branch, commit) {
   const status = readJson(path.join(checkpointPath, 'checkpoint-status.json'))
   if (status?.state !== 'complete') throw new Error('New checkpoint is not complete')
   if (manifest?.includesDatabase !== true) throw new Error('New checkpoint has no database dump')
+  if (String(manifest?.checkpointProfile || '') !== 'database_only') {
+    throw new Error('New checkpoint is not database-only')
+  }
+  if (manifest?.includesWorkspace !== false || manifest?.includesGitBundle !== false) {
+    throw new Error('New database-only checkpoint unexpectedly contains workspace backup flags')
+  }
   if (String(manifest?.branch || '') !== branch) throw new Error('New checkpoint branch mismatch')
   if (String(manifest?.commit || '') !== commit) throw new Error('New checkpoint commit mismatch')
   return checkpointPath

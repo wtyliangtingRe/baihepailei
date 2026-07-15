@@ -15,7 +15,7 @@ test('remaining-batch orchestrator is plan-only by default and requires exact bu
 })
 
 test('every writable batch is checkpointed and restore-list verified before candidate preparation', () => {
-  const checkpoint = source.indexOf('create-database-checkpoint.ps1')
+  const checkpoint = source.indexOf('create-database-only-checkpoint.ps1')
   const verify = source.indexOf('verify-local-database-checkpoint.ps1')
   const candidate = source.indexOf('prepare-ai-radar-v06-batch-candidate-v01.mjs')
   assert.ok(checkpoint >= 0)
