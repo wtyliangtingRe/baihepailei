@@ -193,3 +193,43 @@ test('Payload-generated array row ids do not create a false post-patch mismatch'
   assert.deepEqual(changedFieldsAgainstCurrent(current, p), [])
   assert.equal('id' in payloadComparable(current.radarAssessment.matchedRules[0]), false)
 })
+
+test('Payload review-reason and matched-rule enums are validated before PATCH', () => {
+  const supported = plan({
+    patch: {
+      ...plan().patch,
+      reviewReasons: ['radar_seed_attached', 'radar_v06_package_import'],
+    },
+  })
+  assert.deepEqual(validateApplyPlanRow(supported), [])
+
+  const invalidReason = plan({
+    patch: {
+      ...plan().patch,
+      reviewReasons: ['radar_seed_attached', 'legacy_unknown_reason'],
+    },
+  })
+  assert.ok(
+    validateApplyPlanRow(invalidReason)
+      .includes('invalid_apply_review_reason:legacy_unknown_reason'),
+  )
+
+  const invalidRuleGrade = plan({
+    patch: {
+      ...plan().patch,
+      radarAssessment: {
+        ...plan().patch.radarAssessment,
+        matchedRules: [
+          {
+            ...plan().patch.radarAssessment.matchedRules[0],
+            grade: 'E1',
+          },
+        ],
+      },
+    },
+  })
+  assert.ok(
+    validateApplyPlanRow(invalidRuleGrade)
+      .includes('invalid_apply_matched_rule_grade:0:E1'),
+  )
+})

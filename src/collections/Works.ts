@@ -13,6 +13,7 @@ const reviewStatusOptions = [
 
 const reviewReasonOptions = [
   { label: '雷达种子命中', value: 'radar_seed_attached' },
+  { label: 'Radar v0.6 评估包导入', value: 'radar_v06_package_import' },
   { label: '来源冲突', value: 'source_conflict' },
   { label: '多来源或变体', value: 'multi_source_or_variant' },
   { label: 'Wikidata 候选待复核', value: 'wikidata_candidate_review' },

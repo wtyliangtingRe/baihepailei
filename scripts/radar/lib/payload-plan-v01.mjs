@@ -1,6 +1,16 @@
 import { createHash } from 'node:crypto'
 
 export const ALLOWED_GRADES = new Set(['S', 'A', 'B', 'C', 'D', 'E', 'F'])
+export const ALLOWED_REVIEW_REASONS = new Set([
+  'radar_seed_attached',
+  'radar_v06_package_import',
+  'source_conflict',
+  'multi_source_or_variant',
+  'wikidata_candidate_review',
+  'wikidata_quarantine',
+  'manual_review',
+  'other',
+])
 export const ALLOWED_PATCH_FIELDS = new Set([
   'rank',
   'ratingNotice',
