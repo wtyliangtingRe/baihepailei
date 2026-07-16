@@ -7,6 +7,7 @@ import { Creators } from './src/collections/Creators'
 import { Evidence } from './src/collections/Evidence'
 import { Media } from './src/collections/Media'
 import { Organizations } from './src/collections/Organizations'
+import { RadarResearchRecords } from './src/collections/RadarResearchRecords'
 import { Rules } from './src/collections/Rules'
 import { Tags } from './src/collections/Tags'
 import { Terms } from './src/collections/Terms'
@@ -22,7 +23,21 @@ export default buildConfig({
   admin: {
     user: Users.slug,
   },
-  collections: [Users, Media, WorksWithRadarAssessment, Creators, Organizations, Evidence, Comments, UserLists, Terms, Warnings, Tags, Rules],
+  collections: [
+    Users,
+    Media,
+    WorksWithRadarAssessment,
+    Creators,
+    Organizations,
+    Evidence,
+    RadarResearchRecords,
+    Comments,
+    UserLists,
+    Terms,
+    Warnings,
+    Tags,
+    Rules,
+  ],
   db: postgresAdapter({
     pool: {
       connectionString: String(process.env['DATABASE_URL'] || ''),
