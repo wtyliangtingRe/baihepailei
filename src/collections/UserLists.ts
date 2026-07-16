@@ -17,6 +17,15 @@ const ownListOrOwner: Access = ({ req }) => {
   }
 }
 
+const ownListOnly: Access = ({ req }) => {
+  if (!req.user) return false
+  return {
+    user: {
+      equals: (req.user as ListUser).id,
+    },
+  }
+}
+
 const listStatusOptions = [
   { label: '想看', value: 'want' },
   { label: '在看', value: 'watching' },
@@ -41,7 +50,7 @@ export const UserLists: CollectionConfig = {
     create: signedIn,
     delete: ownListOrOwner,
     read: ownListOrOwner,
-    update: ownListOrOwner,
+    update: ownListOnly,
   },
   hooks: {
     beforeValidate: [
