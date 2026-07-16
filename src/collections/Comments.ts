@@ -1,22 +1,15 @@
 import type { Access, CollectionConfig } from 'payload'
 
-import { editorsAndUp, signedIn } from '@/access/roles'
+import { editorsAndUp, isEditor, signedIn } from '@/access/roles'
 
 type CommentUser = {
   id?: string | number
   email?: string
   displayName?: string
-  role?: string
-}
-
-function canModerateComments(user: unknown) {
-  if (!user || typeof user !== 'object') return false
-  const role = (user as CommentUser).role
-  return role === 'admin' || role === 'editor' || role === 'reviewer'
 }
 
 const approvedCommentsOrModerator: Access = ({ req }) => {
-  if (canModerateComments(req.user)) return true
+  if (isEditor(req.user)) return true
 
   return {
     moderationStatus: {
@@ -60,16 +53,24 @@ export const Comments: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
-      ({ data, operation, req }) => {
-        if (operation !== 'create') return data
+      ({ data, operation, originalDoc, req }) => {
+        if (operation !== 'create') {
+          if (!isEditor(req.user)) {
+            return {
+              ...data,
+              author: originalDoc?.author,
+              authorName: originalDoc?.authorName,
+              moderationStatus: originalDoc?.moderationStatus,
+            }
+          }
+          return data
+        }
 
         const user = req.user as CommentUser | undefined
-        const authorName = user?.displayName || user?.email || '注册用户'
-
         return {
           ...data,
           author: user?.id,
-          authorName,
+          authorName: user?.displayName || user?.email || '注册用户',
           moderationStatus: 'pending',
         }
       },
@@ -83,42 +84,26 @@ export const Comments: CollectionConfig = {
       required: true,
       options: targetCollectionOptions,
     },
-    {
-      name: 'targetSlug',
-      type: 'text',
-      label: '评论对象 Slug',
-      required: true,
-    },
-    {
-      name: 'targetTitle',
-      type: 'text',
-      label: '评论对象标题',
-      required: true,
-    },
+    { name: 'targetSlug', type: 'text', label: '评论对象 Slug', required: true, maxLength: 200 },
+    { name: 'targetTitle', type: 'text', label: '评论对象标题', required: true, maxLength: 200 },
     {
       name: 'author',
       type: 'relationship',
       label: '作者账户',
       relationTo: 'users',
-      admin: {
-        readOnly: true,
-      },
+      required: true,
+      admin: { readOnly: true },
     },
-    {
-      name: 'authorName',
-      type: 'text',
-      label: '显示名称',
-      admin: {
-        readOnly: true,
-      },
-    },
+    { name: 'authorName', type: 'text', label: '显示名称', admin: { readOnly: true } },
     {
       name: 'body',
       type: 'textarea',
       label: '评论内容',
       required: true,
+      minLength: 2,
+      maxLength: 1200,
       admin: {
-        description: '短评、补充阅读感想，或提醒条目需要复核。',
+        description: '短评、阅读感想，或提醒条目需要复核。纯文本，审核后公开。',
       },
     },
     {
