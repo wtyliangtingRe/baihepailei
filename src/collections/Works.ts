@@ -197,6 +197,7 @@ export const Works: CollectionConfig = {
         { label: 'D', value: 'D' },
         { label: 'E', value: 'E' },
         { label: 'F', value: 'F' },
+        { label: 'X', value: 'X' },
         { label: '垃圾', value: 'trash' },
         { label: '未知', value: 'unknown' },
       ],
@@ -687,4 +688,5 @@ export const Works: CollectionConfig = {
     },
   ],
 }
+
 
