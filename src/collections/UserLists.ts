@@ -1,20 +1,13 @@
 import type { Access, CollectionConfig } from 'payload'
 
-import { editorsAndUp, signedIn } from '@/access/roles'
+import { isOwner, signedIn } from '@/access/roles'
 
 type ListUser = {
   id?: string | number
-  role?: string
 }
 
-function canManageLists(user: unknown) {
-  if (!user || typeof user !== 'object') return false
-  const role = (user as ListUser).role
-  return role === 'admin' || role === 'editor' || role === 'reviewer'
-}
-
-const ownListOrEditor: Access = ({ req }) => {
-  if (canManageLists(req.user)) return true
+const ownListOrOwner: Access = ({ req }) => {
+  if (isOwner(req.user)) return true
   if (!req.user) return false
 
   return {
@@ -26,7 +19,9 @@ const ownListOrEditor: Access = ({ req }) => {
 
 const listStatusOptions = [
   { label: '想看', value: 'want' },
+  { label: '在看', value: 'watching' },
   { label: '已看', value: 'seen' },
+  { label: '喜欢', value: 'favorite' },
   { label: '避雷', value: 'avoid' },
   { label: '需要复核', value: 'needs_review' },
 ]
@@ -44,9 +39,9 @@ export const UserLists: CollectionConfig = {
   },
   access: {
     create: signedIn,
-    delete: ownListOrEditor,
-    read: ownListOrEditor,
-    update: ownListOrEditor,
+    delete: ownListOrOwner,
+    read: ownListOrOwner,
+    update: ownListOrOwner,
   },
   hooks: {
     beforeValidate: [
@@ -69,22 +64,10 @@ export const UserLists: CollectionConfig = {
       label: '用户',
       relationTo: 'users',
       required: true,
-      admin: {
-        readOnly: true,
-      },
+      admin: { readOnly: true },
     },
-    {
-      name: 'workSlug',
-      type: 'text',
-      label: '作品 Slug',
-      required: true,
-    },
-    {
-      name: 'workTitle',
-      type: 'text',
-      label: '作品标题',
-      required: true,
-    },
+    { name: 'workSlug', type: 'text', label: '作品 Slug', required: true, maxLength: 200 },
+    { name: 'workTitle', type: 'text', label: '作品标题', required: true, maxLength: 200 },
     {
       name: 'listStatus',
       type: 'select',
@@ -97,9 +80,8 @@ export const UserLists: CollectionConfig = {
       name: 'note',
       type: 'textarea',
       label: '私人备注',
-      admin: {
-        description: '仅用于自己的列表记录。',
-      },
+      maxLength: 500,
+      admin: { description: '仅用于自己的列表记录。' },
     },
     {
       name: 'uniqueKey',
