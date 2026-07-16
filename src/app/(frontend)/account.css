@@ -1,0 +1,160 @@
+.account-page,
+.account-dashboard,
+.account-card,
+.account-form {
+  display: grid;
+  gap: 18px;
+}
+
+.account-page {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.account-card {
+  width: min(100%, 720px);
+  margin: 0 auto;
+}
+
+.account-card h1,
+.account-card p {
+  margin-top: 0;
+}
+
+.account-form label {
+  display: grid;
+  gap: 7px;
+  color: #ddd;
+  font-weight: 780;
+}
+
+.account-form input,
+.account-form select,
+.account-form textarea {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid #343434;
+  border-radius: 13px;
+  background: #101010;
+  color: #fff;
+}
+
+.account-form button,
+.account-link-button {
+  width: fit-content;
+  padding: 10px 15px;
+  border: 1px solid #4f3743;
+  border-radius: 999px;
+  background: #251923;
+  color: #ffb5d7;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.account-form button:disabled {
+  opacity: 0.56;
+  cursor: wait;
+}
+
+.account-check {
+  grid-template-columns: auto 1fr;
+  align-items: start;
+}
+
+.account-check input {
+  width: auto;
+  margin-top: 4px;
+}
+
+.account-links,
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.account-links a,
+.account-actions a,
+.account-link-button {
+  color: #ffb5d7;
+}
+
+.account-message {
+  margin: 0;
+  color: #8fe3a2;
+}
+
+.account-message-error {
+  color: #ff786e;
+}
+
+.account-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.account-meta > div {
+  padding: 12px;
+  border: 1px solid #303030;
+  border-radius: 14px;
+}
+
+.account-meta dt {
+  color: #888;
+  font-size: 12px;
+}
+
+.account-meta dd {
+  margin: 6px 0 0;
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+
+.account-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.account-feature {
+  display: grid;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.account-feature:hover {
+  border-color: #ffb5d7;
+}
+
+.account-feature strong {
+  color: #fff;
+}
+
+.account-feature span {
+  color: #aaa;
+  line-height: 1.65;
+}
+
+[data-theme='light'] .account-form input,
+[data-theme='light'] .account-form select,
+[data-theme='light'] .account-form textarea,
+[data-theme='light'] .account-meta > div {
+  border-color: #e2d6cc;
+  background: #fff7f2;
+  color: #191716;
+}
+
+[data-theme='light'] .account-form label,
+[data-theme='light'] .account-meta dd,
+[data-theme='light'] .account-feature strong {
+  color: #191716;
+}
+
+[data-theme='light'] .account-feature span {
+  color: #766a61;
+}
