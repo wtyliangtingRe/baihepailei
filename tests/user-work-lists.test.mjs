@@ -12,6 +12,7 @@ test('private user lists support six practical states', () => {
     assert.match(collection, new RegExp(`value: '${value}'`, 'u'))
   }
   assert.match(collection, /ownListOrOwner/u)
+  assert.match(collection, /update: ownListOnly/u)
   assert.match(collection, /uniqueKey/u)
 })
 
