@@ -108,7 +108,7 @@ infra/      部署模板，不含真实密钥
 启动 PostgreSQL 与 Next.js / Payload 开发服务：
 
 ```powershell
-cd "D:\0GitHubtest\Baihepailei\_repo"
+cd "D:\0GitHubtest\Baihepailei"
 
 docker compose up -d postgres
 pnpm dev
@@ -134,7 +134,7 @@ pnpm dev
 清洗后的真实数据 seed 只保存在本地，不提交到 GitHub。导入示例：
 
 ```powershell
-cd "D:\0GitHubtest\Baihepailei\_repo"
+cd "D:\0GitHubtest\Baihepailei"
 
 pnpm import:clean-seed -- --file "D:\0GitHubtest\Baihepailei\_clean_real_data\payload_seed_direct_v2_clean.json" --url "http://localhost:3000" --update-existing
 ```
@@ -144,7 +144,7 @@ pnpm import:clean-seed -- --file "D:\0GitHubtest\Baihepailei\_clean_real_data\pa
 前台搜索和详情页需要本地生成索引文件：
 
 ```powershell
-cd "D:\0GitHubtest\Baihepailei\_repo"
+cd "D:\0GitHubtest\Baihepailei"
 
 $env:PAYLOAD_EXPORT_EMAIL="你的Payload后台邮箱"
 $env:PAYLOAD_EXPORT_PASSWORD="你的Payload后台密码"
@@ -167,7 +167,7 @@ public/detail-index.json
 前台聚合测试与构建：
 
 ```powershell
-cd "D:\0GitHubtest\Baihepailei\_repo"
+cd "D:\0GitHubtest\Baihepailei"
 
 node scripts/test-frontend.mjs
 pnpm build
@@ -194,10 +194,17 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 输出会写到本地 `OutDir`，不要直接提交到 GitHub。
 
+## 当前 Radar 进度
+
+完整目录已经核算 35,611 条 Works。v0.6 交付包覆盖 10,805 条本地证据评估，其中 9,364 条已进入 generalized dry-run 计划，1,441 条因来源可追溯性不足保持阻断。
+
+详细流程见 `docs/ai-radar-v06-package-import-v01.md`。这些阶段不会写入 Payload；通用写入流程必须在完整 dry-run 结果复核之后单独设计和批准。
+
 ## 当前开发重点
 
 短期目标：
 
+- 完成 v0.6 全批次 dry-run，并设计独立的 generalized release/apply 流程。
 - 继续清洗旧 XWiki 正文，让少量真实资料更可读。
 - 完善作品、机构、证据材料之间的关系。
 - 让前台保持简洁，优先服务普通浏览者。
