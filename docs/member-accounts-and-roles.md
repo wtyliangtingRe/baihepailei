@@ -4,12 +4,12 @@
 
 - Register at `/account/register` with email, display name and password.
 - New public registrations are always forced to `member` by a server hook.
-- Email verification is required before login.
-- Login and logout use Payload's HTTP-only auth cookie.
+- Production requires email verification before login; local development may explicitly disable it.
+- Login and logout use Payload's official Next server functions and HTTP-only auth cookie.
 - Password recovery uses `/account/forgot-password` and a one-hour email reset token.
 - `/account` links to personal lists, feedback, and staff tools when permitted.
 
-Production must configure the SMTP variables in `.env.example`. Without a working email adapter, verification and password-reset mail cannot be delivered.
+For local development, use `ACCOUNT_EMAIL_VERIFICATION_ENABLED=false` and leave `SMTP_HOST` blank. Production must set `ACCOUNT_EMAIL_VERIFICATION_ENABLED=true` and configure real SMTP; without a working email adapter, verification and password-reset mail cannot be delivered.
 
 ## Roles
 
