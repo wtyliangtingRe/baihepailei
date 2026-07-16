@@ -4,6 +4,7 @@ import { readDetailIndex, type DetailCoverImage, type DetailItem, type DetailSou
 import CommentBlock from './CommentBlock'
 import ContentCallout, { type ContentCalloutItem } from './ContentCallout'
 import RichTextRenderer from './RichTextRenderer'
+import WorkAssessmentTrustCard from './WorkAssessmentTrustCard'
 import WorkListControl from './WorkListControl'
 import WorkRiskMatrixCard from './WorkRiskMatrixCard'
 
@@ -346,7 +347,7 @@ function SourceLinks({ item }: { item: DetailItem }) {
   if (links.length === 0 && externalIds.length === 0 && candidateSources.length === 0) return null
 
   return (
-    <section className="detail-card">
+    <section className="detail-card" id="public-sources">
       <h2>公开来源</h2>
       <FieldList
         fields={[
@@ -540,6 +541,7 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
         </div>
       </section>
 
+      <WorkAssessmentTrustCard item={item} />
       <BasicInfo item={item} />
       <WorkRiskMatrixCard item={item} />
       <WorkListControl item={item} />
@@ -552,3 +554,4 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
     </main>
   )
 }
+
