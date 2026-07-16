@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useEffect, useState, type FormEvent } from 'react'
 
+import { logoutAccount } from '../_actions/account'
+
 type AccountUser = {
   id: string
   email?: string
@@ -69,12 +71,12 @@ export default function AccountClient() {
   }
 
   async function logout() {
-    await fetch('/api/users/logout?allSessions=false', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-    })
-    window.location.assign('/')
+    const result = await logoutAccount()
+    if (result.ok) {
+      window.location.assign('/')
+      return
+    }
+    setState('error')
   }
 
   if (state === 'loading') return <section className="account-card detail-card"><p className="muted">正在读取账户……</p></section>
