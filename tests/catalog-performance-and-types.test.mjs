@@ -6,6 +6,7 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), '
 const works = read('src/app/(frontend)/works/page.tsx')
 const search = read('src/app/(frontend)/search/search-client.tsx')
 const recommendations = read('src/app/(frontend)/_lib/recommendations.ts')
+const packageJson = JSON.parse(read('package.json'))
 
 test('works page caches sort, titles and normalized search blobs', () => {
   assert.match(works, /cachedSortedWorks/u)
@@ -28,4 +29,10 @@ test('recommendations demote uncertain AI grades and high-risk ranks', () => {
   assert.match(recommendations, /needsHumanReview/u)
   assert.match(recommendations, /confidencePercent/u)
   assert.match(recommendations, /evidenceCoveragePercent/u)
+})
+
+test('frontend validation uses a Next-compatible TypeScript and a non-recursive command', () => {
+  assert.equal(packageJson.devDependencies.typescript, '5.9.3')
+  assert.doesNotMatch(packageJson.scripts['test:frontend-polish'], /pnpm test:frontend-polish/u)
+  assert.match(packageJson.scripts['test:frontend-polish'], /catalog-performance-and-types\.test\.mjs/u)
 })
