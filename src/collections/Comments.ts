@@ -91,7 +91,6 @@ export const Comments: CollectionConfig = {
       type: 'relationship',
       label: '作者账户',
       relationTo: 'users',
-      required: true,
       admin: { readOnly: true },
     },
     { name: 'authorName', type: 'text', label: '显示名称', admin: { readOnly: true } },
