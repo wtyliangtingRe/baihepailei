@@ -1,3 +1,5 @@
+import type { RadarAssessmentMetrics } from '@/lib/radar/assessmentPresentation'
+
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -25,6 +27,8 @@ export type SearchItem = {
   evidenceType?: string
   reviewStatus?: string
   evidenceStrength?: string
+  ratingNotice?: string
+  radarAssessment?: RadarAssessmentMetrics
   originalTitle?: string
   aliases?: string[]
   localizedTitles?: string[]
@@ -84,3 +88,4 @@ export function findSearchItem(collection: SearchCollection, slug: string) {
 
   return index.items.find((item) => item.collection === collection && item.slug === slug) || null
 }
+
