@@ -18,6 +18,8 @@ test('public registration is forced to member and staff admin access is separate
   assert.match(users, /role: 'member'/u)
   assert.match(users, /SITE_OWNER_EMAIL/u)
   assert.match(users, /isConfiguredOwnerEmail/u)
+  assert.match(users, /beforeLogin:/u)
+  assert.match(users, /overrideAccess: true/u)
   assert.match(users, /注册时必须填写显示名/u)
   assert.match(users, /value: 'owner'/u)
   assert.match(users, /value: 'admin'/u)

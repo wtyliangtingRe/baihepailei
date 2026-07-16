@@ -34,7 +34,7 @@ For the official Baihepailei deployment, set it to `wty1123581321@gmail.com`. Th
 
 Self-hosted copies must deliberately set their own owner email. There is no hidden cross-deployment account or universal fallback identity.
 
-If the official email already exists as an older admin record, update that record once after setting `SITE_OWNER_EMAIL`; the user hook will normalize it to `owner`.
+If the configured email already exists as an older admin or member record, its next successful login normalizes it to `owner`. This bootstrap only uses the deployment's explicit `SITE_OWNER_EMAIL` value.
 
 ## Personnel boundaries
 
