@@ -79,19 +79,20 @@ pnpm export:lite-details -- --url "http://localhost:3000" --include-drafts
 
 ## 账户与邮件
 
-每个部署必须通过 `SITE_OWNER_EMAIL` 明确配置自己的最高权限账户。注册验证和找回密码依赖 SMTP：
+每个部署必须通过 `SITE_OWNER_EMAIL` 明确配置自己的最高权限账户。生产环境的注册验证和找回密码依赖真实 SMTP：
 
 ```env
 SITE_OWNER_EMAIL=owner@example.com
-SMTP_HOST=smtp.example.com
+ACCOUNT_EMAIL_VERIFICATION_ENABLED=true
+SMTP_HOST=你的真实 SMTP 主机
 SMTP_PORT=587
 SMTP_SECURE=false
-SMTP_USER=CHANGE_ME
-SMTP_PASS=CHANGE_ME
-SMTP_FROM_ADDRESS=no-reply@example.com
+SMTP_USER=你的 SMTP 用户名
+SMTP_PASS=你的 SMTP 密码
+SMTP_FROM_ADDRESS=你的发件地址
 ```
 
-完整变量见 `.env.example`。
+本地测试可设置 `ACCOUNT_EMAIL_VERIFICATION_ENABLED=false`，并把 `SMTP_HOST` 留空；完整变量见 `.env.example`。
 
 ## Radar 数据边界
 
