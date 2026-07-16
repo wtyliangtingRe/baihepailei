@@ -1,12 +1,9 @@
 .comment-block-shell,
-.comment-block {
+.comment-block,
+.comment-list,
+.comment-compose-placeholder {
   display: grid;
-  gap: 16px;
-}
-
-.comment-list {
-  display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .comment-item {
@@ -29,7 +26,8 @@
   color: #fff;
 }
 
-.comment-item time {
+.comment-item time,
+.comment-compose-actions span {
   color: #888;
   font-size: 13px;
 }
@@ -39,11 +37,6 @@
   color: #d7d7d7;
   line-height: 1.75;
   white-space: pre-wrap;
-}
-
-.comment-compose-placeholder {
-  display: grid;
-  gap: 10px;
 }
 
 .comment-compose-placeholder label {
@@ -59,11 +52,6 @@
   border-radius: 16px;
   background: #101010;
   color: #d7d7d7;
-}
-
-.comment-compose-placeholder textarea:focus {
-  outline: 2px solid rgb(255 181 215 / 0.35);
-  border-color: #ffb5d7;
 }
 
 .comment-compose-actions {
@@ -88,45 +76,28 @@
   cursor: not-allowed;
 }
 
-.comment-compose-actions span {
-  color: #888;
-  font-size: 13px;
-}
-
 .comment-message {
   margin: 0;
   color: #ffb5d7;
+}
+
+.comment-message a {
+  margin: 0 4px;
 }
 
 .comment-message-error {
   color: #ff786e;
 }
 
-[data-theme='light'] .comment-item {
+[data-theme='light'] .comment-item,
+[data-theme='light'] .comment-compose-placeholder textarea {
   border-color: #e2d6cc;
   background: #fff7f2;
 }
 
 [data-theme='light'] .comment-item strong,
-[data-theme='light'] .comment-item p {
+[data-theme='light'] .comment-item p,
+[data-theme='light'] .comment-compose-placeholder textarea,
+[data-theme='light'] .comment-compose-placeholder label {
   color: #191716;
-}
-
-[data-theme='light'] .comment-item time,
-[data-theme='light'] .comment-compose-actions span {
-  color: #766a61;
-}
-
-[data-theme='light'] .comment-compose-actions button {
-  border-color: #d7c9bc;
-  background: #fffaf6;
-  color: #b64178;
-}
-
-[data-theme='light'] .comment-message {
-  color: #b64178;
-}
-
-[data-theme='light'] .comment-message-error {
-  color: #c73a2e;
 }
