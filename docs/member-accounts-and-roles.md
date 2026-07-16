@@ -34,7 +34,7 @@ For the official Baihepailei deployment, set it to `wty1123581321@gmail.com`. Th
 
 Self-hosted copies must deliberately set their own owner email. There is no hidden cross-deployment account or universal fallback identity.
 
-If the configured email already exists as an older admin or member record, its next successful login normalizes it to `owner`. This bootstrap only uses the deployment's explicit `SITE_OWNER_EMAIL` value.
+If the configured email already exists as an older admin or member record, its next successful password login normalizes it to `owner`. When email verification is enabled, the same successful login also normalizes a legacy owner record whose old `_verified` value is missing; this prevents the misleading state where password verification succeeds but the following authenticated request is rejected. This bootstrap only uses the deployment's explicit `SITE_OWNER_EMAIL` value.
 
 ## Personnel boundaries
 
@@ -54,6 +54,8 @@ If the configured email already exists as an older admin or member record, its n
 ## Local user cleanup
 
 For a local test database, `scripts/users/prune-users-except-email.mjs` can remove every account except one explicitly retained owner. It is dry-run by default, requires the retained record to have role `owner`, and inventories dependent comments, lists, feedback and Work reviewer links before any deletion.
+
+The script first checks `/api/users/me` and prints the authenticated identity. If password login succeeds but that check fails, confirm that `.env` contains the exact `SITE_OWNER_EMAIL`, pull the latest `main`, and restart the development server before retrying.
 
 Always create and verify a database checkpoint before apply. The apply mode deletes list rows, comments and submitted feedback belonging to removed users; it clears reviewer references that should be preserved, then deletes the user records through Payload. It never writes PostgreSQL directly.
 

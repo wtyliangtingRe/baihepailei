@@ -13,6 +13,7 @@ import {
 
 type UserLike = {
   id?: string | number
+  _verified?: boolean | null
   email?: string
   displayName?: string
   role?: Role
@@ -123,14 +124,21 @@ export const Users: CollectionConfig = {
     beforeLogin: [
       async ({ user, req }) => {
         const current = user as UserLike
-        if (!current.id || !isConfiguredOwnerEmail(current.email) || current.role === 'owner') {
+        if (!current.id || !isConfiguredOwnerEmail(current.email)) {
           return user
         }
+
+        const verificationNeedsNormalization = accountEmailVerificationEnabled() && current._verified !== true
+        const roleNeedsNormalization = current.role !== 'owner'
+        if (!verificationNeedsNormalization && !roleNeedsNormalization) return user
 
         return req.payload.update({
           collection: 'users',
           id: current.id,
-          data: { role: 'owner' },
+          data: {
+            ...(verificationNeedsNormalization ? { _verified: true } : {}),
+            ...(roleNeedsNormalization ? { role: 'owner' as const } : {}),
+          },
           overrideAccess: true,
           req,
         })
