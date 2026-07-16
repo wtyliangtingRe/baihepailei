@@ -10,6 +10,10 @@ test('user cleanup is dry-run by default and requires an exact keep identity', (
   assert.match(script, /DELETE-USERS-EXCEPT-KEEP-EMAIL/u)
   assert.match(script, /keep_user_is_not_owner/u)
   assert.match(script, /loginEmail !== keepEmail/u)
+  assert.match(script, /verifyMaintenanceIdentity/u)
+  assert.match(script, /Authorization: `Bearer \$\{token\}`/u)
+  assert.match(script, /DisableAutologin: 'true'/u)
+  assert.match(script, /Authenticated account has role/u)
 })
 
 test('user cleanup handles dependent community rows before deleting accounts', () => {
