@@ -1,4 +1,4 @@
-import type { Access, CollectionConfig, FieldAccess } from 'payload'
+import type { Access, CollectionConfig, FieldAccess, TextFieldSingleValidation } from 'payload'
 
 import {
   adminsOnly,
@@ -65,6 +65,14 @@ const selfOrStaff: Access = ({ req }) => {
 
 const personnelRoleAccess: FieldAccess = ({ req }) => isOwner(req.user) || getRole(req.user) === 'admin'
 
+const validateDisplayName: TextFieldSingleValidation = (value, { operation }) => {
+  const normalized = String(value || '').trim()
+  if (!normalized) return operation === 'create' ? '注册时必须填写显示名。' : true
+  if (normalized.length < 2) return '显示名至少需要 2 个字符。'
+  if (normalized.length > 50) return '显示名不能超过 50 个字符。'
+  return true
+}
+
 export const Users: CollectionConfig = {
   slug: 'users',
   auth: {
@@ -111,7 +119,12 @@ export const Users: CollectionConfig = {
         const desired = requestedRole(data?.role)
 
         if (operation === 'create') {
-          const created = { ...data, email, termsAcceptedAt: new Date().toISOString() }
+          const created = {
+            ...data,
+            displayName: String(data?.displayName || '').trim(),
+            email,
+            termsAcceptedAt: new Date().toISOString(),
+          }
           if (isConfiguredOwnerEmail(email)) return { ...created, role: 'owner' }
           if (actorRole === 'owner') return { ...created, role: desired || 'member' }
           if (actorRole === 'admin' && desired && adminAssignableRoles.has(desired)) {
@@ -175,7 +188,7 @@ export const Users: CollectionConfig = {
       label: '显示名',
       minLength: 2,
       maxLength: 50,
-      required: true,
+      validate: validateDisplayName,
     },
     {
       name: 'termsAcceptedAt',
