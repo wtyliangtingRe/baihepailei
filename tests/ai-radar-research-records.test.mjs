@@ -6,6 +6,7 @@ import {
   buildResearchRecord,
   normalizeResearchRecord,
   stableEqual,
+  toPayloadData,
 } from '../scripts/radar/import-ai-radar-research-records-v01.mjs'
 
 const batch = {
@@ -99,3 +100,66 @@ test('Payload-generated array ids and relationship objects do not cause false dr
   }
   assert.equal(stableEqual(payloadShape, target), true)
 })
+test('Payload write data uses numeric relationships and omits empty optional selects', () => {
+  const blocked = buildResearchRecord({
+    workId: 33269,
+    siteId: 'VNDB-V15860',
+    title: 'Quantum Conscience',
+    researchStatus: 'insufficient',
+    proposedLikelyGrade: 'D',
+    proposedBestGrade: 'unknown',
+    proposedWorstGrade: 'unknown',
+    sourceSummary: 'summary',
+    sources: [],
+    unresolvedQuestions: ['ending'],
+    confidencePercent: 35,
+    recommendedNextAction: 'retain_block',
+  }, batch, '2026-07-16T00:00:00.000Z')
+
+  const blockedPayload = toPayloadData(blocked)
+  assert.equal(blockedPayload.work, 33269)
+  assert.equal(blockedPayload.recommendedNextAction, 'retain_block')
+  assert.equal(Object.hasOwn(blockedPayload, 'yuriRelevance'), false)
+  assert.equal(Object.hasOwn(blockedPayload, 'recommendedNextQueue'), false)
+
+  const catalog = buildResearchRecord({
+    workId: 456,
+    siteId: 'catalog-anilist-1',
+    title: 'Catalog Example',
+    researchStatus: 'partial',
+    yuriRelevance: 'possible',
+    riskSignals: [],
+    confidencePercent: 35,
+    recommendedNextQueue: 'more_research',
+  }, {
+    ...batch,
+    batchId: 'W03-CATALOG_TIER1_YURI_RISK-0001',
+    wave: 'W03',
+    lane: 'catalog_tier1_yuri_risk',
+  }, '2026-07-16T00:00:00.000Z')
+
+  const catalogPayload = toPayloadData(catalog)
+  assert.equal(catalogPayload.work, 456)
+  assert.equal(catalogPayload.yuriRelevance, 'possible')
+  assert.equal(catalogPayload.recommendedNextQueue, 'more_research')
+  assert.equal(Object.hasOwn(catalogPayload, 'recommendedNextAction'), false)
+  assert.equal(Object.hasOwn(catalogPayload, 'proposedLikelyGrade'), false)
+})
+test('equivalent importedAt timestamps normalize to the same UTC instant', () => {
+  const expected = normalizeResearchRecord({
+    researchKey: `${PROGRAM_ID}|33269|VNDB-V15860`,
+    title: 'Quantum Conscience',
+    importedAt: '2026-07-16T00:49:36.336430+00:00',
+  })
+
+  const actual = normalizeResearchRecord({
+    researchKey: `${PROGRAM_ID}|33269|VNDB-V15860`,
+    title: 'Quantum Conscience',
+    importedAt: '2026-07-16T00:49:36.336Z',
+  })
+
+  assert.equal(expected.importedAt, '2026-07-16T00:49:36.336Z')
+  assert.equal(actual.importedAt, '2026-07-16T00:49:36.336Z')
+  assert.equal(stableEqual(expected, actual), true)
+})
+

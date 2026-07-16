@@ -20,6 +20,12 @@ function val(value) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
+function normalizeDateTime(value) {
+  const text = val(value)
+  if (!text) return ''
+  const parsed = new Date(text)
+  return Number.isNaN(parsed.getTime()) ? text : parsed.toISOString()
+}
 function parseArgs(argv) {
   const args = {}
   for (let index = 0; index < argv.length; index += 1) {
@@ -204,7 +210,7 @@ export function normalizeResearchRecord(record) {
     recommendedNextQueue: val(record?.recommendedNextQueue),
     researchNote: val(record?.researchNote),
     sourceResponseSha256: val(record?.sourceResponseSha256),
-    importedAt: val(record?.importedAt),
+    importedAt: normalizeDateTime(record?.importedAt),
     recordStatus: val(record?.recordStatus) || 'current',
   }
 }
@@ -245,6 +251,27 @@ export function buildResearchRecord(row, batch, importedAt) {
 
 export function stableEqual(left, right) {
   return JSON.stringify(normalizeResearchRecord(left)) === JSON.stringify(normalizeResearchRecord(right))
+}
+
+export function toPayloadData(record) {
+  const normalized = normalizeResearchRecord(record)
+  const data = {
+    ...normalized,
+    work: /^\d+$/u.test(normalized.work) ? Number(normalized.work) : normalized.work,
+  }
+
+  for (const field of [
+    'yuriRelevance',
+    'proposedLikelyGrade',
+    'proposedBestGrade',
+    'proposedWorstGrade',
+    'recommendedNextAction',
+    'recommendedNextQueue',
+  ]) {
+    if (!data[field]) delete data[field]
+  }
+
+  return data
 }
 
 async function requestJson(url, options = {}) {
@@ -410,7 +437,7 @@ async function applyRows(baseUrl, token, results, outDir) {
         response = await requestJson(`${baseUrl}/api/radar-research-records?depth=0`, {
           method: 'POST',
           headers: { Authorization: `JWT ${token}` },
-          body: JSON.stringify(result.target),
+          body: JSON.stringify(toPayloadData(result.target)),
         })
       } else {
         response = await requestJson(
@@ -418,7 +445,7 @@ async function applyRows(baseUrl, token, results, outDir) {
           {
             method: 'PATCH',
             headers: { Authorization: `JWT ${token}` },
-            body: JSON.stringify(result.target),
+            body: JSON.stringify(toPayloadData(result.target)),
           },
         )
       }
@@ -565,3 +592,5 @@ if (isMain) {
     process.exitCode = 1
   })
 }
+
+
