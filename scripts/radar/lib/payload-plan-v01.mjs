@@ -1,6 +1,20 @@
 import { createHash } from 'node:crypto'
 
 export const ALLOWED_GRADES = new Set(['S', 'A', 'B', 'C', 'D', 'E', 'F'])
+export const ALLOWED_REVIEW_REASONS = new Set([
+  'radar_seed_attached',
+  'radar_v06_package_import',
+  'radar_publication_guard',
+  'radar_guard_low_evidence_coverage',
+  'radar_guard_weak_or_conflicting_source',
+  'radar_guard_unclear_provisional_grade',
+  'source_conflict',
+  'multi_source_or_variant',
+  'wikidata_candidate_review',
+  'wikidata_quarantine',
+  'manual_review',
+  'other',
+])
 export const ALLOWED_PATCH_FIELDS = new Set([
   'rank',
   'ratingNotice',
@@ -212,6 +226,28 @@ export function canonical(value) {
   }))
 }
 
+function canonicalInstant(value) {
+  if (typeof value !== 'string') return value
+  const parsed = Date.parse(value)
+  return Number.isFinite(parsed) ? new Date(parsed).toISOString() : value
+}
+
+export function payloadComparable(value, parentKey = '') {
+  if (parentKey === 'assessedAt') return canonicalInstant(value)
+  if (Array.isArray(value)) {
+    return value.map((item) => payloadComparable(item, parentKey))
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).flatMap(([key, item]) => {
+        if (key === 'id') return []
+        return [[key, payloadComparable(item, key)]]
+      }),
+    )
+  }
+  return value
+}
+
 export function equal(a, b) {
   return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b))
 }
@@ -230,7 +266,12 @@ export function currentStateOf(work) {
 export function changedFields(before, desired) {
   const changes = []
   for (const key of ALLOWED_PATCH_FIELDS) {
-    if (!equal(before?.[key], desired?.[key])) changes.push(key)
+    if (!equal(
+      payloadComparable(before?.[key], key),
+      payloadComparable(desired?.[key], key),
+    )) {
+      changes.push(key)
+    }
   }
   return changes
 }

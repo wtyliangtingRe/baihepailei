@@ -15,6 +15,7 @@
     "dev:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev.ps1",
     "ui:install-visual-assets": "node scripts/ui/install-visual-assets.mjs",
     "backup:checkpoint": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/backup/create-local-checkpoint.ps1",
+    "backup:checkpoint:database": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/backup/create-database-checkpoint.ps1",
     "backup:verify-database-checkpoint": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/backup/verify-local-database-checkpoint.ps1",
     "import:audit-candidates": "node scripts/import/audit-payload-candidates.mjs",
     "import:prepare-target": "node scripts/import/prepare-target-content.mjs",
@@ -102,6 +103,10 @@
     "radar:import-v06-package": "node scripts/radar/import-ai-radar-v06-package-v01.mjs",
     "radar:plan-v06-payload": "node scripts/radar/plan-ai-radar-v06-payload-batches-v01.mjs",
     "radar:dryrun-v06-payload": "node scripts/radar/run-ai-radar-v06-payload-dryruns-v01.mjs",
+    "radar:prepare-v06-batch-candidate": "node scripts/radar/prepare-ai-radar-v06-batch-candidate-v01.mjs",
+    "radar:readiness-v06-batch": "node scripts/radar/run-ai-radar-v06-batch-readiness-v01.mjs",
+    "radar:arm-v06-batch": "node scripts/radar/arm-ai-radar-v06-batch-candidate-v01.mjs",
+    "radar:execute-v06-batch-once": "node scripts/radar/run-ai-radar-v06-batch-execute-once-v01.mjs",
     "test:radar-input-audit": "node --test tests/ai-radar-input-audit.test.mjs",
     "test:radar-duplicate-guard": "node --test tests/ai-radar-exact-summary-duplicate-guard.test.mjs",
     "test:radar-assessment": "node --test tests/ai-radar-assessment-resolver.test.mjs",
@@ -116,6 +121,7 @@
     "test:radar-assessment-handoff": "node --test tests/radar-assessment-handoff.test.mjs",
     "test:radar-v06-package": "node --test tests/radar-v06-package-import.test.mjs",
     "test:radar-v06-dryrun": "node --test tests/radar-v06-payload-dryrun.test.mjs",
+    "test:radar-v06-release": "node --test tests/radar-v06-batch-release.test.mjs",
     "test:source-import": "node --test tests/source-import.test.mjs",
     "test:source-bangumi": "node --test tests/bangumi-source.test.mjs",
     "test:source-bangumi-fetch": "node --test tests/bangumi-tag-fetcher.test.mjs",
@@ -132,7 +138,9 @@
     "test:work-entity-link-plan": "node --test tests/bangumi-work-entity-link-patch-plan.test.mjs",
     "test:bangumi-media-subject-preview": "node --test tests/bangumi-media-subject-preview.test.mjs",
     "test:search": "node --test tests/search-utils.test.mjs",
-    "test:frontend-polish": "pnpm test:frontend-polish && pnpm test:works-rank && pnpm test:search"
+    "test:frontend-polish": "pnpm test:frontend-polish && pnpm test:works-rank && pnpm test:search",
+    "radar:orchestrate-v06-remaining": "node scripts/radar/run-ai-radar-v06-remaining-batches-v01.mjs",
+    "test:radar-v06-orchestrator": "node --test tests/radar-v06-remaining-orchestrator.test.mjs"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "latest",

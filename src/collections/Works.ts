@@ -13,6 +13,11 @@ const reviewStatusOptions = [
 
 const reviewReasonOptions = [
   { label: '雷达种子命中', value: 'radar_seed_attached' },
+  { label: 'Radar v0.6 评估包导入', value: 'radar_v06_package_import' },
+  { label: 'Radar 发布保护', value: 'radar_publication_guard' },
+  { label: 'Radar 证据覆盖不足', value: 'radar_guard_low_evidence_coverage' },
+  { label: 'Radar 来源较弱或冲突', value: 'radar_guard_weak_or_conflicting_source' },
+  { label: 'Radar 暂定等级不明确', value: 'radar_guard_unclear_provisional_grade' },
   { label: '来源冲突', value: 'source_conflict' },
   { label: '多来源或变体', value: 'multi_source_or_variant' },
   { label: 'Wikidata 候选待复核', value: 'wikidata_candidate_review' },

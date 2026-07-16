@@ -4,6 +4,7 @@ import path from 'node:path'
 
 import {
   ALLOWED_GRADES,
+  ALLOWED_REVIEW_REASONS,
   ALLOWED_PATCH_FIELDS,
   canonical,
   currentStateOf,
@@ -70,9 +71,15 @@ export function validateCheckpoint(checkpointPath, {
   const manifest = readJson(files.manifest)
   const status = readJson(files.status)
   if (val(status?.state) !== 'complete') blockers.push('checkpoint_not_complete')
+  const checkpointProfile = val(manifest?.checkpointProfile) || 'full_workspace'
   if (manifest?.includesDatabase !== true) blockers.push('checkpoint_database_not_included')
-  if (manifest?.includesWorkspace !== true) blockers.push('checkpoint_workspace_not_included')
-  if (manifest?.includesGitBundle !== true) blockers.push('checkpoint_git_bundle_not_included')
+  if (checkpointProfile === 'database_only') {
+    if (manifest?.includesWorkspace !== false) blockers.push('checkpoint_database_only_workspace_flag_invalid')
+    if (manifest?.includesGitBundle !== false) blockers.push('checkpoint_database_only_git_bundle_flag_invalid')
+  } else {
+    if (manifest?.includesWorkspace !== true) blockers.push('checkpoint_workspace_not_included')
+    if (manifest?.includesGitBundle !== true) blockers.push('checkpoint_git_bundle_not_included')
+  }
 
   const databaseDumpName = val(manifest?.databaseDump)
   const databaseDump = databaseDumpName ? path.join(files.root, databaseDumpName) : ''
@@ -121,6 +128,26 @@ export function validateApplyPlanRow(plan) {
   if (!val(plan?.target?.id) || !val(plan?.target?.siteId)) blockers.push('apply_requires_id_and_site_id')
   if (!val(plan?.expectedBeforeHash)) blockers.push('missing_expected_before_hash')
   if (!ALLOWED_GRADES.has(val(plan?.patch?.rank))) blockers.push('invalid_apply_rank')
+
+  const reviewReasons = Array.isArray(plan?.patch?.reviewReasons)
+    ? plan.patch.reviewReasons
+    : []
+  for (const reason of reviewReasons) {
+    const value = val(reason)
+    if (!ALLOWED_REVIEW_REASONS.has(value)) {
+      blockers.push(`invalid_apply_review_reason:${value || 'missing'}`)
+    }
+  }
+
+  const matchedRules = Array.isArray(plan?.patch?.radarAssessment?.matchedRules)
+    ? plan.patch.radarAssessment.matchedRules
+    : []
+  for (const [index, rule] of matchedRules.entries()) {
+    const grade = val(rule?.grade)
+    if (!ALLOWED_GRADES.has(grade)) {
+      blockers.push(`invalid_apply_matched_rule_grade:${index}:${grade || 'missing'}`)
+    }
+  }
   for (const key of Object.keys(plan?.patch || {})) {
     if (!ALLOWED_PATCH_FIELDS.has(key)) blockers.push(`unexpected_apply_field:${key}`)
   }
