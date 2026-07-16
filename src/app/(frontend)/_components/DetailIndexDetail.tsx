@@ -1,5 +1,7 @@
 import Link from 'next/link'
 
+import { publicContentImagesEnabled } from '@/lib/deploymentProfile'
+
 import { readDetailIndex, type DetailCoverImage, type DetailItem, type DetailSourceLink } from '../_lib/detail-index'
 import CommentBlock from './CommentBlock'
 import ContentCallout, { type ContentCalloutItem } from './ContentCallout'
@@ -47,7 +49,7 @@ const evidenceTypeLabels: Record<string, string> = {
   official_page: '官方页面',
   interview: '访谈',
   social_media: '社交媒体',
-  legacy_wiki: '旧站记录',
+  legacy_wiki: '历史归档记录',
   platform_page: '平台页面',
   other: '其他证据',
 }
@@ -73,6 +75,20 @@ const mediaGroupLabels: Record<string, string> = {
   game: '游戏',
   other: '其他',
   unknown: '未知类型',
+}
+
+const mediaTypeLabels: Record<string, string> = {
+  anime: '动画', manga: '漫画', novel: '小说', light_novel: '轻小说', visual_novel: '视觉小说',
+  game: '游戏', audio_drama: '广播剧 / 音声', live_action: '真人影视', webtoon: 'Webtoon',
+  doujin: '同人作品', anthology: '合集 / 选集', other: '其他', unknown: '未知类型',
+}
+
+const workFormatLabels: Record<string, string> = {
+  tv_anime: 'TV 动画', anime_movie: '动画电影', ova: 'OVA', ona: '网络动画', manga_series: '漫画连载',
+  manga_oneshot: '漫画短篇', novel_series: '小说系列', light_novel_series: '轻小说系列', web_serial: 'Web 连载',
+  visual_novel: '视觉小说', pc_game: 'PC 游戏', console_game: '主机游戏', mobile_game: '手机游戏',
+  audio_drama: '广播剧 / 音声', live_action: '真人影视', webtoon_series: 'Webtoon 连载', doujin: '同人作品',
+  anthology: '合集 / 选集', other: '其他', unknown: '未知形态',
 }
 
 function collectionLabel(collection: string) {
@@ -118,6 +134,16 @@ function evidenceStrengthLabel(value?: string) {
 function mediaGroupLabel(value?: string) {
   if (!value || value === 'unknown') return ''
   return mediaGroupLabels[value] || value
+}
+
+function mediaTypeLabel(value?: string) {
+  if (!value || value === 'unknown') return ''
+  return mediaTypeLabels[value] || value
+}
+
+function workFormatLabel(value?: string) {
+  if (!value || value === 'unknown') return ''
+  return workFormatLabels[value] || value
 }
 
 function visibleMetadataValue(value?: string) {
@@ -273,8 +299,9 @@ function BasicInfo({ item }: { item: DetailItem }) {
   const extendedItem = item as ExtendedDetailItem
   const searchableTitles = uniqueTitleValues([displayTitle(item), item.title, item.originalTitle, ...(item.localizedTitles || []), ...(item.aliases || []), ...(item.allTitles || [])])
   const fields: Array<[string, string | string[] | boolean | undefined]> = [
-    ['作品类型', mediaGroupLabel(extendedItem.mediaGroup)],
-    ['作品形态', visibleMetadataValue(extendedItem.format)],
+    ['作品大类', mediaGroupLabel(extendedItem.mediaGroup)],
+    ['作品类型', mediaTypeLabel(extendedItem.mediaType)],
+    ['作品形态', workFormatLabel(extendedItem.format)],
     ['日期', extendedItem.firstPublishedLabel || extendedItem.firstPublishedAt],
     ['复核状态', reviewStatusLabel(extendedItem.reviewStatus)],
     ['证据强度', evidenceStrengthLabel(extendedItem.evidenceStrength)],
@@ -402,20 +429,20 @@ function EvidenceImage({ image, title }: { image?: DetailCoverImage; title: stri
   )
 }
 
-function DetailCallouts({ item }: { item: DetailItem }) {
+function DetailCallouts({ item, showImages }: { item: DetailItem; showImages: boolean }) {
   const callouts = ((item as ExtendedDetailItem).callouts || []).filter(Boolean)
   if (callouts.length === 0) return null
 
   return (
     <section className="detail-callouts" aria-label="图文提示块">
       {callouts.map((callout, index) => (
-        <ContentCallout callout={callout} key={callout.id || `${callout.title || 'callout'}-${index}`} />
+        <ContentCallout callout={callout} key={callout.id || `${callout.title || 'callout'}-${index}`} showImage={showImages} />
       ))}
     </section>
   )
 }
 
-function RelatedEvidence({ evidence, showPlaceholder }: { evidence: DetailItem[]; showPlaceholder: boolean }) {
+function RelatedEvidence({ evidence, showImages, showPlaceholder }: { evidence: DetailItem[]; showImages: boolean; showPlaceholder: boolean }) {
   if (evidence.length === 0 && !showPlaceholder) return null
 
   return (
@@ -430,7 +457,7 @@ function RelatedEvidence({ evidence, showPlaceholder }: { evidence: DetailItem[]
             const title = displayTitle(item)
             return (
               <Link className="evidence-item" href={item.url || `/evidence/${item.slug}`} key={item.id}>
-                <EvidenceImage image={evidenceItem.image} title={title} />
+                {showImages ? <EvidenceImage image={evidenceItem.image} title={title} /> : null}
                 <div>
                   <span>{evidenceTypeLabel(evidenceItem.evidenceType) || '证据材料'}</span>
                   {evidenceItem.evidenceStrength ? <span>{evidenceStrengthLabel(evidenceItem.evidenceStrength)}</span> : null}
@@ -503,12 +530,15 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
   const extendedItem = item as ExtendedDetailItem
   const rank = item.collection === 'works' ? displayRank(item.rank) : ''
   const mediaGroup = item.collection === 'works' ? mediaGroupLabel(extendedItem.mediaGroup) : ''
+  const mediaType = item.collection === 'works' ? mediaTypeLabel(extendedItem.mediaType) : ''
+  const workFormat = item.collection === 'works' ? workFormatLabel(extendedItem.format) : ''
   const organizationType = organizationTypeLabel(extendedItem.organizationType)
   const evidenceType = evidenceTypeLabel(extendedItem.evidenceType)
   const reviewStatus = reviewStatusLabel(extendedItem.reviewStatus)
   const evidenceStrength = evidenceStrengthLabel(extendedItem.evidenceStrength)
   const showEvidencePlaceholder = ['works', 'creators', 'organizations'].includes(item.collection)
   const title = displayTitle(item)
+  const showImages = publicContentImagesEnabled()
 
   return (
     <main className="page detail-page">
@@ -522,14 +552,16 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
           </Link>
         </div>
         <div className="detail-hero-layout">
-          {item.collection === 'works' ? <WorkCover cover={item.cover} title={title} /> : null}
-          {item.collection === 'evidence' ? <EvidenceImage image={extendedItem.image} title={title} /> : null}
+          {showImages && item.collection === 'works' ? <WorkCover cover={item.cover} title={title} /> : null}
+          {showImages && item.collection === 'evidence' ? <EvidenceImage image={extendedItem.image} title={title} /> : null}
           <div>
             <p className="eyebrow">{collectionLabel(item.collection)}</p>
             <h1>{title}</h1>
             <div className="detail-chips">
               {rank ? <span>{rank}</span> : null}
               {mediaGroup ? <span>{mediaGroup}</span> : null}
+              {mediaType && mediaType !== mediaGroup ? <span>{mediaType}</span> : null}
+              {workFormat && workFormat !== mediaType ? <span>{workFormat}</span> : null}
               {reviewStatus ? <span>{reviewStatus}</span> : null}
               {evidenceStrength ? <span>{evidenceStrength}</span> : null}
               {organizationType ? <span>{organizationType}</span> : null}
@@ -545,13 +577,12 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
       <BasicInfo item={item} />
       <WorkRiskMatrixCard item={item} />
       <WorkListControl item={item} />
-      <DetailCallouts item={item} />
+      <DetailCallouts item={item} showImages={showImages} />
       <RelatedWorks works={relatedWorks} />
       <RichTextSections item={item} />
-      <RelatedEvidence evidence={relatedEvidence} showPlaceholder={showEvidencePlaceholder} />
+      <RelatedEvidence evidence={relatedEvidence} showImages={showImages} showPlaceholder={showEvidencePlaceholder} />
       <SourceLinks item={item} />
       <CommentBlock item={item} />
     </main>
   )
 }
-

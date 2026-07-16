@@ -114,6 +114,7 @@ export type DetailIndex = {
   generatedAt: string
   source: string
   mode: string
+  mediaMode?: 'text' | 'enhanced'
   counts: Record<string, number>
   total: number
   items: DetailItem[]
@@ -219,4 +220,3 @@ export function findCreatorsByOrganizationName(organizationName: string) {
   const creatorNames = works.flatMap((work) => work.creators || [])
   return findItemsByTitles('creators', creatorNames)
 }
-

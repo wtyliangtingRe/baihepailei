@@ -1,0 +1,109 @@
+.work-card-badges,
+.result-type-badges,
+.recommendation-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.work-card-badges p {
+  margin: 0;
+}
+
+.collection-card .work-type-chip,
+.result-type-badges span,
+.recommendation-card-meta span {
+  width: fit-content;
+  padding: 5px 9px;
+  border: 1px solid rgb(255 181 215 / 0.32);
+  border-radius: 999px;
+  background: rgb(255 181 215 / 0.08);
+  color: #ffb5d7;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.work-title-only-card small {
+  color: #aaa;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.search-refine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.search-refine-grid label {
+  display: grid;
+  gap: 7px;
+  color: #ddd;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.search-refine-grid select {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid #444;
+  border-radius: 14px;
+  background: #101010;
+  color: #fff;
+}
+
+.search-empty-symbol {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 14px;
+  border: 1px solid rgb(255 181 215 / 0.28);
+  border-radius: 24px;
+  background: rgb(255 181 215 / 0.07);
+  color: #ffb5d7;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.feedback-channel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.feedback-channel-card {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.feedback-channel-card h2,
+.feedback-channel-card p {
+  margin: 0;
+}
+
+.feedback-channel-card a {
+  width: fit-content;
+}
+
+[data-theme='light'] .collection-card .work-type-chip,
+[data-theme='light'] .result-type-badges span,
+[data-theme='light'] .recommendation-card-meta span {
+  border-color: #e8c1d5;
+  background: #fff0f7;
+  color: #b64178;
+}
+
+[data-theme='light'] .search-refine-grid label {
+  color: #191716;
+}
+
+[data-theme='light'] .search-refine-grid select {
+  border-color: #e2d6cc;
+  background: #fff7f2;
+  color: #191716;
+}

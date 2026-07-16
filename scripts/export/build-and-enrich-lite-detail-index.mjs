@@ -6,10 +6,7 @@ import { spawnSync } from 'node:child_process'
 const rawArgs = process.argv.slice(2)
 const publishedOnly = rawArgs.includes('--published-only')
 const args = rawArgs.filter((arg) => arg !== '--published-only')
-
-if (!publishedOnly && !args.includes('--include-drafts')) {
-  args.push('--include-drafts')
-}
+if (!publishedOnly && !args.includes('--include-drafts')) args.push('--include-drafts')
 
 function argValue(name, fallback) {
   const index = args.indexOf(name)
@@ -21,12 +18,8 @@ const outputFile = path.resolve(argValue('--out', 'public/detail-index.json'))
 const previous = fs.existsSync(outputFile) ? fs.readFileSync(outputFile) : null
 
 function run(commandArgs) {
-  const result = spawnSync(process.execPath, commandArgs, {
-    stdio: 'inherit',
-  })
-  if (result.status !== 0) {
-    throw new Error(`Export step failed: node ${commandArgs.join(' ')}`)
-  }
+  const result = spawnSync(process.execPath, commandArgs, { stdio: 'inherit' })
+  if (result.status !== 0) throw new Error(`Export step failed: node ${commandArgs.join(' ')}`)
 }
 
 try {
@@ -37,14 +30,13 @@ try {
   run(['scripts/export/enrich-lite-evidence-details.mjs', '--file', outputFile, ...args])
   run(['scripts/export/enrich-lite-review-fields.mjs', '--file', outputFile, ...args])
   run(['scripts/export/enrich-lite-risk-matrix.mjs', '--file', outputFile, ...args])
+  run(['scripts/export/compact-public-index.mjs', '--file', outputFile, ...args])
 } catch (error) {
   if (previous) {
     fs.mkdirSync(path.dirname(outputFile), { recursive: true })
     fs.writeFileSync(outputFile, previous)
     console.error(`[export] Restored previous detail index after failure: ${outputFile}`)
-  } else if (fs.existsSync(outputFile)) {
-    fs.rmSync(outputFile, { force: true })
-  }
+  } else if (fs.existsSync(outputFile)) fs.rmSync(outputFile, { force: true })
   console.error(error)
   process.exit(1)
 }

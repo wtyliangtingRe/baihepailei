@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import test from 'node:test'
+
+const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+const works = read('src/app/(frontend)/works/page.tsx')
+const search = read('src/app/(frontend)/search/search-client.tsx')
+const recommendations = read('src/app/(frontend)/_lib/recommendations.ts')
+
+test('works page caches sort, titles and normalized search blobs', () => {
+  assert.match(works, /cachedSortedWorks/u)
+  assert.match(works, /titleCache/u)
+  assert.match(works, /searchBlobCache/u)
+  assert.match(works, /workFormatLabels/u)
+  assert.match(works, /work-type-chip/u)
+})
+
+test('client search defers typing and reuses the exported index', () => {
+  assert.match(search, /useDeferredValue/u)
+  assert.match(search, /cache: 'force-cache'/u)
+  assert.match(search, /activeMedia/u)
+  assert.match(search, /activeRank/u)
+})
+
+test('recommendations demote uncertain AI grades and high-risk ranks', () => {
+  assert.match(recommendations, /ai_synthesized_pending_review/u)
+  assert.match(recommendations, /rank === 'X'/u)
+  assert.match(recommendations, /needsHumanReview/u)
+  assert.match(recommendations, /confidencePercent/u)
+  assert.match(recommendations, /evidenceCoveragePercent/u)
+})

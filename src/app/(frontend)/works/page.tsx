@@ -16,6 +16,51 @@ const mediaGroupOptions = [
   { label: '未知', value: 'unknown' },
 ]
 
+const mediaGroupLabels = Object.fromEntries(mediaGroupOptions.map((option) => [option.value, option.label])) as Record<string, string>
+const mediaTypeLabels: Record<string, string> = {
+  anime: '动画',
+  manga: '漫画',
+  novel: '小说',
+  light_novel: '轻小说',
+  visual_novel: '视觉小说',
+  game: '游戏',
+  audio_drama: '广播剧 / 音声',
+  live_action: '真人影视',
+  webtoon: 'Webtoon',
+  doujin: '同人作品',
+  anthology: '合集 / 选集',
+  other: '其他',
+  unknown: '未知类型',
+}
+const workFormatLabels: Record<string, string> = {
+  tv_anime: 'TV 动画',
+  anime_movie: '动画电影',
+  ova: 'OVA',
+  ona: '网络动画',
+  manga_series: '漫画连载',
+  manga_oneshot: '漫画短篇',
+  novel_series: '小说系列',
+  light_novel_series: '轻小说系列',
+  web_serial: 'Web 连载',
+  visual_novel: '视觉小说',
+  pc_game: 'PC 游戏',
+  console_game: '主机游戏',
+  mobile_game: '手机游戏',
+  audio_drama: '广播剧 / 音声',
+  live_action: '真人影视',
+  webtoon_series: 'Webtoon 连载',
+  doujin: '同人作品',
+  anthology: '合集 / 选集',
+  other: '其他',
+  unknown: '未知形态',
+}
+
+let cachedSourceItems: SearchItem[] | undefined
+let cachedSortedWorks: SearchItem[] = []
+let cachedMarkedWorks = 0
+const titleCache = new WeakMap<SearchItem, string>()
+const searchBlobCache = new WeakMap<SearchItem, string>()
+
 const rankDescriptions: Record<string, string> = {
   AA: '高度稳定的百合作品。核心关系明确，整体风险极低，通常适合作为优先阅读对象。',
   A: '整体较安全。可能存在轻微注意点，但通常不影响其作为百合作品的基本判断。',
@@ -134,15 +179,30 @@ function uniqueTitleValues(values: Array<string | undefined>) {
 }
 
 function displayTitle(item: SearchItem) {
+  const cached = titleCache.get(item)
+  if (cached) return cached
   const candidates = uniqueTitleValues([...(item.localizedTitles || []), item.title, item.originalTitle, ...(item.aliases || [])])
-  return candidates.find(isChineseTitle) || candidates.find(isJapaneseTitle) || candidates.find(isEnglishTitle) || candidates[0] || item.title
+  const title = candidates.find(isChineseTitle) || candidates.find(isJapaneseTitle) || candidates.find(isEnglishTitle) || candidates[0] || item.title
+  titleCache.set(item, title)
+  return title
 }
 
-function itemMatchesQuery(item: SearchItem, query: string) {
-  const normalizedQuery = normalizeText(query)
-  if (!normalizedQuery) return true
+function sortedWorks(items: SearchItem[]) {
+  if (cachedSourceItems === items) return cachedSortedWorks
 
-  const haystack = [
+  cachedSourceItems = items
+  cachedSortedWorks = items
+    .filter((item) => item.collection === 'works')
+    .sort((a, b) => rankSortValue(a.rank) - rankSortValue(b.rank) || displayTitle(a).localeCompare(displayTitle(b), 'zh-CN'))
+  cachedMarkedWorks = cachedSortedWorks.filter((item) => item.contentVisibility && item.contentVisibility !== 'ordinary').length
+  return cachedSortedWorks
+}
+
+function searchBlob(item: SearchItem) {
+  const cached = searchBlobCache.get(item)
+  if (cached !== undefined) return cached
+
+  const value = [
     item.title,
     item.originalTitle,
     ...(item.localizedTitles || []),
@@ -155,11 +215,32 @@ function itemMatchesQuery(item: SearchItem, query: string) {
     item.mediaGroup,
     item.mediaType,
     item.format,
+    mediaGroupLabels[item.mediaGroup || 'unknown'],
+    mediaTypeLabels[item.mediaType || 'unknown'],
+    workFormatLabels[item.format || 'unknown'],
     item.firstPublishedLabel,
     item.searchText,
   ]
     .map((value) => normalizeText(value))
     .join('\n')
+
+  searchBlobCache.set(item, value)
+  return value
+}
+
+function workTypeLabels(item: SearchItem) {
+  const group = mediaGroupLabels[item.mediaGroup || 'unknown'] || item.mediaGroup || '未知类型'
+  const format = workFormatLabels[item.format || 'unknown']
+  const type = mediaTypeLabels[item.mediaType || 'unknown']
+  const specific = format && format !== '未知形态' ? format : type && type !== '未知类型' ? type : group
+  return { group, specific }
+}
+
+function itemMatchesQuery(item: SearchItem, query: string) {
+  const normalizedQuery = normalizeText(query)
+  if (!normalizedQuery) return true
+
+  const haystack = searchBlob(item)
 
   return normalizedQuery
     .split(/\s+/g)
@@ -307,11 +388,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
   const pageSize = normalizePageSize(firstParam(params.perPage))
   const requestedPage = normalizePositiveInteger(firstParam(params.page), 1)
 
-  const allItems = index.items
-    .filter((item) => item.collection === 'works')
-    .sort((a, b) => rankSortValue(a.rank) - rankSortValue(b.rank) || displayTitle(a).localeCompare(displayTitle(b), 'zh-CN'))
-
-  const markedItems = allItems.filter((item) => item.contentVisibility && item.contentVisibility !== 'ordinary')
+  const allItems = sortedWorks(index.items)
   const items = allItems.filter((item) => itemMatchesFilters(item, filters))
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
   const currentPage = Math.min(requestedPage, totalPages)
@@ -337,7 +414,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
           <Link className="back-link" href="/browse">浏览全部</Link>
           <span>{items.length} / {allItems.length} 条</span>
           <span>当前页 {pageItems.length} 条</span>
-          {markedItems.length ? <span>普通模式隐藏 {markedItems.length} 条标记作品</span> : null}
+          {cachedMarkedWorks ? <span>普通模式隐藏 {cachedMarkedWorks} 条标记作品</span> : null}
         </div>
         <nav className="media-group-links" aria-label="作品类型快速筛选">
           <Link href="/works">全部</Link>
@@ -401,11 +478,16 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
               <div className="collection-grid work-title-only-grid">
                 {group.items.map((item) => {
                   const visibilityLabel = contentVisibilityLabel(item.contentVisibility)
+                  const typeLabels = workTypeLabels(item)
 
                   return (
                     <Link className="collection-card work-card work-title-only-card" data-content-visibility={item.contentVisibility || 'ordinary'} href={item.url} key={item.id}>
-                      <p>{rankLabel(item.rank)}</p>
+                      <div className="work-card-badges">
+                        <p>{rankLabel(item.rank)}</p>
+                        <span className="work-type-chip">{typeLabels.specific}</span>
+                      </div>
                       <h2>{displayTitle(item)}</h2>
+                      {typeLabels.group !== typeLabels.specific ? <small>{typeLabels.group}</small> : null}
                       {visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}
                     </Link>
                   )
@@ -423,4 +505,3 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
     </main>
   )
 }
-

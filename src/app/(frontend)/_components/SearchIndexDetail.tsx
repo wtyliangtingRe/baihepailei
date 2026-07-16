@@ -1,5 +1,7 @@
 import Link from 'next/link'
 
+import { publicContentImagesEnabled } from '@/lib/deploymentProfile'
+
 import type { DetailCandidateSource, DetailCoverImage, DetailItem, DetailSourceLink } from '../_lib/detail-index'
 import type { SearchItem } from '../_lib/search-index'
 import CommentBlock from './CommentBlock'
@@ -25,7 +27,7 @@ const evidenceTypeLabels: Record<string, string> = {
   official_page: '官方页面',
   interview: '访谈',
   social_media: '社交媒体',
-  legacy_wiki: '旧站记录',
+  legacy_wiki: '历史归档记录',
   platform_page: '平台页面',
   other: '其他证据',
 }
@@ -51,6 +53,20 @@ const mediaGroupLabels: Record<string, string> = {
   game: '游戏',
   other: '其他',
   unknown: '未知类型',
+}
+
+const mediaTypeLabels: Record<string, string> = {
+  anime: '动画', manga: '漫画', novel: '小说', light_novel: '轻小说', visual_novel: '视觉小说',
+  game: '游戏', audio_drama: '广播剧 / 音声', live_action: '真人影视', webtoon: 'Webtoon',
+  doujin: '同人作品', anthology: '合集 / 选集', other: '其他', unknown: '未知类型',
+}
+
+const workFormatLabels: Record<string, string> = {
+  tv_anime: 'TV 动画', anime_movie: '动画电影', ova: 'OVA', ona: '网络动画', manga_series: '漫画连载',
+  manga_oneshot: '漫画短篇', novel_series: '小说系列', light_novel_series: '轻小说系列', web_serial: 'Web 连载',
+  visual_novel: '视觉小说', pc_game: 'PC 游戏', console_game: '主机游戏', mobile_game: '手机游戏',
+  audio_drama: '广播剧 / 音声', live_action: '真人影视', webtoon_series: 'Webtoon 连载', doujin: '同人作品',
+  anthology: '合集 / 选集', other: '其他', unknown: '未知形态',
 }
 
 const advisoryLabels: Record<string, string> = {
@@ -84,6 +100,16 @@ function displayRank(rank?: string) {
 function mediaGroupLabel(value?: string) {
   if (!value || value === 'unknown') return ''
   return mediaGroupLabels[value] || value
+}
+
+function mediaTypeLabel(value?: string) {
+  if (!value || value === 'unknown') return ''
+  return mediaTypeLabels[value] || value
+}
+
+function workFormatLabel(value?: string) {
+  if (!value || value === 'unknown') return ''
+  return workFormatLabels[value] || value
 }
 
 function visibleMetadataValue(value?: string) {
@@ -225,8 +251,9 @@ function SearchableTitleTable({ titles }: { titles: string[] }) {
 function BasicInfo({ item }: { item: SearchItem }) {
   const searchableTitles = uniqueTitleValues([displayTitle(item), item.title, item.originalTitle, ...(item.localizedTitles || []), ...(item.localizedNames || []), ...(item.aliases || [])])
   const fields: Array<[string, string | string[] | boolean | undefined]> = [
-    ['作品类型', mediaGroupLabel(item.mediaGroup)],
-    ['作品形态', visibleMetadataValue(item.format || item.mediaType)],
+    ['作品大类', mediaGroupLabel(item.mediaGroup)],
+    ['作品类型', mediaTypeLabel(item.mediaType)],
+    ['作品形态', workFormatLabel(item.format)],
     ['日期', item.firstPublishedLabel],
     ['复核状态', reviewStatusLabel(item.reviewStatus)],
     ['证据强度', evidenceStrengthLabel(item.evidenceStrength)],
@@ -402,12 +429,15 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
   const detailLikeItem = toDetailItem(item)
   const rank = displayRank(item.rank)
   const mediaGroup = mediaGroupLabel(item.mediaGroup)
+  const mediaType = mediaTypeLabel(item.mediaType)
+  const workFormat = workFormatLabel(item.format)
   const organizationType = organizationTypeLabel(item.organizationType)
   const evidenceType = evidenceTypeLabel(item.evidenceType)
   const reviewStatus = reviewStatusLabel(item.reviewStatus)
   const evidenceStrength = evidenceStrengthLabel(item.evidenceStrength)
   const contentVisibility = contentVisibilityLabel(item.contentVisibility)
   const title = displayTitle(item)
+  const showImages = publicContentImagesEnabled()
 
   return (
     <main className="page detail-page" data-content-visibility={item.contentVisibility || 'ordinary'}>
@@ -421,7 +451,7 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
           </Link>
         </div>
         <div className="detail-hero-layout">
-          {item.collection === 'works' ? <WorkCover cover={item.cover} title={title} /> : null}
+          {showImages && item.collection === 'works' ? <WorkCover cover={item.cover} title={title} /> : null}
           <div>
             <p className="eyebrow">{collectionLabel(item.collection)}</p>
             <h1>{title}</h1>
@@ -429,7 +459,8 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
             <div className="detail-chips">
               {rank ? <span>{rank}</span> : null}
               {mediaGroup ? <span>{mediaGroup}</span> : null}
-              {visibleMetadataValue(item.mediaType) ? <span>{visibleMetadataValue(item.mediaType)}</span> : null}
+              {mediaType && mediaType !== mediaGroup ? <span>{mediaType}</span> : null}
+              {workFormat && workFormat !== mediaType ? <span>{workFormat}</span> : null}
               {reviewStatus ? <span>{reviewStatus}</span> : null}
               {evidenceStrength ? <span>{evidenceStrength}</span> : null}
               {contentVisibility ? <span>{contentVisibility}</span> : null}
@@ -453,4 +484,3 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
     </main>
   )
 }
-

@@ -1,29 +1,32 @@
 import configPromise from '@payload-config'
-import Link from 'next/link'
-import type { ReactNode } from 'react'
+import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getPayload } from 'payload'
+import { getPayload, type Where } from 'payload'
 
 export const dynamic = 'force-dynamic'
 
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
-
 type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted'
 
 type CandidateSource = {
   source?: string
+  label?: string
   externalId?: string
   url?: string
   note?: string
 }
 
 type WorkDoc = {
-  id: string
+  id: string | number
   title?: string
   slug?: string
   siteId?: string
   rank?: string
+  mediaGroup?: string
+  mediaType?: string
+  format?: string
   reviewStatus?: string
   evidenceStrength?: string
   evidenceNote?: string
@@ -33,528 +36,458 @@ type WorkDoc = {
   chosenBaseSource?: string
   reviewReasons?: string[] | string
   sourceConflictNotes?: string
+  humanReviewNote?: string
   status?: string
   updatedAt?: string
 }
 
-type LabeledOption = {
-  value: string
-  label: string
-}
-
 type Filters = {
   q: string
+  mode: 'priority' | 'all'
   rank: string
+  media: string
   source: string
   reason: string
   ratingNotice: string
+  evidenceStrength: string
   importBatch: string
-  mode: 'focus' | 'all'
+  sort: string
+  page: number
+  perPage: 25 | 50
 }
 
+type LabeledOption = { value: string; label: string }
+
 const allowedRoles: Role[] = ['owner', 'admin', 'editor', 'reviewer']
+const ranks = ['X', 'F', 'E', 'D', 'C', 'B', 'A', 'AA', 'unknown']
+const mediaOptions: LabeledOption[] = [
+  { value: 'anime', label: '动画' },
+  { value: 'manga', label: '漫画' },
+  { value: 'novel', label: '小说' },
+  { value: 'game', label: '游戏' },
+  { value: 'other', label: '其他' },
+  { value: 'unknown', label: '未知' },
+]
 const sourceOptions = ['mangadex', 'steam', 'yurizukan', 'bangumi', 'wikidata', 'anilist', 'vndb', 'wikipedia', 'ndl', 'manual', 'other']
-const rankOptions = ['X', 'F', 'E', 'D', 'C', 'B', 'A', 'AA', 'unknown']
 const reviewReasonOptions: LabeledOption[] = [
   { value: 'radar_seed_attached', label: '雷达种子命中' },
-  { value: 'multi_source_or_variant', label: '多来源或变体' },
+  { value: 'radar_v06_package_import', label: 'Radar v0.6 评估包' },
+  { value: 'radar_publication_guard', label: 'Radar 发布保护' },
+  { value: 'radar_guard_low_evidence_coverage', label: '证据覆盖不足' },
+  { value: 'radar_guard_weak_or_conflicting_source', label: '来源弱或冲突' },
+  { value: 'radar_guard_unclear_provisional_grade', label: '暂定等级不明确' },
   { value: 'source_conflict', label: '来源冲突' },
+  { value: 'multi_source_or_variant', label: '多来源或变体' },
+  { value: 'wikidata_candidate_review', label: 'Wikidata 候选待复核' },
+  { value: 'wikidata_quarantine', label: 'Wikidata 隔离' },
+  { value: 'manual_review', label: '人工复核' },
+  { value: 'other', label: '其他' },
 ]
 const ratingNoticeOptions: LabeledOption[] = [
   { value: 'ai_synthesized_pending_review', label: 'AI 综合，待复核' },
   { value: 'insufficient_information', label: '信息不足' },
+  { value: 'manual_reviewed', label: '人工已确认' },
+  { value: 'none', label: '无提示' },
+  { value: 'other', label: '其他' },
 ]
-const importBatchOptions: LabeledOption[] = [
-  { value: 'public-catalog-import-v02', label: 'Public Catalog v0.2' },
+const evidenceOptions: LabeledOption[] = [
+  { value: 'unassessed', label: '未评估' },
+  { value: 'weak', label: '弱' },
+  { value: 'medium', label: '中' },
+  { value: 'strong', label: '强' },
 ]
-const collator = new Intl.Collator('zh-CN')
+const sortOptions: LabeledOption[] = [
+  { value: '-updatedAt', label: '最近更新优先' },
+  { value: 'updatedAt', label: '最早更新优先' },
+  { value: 'title', label: '标题顺序' },
+  { value: 'rank', label: '分级顺序' },
+]
+const priorityReasons = [
+  'radar_seed_attached',
+  'source_conflict',
+  'multi_source_or_variant',
+  'radar_guard_low_evidence_coverage',
+  'radar_guard_weak_or_conflicting_source',
+  'radar_guard_unclear_provisional_grade',
+]
+const mediaGroupLabels = Object.fromEntries(mediaOptions.map((item) => [item.value, item.label])) as Record<string, string>
+const formatLabels: Record<string, string> = {
+  tv_anime: 'TV 动画', anime_movie: '动画电影', ova: 'OVA', ona: '网络动画',
+  manga_series: '漫画连载', manga_oneshot: '漫画短篇', novel_series: '小说系列',
+  light_novel_series: '轻小说系列', web_serial: 'Web 连载', visual_novel: '视觉小说',
+  pc_game: 'PC 游戏', console_game: '主机游戏', mobile_game: '手机游戏',
+  audio_drama: '广播剧 / 音声', live_action: '真人影视', webtoon_series: 'Webtoon 连载',
+  doujin: '同人作品', anthology: '合集 / 选集', other: '其他', unknown: '未知形态',
+}
 
-
-function firstParam(value: string | string[] | undefined) {
+function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] || '' : value || ''
 }
 
-function normalizeText(value: unknown) {
-  return String(value || '').trim().toLowerCase()
+function positiveInteger(value: string, fallback: number) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : fallback
 }
 
-function normalizeRank(value: string) {
-  const rank = value.trim()
-  if (!rank || rank === 'all') return 'all'
-  if (rank.toUpperCase() === 'S') return 'AA'
-  if (rank.toLowerCase() === 'unknown') return 'unknown'
-  return rank.toUpperCase()
-}
-
-function normalizeOption(value: string, options: string[]) {
-  const normalized = value.trim().toLowerCase()
-  if (!normalized || normalized === 'all') return 'all'
+function selectValue(value: string, options: string[]) {
+  const normalized = value.trim()
   return options.includes(normalized) ? normalized : 'all'
 }
 
-function normalizeSource(value: string) {
-  return normalizeOption(value, sourceOptions)
-}
-
 function parseFilters(params: Record<string, string | string[] | undefined>): Filters {
-  const mode = firstParam(params.mode) === 'all' ? 'all' : 'focus'
+  const perPage = positiveInteger(first(params.perPage), 25) === 50 ? 50 : 25
+  const requestedSort = first(params.sort)
   return {
-    q: firstParam(params.q).trim(),
-    rank: normalizeRank(firstParam(params.rank)),
-    source: normalizeSource(firstParam(params.source)),
-    reason: normalizeOption(firstParam(params.reason), reviewReasonOptions.map((item) => item.value)),
-    ratingNotice: normalizeOption(firstParam(params.ratingNotice), ratingNoticeOptions.map((item) => item.value)),
-    importBatch: normalizeOption(firstParam(params.importBatch), importBatchOptions.map((item) => item.value)),
-    mode,
+    q: first(params.q).trim().slice(0, 160),
+    mode: first(params.mode) === 'all' ? 'all' : 'priority',
+    rank: selectValue(first(params.rank), ranks),
+    media: selectValue(first(params.media), mediaOptions.map((item) => item.value)),
+    source: selectValue(first(params.source), sourceOptions),
+    reason: selectValue(first(params.reason), reviewReasonOptions.map((item) => item.value)),
+    ratingNotice: selectValue(first(params.ratingNotice), ratingNoticeOptions.map((item) => item.value)),
+    evidenceStrength: selectValue(first(params.evidenceStrength), evidenceOptions.map((item) => item.value)),
+    importBatch: first(params.importBatch).trim().slice(0, 120),
+    sort: sortOptions.some((item) => item.value === requestedSort) ? requestedSort : '-updatedAt',
+    page: positiveInteger(first(params.page), 1),
+    perPage,
   }
 }
 
-function getRole(user: unknown): Role | undefined {
+function roleOf(user: unknown): Role | undefined {
   if (!user || typeof user !== 'object') return undefined
   return (user as { role?: Role }).role
 }
 
-function canView(user: unknown) {
-  const role = getRole(user)
+function canReview(user: unknown) {
+  const role = roleOf(user)
   return Boolean(role && allowedRoles.includes(role))
 }
 
-function asText(value: unknown) {
-  return typeof value === 'string' ? value : String(value || '')
-}
-
-function sourceValues(doc: WorkDoc) {
-  const sources = doc.candidateSources || []
-  return [
-    ...new Set([
-      ...sources.map((item) => item?.source),
-      doc.chosenBaseSource,
-    ].filter(Boolean)),
-  ] as string[]
-}
-
-function primarySource(doc: WorkDoc) {
-  return sourceValues(doc)[0] || 'unknown'
-}
-
-function reviewReasonValues(doc: WorkDoc) {
-  const value = doc.reviewReasons
-
-  if (Array.isArray(value)) {
-    return [...new Set(value.map((item) => String(item || '').trim()).filter(Boolean))]
-  }
-
-  if (typeof value === 'string') {
-    return [...new Set(value.split(/[;|,]/u).map((item) => item.trim()).filter(Boolean))]
-  }
-
+function reviewReasons(value: WorkDoc['reviewReasons']) {
+  if (Array.isArray(value)) return [...new Set(value.map(String).map((item) => item.trim()).filter(Boolean))]
+  if (typeof value === 'string') return [...new Set(value.split(/[;|,]/u).map((item) => item.trim()).filter(Boolean))]
   return []
 }
 
-function labelFromOptions(options: LabeledOption[], value?: string) {
-  const normalized = asText(value)
-  if (!normalized || normalized === 'missing') return '未填写'
-  return options.find((option) => option.value === normalized)?.label || normalized
-}
-
-function reviewReasonLabel(value?: string) {
-  return labelFromOptions(reviewReasonOptions, value)
-}
-
-function ratingNoticeLabel(value?: string) {
-  return labelFromOptions(ratingNoticeOptions, value)
-}
-
-function importBatchLabel(value?: string) {
-  return labelFromOptions(importBatchOptions, value)
-}
-
-function isPublicCatalogDoc(doc: WorkDoc) {
-  const siteId = asText(doc.siteId)
-  const note = asText(doc.evidenceNote)
-  const importBatch = asText(doc.importBatch)
-
-  return (
-    importBatch.startsWith('public-catalog-import') ||
-    siteId.startsWith('work:mgv2-') ||
-    note.includes('Preview generated from mgv2-') ||
-    /AI\s*综合，\s*待\s*复核/.test(note)
-  )
-}
-
-function isFocusDoc(doc: WorkDoc) {
-  const note = asText(doc.evidenceNote)
-  const reasons = reviewReasonValues(doc)
-
-  return (
-    reasons.includes('radar_seed_attached') ||
-    reasons.includes('source_conflict') ||
-    reasons.includes('multi_source_or_variant') ||
-    note.includes('Review notes:') ||
-    note.includes('radar_seed_attached') ||
-    note.includes('source_conflict')
-  )
+function label(options: LabeledOption[], value?: string) {
+  if (!value) return '未填写'
+  return options.find((item) => item.value === value)?.label || value
 }
 
 function rankLabel(rank?: string) {
   if (!rank || rank === 'unknown') return '未分级'
-  if (rank === 'AA') return 'S级'
-  return `${rank}级`
+  return rank === 'AA' ? 'S级' : `${rank}级`
 }
 
-function rankSortValue(rank?: string) {
-  const order = ['X', 'F', 'E', 'D', 'C', 'B', 'A', 'AA', 'unknown']
-  const index = order.indexOf(rank || 'unknown')
-  return index === -1 ? order.length : index
+function reviewStatusLabel(value?: string) {
+  if (value === 'reviewed') return '已复核'
+  if (value === 'disputed') return '有争议'
+  if (value === 'deprecated') return '已废弃'
+  return '待复核'
 }
 
-function matchesQuery(doc: WorkDoc, q: string) {
-  const query = normalizeText(q)
-  if (!query) return true
-
-  const haystack = [
-    doc.title,
-    doc.slug,
-    doc.siteId,
-    doc.rank,
-    doc.reviewStatus,
-    doc.evidenceStrength,
-    doc.status,
-    doc.evidenceNote,
-    doc.importBatch,
-    doc.ratingNotice,
-    doc.chosenBaseSource,
-    doc.sourceConflictNotes,
-    ratingNoticeLabel(doc.ratingNotice),
-    importBatchLabel(doc.importBatch),
-    ...reviewReasonValues(doc),
-    ...reviewReasonValues(doc).map(reviewReasonLabel),
-    ...sourceValues(doc),
-  ]
-    .map(normalizeText)
-    .join('\n')
-
-  return query
-    .split(/\s+/g)
-    .filter(Boolean)
-    .every((term) => haystack.includes(term))
+function publicationLabel(value?: string) {
+  if (value === 'published') return '已发布'
+  if (value === 'review') return '待发布审核'
+  if (value === 'archived') return '已归档'
+  return '草稿'
 }
 
-function matchesFilters(doc: WorkDoc, filters: Filters) {
-  if (filters.mode === 'focus' && !isFocusDoc(doc)) return false
-  if (filters.rank !== 'all' && (doc.rank || 'unknown') !== filters.rank) return false
-  if (filters.source !== 'all' && !sourceValues(doc).includes(filters.source)) return false
-  if (filters.reason !== 'all' && !reviewReasonValues(doc).includes(filters.reason)) return false
-  if (filters.ratingNotice !== 'all' && (doc.ratingNotice || 'missing') !== filters.ratingNotice) return false
-  if (filters.importBatch !== 'all' && (doc.importBatch || 'missing') !== filters.importBatch) return false
-  return matchesQuery(doc, filters.q)
+function workTypeLabel(doc: WorkDoc) {
+  const format = formatLabels[doc.format || 'unknown']
+  if (format && format !== '未知形态') return format
+  return mediaGroupLabels[doc.mediaGroup || 'unknown'] || doc.mediaType || '未知类型'
 }
 
-function countBy(items: WorkDoc[], getKey: (item: WorkDoc) => string) {
-  const counts: Record<string, number> = {}
-  for (const item of items) {
-    const key = getKey(item) || 'unknown'
-    counts[key] = (counts[key] || 0) + 1
-  }
-  return Object.entries(counts).sort(([a], [b]) => collator.compare(a, b))
-}
+function buildWhere(filters: Filters): Where {
+  const and: Where[] = [{ reviewStatus: { equals: 'pending' } }]
 
-function countReviewReasons(items: WorkDoc[]) {
-  const counts: Record<string, number> = {}
-  for (const item of items) {
-    const reasons = reviewReasonValues(item)
-    if (!reasons.length) {
-      counts.missing = (counts.missing || 0) + 1
-      continue
-    }
-
-    for (const reason of reasons) {
-      counts[reason] = (counts[reason] || 0) + 1
-    }
+  if (filters.mode === 'priority') {
+    and.push({
+      or: [
+        { reviewReasons: { in: priorityReasons } },
+        { ratingNotice: { equals: 'insufficient_information' } },
+        { rank: { equals: 'unknown' } },
+        { evidenceStrength: { equals: 'weak' } },
+      ],
+    })
   }
 
-  return Object.entries(counts).sort(([a], [b]) => collator.compare(reviewReasonLabel(a), reviewReasonLabel(b)))
+  if (filters.q) {
+    and.push({
+      or: [
+        { title: { like: filters.q } },
+        { slug: { like: filters.q } },
+        { siteId: { like: filters.q } },
+        { evidenceNote: { like: filters.q } },
+        { sourceConflictNotes: { like: filters.q } },
+      ],
+    })
+  }
+
+  if (filters.rank !== 'all') and.push({ rank: { equals: filters.rank } })
+  if (filters.media !== 'all') and.push({ mediaGroup: { equals: filters.media } })
+  if (filters.source !== 'all') and.push({ 'candidateSources.source': { equals: filters.source } })
+  if (filters.reason !== 'all') and.push({ reviewReasons: { contains: filters.reason } })
+  if (filters.ratingNotice !== 'all') and.push({ ratingNotice: { equals: filters.ratingNotice } })
+  if (filters.evidenceStrength !== 'all') and.push({ evidenceStrength: { equals: filters.evidenceStrength } })
+  if (filters.importBatch) and.push({ importBatch: { like: filters.importBatch } })
+
+  return { and }
 }
 
-function mapCountLabels(rows: Array<[string, number]>, getLabel: (value: string) => string): Array<[string, number]> {
-  return rows.map(([value, count]) => [getLabel(value), count])
+function queryHref(filters: Filters, page: number) {
+  const params = new URLSearchParams()
+  if (filters.q) params.set('q', filters.q)
+  if (filters.mode !== 'priority') params.set('mode', filters.mode)
+  if (filters.rank !== 'all') params.set('rank', filters.rank)
+  if (filters.media !== 'all') params.set('media', filters.media)
+  if (filters.source !== 'all') params.set('source', filters.source)
+  if (filters.reason !== 'all') params.set('reason', filters.reason)
+  if (filters.ratingNotice !== 'all') params.set('ratingNotice', filters.ratingNotice)
+  if (filters.evidenceStrength !== 'all') params.set('evidenceStrength', filters.evidenceStrength)
+  if (filters.importBatch) params.set('importBatch', filters.importBatch)
+  if (filters.sort !== '-updatedAt') params.set('sort', filters.sort)
+  if (filters.perPage !== 25) params.set('perPage', String(filters.perPage))
+  if (page > 1) params.set('page', String(page))
+  const query = params.toString()
+  return query ? `/me/review/public-catalog?${query}` : '/me/review/public-catalog'
 }
 
-function shortNote(note?: string) {
-  const text = asText(note).replace(/\s+/g, ' ').trim()
-  return text.length > 180 ? `${text.slice(0, 180)}…` : text
+function pageNumbers(current: number, total: number) {
+  const values = new Set([1, total, current - 1, current, current + 1])
+  return [...values].filter((value) => value >= 1 && value <= total).sort((a, b) => a - b)
 }
 
-function detailUrl(doc: WorkDoc) {
-  return doc.slug ? `/works/${doc.slug}` : '/works'
+function countRows(docs: WorkDoc[], getValues: (doc: WorkDoc) => string[]) {
+  const counts = new Map<string, number>()
+  for (const doc of docs) {
+    const values = getValues(doc)
+    for (const value of values.length ? values : ['未填写']) counts.set(value, (counts.get(value) || 0) + 1)
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])
 }
 
-function adminUrl(doc: WorkDoc) {
-  return `/admin/collections/works/${doc.id}`
-}
+async function updateReviewAction(formData: FormData) {
+  'use server'
 
-export default async function PublicCatalogReviewPage({ searchParams }: { searchParams: PageSearchParams }) {
   const payload = await getPayload({ config: configPromise })
   const auth = await payload.auth({ headers: await headers() })
+  if (!auth.user || !canReview(auth.user)) throw new Error('没有审核权限。')
 
-  if (!auth.user) {
-    redirect(`/account/login?redirect=${encodeURIComponent('/me/review/public-catalog')}`)
+  const id = String(formData.get('id') || '').trim()
+  const decision = String(formData.get('decision') || '').trim()
+  const note = String(formData.get('note') || '').trim().slice(0, 4000)
+  if (!id || !['reviewed', 'disputed'].includes(decision)) throw new Error('审核参数无效。')
+  if (decision === 'disputed' && !note) throw new Error('标记争议时必须填写原因。')
+
+  const current = await payload.findByID({ collection: 'works', id, depth: 0, overrideAccess: true }) as unknown as WorkDoc
+  const nextReasons = [...new Set([...reviewReasons(current.reviewReasons), 'manual_review'])]
+  const actorID = (auth.user as { id?: string | number }).id
+  const data: Record<string, unknown> = {
+    reviewStatus: decision,
+    reviewReasons: nextReasons,
+    humanReviewNote: note,
+    humanReviewedAt: new Date().toISOString(),
+    humanReviewedBy: actorID,
   }
 
-  if (!canView(auth.user)) {
+  if (decision === 'reviewed') data.ratingNotice = 'manual_reviewed'
+
+  await payload.update({
+    collection: 'works',
+    id,
+    depth: 0,
+    overrideAccess: true,
+    data: data as never,
+  })
+
+  revalidatePath('/me/review/public-catalog')
+}
+
+function FilterSelect({ labelText, name, value, options }: { labelText: string; name: string; value: string; options: LabeledOption[] }) {
+  return (
+    <label>
+      <span>{labelText}</span>
+      <select defaultValue={value} name={name}>
+        <option value="all">全部</option>
+        {options.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+      </select>
+    </label>
+  )
+}
+
+function Pagination({ filters, currentPage, totalPages }: { filters: Filters; currentPage: number; totalPages: number }) {
+  if (totalPages <= 1) return null
+  return (
+    <nav className="review-pagination" aria-label="审核队列分页">
+      {currentPage > 1 ? <Link href={queryHref(filters, currentPage - 1)}>上一页</Link> : null}
+      {pageNumbers(currentPage, totalPages).map((page) => (
+        page === currentPage
+          ? <span aria-current="page" key={page}>{page}</span>
+          : <Link href={queryHref(filters, page)} key={page}>{page}</Link>
+      ))}
+      {currentPage < totalPages ? <Link href={queryHref(filters, currentPage + 1)}>下一页</Link> : null}
+    </nav>
+  )
+}
+
+export default async function ReviewWorkbenchPage({ searchParams }: { searchParams: PageSearchParams }) {
+  const payload = await getPayload({ config: configPromise })
+  const auth = await payload.auth({ headers: await headers() })
+  if (!auth.user) redirect(`/account/login?redirect=${encodeURIComponent('/me/review/public-catalog')}`)
+
+  if (!canReview(auth.user)) {
     return (
-      <main style={{ margin: '0 auto', maxWidth: 960, padding: '48px 20px' }}>
-        <p style={{ color: '#777', fontSize: 14, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Public Catalog Review</p>
-        <h1>权限不足</h1>
-        <p>这个页面目前只开放给最高领袖、管理员、编辑和审核人员。</p>
-        <p><Link href="/">返回首页</Link></p>
+      <main className="page review-workbench">
+        <section className="review-empty"><p className="eyebrow">条目审核</p><h1>权限不足</h1><p>该页面只开放给最高领袖、管理员、编辑和审核人员。</p></section>
       </main>
     )
   }
 
   const filters = parseFilters(await searchParams)
+  const where = buildWhere(filters)
+  const [result, pending, aiPending, disputed, unknownRank, promote, humanReview, identityReview, fullAssessment, moreResearch] = await Promise.all([
+    payload.find({ collection: 'works', depth: 0, limit: filters.perPage, page: filters.page, overrideAccess: true, pagination: true, sort: filters.sort, where }),
+    payload.count({ collection: 'works', overrideAccess: true, where: { reviewStatus: { equals: 'pending' } } }),
+    payload.count({ collection: 'works', overrideAccess: true, where: { and: [{ reviewStatus: { equals: 'pending' } }, { ratingNotice: { equals: 'ai_synthesized_pending_review' } }] } }),
+    payload.count({ collection: 'works', overrideAccess: true, where: { reviewStatus: { equals: 'disputed' } } }),
+    payload.count({ collection: 'works', overrideAccess: true, where: { and: [{ reviewStatus: { equals: 'pending' } }, { rank: { equals: 'unknown' } }] } }),
+    payload.count({ collection: 'radar-research-records', overrideAccess: true, where: { recommendedNextAction: { equals: 'promote_for_reassessment' } } }),
+    payload.count({ collection: 'radar-research-records', overrideAccess: true, where: { recommendedNextAction: { equals: 'human_review' } } }),
+    payload.count({ collection: 'radar-research-records', overrideAccess: true, where: { recommendedNextAction: { equals: 'identity_review' } } }),
+    payload.count({ collection: 'radar-research-records', overrideAccess: true, where: { recommendedNextQueue: { equals: 'full_assessment' } } }),
+    payload.count({ collection: 'radar-research-records', overrideAccess: true, where: { recommendedNextQueue: { equals: 'more_research' } } }),
+  ])
 
-  const result = await payload.find({
-    collection: 'works',
-    depth: 0,
-    limit: 2000,
-    overrideAccess: true,
-    sort: 'title',
-    where: {
-      reviewStatus: {
-        equals: 'pending',
-      },
-    },
-  })
-
-  const pendingDocs = result.docs as unknown as WorkDoc[]
-  const publicCatalogDocs = pendingDocs.filter(isPublicCatalogDoc)
-  const focusDocs = publicCatalogDocs.filter(isFocusDoc)
-
-  const baseDocs = filters.mode === 'focus' ? focusDocs : publicCatalogDocs
-  const filteredDocs = baseDocs
-    .filter((doc) => matchesFilters(doc, filters))
-    .sort((a, b) => {
-      const rankDiff = rankSortValue(a.rank) - rankSortValue(b.rank)
-      return rankDiff || collator.compare(a.title || '', b.title || '')
-    })
-
-  const rankStats = countBy(baseDocs, (doc) => doc.rank || 'unknown')
-  const reasonStats = countReviewReasons(baseDocs)
-  const ratingNoticeStats = countBy(baseDocs, (doc) => doc.ratingNotice || 'missing')
-  const sourceStats = countBy(baseDocs, primarySource)
-  const importBatchStats = countBy(baseDocs, (doc) => doc.importBatch || 'missing')
+  const docs = result.docs as unknown as WorkDoc[]
+  const reasonStats = countRows(docs, (doc) => reviewReasons(doc.reviewReasons).map((value) => label(reviewReasonOptions, value)))
+  const typeStats = countRows(docs, (doc) => [workTypeLabel(doc)])
+  const sourceStats = countRows(docs, (doc) => [...new Set([doc.chosenBaseSource, ...(doc.candidateSources || []).map((item) => item.source)].filter(Boolean))] as string[])
+  const totalPages = Math.max(1, result.totalPages || 1)
+  const currentPage = Math.min(result.page || filters.page, totalPages)
+  const adminResearchURL = '/admin/collections/radar-research-records'
 
   return (
-    <main style={{ margin: '0 auto', maxWidth: 1180, padding: '40px 20px 72px' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between' }}>
-        <div>
-          <p style={{ color: '#777', fontSize: 14, letterSpacing: '0.08em', margin: 0, textTransform: 'uppercase' }}>Public Catalog Review</p>
-          <h1 style={{ marginBottom: 8 }}>Public catalog 复核队列</h1>
-          <p style={{ color: '#666', lineHeight: 1.7, marginTop: 0, maxWidth: 760 }}>
-            只读内部页。当前不写 Payload、不改 PostgreSQL、不批量更新。默认显示 reviewReasons 包含雷达种子命中、多来源或变体、来源冲突的重点复核项，并保留 evidenceNote fallback。
-          </p>
+    <main className="page review-workbench">
+      <section className="review-hero">
+        <div className="review-hero-copy">
+          <p className="eyebrow">条目审核工作台</p>
+          <h1>先读懂，再逐条处理</h1>
+          <p className="muted">把作品身份、媒介类型、来源、证据状态、分级提示和待核问题放在同一屏。默认优先显示冲突、证据弱、未知等级等高价值队列。</p>
+          <div className="review-safety-note">这里的“通过”只确认当前条目经过人工复核：不会自动发布，不会批量处理，也不会把 25,048 条研究建议写进正式评级。</div>
         </div>
-
-        <div style={{ border: '1px solid #ddd', borderRadius: 16, minWidth: 240, padding: 16 }}>
-          <strong>当前匹配</strong>
-          <p style={{ color: '#666', margin: '8px 0 0' }}>{filters.mode === 'focus' ? '重点复核' : '全部 public catalog pending'}</p>
-          <p style={{ fontSize: 28, fontWeight: 700, margin: '8px 0 0' }}>{filteredDocs.length}</p>
+        <div className="review-stat-grid">
+          <Stat label="当前筛选" value={result.totalDocs} />
+          <Stat label="当前页" value={docs.length} />
         </div>
-      </div>
-
-      <section style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', marginTop: 24 }}>
-        <StatCard label="Pending total" value={pendingDocs.length} />
-        <StatCard label="Public catalog" value={publicCatalogDocs.length} />
-        <StatCard label="Focus queue" value={focusDocs.length} />
-        <StatCard label="Fetched docs" value={result.docs.length} />
       </section>
 
-      {focusDocs.length !== 50 ? (
-        <div style={{ background: '#fff8e6', border: '1px solid #f0d48a', borderRadius: 14, lineHeight: 1.7, marginTop: 18, padding: 14 }}>
-          <strong>提示：</strong>
-          handoff 里的 review queue 是 50 条。如果这里不是 50，请检查结构化 reviewReasons / importBatch 是否已回填；当前页面仍保留 evidenceNote fallback。
+      <section className="review-stat-grid" aria-label="作品审核概览">
+        <Stat label="作品待复核" value={pending.totalDocs} />
+        <Stat label="AI 综合待复核" value={aiPending.totalDocs} />
+        <Stat label="未知分级待复核" value={unknownRank.totalDocs} />
+        <Stat label="已标记争议" value={disputed.totalDocs} />
+      </section>
+
+      <section>
+        <div className="collection-heading"><h2>研究档案优先队列</h2><p className="muted">这些是独立研究建议，不等于正式评级。进入条目编辑页前仍需人工判断。</p></div>
+        <div className="review-research-grid">
+          <QueueCard href={adminResearchURL} label="建议重新评估" value={promote.totalDocs} />
+          <QueueCard href={adminResearchURL} label="需要人工复核" value={humanReview.totalDocs} />
+          <QueueCard href={adminResearchURL} label="需要身份核对" value={identityReview.totalDocs} />
+          <QueueCard href={adminResearchURL} label="完整评估队列" value={fullAssessment.totalDocs} />
+          <QueueCard href={adminResearchURL} label="继续研究队列" value={moreResearch.totalDocs} />
         </div>
-      ) : null}
+      </section>
 
-      <form action="/me/review/public-catalog" style={{ border: '1px solid #ddd', borderRadius: 18, display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginTop: 24, padding: 18 }}>
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span>关键词</span>
-          <input defaultValue={filters.q} name="q" placeholder="title / slug / siteId / reason / note" style={{ padding: '10px 12px' }} type="search" />
-        </label>
-
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span>视图</span>
-          <select defaultValue={filters.mode} name="mode" style={{ padding: '10px 12px' }}>
-            <option value="focus">重点复核</option>
-            <option value="all">全部 pending</option>
-          </select>
-        </label>
-
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span>分级</span>
-          <select defaultValue={filters.rank} name="rank" style={{ padding: '10px 12px' }}>
-            <option value="all">全部分级</option>
-            {rankOptions.map((rank) => (
-              <option key={rank} value={rank}>{rankLabel(rank)}</option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span>来源</span>
-          <select defaultValue={filters.source} name="source" style={{ padding: '10px 12px' }}>
-            <option value="all">全部来源</option>
-            {sourceOptions.map((source) => (
-              <option key={source} value={source}>{source}</option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span>复核原因</span>
-          <select defaultValue={filters.reason} name="reason" style={{ padding: '10px 12px' }}>
-            <option value="all">全部原因</option>
-            {reviewReasonOptions.map((reason) => (
-              <option key={reason.value} value={reason.value}>{reason.label}</option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span>分级提示</span>
-          <select defaultValue={filters.ratingNotice} name="ratingNotice" style={{ padding: '10px 12px' }}>
-            <option value="all">全部提示</option>
-            {ratingNoticeOptions.map((notice) => (
-              <option key={notice.value} value={notice.value}>{notice.label}</option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span>导入批次</span>
-          <select defaultValue={filters.importBatch} name="importBatch" style={{ padding: '10px 12px' }}>
-            <option value="all">全部批次</option>
-            {importBatchOptions.map((batch) => (
-              <option key={batch.value} value={batch.value}>{batch.label}</option>
-            ))}
-          </select>
-        </label>
-
-        <div style={{ alignItems: 'end', display: 'flex', gap: 10 }}>
-          <button style={{ padding: '10px 16px' }} type="submit">筛选</button>
-          <Link href="/me/review/public-catalog">重置</Link>
-        </div>
+      <form action="/me/review/public-catalog" className="review-filter-panel">
+        <label><span>关键词</span><input defaultValue={filters.q} name="q" placeholder="标题、Slug、站内 ID、证据或冲突说明" type="search" /></label>
+        <label><span>队列</span><select defaultValue={filters.mode} name="mode"><option value="priority">优先处理</option><option value="all">全部待复核</option></select></label>
+        <FilterSelect labelText="作品大类" name="media" options={mediaOptions} value={filters.media} />
+        <FilterSelect labelText="来源" name="source" options={sourceOptions.map((value) => ({ value, label: value }))} value={filters.source} />
+        <FilterSelect labelText="复核原因" name="reason" options={reviewReasonOptions} value={filters.reason} />
+        <FilterSelect labelText="分级提示" name="ratingNotice" options={ratingNoticeOptions} value={filters.ratingNotice} />
+        <FilterSelect labelText="证据强度" name="evidenceStrength" options={evidenceOptions} value={filters.evidenceStrength} />
+        <label><span>分级</span><select defaultValue={filters.rank} name="rank"><option value="all">全部</option>{ranks.map((rank) => <option key={rank} value={rank}>{rankLabel(rank)}</option>)}</select></label>
+        <label><span>导入批次</span><input defaultValue={filters.importBatch} name="importBatch" placeholder="可输入部分批次名" /></label>
+        <label><span>排序</span><select defaultValue={filters.sort} name="sort">{sortOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+        <label><span>每页</span><select defaultValue={String(filters.perPage)} name="perPage"><option value="25">25 条</option><option value="50">50 条</option></select></label>
+        <div className="review-filter-actions"><button className="review-button" type="submit">应用筛选</button><Link className="review-link" href="/me/review/public-catalog">重置</Link></div>
       </form>
 
-      <section style={{ display: 'grid', gap: 18, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', marginTop: 24 }}>
-        <SummaryBox title="分级分布" rows={mapCountLabels(rankStats, rankLabel)} />
-        <SummaryBox title="复核原因分布" rows={mapCountLabels(reasonStats, reviewReasonLabel)} />
-        <SummaryBox title="分级提示分布" rows={mapCountLabels(ratingNoticeStats, ratingNoticeLabel)} />
-        <SummaryBox title="来源分布" rows={sourceStats} />
-        <SummaryBox title="导入批次分布" rows={mapCountLabels(importBatchStats, importBatchLabel)} />
+      <section className="review-summary-grid" aria-label="当前页摘要">
+        <Summary title="当前页复核原因" rows={reasonStats} />
+        <Summary title="当前页作品形态" rows={typeStats} />
+        <Summary title="当前页来源" rows={sourceStats} />
       </section>
 
-      <section style={{ display: 'grid', gap: 14, marginTop: 24 }}>
-        {filteredDocs.map((doc) => {
-          const sources = sourceValues(doc)
-          const reviewReasons = reviewReasonValues(doc)
-          const reviewReasonLabels = reviewReasons.map(reviewReasonLabel)
+      <Pagination currentPage={currentPage} filters={filters} totalPages={totalPages} />
 
+      <section className="review-list">
+        {docs.map((doc) => {
+          const sources = [...new Set([doc.chosenBaseSource, ...(doc.candidateSources || []).map((item) => item.source)].filter(Boolean))] as string[]
+          const reasons = reviewReasons(doc.reviewReasons)
           return (
-            <article key={doc.id} style={{ border: '1px solid #ddd', borderRadius: 18, padding: 18 }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' }}>
-                <div>
-                  <h2 style={{ fontSize: 20, margin: '0 0 6px' }}>
-                    <Link href={detailUrl(doc)}>{doc.title || '(untitled)'}</Link>
-                  </h2>
-                  <p style={{ color: '#666', margin: 0 }}>{doc.siteId || 'no siteId'}</p>
-                </div>
+            <article className="review-row" key={doc.id}>
+              <header className="review-row-header">
+                <div className="review-row-title"><h2><Link href={doc.slug ? `/works/${doc.slug}` : '/works'}>{doc.title || '未命名作品'}</Link></h2><small>{doc.siteId || doc.slug || `ID ${doc.id}`}</small></div>
+                <div className="review-chip-list"><span className="review-row-chip">{rankLabel(doc.rank)}</span><span className="review-row-chip">{workTypeLabel(doc)}</span><span className="review-row-chip">{reviewStatusLabel(doc.reviewStatus)}</span><span className="review-row-chip">{publicationLabel(doc.status)}</span></div>
+              </header>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  <Badge>{rankLabel(doc.rank)}</Badge>
-                  <Badge>{doc.reviewStatus || 'no reviewStatus'}</Badge>
-                  <Badge>{doc.status || 'no status'}</Badge>
-                </div>
-              </div>
-
-              <dl style={{ display: 'grid', gap: 8, gridTemplateColumns: '120px 1fr', marginTop: 14 }}>
-                <dt style={{ color: '#666' }}>slug</dt>
-                <dd style={{ margin: 0 }}>{doc.slug || '-'}</dd>
-
-                <dt style={{ color: '#666' }}>sources</dt>
-                <dd style={{ margin: 0 }}>{sources.length ? sources.join(', ') : '-'}</dd>
-
-                <dt style={{ color: '#666' }}>import batch</dt>
-                <dd style={{ margin: 0 }}>{importBatchLabel(doc.importBatch)}</dd>
-
-                <dt style={{ color: '#666' }}>review reasons</dt>
-                <dd style={{ margin: 0 }}>{reviewReasonLabels.length ? reviewReasonLabels.join(', ') : '-'}</dd>
-
-                <dt style={{ color: '#666' }}>rating notice</dt>
-                <dd style={{ margin: 0 }}>{ratingNoticeLabel(doc.ratingNotice)}</dd>
-
-                <dt style={{ color: '#666' }}>base source</dt>
-                <dd style={{ margin: 0 }}>{doc.chosenBaseSource || '-'}</dd>
-
-                <dt style={{ color: '#666' }}>source conflict</dt>
-                <dd style={{ margin: 0 }}>{doc.sourceConflictNotes || '-'}</dd>
-
-                <dt style={{ color: '#666' }}>evidence</dt>
-                <dd style={{ margin: 0 }}>{shortNote(doc.evidenceNote) || '-'}</dd>
+              <dl className="review-row-facts">
+                <Fact labelText="页面提示" value={label(ratingNoticeOptions, doc.ratingNotice)} />
+                <Fact labelText="证据强度" value={label(evidenceOptions, doc.evidenceStrength)} />
+                <Fact labelText="来源" value={sources.join('、') || '未填写'} />
+                <Fact labelText="复核原因" value={reasons.map((value) => label(reviewReasonOptions, value)).join('、') || '未填写'} />
+                <Fact labelText="导入批次" value={doc.importBatch || '未填写'} />
+                <Fact labelText="来源冲突" value={doc.sourceConflictNotes || '未记录冲突'} />
               </dl>
 
-              {doc.evidenceNote ? (
-                <details style={{ marginTop: 12 }}>
-                  <summary>展开完整 evidenceNote</summary>
-                  <pre style={{ background: '#f7f7f7', borderRadius: 12, overflow: 'auto', padding: 12, whiteSpace: 'pre-wrap' }}>{doc.evidenceNote}</pre>
+              {doc.evidenceNote || (doc.candidateSources || []).length ? (
+                <details>
+                  <summary>展开证据与来源详情</summary>
+                  {doc.evidenceNote ? <pre>{doc.evidenceNote}</pre> : null}
+                  {(doc.candidateSources || []).map((source, index) => (
+                    <p key={`${source.source || 'source'}-${index}`}>{[source.source, source.label, source.externalId, source.note].filter(Boolean).join(' · ')} {source.url ? <a href={source.url} rel="noreferrer" target="_blank">打开来源</a> : null}</p>
+                  ))}
                 </details>
               ) : null}
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 14 }}>
-                <Link href={detailUrl(doc)}>打开作品页</Link>
-                <Link href={adminUrl(doc)}>打开 Admin 编辑页</Link>
-              </div>
+              <div className="review-row-actions"><Link className="review-link" href={doc.slug ? `/works/${doc.slug}` : '/works'}>查看前台条目</Link><Link className="review-link" href={`/admin/collections/works/${doc.id}`}>完整编辑</Link></div>
+
+              <details>
+                <summary>执行单条审核操作</summary>
+                <form action={updateReviewAction} className="review-decision">
+                  <input name="id" type="hidden" value={String(doc.id)} />
+                  <label><span>人工复核记录</span><textarea defaultValue={doc.humanReviewNote || ''} maxLength={4000} name="note" placeholder="写明核对过的来源、仍有疑问的点，或争议原因。标记争议时必填。" /></label>
+                  <p className="muted">通过会把复核状态改为“已复核”、页面提示改为“人工已确认”，但保持当前发布状态和当前分级不变。</p>
+                  <div className="review-decision-actions"><button className="review-button review-button-primary" name="decision" type="submit" value="reviewed">通过当前条目</button><button className="review-button review-button-danger" name="decision" type="submit" value="disputed">标记为有争议</button></div>
+                </form>
+              </details>
             </article>
           )
         })}
-
-        {filteredDocs.length === 0 ? (
-          <div style={{ border: '1px solid #ddd', borderRadius: 18, padding: 24 }}>
-            <h2>没有匹配项</h2>
-            <p>可以切换到“全部 pending”，或者清空关键词、分级、来源、复核原因、分级提示、导入批次筛选。</p>
-          </div>
-        ) : null}
+        {docs.length === 0 ? <section className="review-empty"><h2>没有匹配条目</h2><p>可以切到“全部待复核”，或放宽来源、原因、证据和关键词筛选。</p></section> : null}
       </section>
+
+      <Pagination currentPage={currentPage} filters={filters} totalPages={totalPages} />
     </main>
   )
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div style={{ border: '1px solid #ddd', borderRadius: 14, padding: 14 }}>
-      <span style={{ color: '#666', display: 'block' }}>{label}</span>
-      <strong style={{ fontSize: 24 }}>{value}</strong>
-    </div>
-  )
+function Stat({ label, value }: { label: string; value: number }) {
+  return <div className="review-stat"><span>{label}</span><strong>{value.toLocaleString('zh-CN')}</strong></div>
 }
 
-function Badge({ children }: { children: ReactNode }) {
-  return <span style={{ border: '1px solid #ddd', borderRadius: 999, padding: '5px 9px' }}>{children}</span>
+function QueueCard({ href, label, value }: { href: string; label: string; value: number }) {
+  return <Link className="review-queue-card" href={href}><span>{label}</span><strong>{value.toLocaleString('zh-CN')}</strong></Link>
 }
 
-function SummaryBox({ title, rows }: { title: string; rows: Array<[string, number]> }) {
-  return (
-    <div style={{ border: '1px solid #ddd', borderRadius: 16, padding: 16 }}>
-      <h2 style={{ fontSize: 18, marginTop: 0 }}>{title}</h2>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {rows.map(([label, count]) => (
-          <span key={label} style={{ border: '1px solid #ddd', borderRadius: 999, padding: '6px 10px' }}>
-            {label} · {count}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
+function Summary({ title, rows }: { title: string; rows: Array<[string, number]> }) {
+  return <section className="review-summary"><h2>{title}</h2><div className="review-chip-list">{rows.slice(0, 12).map(([value, count]) => <span key={value}>{value} · {count}</span>)}</div></section>
 }
 
+function Fact({ labelText, value }: { labelText: string; value: string }) {
+  return <div className="review-row-fact"><dt>{labelText}</dt><dd>{value}</dd></div>
+}
