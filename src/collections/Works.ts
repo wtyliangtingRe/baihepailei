@@ -210,7 +210,33 @@ export const Works: CollectionConfig = {
       defaultValue: 'pending',
       options: reviewStatusOptions,
       admin: {
-        description: '新站自己的复核状态，不表示旧站来源。',
+        description: '本站的人工复核状态。只在完成逐条核验后改为“已复核”。',
+      },
+    },
+    {
+      name: 'humanReviewNote',
+      type: 'textarea',
+      label: '人工复核记录',
+      maxLength: 4000,
+      admin: {
+        description: '记录本次人工复核的结论、仍待确认的问题或退回原因。',
+      },
+    },
+    {
+      name: 'humanReviewedAt',
+      type: 'date',
+      label: '最近人工复核时间',
+      admin: {
+        readOnly: true,
+      },
+    },
+    {
+      name: 'humanReviewedBy',
+      type: 'relationship',
+      label: '最近人工复核人',
+      relationTo: 'users',
+      admin: {
+        readOnly: true,
       },
     },
     {
@@ -265,7 +291,7 @@ export const Works: CollectionConfig = {
       defaultValue: 'unassessed',
       options: evidenceStrengthOptions,
       admin: {
-        description: '按当前新站证据材料评估强弱；未评估不等于没有证据。',
+        description: '按本站当前证据材料评估强弱；未评估不等于没有证据。',
       },
     },
     {
@@ -668,9 +694,8 @@ export const Works: CollectionConfig = {
     {
       name: 'legacyXWikiPage',
       type: 'text',
-      label: '旧 XWiki 页面',
       admin: {
-        description: '旧站页面全名，仅用于迁移追踪。',
+        hidden: true,
       },
     },
     {
@@ -688,4 +713,3 @@ export const Works: CollectionConfig = {
     },
   ],
 }
-

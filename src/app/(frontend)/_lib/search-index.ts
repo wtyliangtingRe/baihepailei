@@ -51,7 +51,6 @@ export type SearchItem = {
   contentAdvisories?: string[]
   cover?: SearchCoverImage
   image?: SearchCoverImage
-  legacyXWikiPage?: string
   searchText: string
 }
 
@@ -61,6 +60,7 @@ export type SearchIndex = {
   mode: string
   counts: Record<string, number>
   visibilityCounts?: Record<string, number>
+  mediaMode?: 'text' | 'enhanced'
   total: number
   items: SearchItem[]
 }
@@ -88,4 +88,3 @@ export function findSearchItem(collection: SearchCollection, slug: string) {
 
   return index.items.find((item) => item.collection === collection && item.slug === slug) || null
 }
-
