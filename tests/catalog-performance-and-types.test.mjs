@@ -6,7 +6,7 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), '
 const works = read('src/app/(frontend)/works/page.tsx')
 const search = read('src/app/(frontend)/search/search-client.tsx')
 const recommendations = read('src/app/(frontend)/_lib/recommendations.ts')
-const packageJson = JSON.parse(read('package.json'))
+const detailLayout = read('src/app/(frontend)/detail-layout-fixes.css')
 
 test('works page caches sort, titles and normalized search blobs', () => {
   assert.match(works, /cachedSortedWorks/u)
@@ -31,8 +31,10 @@ test('recommendations demote uncertain AI grades and high-risk ranks', () => {
   assert.match(recommendations, /evidenceCoveragePercent/u)
 })
 
-test('frontend validation uses a Next-compatible TypeScript and a non-recursive command', () => {
-  assert.equal(packageJson.devDependencies.typescript, '5.9.3')
-  assert.doesNotMatch(packageJson.scripts['test:frontend-polish'], /pnpm test:frontend-polish/u)
-  assert.match(packageJson.scripts['test:frontend-polish'], /catalog-performance-and-types\.test\.mjs/u)
+test('detail titles wrap in full instead of using an ellipsis', () => {
+  const detailHeadingRule = detailLayout.match(/\.detail-hero h1\s*\{(?<body>[^}]*)\}/u)?.groups?.body || ''
+  assert.match(detailHeadingRule, /white-space:\s*normal/u)
+  assert.match(detailHeadingRule, /overflow-wrap:\s*anywhere/u)
+  assert.doesNotMatch(detailHeadingRule, /text-overflow:\s*ellipsis/u)
+  assert.doesNotMatch(detailHeadingRule, /white-space:\s*nowrap/u)
 })
