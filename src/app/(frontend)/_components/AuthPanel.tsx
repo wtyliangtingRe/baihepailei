@@ -3,8 +3,6 @@
 import Link from 'next/link'
 import { useEffect, useState, type FormEvent } from 'react'
 
-import { loginAccount } from '../_actions/account'
-
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password' | 'verify'
 
 type AuthPanelProps = {
@@ -81,19 +79,24 @@ export default function AuthPanel({ mode, redirectTo, token = '' }: AuthPanelPro
       if (mode === 'register' && !accepted) throw new Error('请先确认遵守社区规则。')
 
       if (mode === 'login') {
-        const result = await loginAccount({
-          email: email.trim().toLowerCase(),
-          password,
+        const loginResponse = await fetch('/api/account/session', {
+          method: 'POST',
+          cache: 'no-store',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
         })
-        if (!result.ok) throw new Error(result.message || '登录失败，请稍后重试。')
+        if (!loginResponse.ok) {
+          throw new Error(await responseMessage(loginResponse) || '登录失败，请稍后重试。')
+        }
 
-        const sessionResponse = await fetch('/api/users/me', {
+        const sessionResponse = await fetch('/api/account/session', {
           cache: 'no-store',
           credentials: 'include',
         })
         const session = sessionResponse.ok ? await sessionResponse.json() : null
         if (!session?.user) {
-          throw new Error('登录凭据已通过，但浏览器没有建立会话。请清除本站 Cookie、重启开发服务器后重试。')
+          throw new Error('登录凭据已通过，但会话 Cookie 没有回传。请确认浏览器允许 localhost Cookie，然后重试。')
         }
 
         setState('success')
