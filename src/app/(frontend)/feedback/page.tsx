@@ -1,40 +1,42 @@
 import Link from 'next/link'
 
-import FeedbackPrompt from '../_components/FeedbackPrompt'
+import FeedbackForm from '../_components/FeedbackForm'
+
+type SearchParams = Promise<Record<string, string | string[] | undefined>>
+
+function first(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] || '' : value || ''
+}
 
 const feedbackTypes = [
-  {
-    title: '信息错误',
-    text: '标题、分级、创作者、机构、说明文字等内容有误。',
-  },
-  {
-    title: '补充证据',
-    text: '想补充官方页面、截图说明、平台页面、访谈或其他可核验材料。',
-  },
-  {
-    title: '链接失效',
-    text: '来源链接、条目链接、图片或页面跳转出现问题。',
-  },
-  {
-    title: '页面显示问题',
-    text: '前台布局、搜索、筛选、详情页互链或移动端显示异常。',
-  },
+  { title: '人工排雷', text: '补充男性亲密接触、路线污染、NTR、欺诈、作者言论等具体证据。' },
+  { title: '规则与等级纠错', text: '指出当前等级、决定性规则或页面提示可能不准确。' },
+  { title: '资料补充', text: '提供官方页面、原作章节、访谈、截图出处或其他可核验材料。' },
+  { title: '页面与链接问题', text: '报告失效链接、条目身份错误或页面显示异常。' },
 ]
 
-export default function FeedbackPage() {
+export default async function FeedbackPage({ searchParams }: { searchParams: SearchParams }) {
+  const params = await searchParams
   return (
     <main className="page feedback-page">
       <section className="page-heading collection-heading">
-        <p className="eyebrow">反馈与纠错</p>
-        <h1>反馈与纠错</h1>
-        <p>如果发现资料错误、证据不足、链接失效或页面显示异常，可以通过这里提交反馈。</p>
+        <div>
+          <p className="eyebrow">反馈与纠错</p>
+          <h1>把新的人工排雷材料交给网站</h1>
+          <p>用户提交只会进入待审核队列，不会直接覆盖正式评级。编辑核验来源后才能采纳。</p>
+        </div>
         <div className="collection-actions">
           <Link className="back-link" href="/browse">返回资料库</Link>
-          <Link className="back-link" href="/search">搜索条目</Link>
+          <Link className="back-link" href="/account">我的账户</Link>
         </div>
       </section>
 
-      <FeedbackPrompt />
+      <FeedbackForm
+        initialCollection={first(params.collection) || 'works'}
+        initialPageUrl={first(params.page)}
+        initialSlug={first(params.slug)}
+        initialTitle={first(params.title)}
+      />
 
       <section className="feedback-grid" aria-label="反馈类型">
         {feedbackTypes.map((item) => (
@@ -46,12 +48,12 @@ export default function FeedbackPage() {
       </section>
 
       <section className="detail-card feedback-guide">
-        <h2>建议附带的信息</h2>
+        <h2>什么样的材料更容易被采纳？</h2>
         <ul>
-          <li>相关条目名称或页面链接。</li>
-          <li>你认为需要修正或补充的具体位置。</li>
-          <li>可核验的来源链接、截图说明或其他材料。</li>
-          <li>如果是页面显示问题，请说明浏览器、设备和复现步骤。</li>
+          <li>明确到人物、章节、路线、版本或结局。</li>
+          <li>提供可追溯的官方页面、原作位置或可靠资料链接。</li>
+          <li>说明建议对应的 S–X 规则代码，以及是否存在相反证据。</li>
+          <li>涉及剧透时勾选剧透提示，避免审核时误公开。</li>
         </ul>
       </section>
     </main>
