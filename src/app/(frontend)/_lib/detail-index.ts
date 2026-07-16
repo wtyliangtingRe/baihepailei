@@ -1,3 +1,5 @@
+import type { RadarAssessmentMetrics } from '@/lib/radar/assessmentPresentation'
+
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -66,6 +68,8 @@ export type DetailItem = {
   evidenceType?: string
   reviewStatus?: string
   evidenceStrength?: string
+  ratingNotice?: string
+  radarAssessment?: RadarAssessmentMetrics
   originalTitle?: string
   aliases?: string[]
   localizedTitles?: string[]
@@ -215,3 +219,4 @@ export function findCreatorsByOrganizationName(organizationName: string) {
   const creatorNames = works.flatMap((work) => work.creators || [])
   return findItemsByTitles('creators', creatorNames)
 }
+
