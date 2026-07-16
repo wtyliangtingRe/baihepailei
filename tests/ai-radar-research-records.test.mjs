@@ -162,4 +162,3 @@ test('equivalent importedAt timestamps normalize to the same UTC instant', () =>
   assert.equal(actual.importedAt, '2026-07-16T00:49:36.336Z')
   assert.equal(stableEqual(expected, actual), true)
 })
-
