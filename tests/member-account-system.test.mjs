@@ -5,6 +5,7 @@ import fs from 'node:fs'
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 const users = read('src/collections/Users.ts')
 const roles = read('src/access/roles.ts')
+const actions = read('src/app/(frontend)/_actions/account.ts')
 const auth = read('src/app/(frontend)/_components/AuthPanel.tsx')
 const account = read('src/app/(frontend)/_components/AccountClient.tsx')
 const layout = read('src/app/(frontend)/layout.tsx')
@@ -33,14 +34,22 @@ test('role hierarchy includes owner and preserves legacy roles', () => {
 
 test('auth flow supports verification, login, logout and email password reset', () => {
   assert.match(users, /verify:/u)
+  assert.match(users, /ACCOUNT_EMAIL_VERIFICATION_ENABLED/u)
   assert.match(users, /forgotPassword:/u)
-  assert.match(auth, /\/api\/users\/login/u)
+  assert.match(actions, /@payloadcms\/next\/auth/u)
+  assert.match(actions, /login\(/u)
+  assert.match(actions, /logout\(/u)
+  assert.match(auth, /loginAccount/u)
+  assert.doesNotMatch(auth, /\/api\/users\/login/u)
   assert.match(auth, /\/api\/users\/forgot-password/u)
   assert.match(auth, /\/api\/users\/reset-password/u)
   assert.match(auth, /\/api\/users\/verify\//u)
-  assert.match(account, /\/api\/users\/logout/u)
+  assert.match(account, /logoutAccount/u)
+  assert.doesNotMatch(account, /\/api\/users\/logout/u)
   assert.match(config, /nodemailerAdapter/u)
+  assert.match(config, /smtp\.example\.com/u)
   assert.match(env, /SMTP_HOST/u)
+  assert.match(env, /ACCOUNT_EMAIL_VERIFICATION_ENABLED=false/u)
 })
 
 test('frontend exposes an account entry instead of a public admin entry', () => {
