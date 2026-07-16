@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useEffect, useState, type FormEvent } from 'react'
 
+import { loginAccount } from '../_actions/account'
+
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-password' | 'verify'
 
 type AuthPanelProps = {
@@ -20,7 +22,12 @@ async function responseMessage(response: Response) {
   try {
     const payload = await response.json()
     const firstError = Array.isArray(payload?.errors) ? payload.errors[0] : null
-    return String(firstError?.message || payload?.message || '')
+    const fieldError = Array.isArray(firstError?.data?.errors) ? firstError.data.errors[0] : null
+    const detail = String(fieldError?.message || firstError?.message || payload?.message || '')
+    if (/invalid:\s*email/iu.test(detail)) {
+      return '邮箱格式无效，或该邮箱已经注册。请换一个尚未注册的邮箱重试。'
+    }
+    return detail
   } catch {
     return ''
   }
@@ -73,18 +80,36 @@ export default function AuthPanel({ mode, redirectTo, token = '' }: AuthPanelPro
       }
       if (mode === 'register' && !accepted) throw new Error('请先确认遵守社区规则。')
 
-      let endpoint = '/api/users/login'
-      let body: Record<string, unknown> = { email: email.trim().toLowerCase(), password }
-
-      if (mode === 'register') {
-        endpoint = '/api/users'
-        body = {
+      if (mode === 'login') {
+        const result = await loginAccount({
           email: email.trim().toLowerCase(),
-          displayName: displayName.trim(),
           password,
-          termsAcceptedAt: new Date().toISOString(),
+        })
+        if (!result.ok) throw new Error(result.message || '登录失败，请稍后重试。')
+
+        const sessionResponse = await fetch('/api/users/me', {
+          cache: 'no-store',
+          credentials: 'include',
+        })
+        const session = sessionResponse.ok ? await sessionResponse.json() : null
+        if (!session?.user) {
+          throw new Error('登录凭据已通过，但浏览器没有建立会话。请清除本站 Cookie、重启开发服务器后重试。')
         }
-      } else if (mode === 'forgot-password') {
+
+        setState('success')
+        window.location.assign(safeRedirect(redirectTo))
+        return
+      }
+
+      let endpoint = '/api/users'
+      let body: Record<string, unknown> = {
+        email: email.trim().toLowerCase(),
+        displayName: displayName.trim(),
+        password,
+        termsAcceptedAt: new Date().toISOString(),
+      }
+
+      if (mode === 'forgot-password') {
         endpoint = '/api/users/forgot-password'
         body = { email: email.trim().toLowerCase() }
       } else if (mode === 'reset-password') {
@@ -104,10 +129,8 @@ export default function AuthPanel({ mode, redirectTo, token = '' }: AuthPanelPro
       }
 
       setState('success')
-      if (mode === 'login') {
-        window.location.assign(safeRedirect(redirectTo))
-      } else if (mode === 'register') {
-        setMessage('账户已创建。请查收验证邮件，验证后即可登录。')
+      if (mode === 'register') {
+        setMessage('账户已创建。如果部署启用了邮箱验证，请先查收验证邮件；本地关闭验证时可以直接登录。')
         setPassword('')
         setConfirmPassword('')
       } else if (mode === 'forgot-password') {

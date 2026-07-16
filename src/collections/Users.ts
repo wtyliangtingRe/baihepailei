@@ -43,6 +43,11 @@ function siteURL() {
   return String(process.env['NEXT_PUBLIC_SERVER_URL'] || 'http://localhost:3000').replace(/\/$/u, '')
 }
 
+function accountEmailVerificationEnabled() {
+  const value = String(process.env['ACCOUNT_EMAIL_VERIFICATION_ENABLED'] || 'true').trim().toLowerCase()
+  return !new Set(['0', 'false', 'no', 'off']).has(value)
+}
+
 function escapeHTML(value: unknown) {
   return String(value || '')
     .replaceAll('&', '&amp;')
@@ -79,13 +84,17 @@ export const Users: CollectionConfig = {
     tokenExpiration: 60 * 60 * 24 * 7,
     maxLoginAttempts: 5,
     lockTime: 10 * 60 * 1000,
-    verify: {
-      generateEmailSubject: () => '验证你的 Baihepailei 账户',
-      generateEmailHTML: ({ token, user }) => {
-        const url = `${siteURL()}/account/verify?token=${encodeURIComponent(token)}`
-        return `<p>你好，${escapeHTML(user.displayName || user.email)}：</p><p>请点击下面的链接验证 Baihepailei 账户：</p><p><a href="${url}">${url}</a></p><p>如果不是你发起的注册，可以忽略这封邮件。</p>`
-      },
-    },
+    ...(accountEmailVerificationEnabled()
+      ? {
+          verify: {
+            generateEmailSubject: () => '验证你的 Baihepailei 账户',
+            generateEmailHTML: ({ token, user }) => {
+              const url = `${siteURL()}/account/verify?token=${encodeURIComponent(token)}`
+              return `<p>你好，${escapeHTML(user.displayName || user.email)}：</p><p>请点击下面的链接验证 Baihepailei 账户：</p><p><a href="${url}">${url}</a></p><p>如果不是你发起的注册，可以忽略这封邮件。</p>`
+            },
+          },
+        }
+      : {}),
     forgotPassword: {
       expiration: 60 * 60 * 1000,
       generateEmailSubject: () => '重设你的 Baihepailei 密码',

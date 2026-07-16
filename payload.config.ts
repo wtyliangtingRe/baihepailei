@@ -20,12 +20,28 @@ import { Works } from './src/collections/Works'
 import { withRadarAssessmentFields } from './src/collections/fields/radarAssessment'
 
 const WorksWithRadarAssessment = withRadarAssessmentFields(Works)
-const smtpHost = String(process.env['SMTP_HOST'] || '').trim()
-const smtpUser = String(process.env['SMTP_USER'] || '').trim()
-const smtpPass = String(process.env['SMTP_PASS'] || '')
+
+function smtpValue(value: unknown) {
+  const normalized = String(value || '').trim()
+  const placeholder = normalized.toLowerCase()
+  if (
+    !normalized ||
+    placeholder === 'change_me' ||
+    placeholder === 'smtp.example.com' ||
+    placeholder.endsWith('@example.com')
+  ) {
+    return ''
+  }
+  return normalized
+}
+
+const smtpHost = smtpValue(process.env['SMTP_HOST'])
+const smtpUser = smtpValue(process.env['SMTP_USER'])
+const smtpPass = smtpValue(process.env['SMTP_PASS'])
+const smtpFromAddress = smtpValue(process.env['SMTP_FROM_ADDRESS'])
 const emailAdapter = smtpHost
   ? nodemailerAdapter({
-      defaultFromAddress: String(process.env['SMTP_FROM_ADDRESS'] || smtpUser || 'no-reply@localhost'),
+      defaultFromAddress: smtpFromAddress || smtpUser || 'no-reply@localhost',
       defaultFromName: String(process.env['SMTP_FROM_NAME'] || 'Baihepailei'),
       transportOptions: {
         host: smtpHost,
