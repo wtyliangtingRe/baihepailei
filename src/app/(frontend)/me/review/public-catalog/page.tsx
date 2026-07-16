@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
 
-type Role = 'admin' | 'editor' | 'reviewer' | 'trusted'
+type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted'
 
 type CandidateSource = {
   source?: string
@@ -52,9 +52,9 @@ type Filters = {
   mode: 'focus' | 'all'
 }
 
-const allowedRoles: Role[] = ['admin', 'editor', 'reviewer']
+const allowedRoles: Role[] = ['owner', 'admin', 'editor', 'reviewer']
 const sourceOptions = ['mangadex', 'steam', 'yurizukan', 'bangumi', 'wikidata', 'anilist', 'vndb', 'wikipedia', 'ndl', 'manual', 'other']
-const rankOptions = ['F', 'E', 'D', 'C', 'B', 'A', 'AA', 'unknown']
+const rankOptions = ['X', 'F', 'E', 'D', 'C', 'B', 'A', 'AA', 'unknown']
 const reviewReasonOptions: LabeledOption[] = [
   { value: 'radar_seed_attached', label: '雷达种子命中' },
   { value: 'multi_source_or_variant', label: '多来源或变体' },
@@ -203,7 +203,7 @@ function rankLabel(rank?: string) {
 }
 
 function rankSortValue(rank?: string) {
-  const order = ['F', 'E', 'D', 'C', 'B', 'A', 'AA', 'unknown']
+  const order = ['X', 'F', 'E', 'D', 'C', 'B', 'A', 'AA', 'unknown']
   const index = order.indexOf(rank || 'unknown')
   return index === -1 ? order.length : index
 }
@@ -298,7 +298,7 @@ export default async function PublicCatalogReviewPage({ searchParams }: { search
   const auth = await payload.auth({ headers: await headers() })
 
   if (!auth.user) {
-    redirect(`/admin/login?redirect=${encodeURIComponent('/me/review/public-catalog')}`)
+    redirect(`/account/login?redirect=${encodeURIComponent('/me/review/public-catalog')}`)
   }
 
   if (!canView(auth.user)) {
@@ -306,7 +306,7 @@ export default async function PublicCatalogReviewPage({ searchParams }: { search
       <main style={{ margin: '0 auto', maxWidth: 960, padding: '48px 20px' }}>
         <p style={{ color: '#777', fontSize: 14, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Public Catalog Review</p>
         <h1>权限不足</h1>
-        <p>这个页面目前只开放给 admin、editor、reviewer。</p>
+        <p>这个页面目前只开放给最高领袖、管理员、编辑和审核人员。</p>
         <p><Link href="/">返回首页</Link></p>
       </main>
     )
