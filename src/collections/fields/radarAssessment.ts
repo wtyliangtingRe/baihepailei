@@ -12,7 +12,7 @@ export const radarEvidenceStatusOptions = [
   { label: '尚未评估', value: 'unknown' },
 ]
 
-const radarGradeOptions = ['S', 'A', 'B', 'C', 'D', 'E', 'F'].map((value) => ({ label: value, value }))
+const radarGradeOptions = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X'].map((value) => ({ label: value, value }))
 
 export const radarAssessmentField: Field = {
   name: 'radarAssessment',
@@ -142,3 +142,4 @@ export function withRadarAssessmentFields(collection: CollectionConfig): Collect
     fields: [...collection.fields, radarAssessmentField],
   }
 }
+
