@@ -1,6 +1,6 @@
 import type { CollectionConfig, CollectionSlug } from 'payload'
 
-import { publishedOrSignedIn, trustedAndUp } from '@/access/roles'
+import { adminsOnly, publishedOrSignedIn, trustedAndUp } from '@/access/roles'
 
 import { localizedTitlesField, mediaGroupOptions } from './fields/localizedMetadata'
 
@@ -149,7 +149,7 @@ export const Works: CollectionConfig = {
   },
   access: {
     create: trustedAndUp,
-    delete: trustedAndUp,
+    delete: adminsOnly,
     read: publishedOrSignedIn,
     update: trustedAndUp,
   },
@@ -688,5 +688,4 @@ export const Works: CollectionConfig = {
     },
   ],
 }
-
 

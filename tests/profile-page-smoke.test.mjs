@@ -6,8 +6,10 @@ const page = fs.readFileSync(new URL('../src/app/(frontend)/me/lists/page.tsx', 
 const layout = fs.readFileSync(new URL('../src/app/(frontend)/layout.tsx', import.meta.url), 'utf8')
 const css = fs.readFileSync(new URL('../src/app/(frontend)/profile-lists.css', import.meta.url), 'utf8')
 
-test('profile page is wired', () => {
-  assert.ok(page.includes('MyListsClient'))
-  assert.ok(layout.includes('/me/lists'))
-  assert.ok(css.includes('.my-list-item'))
+test('profile list page is wired to the public account flow', () => {
+  assert.match(page, /MyListsClient/u)
+  assert.match(page, /在看/u)
+  assert.match(page, /喜欢/u)
+  assert.match(layout, /\/me\/lists/u)
+  assert.match(css, /\.my-list-item/u)
 })

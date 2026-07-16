@@ -1,5 +1,6 @@
 .feedback-page,
-.feedback-prompt-shell {
+.feedback-prompt-shell,
+.feedback-form {
   display: grid;
   gap: 20px;
 }
@@ -13,24 +14,104 @@
 .feedback-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
 }
 
-.feedback-grid {
+.feedback-actions button,
+.feedback-success button {
+  padding: 10px 15px;
+  border: 1px solid #4f3743;
+  border-radius: 999px;
+  background: #251923;
+  color: #ffb5d7;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.feedback-grid,
+.feedback-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
 }
 
-.feedback-type-card p {
+.feedback-type-card p,
+.feedback-guide ul,
+.feedback-success p {
   margin: 0;
   color: #cfcfcf;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
 .feedback-guide ul {
-  margin: 0;
   padding-left: 20px;
-  color: #d7d7d7;
-  line-height: 1.8;
+}
+
+.feedback-form label {
+  display: grid;
+  gap: 7px;
+  color: #ddd;
+  font-weight: 780;
+}
+
+.feedback-form input,
+.feedback-form select,
+.feedback-form textarea {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid #343434;
+  border-radius: 13px;
+  background: #101010;
+  color: #fff;
+}
+
+.feedback-form textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.feedback-check {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.feedback-check input {
+  width: auto;
+}
+
+.feedback-message {
+  margin: 0;
+  color: #ffb5d7;
+}
+
+.feedback-message a {
+  margin: 0 4px;
+}
+
+.feedback-message-error {
+  color: #ff786e;
+}
+
+.feedback-success {
+  border-color: rgb(143 227 162 / 0.44);
+}
+
+[data-theme='light'] .feedback-form input,
+[data-theme='light'] .feedback-form select,
+[data-theme='light'] .feedback-form textarea {
+  border-color: #e2d6cc;
+  background: #fff7f2;
+  color: #191716;
+}
+
+[data-theme='light'] .feedback-form label {
+  color: #191716;
+}
+
+[data-theme='light'] .feedback-type-card p,
+[data-theme='light'] .feedback-guide ul,
+[data-theme='light'] .feedback-success p {
+  color: #342d29;
 }

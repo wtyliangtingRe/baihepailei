@@ -1,32 +1,24 @@
-.work-list-control {
+.work-list-control,
+.work-list-head,
+.work-list-form {
   display: grid;
-  gap: 18px;
-}
-
-.work-list-head {
-  display: grid;
-  gap: 8px;
+  gap: 16px;
 }
 
 .work-list-head h2 {
   margin: 0;
 }
 
-.work-list-form {
-  display: grid;
-  gap: 14px;
-}
-
 .work-list-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
 }
 
 .work-list-option {
   display: grid;
   gap: 7px;
-  padding: 14px;
+  padding: 13px;
   border: 1px solid #303030;
   border-radius: 16px;
   background: #151515;
@@ -49,7 +41,7 @@
 
 .work-list-option small {
   color: #aaa;
-  line-height: 1.6;
+  line-height: 1.55;
 }
 
 .work-list-note {
@@ -69,21 +61,16 @@
   color: #d7d7d7;
 }
 
-.work-list-note textarea:focus {
-  outline: 2px solid rgb(255 181 215 / 0.35);
-  border-color: #ffb5d7;
-}
-
 .work-list-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .work-list-actions button {
   width: fit-content;
-  padding: 10px 14px;
+  padding: 9px 13px;
   border: 1px solid #303030;
   border-radius: 999px;
   background: #151515;
@@ -91,9 +78,8 @@
   cursor: pointer;
 }
 
-.work-list-actions button:disabled {
-  color: #777;
-  cursor: not-allowed;
+.work-list-actions .work-list-remove {
+  color: #aaa;
 }
 
 .work-list-actions span,
@@ -107,6 +93,10 @@
   color: #ffb5d7;
 }
 
+.work-list-message a {
+  margin: 0 4px;
+}
+
 .work-list-message-error {
   color: #ff786e;
 }
@@ -117,32 +107,8 @@
   background: #fff7f2;
 }
 
-[data-theme='light'] .work-list-option[data-active='true'] {
-  border-color: rgb(214 99 153 / 0.45);
-  background: #fff0f7;
-}
-
 [data-theme='light'] .work-list-option span,
 [data-theme='light'] .work-list-note,
 [data-theme='light'] .work-list-note textarea {
   color: #191716;
-}
-
-[data-theme='light'] .work-list-option small,
-[data-theme='light'] .work-list-actions span {
-  color: #766a61;
-}
-
-[data-theme='light'] .work-list-actions button {
-  border-color: #d7c9bc;
-  background: #fffaf6;
-  color: #b64178;
-}
-
-[data-theme='light'] .work-list-message {
-  color: #b64178;
-}
-
-[data-theme='light'] .work-list-message-error {
-  color: #c73a2e;
 }

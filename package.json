@@ -140,10 +140,12 @@
     "test:search": "node --test tests/search-utils.test.mjs",
     "test:frontend-polish": "pnpm test:frontend-polish && pnpm test:works-rank && pnpm test:search",
     "radar:orchestrate-v06-remaining": "node scripts/radar/run-ai-radar-v06-remaining-batches-v01.mjs",
-    "test:radar-v06-orchestrator": "node --test tests/radar-v06-remaining-orchestrator.test.mjs"
+    "test:radar-v06-orchestrator": "node --test tests/radar-v06-remaining-orchestrator.test.mjs",
+    "test:community": "node --test tests/member-account-system.test.mjs tests/comments-system.test.mjs tests/user-work-lists.test.mjs tests/feedback-submissions.test.mjs tests/feedback-entry.test.mjs tests/profile-page-smoke.test.mjs"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "latest",
+    "@payloadcms/email-nodemailer": "latest",
     "@payloadcms/next": "latest",
     "@payloadcms/richtext-lexical": "latest",
     "graphql": "latest",
