@@ -1,0 +1,50 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+
+const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+const users = read('src/collections/Users.ts')
+const roles = read('src/access/roles.ts')
+const auth = read('src/app/(frontend)/_components/AuthPanel.tsx')
+const account = read('src/app/(frontend)/_components/AccountClient.tsx')
+const layout = read('src/app/(frontend)/layout.tsx')
+const config = read('payload.config.ts')
+const env = read('.env.example')
+
+test('public registration is forced to member and staff admin access is separate', () => {
+  assert.match(users, /create: anyone/u)
+  assert.match(users, /admin: \(\{ req \}\) => isEditor\(req\.user\)/u)
+  assert.match(users, /role: 'member'/u)
+  assert.match(users, /SITE_OWNER_EMAIL/u)
+  assert.match(users, /isConfiguredOwnerEmail/u)
+  assert.match(users, /value: 'owner'/u)
+  assert.match(users, /value: 'admin'/u)
+  assert.match(users, /value: 'editor'/u)
+  assert.match(users, /value: 'member'/u)
+})
+
+test('role hierarchy includes owner and preserves legacy roles', () => {
+  assert.match(roles, /'owner' \| 'admin' \| 'editor'/u)
+  assert.match(roles, /role === 'owner'/u)
+  assert.match(roles, /role === 'reviewer'/u)
+  assert.match(roles, /role === 'trusted'/u)
+})
+
+test('auth flow supports verification, login, logout and email password reset', () => {
+  assert.match(users, /verify:/u)
+  assert.match(users, /forgotPassword:/u)
+  assert.match(auth, /\/api\/users\/login/u)
+  assert.match(auth, /\/api\/users\/forgot-password/u)
+  assert.match(auth, /\/api\/users\/reset-password/u)
+  assert.match(auth, /\/api\/users\/verify\//u)
+  assert.match(account, /\/api\/users\/logout/u)
+  assert.match(config, /nodemailerAdapter/u)
+  assert.match(env, /SMTP_HOST/u)
+})
+
+test('frontend exposes an account entry instead of a public admin entry', () => {
+  assert.match(layout, /href: '\/account', label: '账户'/u)
+  assert.doesNotMatch(layout, /href: '\/admin', label: '后台'/u)
+  assert.match(account, /我的列表/u)
+  assert.match(account, /提交人工排雷/u)
+})
