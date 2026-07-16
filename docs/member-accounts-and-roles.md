@@ -50,3 +50,26 @@ If the configured email already exists as an older admin or member record, its n
 - Only owner/admin may delete Works.
 - Comments and feedback enter pending queues before publication or adoption.
 - Accepting feedback never automatically changes a Work rating; a staff member must apply the verified result separately.
+
+## Local user cleanup
+
+For a local test database, `scripts/users/prune-users-except-email.mjs` can remove every account except one explicitly retained owner. It is dry-run by default, requires the retained record to have role `owner`, and inventories dependent comments, lists, feedback and Work reviewer links before any deletion.
+
+Always create and verify a database checkpoint before apply. The apply mode deletes list rows, comments and submitted feedback belonging to removed users; it clears reviewer references that should be preserved, then deletes the user records through Payload. It never writes PostgreSQL directly.
+
+```powershell
+$env:USER_MAINTENANCE_EMAIL="the retained owner email"
+$env:USER_MAINTENANCE_PASSWORD="the retained owner's password"
+
+# Read-only inventory first.
+node scripts\users\prune-users-except-email.mjs `
+  --url "http://localhost:3000" `
+  --keep-email "the retained owner email"
+
+# Only after reviewing the plan and creating a database checkpoint.
+node scripts\users\prune-users-except-email.mjs `
+  --url "http://localhost:3000" `
+  --keep-email "the retained owner email" `
+  --apply `
+  --confirm "DELETE-USERS-EXCEPT-KEEP-EMAIL"
+```

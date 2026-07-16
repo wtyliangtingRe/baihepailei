@@ -35,6 +35,10 @@ test('detail titles wrap in full instead of using an ellipsis', () => {
   const detailHeadingRule = detailLayout.match(/\.detail-hero h1\s*\{(?<body>[^}]*)\}/u)?.groups?.body || ''
   assert.match(detailHeadingRule, /white-space:\s*normal/u)
   assert.match(detailHeadingRule, /overflow-wrap:\s*anywhere/u)
+  assert.match(detailHeadingRule, /text-wrap:\s*wrap/u)
+  assert.doesNotMatch(detailHeadingRule, /text-wrap:\s*balance/u)
   assert.doesNotMatch(detailHeadingRule, /text-overflow:\s*ellipsis/u)
   assert.doesNotMatch(detailHeadingRule, /white-space:\s*nowrap/u)
+  assert.match(detailLayout, /\.detail-hero-layout > div:only-child/u)
+  assert.match(detailLayout, /grid-column:\s*1 \/ -1/u)
 })

@@ -44,7 +44,7 @@
   font-size: clamp(32px, 5vw, 60px);
   line-height: 1.12;
   overflow-wrap: anywhere;
-  text-wrap: balance;
+  text-wrap: wrap;
   white-space: normal;
 }
 
@@ -54,6 +54,11 @@
 
 .detail-hero-layout > div:last-child {
   min-width: 0;
+}
+
+.detail-hero-layout > div:only-child {
+  grid-column: 1 / -1;
+  width: 100%;
 }
 
 @media (max-width: 720px) {

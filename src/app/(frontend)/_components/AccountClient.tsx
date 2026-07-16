@@ -30,7 +30,7 @@ export default function AccountClient() {
 
   useEffect(() => {
     let active = true
-    fetch('/api/users/me', { credentials: 'include' })
+    fetch('/api/account/session', { cache: 'no-store', credentials: 'include' })
       .then(async (response) => {
         if (!response.ok) throw new Error('account-fetch-failed')
         return response.json()
