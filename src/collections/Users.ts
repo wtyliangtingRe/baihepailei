@@ -120,6 +120,22 @@ export const Users: CollectionConfig = {
     update: selfOrStaff,
   },
   hooks: {
+    beforeLogin: [
+      async ({ user, req }) => {
+        const current = user as UserLike
+        if (!current.id || !isConfiguredOwnerEmail(current.email) || current.role === 'owner') {
+          return user
+        }
+
+        return req.payload.update({
+          collection: 'users',
+          id: current.id,
+          data: { role: 'owner' },
+          overrideAccess: true,
+          req,
+        })
+      },
+    ],
     beforeValidate: [
       ({ data, operation, originalDoc, req }) => {
         const actorRole = getRole(req.user)
