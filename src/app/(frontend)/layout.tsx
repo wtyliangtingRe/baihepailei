@@ -5,6 +5,7 @@ import React from 'react'
 import ContentScopeToggle from './_components/ContentScopeToggle'
 import ThemeToggle from './_components/ThemeToggle'
 import './styles.css'
+import './account.css'
 import './covers.css'
 import './callouts.css'
 import './works-filters.css'
@@ -43,7 +44,7 @@ const navItems = [
   { href: '/updates', label: '最近更新' },
   { href: '/feedback', label: '反馈' },
   { href: '/search', label: '搜索' },
-  { href: '/admin', label: '后台' },
+  { href: '/account', label: '账户' },
 ]
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
