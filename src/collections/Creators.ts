@@ -22,6 +22,7 @@ export const Creators: CollectionConfig = {
     { name: 'searchText', type: 'textarea', label: '搜索补充文本', admin: { description: '用于导出前台搜索索引的补充文本，可放别名、社团名、历史名称、作品关键词等。' } },
     { name: 'isLiteVisible', type: 'checkbox', label: '进入 Lite 文字版', defaultValue: true },
     { name: 'isFullVisible', type: 'checkbox', label: '进入 Full 完整版', defaultValue: true },
+    { name: 'legacyXWikiPage', type: 'text', admin: { hidden: true } },
     { name: 'status', type: 'select', label: '状态', defaultValue: 'draft', required: true, options: ['draft', 'review', 'published', 'archived'] },
   ],
 }

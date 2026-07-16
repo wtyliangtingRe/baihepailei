@@ -18,6 +18,7 @@ export const Media: CollectionConfig = {
       ],
       admin: { description: '低流量正式版不渲染封面和证据图片；增强媒体版可按用途展示。' },
     },
+    { name: 'legacyXWikiPage', type: 'text', admin: { hidden: true } },
     { name: 'originalFilename', type: 'text', label: '原始文件名', admin: { description: '外部来源中的原始文件名。' } },
     { name: 'sourceNote', type: 'textarea', label: '来源备注', admin: { description: '记录图片来源、证据说明和整理备注等。' } },
   ],

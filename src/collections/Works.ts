@@ -692,6 +692,13 @@ export const Works: CollectionConfig = {
       },
     },
     {
+      name: 'legacyXWikiPage',
+      type: 'text',
+      admin: {
+        hidden: true,
+      },
+    },
+    {
       name: 'status',
       type: 'select',
       label: '状态',

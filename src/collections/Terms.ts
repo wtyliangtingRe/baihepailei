@@ -19,6 +19,7 @@ export const Terms: CollectionConfig = {
     { name: 'relatedWarnings', type: 'relationship', label: '相关注意点', relationTo: 'warnings', hasMany: true },
     { name: 'relatedTerms', type: 'relationship', label: '相关名词', relationTo: 'terms', hasMany: true },
     { name: 'searchText', type: 'textarea', label: '搜索补充文本', admin: { description: '用于导出前台搜索索引的补充文本。' } },
+    { name: 'legacyXWikiPage', type: 'text', admin: { hidden: true } },
     { name: 'status', type: 'select', label: '状态', defaultValue: 'draft', required: true, options: ['draft', 'review', 'published', 'archived'] },
   ],
 }

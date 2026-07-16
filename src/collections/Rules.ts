@@ -18,6 +18,7 @@ export const Rules: CollectionConfig = {
     { name: 'relatedWarnings', type: 'relationship', relationTo: 'warnings', hasMany: true },
     { name: 'relatedTags', type: 'relationship', relationTo: 'tags', hasMany: true },
     { name: 'searchText', type: 'textarea', admin: { description: '用于导出前台搜索索引的长文本。' } },
+    { name: 'legacyXWikiPage', type: 'text', admin: { hidden: true } },
     { name: 'status', type: 'select', defaultValue: 'draft', required: true, options: ['draft', 'review', 'published', 'archived'] },
   ],
 }
