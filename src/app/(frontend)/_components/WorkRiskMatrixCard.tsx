@@ -1,5 +1,4 @@
 import type { DetailItem, WorkRiskMatrix } from '../_lib/detail-index'
-import WorkAssessmentTrustCard from './WorkAssessmentTrustCard'
 
 type RiskDimension = {
   key: keyof WorkRiskMatrix
@@ -82,34 +81,31 @@ export default function WorkRiskMatrixCard({ item }: { item: DetailItem }) {
   const hasValue = hasMatrixValue(matrix)
 
   return (
-    <>
-      <WorkAssessmentTrustCard item={item} />
-      <section className="detail-card work-risk-matrix-card" aria-label="雷点与注意点矩阵">
-        <div className="work-risk-matrix-head">
-          <p className="eyebrow">快速判断</p>
-          <h2>雷点 / 注意点矩阵</h2>
-          <p className="muted">
-            {hasValue ? '用于快速理解这个作品的主要排雷维度。' : '暂未填写矩阵。后续可在后台补充各维度判断。'}
-          </p>
-        </div>
+    <section className="detail-card work-risk-matrix-card" aria-label="雷点与注意点矩阵">
+      <div className="work-risk-matrix-head">
+        <p className="eyebrow">快速判断</p>
+        <h2>雷点 / 注意点矩阵</h2>
+        <p className="muted">
+          {hasValue ? '用于快速理解这个作品的主要排雷维度。' : '暂未填写矩阵。后续可在后台补充各维度判断。'}
+        </p>
+      </div>
 
-        <div className="work-risk-matrix-grid">
-          {dimensions.map((dimension) => (
-            <div className="work-risk-matrix-item" data-value={matrix?.[dimension.key] || 'missing'} key={dimension.key}>
-              <span>{dimension.label}</span>
-              <strong>{valueLabel(dimension, matrix)}</strong>
-              <p>{dimension.description}</p>
-            </div>
-          ))}
-        </div>
-
-        {matrix?.note ? (
-          <div className="work-risk-matrix-note">
-            <span>矩阵备注</span>
-            <p>{matrix.note}</p>
+      <div className="work-risk-matrix-grid">
+        {dimensions.map((dimension) => (
+          <div className="work-risk-matrix-item" data-value={matrix?.[dimension.key] || 'missing'} key={dimension.key}>
+            <span>{dimension.label}</span>
+            <strong>{valueLabel(dimension, matrix)}</strong>
+            <p>{dimension.description}</p>
           </div>
-        ) : null}
-      </section>
-    </>
+        ))}
+      </div>
+
+      {matrix?.note ? (
+        <div className="work-risk-matrix-note">
+          <span>矩阵备注</span>
+          <p>{matrix.note}</p>
+        </div>
+      ) : null}
+    </section>
   )
 }

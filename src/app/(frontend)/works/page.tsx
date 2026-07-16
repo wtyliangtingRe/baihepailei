@@ -86,8 +86,14 @@ function rankAnchor(rank?: string) {
   return `rank-${rank.toLowerCase()}`
 }
 
+function storedRankKey(rank?: string) {
+  const normalized = String(rank || 'unknown').trim().toUpperCase()
+  if (normalized === 'S' || normalized === 'AA') return 'AA'
+  return normalized.toLowerCase() === 'unknown' ? 'unknown' : normalized
+}
+
 function rankSortValue(rank?: string) {
-  const normalizedRank = rank || 'unknown'
+  const normalizedRank = storedRankKey(rank)
   const index = rankOrder.indexOf(normalizedRank)
   return index === -1 ? rankOrder.length : index
 }
@@ -162,7 +168,7 @@ function itemMatchesQuery(item: SearchItem, query: string) {
 }
 
 function itemMatchesFilters(item: SearchItem, filters: NormalizedFilters) {
-  const rank = item.rank || 'unknown'
+  const rank = storedRankKey(item.rank)
   const mediaGroup = item.mediaGroup || 'unknown'
   if (filters.rank !== 'all' && rank !== filters.rank) return false
   if (filters.media !== 'all' && mediaGroup !== filters.media) return false
@@ -316,7 +322,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
   const groups = rankOrder
     .map((rank) => ({
       rank,
-      items: pageItems.filter((item) => (item.rank || 'unknown') === rank),
+      items: pageItems.filter((item) => storedRankKey(item.rank) === rank),
     }))
     .filter((group) => group.items.length > 0)
 
@@ -417,3 +423,4 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
     </main>
   )
 }
+

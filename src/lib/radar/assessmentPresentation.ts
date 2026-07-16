@@ -1,9 +1,23 @@
+export type RadarMatchedRuleMetrics = {
+  code?: string | null
+  grade?: string | null
+  confidencePercent?: number | null
+  reason?: string | null
+}
+
 export type RadarAssessmentMetrics = {
   confidencePercent?: number | null
   evidenceCoveragePercent?: number | null
   evidenceStatus?: string | null
   sourceSummary?: string | null
+  sourceCount?: number | null
   policyVersion?: string | null
+  suggestedGrade?: string | null
+  decisiveRuleCode?: string | null
+  decisiveRuleReason?: string | null
+  matchedRules?: RadarMatchedRuleMetrics[] | null
+  contradictions?: Array<string | { value?: string | null }> | null
+  requiresHumanReview?: boolean | null
   assessedAt?: string | null
 }
 
@@ -54,13 +68,38 @@ const reviewStatusLabels: Record<string, string> = {
 
 const ratingNoticeLabels: Record<string, string> = {
   ai_synthesized_pending_review: 'AI 综合，待复核',
+  external_source_pending_review: '外部资料整理，待复核',
   insufficient_information: '信息不足，待补充',
+  identity_conflict: '条目身份存在冲突',
+  quarantine_excluded: '隔离记录，不参与公开评级',
   manual_reviewed: '人工已确认',
+  none: '暂无额外页面提示',
+  other: '请结合页面说明',
+}
+
+const pageNoticeTones: Record<string, string> = {
+  ai_synthesized_pending_review: 'medium',
+  external_source_pending_review: 'medium',
+  insufficient_information: 'caution',
+  identity_conflict: 'danger',
+  quarantine_excluded: 'danger',
+  manual_reviewed: 'strong',
+  none: 'neutral',
+  other: 'neutral',
 }
 
 export function normalizeRadarPercent(value?: number | null) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null
   return Math.min(100, Math.max(0, Math.round(value)))
+}
+
+function normalizeSourceCount(value?: number | null) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  return Math.max(0, Math.round(value))
+}
+
+function cleanText(value: unknown) {
+  return String(value || '').trim()
 }
 
 function metricBand(value: number | null) {
@@ -72,21 +111,21 @@ function metricBand(value: number | null) {
 }
 
 function reviewLabel(input: RadarAssessmentPresentationInput) {
-  const notice = String(input.ratingNotice || '').trim()
+  const notice = cleanText(input.ratingNotice)
   if (ratingNoticeLabels[notice]) return ratingNoticeLabels[notice]
-  const status = String(input.reviewStatus || '').trim()
+  const status = cleanText(input.reviewStatus)
   return reviewStatusLabels[status] || status || '待复核'
 }
 
 function evidenceLabel(input: RadarAssessmentPresentationInput) {
-  const status = String(input.radarAssessment?.evidenceStatus || '').trim()
+  const status = cleanText(input.radarAssessment?.evidenceStatus)
   if (status && status !== 'unknown') return evidenceStatusLabels[status] || status
-  const strength = String(input.evidenceStrength || '').trim()
+  const strength = cleanText(input.evidenceStrength)
   return evidenceStrengthLabels[strength] || evidenceStatusLabels[status] || '尚未评估'
 }
 
 function evidenceTone(input: RadarAssessmentPresentationInput) {
-  const status = String(input.radarAssessment?.evidenceStatus || '').trim()
+  const status = cleanText(input.radarAssessment?.evidenceStatus)
   if (status && status !== 'unknown') return evidenceStatusTones[status] || 'neutral'
   if (input.evidenceStrength === 'strong') return 'strong'
   if (input.evidenceStrength === 'medium') return 'medium'
@@ -95,18 +134,43 @@ function evidenceTone(input: RadarAssessmentPresentationInput) {
 }
 
 function assessedDate(value?: string | null) {
-  const normalized = String(value || '').trim()
+  const normalized = cleanText(value)
   if (!normalized) return ''
   const match = normalized.match(/^\d{4}-\d{2}-\d{2}/u)
   return match?.[0] || normalized
 }
 
+function normalizeMatchedRules(value?: RadarMatchedRuleMetrics[] | null) {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((rule) => ({
+      code: cleanText(rule?.code),
+      grade: cleanText(rule?.grade).toUpperCase(),
+      confidencePercent: normalizeRadarPercent(rule?.confidencePercent),
+      reason: cleanText(rule?.reason),
+    }))
+    .filter((rule) => rule.code || rule.reason)
+}
+
+function normalizeContradictions(value?: Array<string | { value?: string | null }> | null) {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.map((item) => cleanText(typeof item === 'string' ? item : item?.value)).filter(Boolean))]
+}
+
 export function buildRadarAssessmentPresentation(input: RadarAssessmentPresentationInput) {
   const confidence = normalizeRadarPercent(input.radarAssessment?.confidencePercent)
   const coverage = normalizeRadarPercent(input.radarAssessment?.evidenceCoveragePercent)
-  const sourceSummary = String(input.radarAssessment?.sourceSummary || '').trim()
-  const policyVersion = String(input.radarAssessment?.policyVersion || '').trim()
+  const sourceSummary = cleanText(input.radarAssessment?.sourceSummary)
+  const sourceCount = normalizeSourceCount(input.radarAssessment?.sourceCount)
+  const policyVersion = cleanText(input.radarAssessment?.policyVersion)
   const assessedAt = assessedDate(input.radarAssessment?.assessedAt)
+  const notice = cleanText(input.ratingNotice)
+  const reviewStatus = cleanText(input.reviewStatus)
+  const requiresHumanReview = input.radarAssessment?.requiresHumanReview === true
+    || notice === 'ai_synthesized_pending_review'
+    || notice === 'external_source_pending_review'
+    || reviewStatus === 'pending'
+    || reviewStatus === 'disputed'
 
   return {
     confidence,
@@ -118,9 +182,18 @@ export function buildRadarAssessmentPresentation(input: RadarAssessmentPresentat
     evidenceLabel: evidenceLabel(input),
     evidenceTone: evidenceTone(input),
     reviewLabel: reviewLabel(input),
+    reviewStatusLabel: reviewStatusLabels[reviewStatus] || reviewStatus || '待复核',
+    pageNoticeTone: pageNoticeTones[notice] || 'neutral',
     sourceSummary,
+    sourceCount,
     policyVersion,
     assessedAt,
+    suggestedGrade: cleanText(input.radarAssessment?.suggestedGrade).toUpperCase(),
+    decisiveRuleCode: cleanText(input.radarAssessment?.decisiveRuleCode),
+    decisiveRuleReason: cleanText(input.radarAssessment?.decisiveRuleReason),
+    matchedRules: normalizeMatchedRules(input.radarAssessment?.matchedRules),
+    contradictions: normalizeContradictions(input.radarAssessment?.contradictions),
+    requiresHumanReview,
     hasCalculatedMetrics: confidence !== null || coverage !== null,
     confidenceExplanation: '表示当前排雷建议与现有证据的一致程度，不等同于作品安全概率。',
     coverageExplanation: '表示角色关系、剧情发展、结局、官方说明与来源材料等关键证据的完整度。',

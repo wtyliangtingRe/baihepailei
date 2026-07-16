@@ -3,6 +3,7 @@ import Link from 'next/link'
 import type { DetailCandidateSource, DetailCoverImage, DetailItem, DetailSourceLink } from '../_lib/detail-index'
 import type { SearchItem } from '../_lib/search-index'
 import CommentBlock from './CommentBlock'
+import WorkAssessmentTrustCard from './WorkAssessmentTrustCard'
 import WorkListControl from './WorkListControl'
 import WorkRiskMatrixCard from './WorkRiskMatrixCard'
 
@@ -335,7 +336,7 @@ function SourceLinks({ item }: { item: SearchItem }) {
   const externalIdRows = Object.entries(inferred.externalIds).filter(([, value]) => value)
 
   return (
-    <section className="detail-card">
+    <section className="detail-card" id="public-sources">
       <h2>公开来源</h2>
       {sourceLinks.length || candidateSources.length || externalIdRows.length ? (
         <>
@@ -441,6 +442,7 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
         </div>
       </section>
 
+      <WorkAssessmentTrustCard item={detailLikeItem} />
       <BasicInfo item={item} />
       <WorkRiskMatrixCard item={detailLikeItem} />
       <WorkListControl item={detailLikeItem} />
@@ -451,3 +453,4 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
     </main>
   )
 }
+

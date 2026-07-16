@@ -122,15 +122,55 @@ function optionalPercent(value) {
   return Math.min(100, Math.max(0, number))
 }
 
+function optionalNonNegativeNumber(value) {
+  if (value === null || value === undefined || value === '') return undefined
+  const number = Number(value)
+  if (!Number.isFinite(number)) return undefined
+  return Math.max(0, Math.round(number))
+}
+
+function optionalText(value) {
+  return String(value || '').trim() || undefined
+}
+
+function normalizeRadarRule(value) {
+  if (!value || typeof value !== 'object') return null
+  const rule = {
+    code: optionalText(value.code),
+    grade: optionalText(value.grade)?.toUpperCase(),
+    confidencePercent: optionalPercent(value.confidencePercent),
+    reason: optionalText(value.reason),
+  }
+  return Object.values(rule).some((item) => item !== undefined) ? rule : null
+}
+
+function normalizeRadarContradiction(value) {
+  const text = typeof value === 'string' ? value : value?.value
+  return optionalText(text)
+}
+
 function normalizeRadarAssessment(value) {
   if (!value || typeof value !== 'object') return undefined
+  const matchedRules = Array.isArray(value.matchedRules)
+    ? value.matchedRules.map(normalizeRadarRule).filter(Boolean)
+    : undefined
+  const contradictions = Array.isArray(value.contradictions)
+    ? value.contradictions.map(normalizeRadarContradiction).filter(Boolean)
+    : undefined
   const assessment = {
     confidencePercent: optionalPercent(value.confidencePercent),
     evidenceCoveragePercent: optionalPercent(value.evidenceCoveragePercent),
-    evidenceStatus: String(value.evidenceStatus || '').trim() || undefined,
-    sourceSummary: String(value.sourceSummary || '').trim() || undefined,
-    policyVersion: String(value.policyVersion || '').trim() || undefined,
-    assessedAt: String(value.assessedAt || '').trim() || undefined,
+    evidenceStatus: optionalText(value.evidenceStatus),
+    sourceSummary: optionalText(value.sourceSummary),
+    sourceCount: optionalNonNegativeNumber(value.sourceCount),
+    policyVersion: optionalText(value.policyVersion),
+    suggestedGrade: optionalText(value.suggestedGrade)?.toUpperCase(),
+    decisiveRuleCode: optionalText(value.decisiveRuleCode),
+    decisiveRuleReason: optionalText(value.decisiveRuleReason),
+    matchedRules,
+    contradictions,
+    requiresHumanReview: typeof value.requiresHumanReview === 'boolean' ? value.requiresHumanReview : undefined,
+    assessedAt: optionalText(value.assessedAt),
   }
   return Object.values(assessment).some((item) => item !== undefined) ? assessment : undefined
 }
@@ -191,3 +231,4 @@ main().catch((error) => {
   console.error(error)
   process.exit(1)
 })
+
