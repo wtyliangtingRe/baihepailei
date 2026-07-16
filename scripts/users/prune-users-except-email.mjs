@@ -3,7 +3,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 'prune-users-except-email-v0.1'
+const VERSION = 'prune-users-except-email-v0.2'
 const APPLY_CONFIRMATION = 'DELETE-USERS-EXCEPT-KEEP-EMAIL'
 
 function parseArgs(argv) {
@@ -79,7 +79,38 @@ async function login(baseUrl, email, password) {
     body: JSON.stringify({ email, password }),
   })
   if (!result?.token) throw new Error('Payload login did not return a token.')
-  return result.token
+  return result
+}
+
+function authenticatedHeaders(token) {
+  return {
+    Authorization: `Bearer ${token}`,
+    DisableAutologin: 'true',
+  }
+}
+
+async function verifyMaintenanceIdentity(baseUrl, token, loginEmail) {
+  const result = await requestJson(`${baseUrl}/api/users/me?depth=0`, {
+    headers: authenticatedHeaders(token),
+  })
+  const user = result?.user
+  if (!user) {
+    throw new Error(
+      'Login credentials passed, but the token did not establish a user session. '
+      + 'Set SITE_OWNER_EMAIL to the retained email in .env, restart pnpm dev, and log in again. '
+      + 'Older owner records may need the compatibility normalization included in the latest main branch.',
+    )
+  }
+  if (normalizeEmail(user.email) !== loginEmail) {
+    throw new Error(`Authenticated as unexpected account: ${normalizeEmail(user.email) || '(missing email)'}`)
+  }
+  if (String(user.role || '') !== 'owner') {
+    throw new Error(
+      `Authenticated account has role ${String(user.role || '(missing)')}, not owner. `
+      + `Set SITE_OWNER_EMAIL=${loginEmail} in .env, restart pnpm dev, then retry.`,
+    )
+  }
+  return user
 }
 
 async function fetchAll(baseUrl, token, slug, where = {}) {
@@ -92,7 +123,7 @@ async function fetchAll(baseUrl, token, slug, where = {}) {
       params.set(`where[${field}][equals]`, String(value))
     }
     const result = await requestJson(`${baseUrl}/api/${slug}?${params}`, {
-      headers: { Authorization: `JWT ${token}` },
+      headers: authenticatedHeaders(token),
     })
     docs.push(...(Array.isArray(result?.docs) ? result.docs : []))
     totalPages = Number(result?.totalPages || 1)
@@ -129,14 +160,14 @@ async function buildCandidatePlan(baseUrl, token, user) {
 async function deleteDocument(baseUrl, token, slug, id) {
   return requestJson(`${baseUrl}/api/${slug}/${encodeURIComponent(id)}`, {
     method: 'DELETE',
-    headers: { Authorization: `JWT ${token}` },
+    headers: authenticatedHeaders(token),
   })
 }
 
 async function patchDocument(baseUrl, token, slug, id, data) {
   return requestJson(`${baseUrl}/api/${slug}/${encodeURIComponent(id)}?depth=0&draft=true`, {
     method: 'PATCH',
-    headers: { Authorization: `JWT ${token}` },
+    headers: authenticatedHeaders(token),
     body: JSON.stringify(data),
   })
 }
@@ -197,7 +228,9 @@ async function main() {
     repoRoot,
     String(args['out-dir'] || `data_local/staging/user-maintenance/prune-users-${stamp}`),
   )
-  const token = await login(baseUrl, loginEmail, loginPassword)
+  const loginResult = await login(baseUrl, loginEmail, loginPassword)
+  const token = loginResult.token
+  const maintenanceUser = await verifyMaintenanceIdentity(baseUrl, token, loginEmail)
   const users = await fetchAll(baseUrl, token, 'users')
   const keepUsers = users.filter((user) => normalizeEmail(user.email) === keepEmail)
   const blockers = []
@@ -215,6 +248,11 @@ async function main() {
     version: VERSION,
     mode: apply ? 'apply' : 'dry_run',
     complete: blockers.length === 0,
+    authenticatedAs: {
+      id: maintenanceUser.id,
+      email: normalizeEmail(maintenanceUser.email),
+      role: maintenanceUser.role,
+    },
     keepEmail,
     keepUser: keepUsers[0]
       ? { id: keepUsers[0].id, email: normalizeEmail(keepUsers[0].email), role: keepUsers[0].role }
