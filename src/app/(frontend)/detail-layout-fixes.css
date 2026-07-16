@@ -40,12 +40,12 @@
 }
 
 .detail-hero h1 {
-  overflow: hidden;
   max-width: 100%;
   font-size: clamp(32px, 5vw, 60px);
   line-height: 1.12;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+  white-space: normal;
 }
 
 .detail-hero-layout {
@@ -57,11 +57,6 @@
 }
 
 @media (max-width: 720px) {
-  .detail-hero h1 {
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-
   .work-list-card {
     grid-template-columns: 1fr;
   }
