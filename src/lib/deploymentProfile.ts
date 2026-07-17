@@ -1,9 +1,9 @@
 export type PublicMediaMode = 'text' | 'enhanced'
 
 export function publicMediaMode(): PublicMediaMode {
-  return String(process.env['NEXT_PUBLIC_MEDIA_MODE'] || '').trim().toLowerCase() === 'enhanced'
-    ? 'enhanced'
-    : 'text'
+  return String(process.env['NEXT_PUBLIC_MEDIA_MODE'] || '').trim().toLowerCase() === 'text'
+    ? 'text'
+    : 'enhanced'
 }
 
 export function publicContentImagesEnabled() {
