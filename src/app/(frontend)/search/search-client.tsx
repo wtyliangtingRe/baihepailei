@@ -18,10 +18,26 @@ type SearchItem = {
   url: string
   rank?: string
   reviewStatus?: string
+  reviewOrigin?: string
   ratingNotice?: string
   radarAssessment?: {
     assessedAt?: string
     suggestedGrade?: string
+  }
+  researchPreview?: {
+    researchStatus?: string
+    riskSignals?: string[]
+    likelyGrade?: string
+    bestGrade?: string
+    worstGrade?: string
+    sourceSummary?: string
+    confidencePercent?: number
+  }
+  cover?: {
+    url?: string
+    alt?: string
+    width?: number
+    height?: number
   }
   originalTitle?: string
   aliases?: string[]
@@ -54,6 +70,8 @@ type SearchIndex = {
   mode: string
   counts: Record<string, number>
   visibilityCounts?: Record<string, number>
+  mediaMode?: 'text' | 'enhanced'
+  profile?: 'full' | 'lite'
   total: number
   items: SearchItem[]
 }
@@ -64,6 +82,7 @@ const searchSuggestions = ['作品中文名、日文名或别名', '作者 / 社
 const validCollections = new Set(['all', 'works', 'creators', 'organizations'])
 const validMedia = new Set(['all', 'anime', 'manga', 'novel', 'game', 'other', 'unknown'])
 const validRanks = new Set(['all', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'unknown'])
+const validAssessments = new Set(['all', 'ai', 'human', 'pending', 'disputed', 'unassessed'])
 const publicSearchCollections = new Set(['works', 'creators', 'organizations'])
 const mediaOptions = [
   { value: 'all', label: '全部作品类型' }, { value: 'anime', label: '动画' }, { value: 'manga', label: '漫画' },
@@ -108,6 +127,14 @@ function normalizedRank(value?: string) {
   return value || 'unknown'
 }
 
+function assessmentKey(item: SearchItem) {
+  if (item.reviewStatus === 'disputed') return 'disputed'
+  if (item.reviewStatus === 'reviewed' || item.ratingNotice === 'manual_reviewed') return 'human'
+  if (item.ratingNotice === 'ai_synthesized_pending_review' || item.radarAssessment?.assessedAt || item.radarAssessment?.suggestedGrade || item.researchPreview) return 'ai'
+  if (item.reviewStatus === 'pending') return 'pending'
+  return 'unassessed'
+}
+
 function HighlightedText({ query, text }: { query: string; text: string }) {
   const terms = splitQuery(query)
   if (!text || terms.length === 0) return <>{text}</>
@@ -129,6 +156,7 @@ export default function SearchClient() {
   const [activeCollection, setActiveCollection] = useState('all')
   const [activeMedia, setActiveMedia] = useState('all')
   const [activeRank, setActiveRank] = useState('all')
+  const [activeAssessment, setActiveAssessment] = useState('all')
   const [contentScope, setContentScope] = useState<ContentScope>('ordinary')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -138,10 +166,12 @@ export default function SearchClient() {
     const initialCollection = params.get('collection') || 'all'
     const initialMedia = params.get('media') || 'all'
     const initialRank = params.get('rank') || 'all'
+    const initialAssessment = params.get('assessment') || 'all'
     setQuery(params.get('q')?.trim() || '')
     if (validCollections.has(initialCollection)) setActiveCollection(initialCollection)
     if (validMedia.has(initialMedia)) setActiveMedia(initialMedia)
     if (validRanks.has(initialRank)) setActiveRank(initialRank)
+    if (validAssessments.has(initialAssessment)) setActiveAssessment(initialAssessment)
   }, [])
 
   useEffect(() => {
@@ -150,9 +180,10 @@ export default function SearchClient() {
     if (activeCollection !== 'all') params.set('collection', activeCollection)
     if (activeMedia !== 'all') params.set('media', activeMedia)
     if (activeRank !== 'all') params.set('rank', activeRank)
+    if (activeAssessment !== 'all') params.set('assessment', activeAssessment)
     const next = params.toString() ? `/search?${params.toString()}` : '/search'
     window.history.replaceState(null, '', next)
-  }, [activeCollection, activeMedia, activeRank, query])
+  }, [activeAssessment, activeCollection, activeMedia, activeRank, query])
 
   useEffect(() => {
     setContentScope(readContentScope())
@@ -176,11 +207,12 @@ export default function SearchClient() {
 
   const visibleItems = useMemo(() => visibleItemsForScope(index?.items || [], contentScope), [contentScope, index?.items])
   const refinedItems = useMemo(() => visibleItems.filter((item) => {
-    if (item.collection !== 'works') return activeMedia === 'all' && activeRank === 'all'
+    if (item.collection !== 'works') return activeMedia === 'all' && activeRank === 'all' && activeAssessment === 'all'
     if (activeMedia !== 'all' && (item.mediaGroup || 'unknown') !== activeMedia) return false
     if (activeRank !== 'all' && normalizedRank(item.rank) !== activeRank) return false
+    if (activeAssessment !== 'all' && assessmentKey(item) !== activeAssessment) return false
     return true
-  }), [activeMedia, activeRank, visibleItems])
+  }), [activeAssessment, activeMedia, activeRank, visibleItems])
   const results = useMemo<SearchResult[]>(() => filterAndRankItems(refinedItems, { activeCollection, query: deferredQuery }) as SearchResult[], [activeCollection, deferredQuery, refinedItems])
   const collectionCounts = useMemo(() => countVisibleByCollection(visibleItems), [visibleItems])
   const hiddenMarkedWorks = Math.max(0, Number(index?.visibilityCounts?.adult || 0) + Number(index?.visibilityCounts?.restricted || 0))
@@ -190,7 +222,7 @@ export default function SearchClient() {
 
   return (
     <section className="search-panel">
-      <div className="search-meta"><span>索引：{visibleItems.length} / {index.total} 条</span><span>生成：{new Date(index.generatedAt).toLocaleString('zh-CN')}</span><span>模式：{indexModeLabel(index.mode)}</span>{contentScope === 'ordinary' && hiddenMarkedWorks ? <span>普通模式隐藏 {hiddenMarkedWorks} 条标记作品</span> : null}</div>
+      <div className="search-meta"><span>索引：{visibleItems.length} / {index.total} 条</span><span>生成：{new Date(index.generatedAt).toLocaleString('zh-CN')}</span><span>模式：{indexModeLabel(index.mode)}</span><span>{index.profile === 'lite' ? '轻量索引' : '完整索引'}</span>{contentScope === 'ordinary' && hiddenMarkedWorks ? <span>普通模式隐藏 {hiddenMarkedWorks} 条标记作品</span> : null}</div>
 
       <label className="search-box"><span>关键词</span><input autoFocus onChange={(event) => setQuery(event.target.value)} placeholder="作品名、别名、作者、机构、类型、标签或注意点" type="search" value={query} /></label>
 
@@ -202,6 +234,7 @@ export default function SearchClient() {
       <div className="search-refine-grid">
         <label><span>作品类型</span><select onChange={(event) => setActiveMedia(event.target.value)} value={activeMedia}>{mediaOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
         <label><span>排雷分级</span><select onChange={(event) => setActiveRank(event.target.value)} value={activeRank}><option value="all">全部分级</option><option value="AA">S级</option>{['A','B','C','D','E','F','X'].map((rank) => <option key={rank} value={rank}>{rank}级</option>)}<option value="unknown">未分级</option></select></label>
+        <label><span>评估状态</span><select onChange={(event) => setActiveAssessment(event.target.value)} value={activeAssessment}><option value="all">全部状态</option><option value="ai">AI 已评估 · 待人工复核</option><option value="human">人工已复核</option><option value="pending">待复核（尚无 AI 明细）</option><option value="disputed">有争议 / 已退回</option><option value="unassessed">尚未评估</option></select></label>
       </div>
 
       <div className="result-summary">{deferredQuery.trim() ? `找到 ${results.length} 条高相关结果` : `显示前 ${results.length} 条条目`}</div>
@@ -212,11 +245,14 @@ export default function SearchClient() {
           const visibilityLabel = contentVisibilityLabel(item.contentVisibility)
           const specificType = item.collection === 'works' ? workTypeLabel(item) : ''
           return (
-            <article className="result-card" data-content-visibility={item.contentVisibility || 'ordinary'} key={item.id}>
-              <div className="result-card-header"><div className="result-type-badges"><span>{resultMeta(item)}</span>{specificType ? <span>{specificType}</span> : null}<AssessmentOriginBadge item={item} /></div>{visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}</div>
-              <h2><HighlightedText query={deferredQuery} text={item.title} /></h2>
-              {resultSummary(item) ? <p className="result-text">{resultSummary(item)}</p> : null}
-              <a className="result-link" href={item.url}>查看详情</a>
+            <article className={`result-card${index.mediaMode !== 'text' && item.collection === 'works' ? ' result-card-with-cover' : ''}`} data-content-visibility={item.contentVisibility || 'ordinary'} key={item.id}>
+              {index.mediaMode !== 'text' && item.collection === 'works' ? (item.cover?.url ? <img alt={item.cover.alt || `${item.title}封面`} className="result-card-cover" height={item.cover.height} loading="lazy" src={item.cover.url} width={item.cover.width} /> : <span aria-hidden="true" className="result-card-cover result-card-cover-placeholder">百合</span>) : null}
+              <div className="result-card-copy">
+                <div className="result-card-header"><div className="result-type-badges"><span>{resultMeta(item)}</span>{specificType ? <span>{specificType}</span> : null}<AssessmentOriginBadge item={item} /></div>{visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}</div>
+                <h2><HighlightedText query={deferredQuery} text={item.title} /></h2>
+                {resultSummary(item) ? <p className="result-text">{resultSummary(item)}</p> : null}
+                <a className="result-link" href={item.url}>查看详情</a>
+              </div>
             </article>
           )
         })}
