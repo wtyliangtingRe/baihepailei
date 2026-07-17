@@ -43,11 +43,12 @@ test('legacy matrix stylesheet is no longer loaded and editor controls are hidde
   assert.match(retirements, /display:\s*none/u)
 })
 
-test('export enrichment remains compatible with existing matrix values', () => {
+test('export keeps existing matrix values without running the retired enrichment step', () => {
   assert.ok(enrichDetail.includes('riskMatrix: item.riskMatrix'))
   assert.ok(enrichDetail.includes('riskMatrix: searchItem.riskMatrix || detailItem.riskMatrix'))
   assert.ok(enrichRisk.includes('function riskMatrix'))
   assert.ok(enrichRisk.includes('/api/works'))
   assert.ok(enrichRisk.includes('matrixById.set'))
-  assert.ok(wrapper.includes('enrich-lite-risk-matrix.mjs'))
+  assert.ok(wrapper.includes('enrich-lite-detail-index.mjs'))
+  assert.doesNotMatch(wrapper, /enrich-lite-risk-matrix\.mjs/u)
 })
