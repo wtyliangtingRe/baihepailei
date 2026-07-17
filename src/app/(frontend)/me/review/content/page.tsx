@@ -305,7 +305,7 @@ async function saveContentAction(formData: FormData) {
       collection: collection as never,
       id,
       depth: 0,
-      draft: true,
+      draft: false,
       overrideAccess: true,
       context: { reviewWorkbench: true },
       data: data as never,
