@@ -5,10 +5,12 @@ import path from 'node:path'
 const DEFAULT_OUT = 'public/search-index.json'
 const COLLECTIONS = ['works', 'creators', 'organizations', 'evidence', 'terms', 'rules']
 const OPTIONAL_COLLECTIONS = new Set(['evidence'])
+const RESEARCH_COLLECTION = 'radar-research-records'
 const EXPORT_EMAIL_ENV = 'PAYLOAD_EXPORT_EMAIL'
 const EXPORT_SECRET_ENV = ['PAYLOAD_EXPORT', 'PASSWORD'].join('_')
 const SEED_EMAIL_ENV = 'PAYLOAD_SEED_EMAIL'
 const SEED_SECRET_ENV = ['PAYLOAD_SEED', 'PASSWORD'].join('_')
+const PAGE_LIMIT = '1000'
 
 function parseArgs(argv) {
   const args = {}
@@ -29,8 +31,13 @@ function parseArgs(argv) {
 
 function usage() {
   console.log(`Usage:
-  pnpm export:lite-search -- [--url http://localhost:3000] [--out public/search-index.json] [--include-drafts]
+  pnpm export:lite-search -- [--url http://localhost:3000] [--out public/search-index.json] [--include-drafts] [--profile full|lite]
 `)
+}
+
+function exportProfile(args) {
+  const requested = String(args.profile || (args.lite ? 'lite' : 'full')).trim().toLowerCase()
+  return requested === 'lite' ? 'lite' : 'full'
 }
 
 async function requestJson(url, options = {}) {
@@ -75,9 +82,9 @@ function authHeaders(token) {
   return token ? { Authorization: `JWT ${token}` } : {}
 }
 
-function visibilityParams(collection, includeDrafts) {
+function visibilityParams(collection, includeDrafts, profile) {
   const params = new URLSearchParams()
-  params.set('limit', '100')
+  params.set('limit', PAGE_LIMIT)
   params.set('depth', '1')
 
   if (includeDrafts) {
@@ -92,19 +99,20 @@ function visibilityParams(collection, includeDrafts) {
   // Visibility flags must still apply when draft records are included.
   // Otherwise manually hidden creator/organization anomalies leak back into Lite indexes.
   if (collection !== 'evidence') {
-    params.set('where[isLiteVisible][not_equals]', 'false')
+    const visibilityField = profile === 'lite' ? 'isLiteVisible' : 'isFullVisible'
+    params.set(`where[${visibilityField}][not_equals]`, 'false')
   }
 
   return params
 }
 
-async function fetchCollection(baseUrl, token, collection, { includeDrafts }) {
+async function fetchCollection(baseUrl, token, collection, { includeDrafts, profile }) {
   const docs = []
   let page = 1
   let totalPages = 1
 
   do {
-    const params = visibilityParams(collection, includeDrafts)
+    const params = visibilityParams(collection, includeDrafts, profile)
     params.set('page', String(page))
 
     const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, {
@@ -116,6 +124,26 @@ async function fetchCollection(baseUrl, token, collection, { includeDrafts }) {
     page += 1
   } while (page <= totalPages)
 
+  return docs
+}
+
+async function fetchResearchRecords(baseUrl, token) {
+  const docs = []
+  let page = 1
+  let totalPages = 1
+  do {
+    const params = new URLSearchParams()
+    params.set('limit', PAGE_LIMIT)
+    params.set('depth', '0')
+    params.set('page', String(page))
+    params.set('where[recordStatus][equals]', 'current')
+    const result = await requestJson(`${baseUrl}/api/${RESEARCH_COLLECTION}?${params.toString()}`, {
+      headers: authHeaders(token),
+    })
+    docs.push(...(result?.docs || []))
+    totalPages = Number(result?.totalPages || 1)
+    page += 1
+  } while (page <= totalPages)
   return docs
 }
 
@@ -211,6 +239,79 @@ function uniqueValues(values) {
   return output
 }
 
+function optionalPercent(value) {
+  if (value === null || value === undefined || value === '') return undefined
+  const number = Number(value)
+  if (!Number.isFinite(number)) return undefined
+  return Math.min(100, Math.max(0, number))
+}
+
+function optionalNonNegativeNumber(value) {
+  if (value === null || value === undefined || value === '') return undefined
+  const number = Number(value)
+  if (!Number.isFinite(number)) return undefined
+  return Math.max(0, Math.round(number))
+}
+
+function optionalText(value) {
+  return String(value || '').trim() || undefined
+}
+
+function normalizeRadarAssessment(value) {
+  if (!value || typeof value !== 'object') return undefined
+  const matchedRules = Array.isArray(value.matchedRules)
+    ? value.matchedRules.map((rule) => ({
+      code: optionalText(rule?.code),
+      grade: optionalText(rule?.grade)?.toUpperCase(),
+      confidencePercent: optionalPercent(rule?.confidencePercent),
+      reason: optionalText(rule?.reason),
+    })).filter((rule) => Object.values(rule).some((item) => item !== undefined))
+    : undefined
+  const contradictions = Array.isArray(value.contradictions)
+    ? value.contradictions.map((item) => optionalText(typeof item === 'string' ? item : item?.value)).filter(Boolean)
+    : undefined
+  const assessment = {
+    confidencePercent: optionalPercent(value.confidencePercent),
+    evidenceCoveragePercent: optionalPercent(value.evidenceCoveragePercent),
+    evidenceStatus: optionalText(value.evidenceStatus),
+    sourceSummary: optionalText(value.sourceSummary),
+    sourceCount: optionalNonNegativeNumber(value.sourceCount),
+    policyVersion: optionalText(value.policyVersion),
+    suggestedGrade: optionalText(value.suggestedGrade)?.toUpperCase(),
+    decisiveRuleCode: optionalText(value.decisiveRuleCode),
+    decisiveRuleReason: optionalText(value.decisiveRuleReason),
+    matchedRules,
+    contradictions,
+    requiresHumanReview: typeof value.requiresHumanReview === 'boolean' ? value.requiresHumanReview : undefined,
+    assessedAt: optionalText(value.assessedAt),
+  }
+  return Object.values(assessment).some((item) => item !== undefined) ? assessment : undefined
+}
+
+function relationshipID(value) {
+  if (value && typeof value === 'object') return String(value.id || '')
+  return value === undefined || value === null ? '' : String(value)
+}
+
+function researchPreview(value) {
+  if (!value || typeof value !== 'object') return undefined
+  return {
+    researchStatus: optionalText(value.researchStatus),
+    yuriRelevance: optionalText(value.yuriRelevance),
+    riskSignals: Array.isArray(value.riskSignals) ? value.riskSignals.map(normalizeText).filter(Boolean) : [],
+    likelyGrade: optionalText(value.proposedLikelyGrade)?.toUpperCase(),
+    bestGrade: optionalText(value.proposedBestGrade)?.toUpperCase(),
+    worstGrade: optionalText(value.proposedWorstGrade)?.toUpperCase(),
+    sourceSummary: optionalText(value.sourceSummary)?.slice(0, 1600),
+    sourceCount: Array.isArray(value.sources) ? value.sources.filter((item) => item?.url).length : 0,
+    unresolvedQuestionCount: Array.isArray(value.unresolvedQuestions) ? value.unresolvedQuestions.length : 0,
+    confidencePercent: optionalPercent(value.confidencePercent),
+    recommendedNextAction: optionalText(value.recommendedNextAction),
+    recommendedNextQueue: optionalText(value.recommendedNextQueue),
+    importedAt: optionalText(value.importedAt),
+  }
+}
+
 function buildSearchBlob(parts) {
   return uniqueValues(parts).join('\n')
 }
@@ -272,6 +373,11 @@ function mapWork(doc) {
     slug: doc.slug || '',
     url: itemUrl('works', doc.id, doc.slug),
     rank: doc.rank || 'unknown',
+    reviewStatus: doc.reviewStatus || 'pending',
+    evidenceStrength: doc.evidenceStrength || 'unassessed',
+    ratingNotice: doc.ratingNotice || '',
+    reviewReasons: Array.isArray(doc.reviewReasons) ? doc.reviewReasons.map(normalizeText).filter(Boolean) : [],
+    radarAssessment: normalizeRadarAssessment(doc.radarAssessment),
     originalTitle: doc.originalTitle || '',
     aliases,
     localizedTitles,
@@ -321,6 +427,8 @@ function mapCreator(doc) {
     slug: doc.slug || '',
     url: itemUrl('creators', doc.id, doc.slug),
     rank: doc.rank || 'unknown',
+    reviewStatus: doc.reviewStatus || 'pending',
+    reviewOrigin: doc.reviewOrigin || 'unassessed',
     aliases,
     localizedNames,
     searchText: buildSearchBlob([doc.name, aliases, localizedNames, doc.rank, doc.searchText, notesText]),
@@ -341,6 +449,8 @@ function mapOrganization(doc) {
     slug: doc.slug || '',
     url: itemUrl('organizations', doc.id, doc.slug),
     organizationType: doc.type || 'other',
+    reviewStatus: doc.reviewStatus || 'pending',
+    reviewOrigin: doc.reviewOrigin || 'unassessed',
     aliases,
     localizedNames,
     searchText: buildSearchBlob([doc.name, aliases, localizedNames, doc.type, doc.searchText, notesText]),
@@ -361,6 +471,8 @@ function mapEvidence(doc) {
     slug: doc.slug || '',
     url: itemUrl('evidence', doc.id, doc.slug),
     evidenceType: doc.evidenceType || 'other',
+    reviewStatus: doc.reviewStatus || 'pending',
+    evidenceStrength: doc.evidenceStrength || 'unassessed',
     relatedWorks,
     relatedCreators,
     relatedOrganizations,
@@ -450,6 +562,7 @@ async function main() {
   const baseUrl = String(args.url || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
   const outFile = String(args.out || DEFAULT_OUT)
   const includeDrafts = Boolean(args['include-drafts'])
+  const profile = exportProfile(args)
   const email = process.env[EXPORT_EMAIL_ENV] || process.env[SEED_EMAIL_ENV]
   const secret = process.env[EXPORT_SECRET_ENV] || process.env[SEED_SECRET_ENV]
 
@@ -461,11 +574,28 @@ async function main() {
   const items = []
   const counts = {}
   const exportWarnings = []
+  const researchByWorkID = new Map()
+
+  if (profile === 'full') {
+    try {
+      const researchRecords = await fetchResearchRecords(baseUrl, token)
+      counts[RESEARCH_COLLECTION] = researchRecords.length
+      for (const record of researchRecords) {
+        const workID = relationshipID(record.work) || String(record.workIdSnapshot || '')
+        if (workID) researchByWorkID.set(workID, researchPreview(record))
+      }
+    } catch (error) {
+      const warning = exportWarning(RESEARCH_COLLECTION, error)
+      exportWarnings.push(warning)
+      counts[RESEARCH_COLLECTION] = 0
+      console.warn(`[warn] skipped internal AI research preview enrichment: ${warning.message.split('\n')[0]}`)
+    }
+  }
 
   for (const collection of COLLECTIONS) {
     let docs = []
     try {
-      docs = await fetchCollection(baseUrl, token, collection, { includeDrafts })
+      docs = await fetchCollection(baseUrl, token, collection, { includeDrafts, profile })
     } catch (error) {
       if (!OPTIONAL_COLLECTIONS.has(collection)) throw error
       const warning = exportWarning(collection, error)
@@ -474,14 +604,31 @@ async function main() {
     }
 
     counts[collection] = docs.length
-    items.push(...docs.map((doc) => mapDocument(collection, doc)))
+    items.push(...docs.map((doc) => {
+      const item = mapDocument(collection, doc)
+      if (collection === 'works') {
+        item.researchPreview = researchByWorkID.get(String(doc.id))
+        if (item.researchPreview) {
+          item.searchText = buildSearchBlob([
+            item.searchText,
+            item.researchPreview.sourceSummary,
+            item.researchPreview.riskSignals,
+            item.researchPreview.likelyGrade,
+            item.researchPreview.bestGrade,
+            item.researchPreview.worstGrade,
+          ])
+        }
+      }
+      return item
+    }))
   }
 
   const payload = {
-    schemaVersion: 4,
+    schemaVersion: 5,
     generatedAt: new Date().toISOString(),
     source: baseUrl,
     mode: includeDrafts ? 'drafts-and-published' : 'published-only',
+    profile,
     counts,
     visibilityCounts: countBy(items.filter((item) => item.collection === 'works'), (item) => item.contentVisibility || 'ordinary'),
     exportWarnings,

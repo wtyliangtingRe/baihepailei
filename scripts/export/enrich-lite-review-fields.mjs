@@ -51,9 +51,9 @@ function authHeaders(token) {
   return token ? { Authorization: `JWT ${token}` } : {}
 }
 
-function visibilityParams(collection, includeDrafts) {
+function visibilityParams(collection, includeDrafts, profile) {
   const params = new URLSearchParams()
-  params.set('limit', '100')
+  params.set('limit', '1000')
   params.set('depth', '0')
   if (includeDrafts) {
     params.set('draft', 'true')
@@ -64,17 +64,18 @@ function visibilityParams(collection, includeDrafts) {
     params.set('where[status][equals]', 'published')
   }
   if (collection !== 'evidence') {
-    params.set('where[isLiteVisible][not_equals]', 'false')
+    const visibilityField = profile === 'lite' ? 'isLiteVisible' : 'isFullVisible'
+    params.set(`where[${visibilityField}][not_equals]`, 'false')
   }
   return params
 }
 
-async function fetchCollection(baseUrl, token, collection, includeDrafts) {
+async function fetchCollection(baseUrl, token, collection, includeDrafts, profile) {
   const docs = []
   let page = 1
   let totalPages = 1
   do {
-    const params = visibilityParams(collection, includeDrafts)
+    const params = visibilityParams(collection, includeDrafts, profile)
     params.set('page', String(page))
     const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, {
       headers: authHeaders(token),
@@ -86,9 +87,9 @@ async function fetchCollection(baseUrl, token, collection, includeDrafts) {
   return docs
 }
 
-async function fetchOptionalCollection(baseUrl, token, collection, includeDrafts) {
+async function fetchOptionalCollection(baseUrl, token, collection, includeDrafts, profile) {
   try {
-    return await fetchCollection(baseUrl, token, collection, includeDrafts)
+    return await fetchCollection(baseUrl, token, collection, includeDrafts, profile)
   } catch (error) {
     console.warn(`[warn] skipped optional review enrichment collection ${collection}: ${String(error?.message || error).split('\n')[0]}`)
     return []
@@ -181,14 +182,15 @@ async function main() {
   const index = readJson(file)
   const baseUrl = String(args.url || index.source || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
   const includeDrafts = Boolean(args['include-drafts']) || index.mode === 'drafts-and-published'
+  const profile = String(args.profile || index.profile || 'full').trim().toLowerCase() === 'lite' ? 'lite' : 'full'
   const email = process.env[EXPORT_EMAIL_ENV] || process.env[SEED_EMAIL_ENV]
   const credential = process.env[EXPORT_SECRET_ENV] || process.env[SEED_SECRET_ENV]
 
   let token = null
   if (email && credential) token = await login(baseUrl, email, credential)
 
-  const works = await fetchCollection(baseUrl, token, 'works', includeDrafts)
-  const evidence = await fetchOptionalCollection(baseUrl, token, 'evidence', includeDrafts)
+  const works = await fetchCollection(baseUrl, token, 'works', includeDrafts, profile)
+  const evidence = await fetchOptionalCollection(baseUrl, token, 'evidence', includeDrafts, profile)
   const reviewById = new Map()
 
   for (const doc of works) {
@@ -231,4 +233,3 @@ main().catch((error) => {
   console.error(error)
   process.exit(1)
 })
-

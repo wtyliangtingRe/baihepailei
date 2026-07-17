@@ -2,6 +2,7 @@
 
 - Registered users can submit plain-text comments from detail pages.
 - New comments are stamped with the authenticated user and published immediately; there is no pre-publication approval queue.
+- Users can reply to a root comment or another reply. Replies are normalized into one visible nesting level and keep the addressed user's display name, which keeps long mobile discussions readable.
 - Comment authors can delete their own comments.
 - Editors, administrators and the owner can delete any comment. The legacy moderation field remains only for database compatibility; old `pending` comments are treated as public, while old rejected or hidden rows stay private.
 - Comment bodies are limited to 1,200 characters.

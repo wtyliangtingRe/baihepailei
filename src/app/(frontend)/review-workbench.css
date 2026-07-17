@@ -324,6 +324,84 @@
   grid-column: 1 / -1;
 }
 
+.feedback-review-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.feedback-review-facts > div {
+  display: grid;
+  gap: 6px;
+  padding: 13px;
+  border: 1px solid #303030;
+  border-radius: 14px;
+  background: #111;
+}
+
+.feedback-review-facts dt {
+  color: #999;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.feedback-review-facts dd {
+  margin: 0;
+  color: #eee;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.feedback-review-wide {
+  grid-column: 1 / -1;
+}
+
+.feedback-review-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.feedback-review-links a {
+  color: #8bd9e8;
+  overflow-wrap: anywhere;
+}
+
+.feedback-review-action-form {
+  display: grid;
+  gap: 10px;
+}
+
+.feedback-review-action-form label {
+  display: grid;
+  gap: 7px;
+  color: #ddd;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.feedback-review-action-form textarea {
+  min-height: 92px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #414141;
+  border-radius: 13px;
+  background: #0f0f0f;
+  color: #fff;
+  font: inherit;
+  resize: vertical;
+}
+
+.review-row-chip-warning {
+  border-color: rgb(255 177 92 / 0.45) !important;
+  color: #ffbd78 !important;
+}
+
 .review-content-actions {
   display: flex;
   flex-wrap: wrap;
@@ -361,7 +439,8 @@
   }
 
   .review-content-tabs,
-  .review-content-form {
+  .review-content-form,
+  .feedback-review-facts {
     grid-template-columns: 1fr;
   }
 }
@@ -408,6 +487,22 @@
 [data-theme='light'] .review-content-form input,
 [data-theme='light'] .review-content-form select,
 [data-theme='light'] .review-content-form textarea {
+  border-color: #e2d6cc;
+  background: #fff;
+  color: #191716;
+}
+
+[data-theme='light'] .feedback-review-facts > div {
+  border-color: #e2d6cc;
+  background: #fff;
+}
+
+[data-theme='light'] .feedback-review-facts dd,
+[data-theme='light'] .feedback-review-action-form label {
+  color: #191716;
+}
+
+[data-theme='light'] .feedback-review-action-form textarea {
   border-color: #e2d6cc;
   background: #fff;
   color: #191716;

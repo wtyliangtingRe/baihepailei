@@ -1,5 +1,7 @@
 import Link from 'next/link'
 
+import { publicContentImagesEnabled } from '@/lib/deploymentProfile'
+
 import AssessmentOriginBadge from '../_components/AssessmentOriginBadge'
 import PersonalRecommendationPanel from '../_components/PersonalRecommendationPanel'
 import { readDetailIndex } from '../_lib/detail-index'
@@ -33,22 +35,25 @@ function typeLabel(work: RecommendedWork) {
   return formatLabels[work.item.format || ''] || mediaGroupLabels[work.item.mediaGroup || 'unknown'] || '未知类型'
 }
 
-function RecommendationCard({ work }: { work: RecommendedWork }) {
+function RecommendationCard({ showImages, work }: { showImages: boolean; work: RecommendedWork }) {
   return (
-    <Link className="recommendation-card" href={work.item.url}>
-      <div className="recommendation-card-meta"><span>{rankLabel(work.item.rank)}</span><span>{typeLabel(work)}</span><span>{work.score} 分</span><AssessmentOriginBadge item={work.item} /></div>
-      <h3>{work.item.title}</h3>
-      {work.item.originalTitle ? <p>{work.item.originalTitle}</p> : null}
-      <ul>{work.reasonCodes.slice(0, 6).map((code) => <li key={code}>{reasonLabels[code] || code}</li>)}</ul>
+    <Link className={`recommendation-card${showImages ? ' recommendation-card-with-cover' : ''}`} href={work.item.url}>
+      {showImages ? (work.item.cover?.url ? <img alt={work.item.cover.alt || `${work.item.title}封面`} className="recommendation-cover" height={work.item.cover.height} loading="lazy" src={work.item.cover.url} width={work.item.cover.width} /> : <span aria-hidden="true" className="recommendation-cover recommendation-cover-placeholder">百合</span>) : null}
+      <div className="recommendation-card-copy">
+        <div className="recommendation-card-meta"><span>{rankLabel(work.item.rank)}</span><span>{typeLabel(work)}</span><span>{work.score} 分</span><AssessmentOriginBadge item={work.item} /></div>
+        <h3>{work.item.title}</h3>
+        {work.item.originalTitle ? <p>{work.item.originalTitle}</p> : null}
+        <ul>{work.reasonCodes.slice(0, 6).map((code) => <li key={code}>{reasonLabels[code] || code}</li>)}</ul>
+      </div>
     </Link>
   )
 }
 
-function RecommendationGroup({ title, description, works }: { title: string; description: string; works: RecommendedWork[] }) {
+function RecommendationGroup({ title, description, showImages, works }: { title: string; description: string; showImages: boolean; works: RecommendedWork[] }) {
   return (
     <section className="recommendation-section">
       <div className="collection-heading"><div><p className="eyebrow">{works.length} 个作品</p><h2>{title}</h2><p className="muted">{description}</p></div></div>
-      {works.length === 0 ? <p className="muted">暂无作品进入这一组。</p> : <div className="recommendation-grid">{works.slice(0, 12).map((work) => <RecommendationCard key={work.item.id} work={work} />)}</div>}
+      {works.length === 0 ? <p className="muted">暂无作品进入这一组。</p> : <div className="recommendation-grid">{works.slice(0, 12).map((work) => <RecommendationCard key={work.item.id} showImages={showImages} work={work} />)}</div>}
     </section>
   )
 }
@@ -58,15 +63,16 @@ export default function RecommendationsPage() {
   const items = index?.items || []
   const groups = recommendationsByBucket(items)
   const allRecommendations = recommendedWorks(items)
+  const showImages = publicContentImagesEnabled() && index?.mediaMode !== 'text'
 
   return (
     <main className="page recommendations-page">
       <section className="collection-heading"><div><p className="eyebrow">可解释推荐</p><h1>推荐</h1><p className="muted">根据正式分级、人工复核、页面提示、证据强度、资料覆盖和雷点矩阵生成。每张卡都会说明入选或降级原因；推荐只是筛选参考，不代替条目结论。</p></div></section>
       <PersonalRecommendationPanel recommendations={allRecommendations} />
       <section className="recommendation-rules detail-card"><h2>当前规则</h2><div><span>只有人工已复核条目可进入优先推荐</span><span>AI 综合待复核最多进入谨慎尝试</span><span>证据和资料覆盖会影响排序</span><span>X / F 与争议条目默认不推荐</span><span>个人列表排除已看和避雷</span></div></section>
-      <RecommendationGroup title="优先推荐" description="人工已复核、证据与风险信息较充分，适合作为优先阅读候选。" works={groups.priority} />
-      <RecommendationGroup title="谨慎尝试" description="有可取之处，但仍需先看页面提示、材料和雷点矩阵。" works={groups.cautious} />
-      <RecommendationGroup title="暂不推荐" description="分级、争议、资料不足或雷点风险较高，默认不作为推荐。" works={groups.notRecommended} />
+      <RecommendationGroup title="优先推荐" description="人工已复核、证据与风险信息较充分，适合作为优先阅读候选。" showImages={showImages} works={groups.priority} />
+      <RecommendationGroup title="谨慎尝试" description="有可取之处，但仍需先看页面提示、材料和雷点矩阵。" showImages={showImages} works={groups.cautious} />
+      <RecommendationGroup title="暂不推荐" description="分级、争议、资料不足或雷点风险较高，默认不作为推荐。" showImages={showImages} works={groups.notRecommended} />
     </main>
   )
 }

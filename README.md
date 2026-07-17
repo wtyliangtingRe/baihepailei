@@ -71,11 +71,10 @@ pnpm generate:importmap
 $env:PAYLOAD_EXPORT_EMAIL="你的后台邮箱"
 $env:PAYLOAD_EXPORT_PASSWORD="你的后台密码"
 
-pnpm export:lite-search -- --url "http://localhost:3000" --include-drafts
-pnpm export:lite-details -- --url "http://localhost:3000" --include-drafts
+node scripts/export/build-full-public-index.mjs --url "http://localhost:3000"
 ```
 
-生成的 `public/search-index.json` 和 `public/detail-index.json` 默认不提交。正式低流量站设置 `NEXT_PUBLIC_MEDIA_MODE=text`；增强分发版设置为 `enhanced`。详见 `docs/deployment-profiles-and-feedback.md`。
+该命令默认生成包含草稿、使用 `isFullVisible` 且显示封面的完整增强版。低流量镜像才显式传入 `--profile lite --media-mode text`。生成的 `public/search-index.json` 和 `public/detail-index.json` 默认不提交。详见 `docs/deployment-profiles-and-feedback.md`。
 
 ## 账户与邮件
 
@@ -99,7 +98,7 @@ SMTP_FROM_ADDRESS=你的发件地址
 两条数据线必须长期区分：
 
 - v0.6 评估包共有 10,805 条计划记录，其中 9,364 条具备受控写入资格，1,441 条因来源可追溯性不足保持阻断。
-- 研究归档共有 25,048 条，存放在 `radar-research-records`；它们是研究建议，不是正式 Works 评级。
+- 研究归档共有 25,048 条，存放在 `radar-research-records`；完整前台索引会以“AI 研究档案 · 非正式评级”展示关联预览，但它们仍是研究建议，不是正式 Works 评级，也不会覆盖 `Works.rank`。
 
 后续网页功能不得把研究档案的建议等级批量写入 `Works.rank`。人工审核工作台只允许逐条、留痕操作。
 

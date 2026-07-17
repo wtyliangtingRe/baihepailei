@@ -105,7 +105,7 @@ function reasonCodes(item: DetailItem) {
   if (item.reviewStatus === 'reviewed') codes.push('reviewed')
   if (item.reviewStatus === 'disputed') codes.push('disputed')
   if (item.reviewStatus === 'deprecated') codes.push('deprecated')
-  if (item.ratingNotice === 'ai_synthesized_pending_review') codes.push('ai-pending')
+  if (item.ratingNotice === 'ai_synthesized_pending_review' || item.researchPreview) codes.push('ai-pending')
   if (item.ratingNotice === 'insufficient_information') codes.push('information-insufficient')
   if (item.evidenceStrength === 'strong' || item.evidenceStrength === 'medium') codes.push('evidence-ok')
   else if (item.hasEvidence) codes.push('evidence-present')

@@ -1,5 +1,7 @@
 import Link from 'next/link'
 
+import { publicContentImagesEnabled } from '@/lib/deploymentProfile'
+
 import MissingSearchIndex from '../_components/MissingSearchIndex'
 import AssessmentOriginBadge from '../_components/AssessmentOriginBadge'
 import { readSearchIndex, type SearchItem } from '../_lib/search-index'
@@ -80,6 +82,7 @@ type NormalizedFilters = {
   q: string
   rank: string
   media: string
+  assessment: string
 }
 
 function firstParam(value: string | string[] | undefined) {
@@ -118,6 +121,18 @@ function normalizeMediaGroup(value: string) {
   const media = String(value || '').trim()
   if (!media || media === 'all') return 'all'
   return mediaGroupOptions.some((option) => option.value === media) ? media : 'all'
+}
+
+function normalizeAssessment(value: string) {
+  return ['ai', 'human', 'pending', 'disputed', 'unassessed'].includes(value) ? value : 'all'
+}
+
+function assessmentKey(item: SearchItem) {
+  if (item.reviewStatus === 'disputed') return 'disputed'
+  if (item.reviewStatus === 'reviewed' || item.ratingNotice === 'manual_reviewed') return 'human'
+  if (item.ratingNotice === 'ai_synthesized_pending_review' || item.radarAssessment?.assessedAt || item.radarAssessment?.suggestedGrade || item.researchPreview) return 'ai'
+  if (item.reviewStatus === 'pending') return 'pending'
+  return 'unassessed'
 }
 
 function rankLabel(rank?: string) {
@@ -254,6 +269,7 @@ function itemMatchesFilters(item: SearchItem, filters: NormalizedFilters) {
   const mediaGroup = item.mediaGroup || 'unknown'
   if (filters.rank !== 'all' && rank !== filters.rank) return false
   if (filters.media !== 'all' && mediaGroup !== filters.media) return false
+  if (filters.assessment !== 'all' && assessmentKey(item) !== filters.assessment) return false
   return itemMatchesQuery(item, filters.q)
 }
 
@@ -262,6 +278,7 @@ function filterLabel(filters: NormalizedFilters) {
   if (filters.q) labels.push(`关键词：${filters.q}`)
   if (filters.rank !== 'all') labels.push(`分级：${rankLabel(filters.rank)}`)
   if (filters.media !== 'all') labels.push(`作品类型：${filters.media}`)
+  if (filters.assessment !== 'all') labels.push(`评估状态：${filters.assessment}`)
   return labels
 }
 
@@ -270,6 +287,7 @@ function parseFilters(params: Record<string, string | string[] | undefined>): No
     q: firstParam(params.q).trim(),
     rank: normalizeRank(firstParam(params.rank)),
     media: normalizeMediaGroup(firstParam(params.media)),
+    assessment: normalizeAssessment(firstParam(params.assessment)),
   }
 }
 
@@ -278,6 +296,7 @@ function pageHref(filters: NormalizedFilters, page: number, pageSize: number) {
   if (filters.q) params.set('q', filters.q)
   if (filters.rank !== 'all') params.set('rank', filters.rank)
   if (filters.media !== 'all') params.set('media', filters.media)
+  if (filters.assessment !== 'all') params.set('assessment', filters.assessment)
   if (page > 1) params.set('page', String(page))
   if (pageSize !== defaultPageSize) params.set('perPage', String(pageSize))
 
@@ -298,6 +317,7 @@ function HiddenFilterInputs({ filters, pageSize }: { filters: NormalizedFilters;
       {filters.q ? <input name="q" type="hidden" value={filters.q} /> : null}
       {filters.rank !== 'all' ? <input name="rank" type="hidden" value={filters.rank} /> : null}
       {filters.media !== 'all' ? <input name="media" type="hidden" value={filters.media} /> : null}
+      {filters.assessment !== 'all' ? <input name="assessment" type="hidden" value={filters.assessment} /> : null}
       {pageSize !== defaultPageSize ? <input name="perPage" type="hidden" value={pageSize} /> : null}
     </>
   )
@@ -310,6 +330,17 @@ function WorksFilterForm({ filters }: { filters: NormalizedFilters }) {
         <label>
           <span>关键词</span>
           <input defaultValue={filters.q} name="q" placeholder="作品名、译名、原名、作者、机构、标签" type="search" />
+        </label>
+        <label>
+          <span>评估状态</span>
+          <select defaultValue={filters.assessment} name="assessment">
+            <option value="all">全部状态</option>
+            <option value="ai">AI 已评估 · 待人工复核</option>
+            <option value="human">人工已复核</option>
+            <option value="pending">待复核（尚无 AI 明细）</option>
+            <option value="disputed">有争议 / 已退回</option>
+            <option value="unassessed">尚未评估</option>
+          </select>
         </label>
         <label>
           <span>作品类型</span>
@@ -396,6 +427,8 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
   const pageStart = (currentPage - 1) * pageSize
   const pageItems = items.slice(pageStart, pageStart + pageSize)
   const activeFilterLabels = filterLabel(filters)
+  const showImages = publicContentImagesEnabled() && index.mediaMode !== 'text'
+  const aiPendingCount = allItems.filter((item) => assessmentKey(item) === 'ai').length
 
   const groups = rankOrder
     .map((rank) => ({
@@ -415,6 +448,8 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
           <Link className="back-link" href="/browse">浏览全部</Link>
           <span>{items.length} / {allItems.length} 条</span>
           <span>当前页 {pageItems.length} 条</span>
+          <span>AI 已评估待复核 {aiPendingCount} 条</span>
+          <span>{index.profile === 'lite' ? '轻量索引' : '完整索引'}</span>
           {cachedMarkedWorks ? <span>普通模式隐藏 {cachedMarkedWorks} 条标记作品</span> : null}
         </div>
         <nav className="media-group-links" aria-label="作品类型快速筛选">
@@ -482,15 +517,22 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
                   const typeLabels = workTypeLabels(item)
 
                   return (
-                    <Link className="collection-card work-card work-title-only-card" data-content-visibility={item.contentVisibility || 'ordinary'} href={item.url} key={item.id}>
-                      <div className="work-card-badges">
-                        <p>{rankLabel(item.rank)}</p>
-                        <span className="work-type-chip">{typeLabels.specific}</span>
-                        <AssessmentOriginBadge item={item} />
+                    <Link className={`collection-card work-card work-title-only-card${showImages ? ' work-card-with-cover' : ''}`} data-content-visibility={item.contentVisibility || 'ordinary'} href={item.url} key={item.id}>
+                      {showImages ? (
+                        item.cover?.url
+                          ? <img alt={item.cover.alt || `${displayTitle(item)}封面`} className="work-card-cover" height={item.cover.height} loading="lazy" src={item.cover.url} width={item.cover.width} />
+                          : <span aria-hidden="true" className="work-card-cover work-card-cover-placeholder">百合</span>
+                      ) : null}
+                      <div className="work-card-copy">
+                        <div className="work-card-badges">
+                          <p>{rankLabel(item.rank)}</p>
+                          <span className="work-type-chip">{typeLabels.specific}</span>
+                          <AssessmentOriginBadge item={item} />
+                        </div>
+                        <h2>{displayTitle(item)}</h2>
+                        {typeLabels.group !== typeLabels.specific ? <small>{typeLabels.group}</small> : null}
+                        {visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}
                       </div>
-                      <h2>{displayTitle(item)}</h2>
-                      {typeLabels.group !== typeLabels.specific ? <small>{typeLabels.group}</small> : null}
-                      {visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}
                     </Link>
                   )
                 })}

@@ -9,9 +9,10 @@ const fallback = read('src/app/(frontend)/_components/SearchIndexDetail.tsx')
 const feedback = read('src/app/(frontend)/feedback/page.tsx')
 const compact = read('scripts/export/compact-public-index.mjs')
 
-test('text mode is the safe default and enhanced mode is explicit', () => {
+test('complete enhanced mode is the default and text mode remains an explicit low-bandwidth option', () => {
   assert.match(profile, /NEXT_PUBLIC_MEDIA_MODE/u)
-  assert.match(profile, /\? 'enhanced'\s*:\s*'text'/u)
+  assert.match(profile, /=== 'text'/u)
+  assert.match(profile, /\? 'text'\s*:\s*'enhanced'/u)
   assert.match(detail, /publicContentImagesEnabled/u)
   assert.match(detail, /showImages && item\.collection/u)
   assert.match(fallback, /showImages && item\.collection/u)

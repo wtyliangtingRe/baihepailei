@@ -8,6 +8,10 @@ const search = read('src/app/(frontend)/search/search-client.tsx')
 const recommendations = read('src/app/(frontend)/_lib/recommendations.ts')
 const detailLayout = read('src/app/(frontend)/detail-layout-fixes.css')
 const assessmentBadge = read('src/app/(frontend)/_components/AssessmentOriginBadge.tsx')
+const searchExport = read('scripts/export/build-lite-search-index.mjs')
+const detailExport = read('scripts/export/build-lite-detail-index.mjs')
+const searchPipeline = read('scripts/export/build-and-enrich-lite-search-index.mjs')
+const trustCard = read('src/app/(frontend)/_components/WorkAssessmentTrustCard.tsx')
 
 test('works page caches sort, titles and normalized search blobs', () => {
   assert.match(works, /cachedSortedWorks/u)
@@ -15,6 +19,8 @@ test('works page caches sort, titles and normalized search blobs', () => {
   assert.match(works, /searchBlobCache/u)
   assert.match(works, /workFormatLabels/u)
   assert.match(works, /work-type-chip/u)
+  assert.match(works, /name="assessment"/u)
+  assert.match(works, /work-card-cover/u)
 })
 
 test('client search defers typing and reuses the exported index', () => {
@@ -22,6 +28,8 @@ test('client search defers typing and reuses the exported index', () => {
   assert.match(search, /cache: 'force-cache'/u)
   assert.match(search, /activeMedia/u)
   assert.match(search, /activeRank/u)
+  assert.match(search, /activeAssessment/u)
+  assert.match(search, /result-card-cover/u)
 })
 
 test('recommendations demote uncertain AI grades and high-risk ranks', () => {
@@ -50,4 +58,19 @@ test('AI assessment origin is visible without pretending it is human review', ()
   assert.match(assessmentBadge, /AI 已评估 · 待人工复核/u)
   assert.match(assessmentBadge, /AI 辅助 · 人工已复核/u)
   assert.doesNotMatch(assessmentBadge, /AI 已人工审核/u)
+})
+
+test('complete export uses full visibility, larger pages and avoids a second works fetch', () => {
+  assert.match(searchExport, /PAGE_LIMIT = '1000'/u)
+  assert.match(detailExport, /PAGE_LIMIT = '1000'/u)
+  assert.match(searchExport, /isFullVisible/u)
+  assert.match(detailExport, /isFullVisible/u)
+  assert.match(searchExport, /profile === 'lite' \? 'isLiteVisible' : 'isFullVisible'/u)
+  assert.match(searchExport, /radarAssessment: normalizeRadarAssessment/u)
+  assert.match(detailExport, /radarAssessment: normalizeRadarAssessment/u)
+  assert.doesNotMatch(searchPipeline, /enrich-lite-review-fields\.mjs/u)
+  assert.match(searchExport, /radar-research-records/u)
+  assert.match(searchExport, /researchPreview/u)
+  assert.match(trustCard, /AI 研究档案 · 非正式评级/u)
+  assert.match(trustCard, /不会覆盖 Works 的正式分级/u)
 })

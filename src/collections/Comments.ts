@@ -8,6 +8,13 @@ type CommentUser = {
   displayName?: string
 }
 
+type CommentRelation = string | number | { id?: string | number } | null | undefined
+
+function relationID(value: CommentRelation) {
+  if (value && typeof value === 'object') return value.id
+  return value
+}
+
 const visibleCommentsOrStaff: Access = ({ req }) => {
   if (isEditor(req.user)) return true
 
@@ -66,7 +73,7 @@ export const Comments: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
-      ({ data, operation, originalDoc, req }) => {
+      async ({ data, operation, originalDoc, req }) => {
         if (operation !== 'create') {
           if (!isEditor(req.user)) {
             return {
@@ -80,12 +87,51 @@ export const Comments: CollectionConfig = {
         }
 
         const user = req.user as CommentUser | undefined
+        const requestedParentID = relationID(data?.parentComment as CommentRelation)
+        let replyFields: Record<string, unknown> = {
+          parentComment: undefined,
+          replyToName: undefined,
+        }
+
+        if (requestedParentID !== undefined && requestedParentID !== null && String(requestedParentID).trim()) {
+          const parent = await req.payload.findByID({
+            collection: 'comments',
+            id: requestedParentID,
+            depth: 0,
+            overrideAccess: true,
+          })
+          if (!['approved', 'pending'].includes(String(parent.moderationStatus || ''))) {
+            throw new Error('不能回复已隐藏或已拒绝的评论。')
+          }
+          const rootParentID = relationID(parent.parentComment as CommentRelation) || parent.id
+          replyFields = {
+            parentComment: rootParentID,
+            replyToName: parent.authorName || '注册用户',
+            targetCollection: parent.targetCollection,
+            targetSlug: parent.targetSlug,
+            targetTitle: parent.targetTitle,
+          }
+        }
+
         return {
           ...data,
+          ...replyFields,
           author: user?.id,
           authorName: user?.displayName || user?.email || '注册用户',
           moderationStatus: 'approved',
         }
+      },
+    ],
+    afterDelete: [
+      async ({ doc, req }) => {
+        if ((req.context as { cascadeCommentDelete?: boolean } | undefined)?.cascadeCommentDelete) return
+        await req.payload.delete({
+          collection: 'comments',
+          depth: 0,
+          overrideAccess: true,
+          where: { parentComment: { equals: doc.id } },
+          context: { cascadeCommentDelete: true },
+        })
       },
     ],
   },
@@ -99,6 +145,17 @@ export const Comments: CollectionConfig = {
     },
     { name: 'targetSlug', type: 'text', label: '评论对象 Slug', required: true, maxLength: 200 },
     { name: 'targetTitle', type: 'text', label: '评论对象标题', required: true, maxLength: 200 },
+    {
+      name: 'parentComment',
+      type: 'relationship',
+      label: '所属主评论',
+      relationTo: 'comments',
+      admin: {
+        description: '回复统一归到一层主评论下，避免手机端无限嵌套。',
+        readOnly: true,
+      },
+    },
+    { name: 'replyToName', type: 'text', label: '回复给', admin: { readOnly: true } },
     {
       name: 'author',
       type: 'relationship',

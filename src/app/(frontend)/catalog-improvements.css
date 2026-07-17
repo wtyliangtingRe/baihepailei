@@ -38,6 +38,72 @@
   font-weight: 700;
 }
 
+.work-card-with-cover,
+.result-card-with-cover,
+.recommendation-card-with-cover {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.work-card-copy,
+.result-card-copy,
+.recommendation-card-copy {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 9px;
+}
+
+.work-card-cover,
+.result-card-cover,
+.recommendation-cover {
+  display: block;
+  width: 82px;
+  height: 112px;
+  border: 1px solid #383038;
+  border-radius: 14px;
+  background: #201820;
+  object-fit: cover;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.22);
+}
+
+.work-card-cover-placeholder,
+.result-card-cover-placeholder,
+.recommendation-cover-placeholder {
+  display: grid;
+  place-items: center;
+  color: #ffb5d7;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+.result-card-copy h2,
+.recommendation-card-copy h3,
+.work-card-copy h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .work-card-with-cover,
+  .result-card-with-cover,
+  .recommendation-card-with-cover {
+    grid-template-columns: 66px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .work-card-cover,
+  .result-card-cover,
+  .recommendation-cover {
+    width: 66px;
+    height: 92px;
+    border-radius: 11px;
+  }
+}
+
 .search-refine-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -110,6 +176,14 @@
   border-color: #9acbd4;
   background: #eefbfc;
   color: #236b78;
+}
+
+[data-theme='light'] .work-card-cover,
+[data-theme='light'] .result-card-cover,
+[data-theme='light'] .recommendation-cover {
+  border-color: #e2d6cc;
+  background: #fff0f7;
+  box-shadow: 0 10px 24px rgb(65 39 49 / 0.1);
 }
 
 [data-theme='light'] .search-refine-grid label {
