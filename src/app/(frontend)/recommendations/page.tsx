@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import AssessmentOriginBadge from '../_components/AssessmentOriginBadge'
 import PersonalRecommendationPanel from '../_components/PersonalRecommendationPanel'
 import { readDetailIndex } from '../_lib/detail-index'
 import { recommendedWorks, recommendationsByBucket, type RecommendedWork } from '../_lib/recommendations'
@@ -35,7 +36,7 @@ function typeLabel(work: RecommendedWork) {
 function RecommendationCard({ work }: { work: RecommendedWork }) {
   return (
     <Link className="recommendation-card" href={work.item.url}>
-      <div className="recommendation-card-meta"><span>{rankLabel(work.item.rank)}</span><span>{typeLabel(work)}</span><span>{work.score} 分</span></div>
+      <div className="recommendation-card-meta"><span>{rankLabel(work.item.rank)}</span><span>{typeLabel(work)}</span><span>{work.score} 分</span><AssessmentOriginBadge item={work.item} /></div>
       <h3>{work.item.title}</h3>
       {work.item.originalTitle ? <p>{work.item.originalTitle}</p> : null}
       <ul>{work.reasonCodes.slice(0, 6).map((code) => <li key={code}>{reasonLabels[code] || code}</li>)}</ul>
