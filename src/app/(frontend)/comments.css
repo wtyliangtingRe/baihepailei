@@ -32,6 +32,23 @@
   font-size: 13px;
 }
 
+.comment-delete {
+  margin-left: auto;
+  padding: 5px 10px;
+  border: 1px solid #53333a;
+  border-radius: 999px;
+  background: transparent;
+  color: #ff9caf;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
+.comment-delete:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 .comment-item p {
   margin: 0;
   color: #d7d7d7;
