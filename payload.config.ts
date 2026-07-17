@@ -21,6 +21,22 @@ import { Works } from './src/collections/Works'
 import { withRadarAssessmentFields } from './src/collections/fields/radarAssessment'
 
 const WorksWithRadarAssessment = withRadarAssessmentFields(Works)
+const WorksWithSafePublicationStatus: CollectionConfig = {
+  ...WorksWithRadarAssessment,
+  hooks: {
+    ...WorksWithRadarAssessment.hooks,
+    beforeValidate: [
+      ...(WorksWithRadarAssessment.hooks?.beforeValidate || []),
+      ({ data }) => {
+        if (!data || data.status !== 'review') return data
+        return {
+          ...data,
+          status: data.reviewStatus === 'reviewed' ? 'published' : 'draft',
+        }
+      },
+    ],
+  },
+}
 const UsersWithRestrictedAdmin: CollectionConfig = {
   ...Users,
   access: {
@@ -67,7 +83,7 @@ export default buildConfig({
   collections: [
     UsersWithRestrictedAdmin,
     Media,
-    WorksWithRadarAssessment,
+    WorksWithSafePublicationStatus,
     Creators,
     Organizations,
     Evidence,
