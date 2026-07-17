@@ -200,7 +200,7 @@ async function reviewFeedbackAction(formData: FormData) {
       data: {
         workflowStatus: intent,
         reviewNote: effectiveNote,
-        reviewer: (auth.user as { id?: string | number }).id,
+        reviewer: Number((auth.user as { id?: string | number }).id),
         reviewedAt: new Date().toISOString(),
       },
     })
