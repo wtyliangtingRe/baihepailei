@@ -61,6 +61,9 @@ export const FeedbackSubmissions: CollectionConfig = {
     beforeChange: [
       ({ data, operation, originalDoc, req }) => {
         const user = req.user as FeedbackUser | undefined
+        const fromReviewWorkbench = Boolean(
+          (req.context as { reviewWorkbench?: boolean } | undefined)?.reviewWorkbench,
+        )
         if (operation === 'create') {
           return {
             ...data,
@@ -73,7 +76,7 @@ export const FeedbackSubmissions: CollectionConfig = {
           }
         }
 
-        if (!isEditor(req.user)) {
+        if (!isEditor(req.user) && !fromReviewWorkbench) {
           return {
             ...data,
             submitter: originalDoc?.submitter,
@@ -89,8 +92,8 @@ export const FeedbackSubmissions: CollectionConfig = {
         if (nextStatus !== 'pending' && nextStatus !== originalDoc?.workflowStatus) {
           return {
             ...data,
-            reviewer: user?.id,
-            reviewedAt: new Date().toISOString(),
+            reviewer: user?.id || data?.reviewer,
+            reviewedAt: data?.reviewedAt || new Date().toISOString(),
           }
         }
         return data
