@@ -74,7 +74,7 @@ $env:PAYLOAD_EXPORT_PASSWORD="你的后台密码"
 node scripts/export/build-full-public-index.mjs --url "http://localhost:3000"
 ```
 
-该命令默认生成包含草稿、使用 `isFullVisible` 且显示封面的完整增强版。低流量镜像才显式传入 `--profile lite --media-mode text`。生成的 `public/search-index.json` 和 `public/detail-index.json` 默认不提交。详见 `docs/deployment-profiles-and-feedback.md`。
+该命令默认生成包含全部作品、创作者、机构和草稿的完整增强版，并保留封面。旧导入记录即使可见性字段为空也会进入完整版；只有低流量镜像才显式传入 `--profile lite --media-mode text` 并应用 Lite 可见性开关。生成的 `public/search-index.json` 和 `public/detail-index.json` 默认不提交。详见 `docs/deployment-profiles-and-feedback.md`。
 
 ## 账户与邮件
 
@@ -90,6 +90,8 @@ SMTP_USER=你的 SMTP 用户名
 SMTP_PASS=你的 SMTP 密码
 SMTP_FROM_ADDRESS=你的发件地址
 ```
+
+`SITE_OWNER_EMAIL` 只供服务端认证使用，不会回退成公开反馈地址。若要展示联系邮箱，请另设 `NEXT_PUBLIC_FEEDBACK_EMAIL`，并建议使用专门的站务邮箱。
 
 本地测试可设置 `ACCOUNT_EMAIL_VERIFICATION_ENABLED=false`，并把 `SMTP_HOST` 留空；完整变量见 `.env.example`。
 

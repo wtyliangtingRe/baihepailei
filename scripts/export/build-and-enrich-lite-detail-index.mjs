@@ -25,10 +25,7 @@ function run(commandArgs) {
 try {
   console.log(`[export] Detail index mode: ${publishedOnly ? 'published-only' : 'drafts-and-published'}; visibility profile defaults to full`)
   run(['scripts/export/build-lite-detail-index.mjs', ...args])
-  run(['scripts/export/enrich-lite-source-display-fields.mjs', '--file', outputFile, ...args])
   run(['scripts/export/enrich-lite-detail-index.mjs', ...args])
-  run(['scripts/export/enrich-lite-evidence-details.mjs', '--file', outputFile, ...args])
-  run(['scripts/export/enrich-lite-risk-matrix.mjs', '--file', outputFile, ...args])
   run(['scripts/export/compact-public-index.mjs', '--file', outputFile, ...args])
 } catch (error) {
   if (previous) {

@@ -11,6 +11,7 @@ const assessmentBadge = read('src/app/(frontend)/_components/AssessmentOriginBad
 const searchExport = read('scripts/export/build-lite-search-index.mjs')
 const detailExport = read('scripts/export/build-lite-detail-index.mjs')
 const searchPipeline = read('scripts/export/build-and-enrich-lite-search-index.mjs')
+const detailPipeline = read('scripts/export/build-and-enrich-lite-detail-index.mjs')
 const trustCard = read('src/app/(frontend)/_components/WorkAssessmentTrustCard.tsx')
 
 test('works page caches sort, titles and normalized search blobs', () => {
@@ -60,15 +61,21 @@ test('AI assessment origin is visible without pretending it is human review', ()
   assert.doesNotMatch(assessmentBadge, /AI 已人工审核/u)
 })
 
-test('complete export uses full visibility, larger pages and avoids a second works fetch', () => {
+test('complete export is exhaustive, keeps Lite visibility explicit and avoids duplicate full scans', () => {
   assert.match(searchExport, /PAGE_LIMIT = '1000'/u)
   assert.match(detailExport, /PAGE_LIMIT = '1000'/u)
-  assert.match(searchExport, /isFullVisible/u)
-  assert.match(detailExport, /isFullVisible/u)
-  assert.match(searchExport, /profile === 'lite' \? 'isLiteVisible' : 'isFullVisible'/u)
+  assert.match(searchExport, /profile === 'lite'/u)
+  assert.match(detailExport, /profile === 'lite'/u)
+  assert.doesNotMatch(searchExport, /where\[isFullVisible\]/u)
+  assert.doesNotMatch(detailExport, /where\[isFullVisible\]/u)
+  assert.match(detailExport, /'organizations', 'evidence'/u)
   assert.match(searchExport, /radarAssessment: normalizeRadarAssessment/u)
   assert.match(detailExport, /radarAssessment: normalizeRadarAssessment/u)
   assert.doesNotMatch(searchPipeline, /enrich-lite-review-fields\.mjs/u)
+  assert.doesNotMatch(searchPipeline, /enrich-lite-title-search-fields\.mjs/u)
+  assert.doesNotMatch(detailPipeline, /enrich-lite-source-display-fields\.mjs/u)
+  assert.doesNotMatch(detailPipeline, /enrich-lite-evidence-details\.mjs/u)
+  assert.doesNotMatch(detailPipeline, /enrich-lite-risk-matrix\.mjs/u)
   assert.match(searchExport, /radar-research-records/u)
   assert.match(searchExport, /researchPreview/u)
   assert.match(trustCard, /AI 研究档案 · 非正式评级/u)

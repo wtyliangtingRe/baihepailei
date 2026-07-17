@@ -449,10 +449,10 @@ export const Works: CollectionConfig = {
     {
       name: 'isFullVisible',
       type: 'checkbox',
-      label: '进入 Full 完整版',
+      label: '旧 Full 可见标记（兼容保留）',
       defaultValue: true,
       admin: {
-        description: '关闭后不进入完整归档/离线包。',
+        description: '完整版现在默认收录全部记录；此字段仅为旧导出器与历史数据兼容保留。',
       },
     },
     {

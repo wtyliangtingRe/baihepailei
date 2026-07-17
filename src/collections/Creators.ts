@@ -23,7 +23,7 @@ export const Creators: CollectionConfig = {
     { name: 'notes', type: 'richText', label: '备注' },
     { name: 'searchText', type: 'textarea', label: '搜索补充文本', admin: { description: '用于导出前台搜索索引的补充文本，可放别名、社团名、历史名称、作品关键词等。' } },
     { name: 'isLiteVisible', type: 'checkbox', label: '进入 Lite 文字版', defaultValue: true },
-    { name: 'isFullVisible', type: 'checkbox', label: '进入 Full 完整版', defaultValue: true },
+    { name: 'isFullVisible', type: 'checkbox', label: '旧 Full 可见标记（兼容保留）', defaultValue: true, admin: { description: '完整版现默认收录全部记录；仅为旧导出器兼容保留。' } },
     { name: 'legacyXWikiPage', type: 'text', admin: { hidden: true } },
     { name: 'status', type: 'select', label: '状态', defaultValue: 'draft', required: true, options: ['draft', 'review', 'published', 'archived'] },
   ],

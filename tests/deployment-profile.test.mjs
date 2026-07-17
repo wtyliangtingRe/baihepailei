@@ -23,6 +23,7 @@ test('feedback page offers configurable non-account channels without file upload
   assert.match(feedback, /mailto:/u)
   assert.match(feedback, /外部材料表单/u)
   assert.doesNotMatch(read('src/app/(frontend)/_components/FeedbackForm.tsx'), /type="file"/u)
+  assert.doesNotMatch(profile, /NEXT_PUBLIC_FEEDBACK_EMAIL'\] \|\| process\.env\['SITE_OWNER_EMAIL/u)
 })
 
 test('export pipeline records media profile and writes compact JSON', () => {

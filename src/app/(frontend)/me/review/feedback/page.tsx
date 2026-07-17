@@ -119,6 +119,21 @@ function queryHref(filters: Filters, page: number) {
   return query ? `/me/review/feedback?${query}` : '/me/review/feedback'
 }
 
+function safeReturnTo(value: FormDataEntryValue | null) {
+  const requested = String(value || '')
+  return requested === '/me/review/feedback' || requested.startsWith('/me/review/feedback?')
+    ? requested
+    : '/me/review/feedback'
+}
+
+function actionResultHref(returnTo: string, key: 'reviewError' | 'reviewed', value: string, id?: string) {
+  const [pathname, rawQuery = ''] = returnTo.split('?', 2)
+  const params = new URLSearchParams(rawQuery)
+  params.set(key, value)
+  if (id) params.set('reviewId', id)
+  return `${pathname}?${params.toString()}`
+}
+
 function relationID(value: FeedbackDoc['linkedWork']) {
   if (value && typeof value === 'object') return String(value.id || '')
   return value === undefined || value === null ? '' : String(value)
@@ -147,27 +162,42 @@ async function reviewFeedbackAction(formData: FormData) {
   const id = String(formData.get('id') || '').trim()
   const intent = String(formData.get('intent') || '').trim() as WorkflowStatus
   const note = String(formData.get('reviewNote') || '').trim().slice(0, 4000)
-  if (!id || !(intent in workflowLabels)) throw new Error('反馈 ID 或处理动作无效。')
-  if (['accepted', 'rejected', 'needs_information'].includes(intent) && !note) {
-    throw new Error('采纳、未采纳或要求补充材料时必须填写审核说明。')
+  const returnTo = safeReturnTo(formData.get('returnTo'))
+  if (!id || !(intent in workflowLabels)) {
+    redirect(actionResultHref(returnTo, 'reviewError', 'invalid_action', id))
+  }
+  if (intent === 'needs_information' && !note) {
+    redirect(actionResultHref(returnTo, 'reviewError', 'note_required', id))
   }
 
-  await payload.update({
-    collection: 'feedback-submissions',
-    id,
-    depth: 0,
-    overrideAccess: true,
-    context: { reviewWorkbench: true },
-    data: {
-      workflowStatus: intent,
-      reviewNote: note,
-      reviewer: (auth.user as { id?: string | number }).id,
-      reviewedAt: new Date().toISOString(),
-    },
-  })
+  const defaultNotes: Partial<Record<WorkflowStatus, string>> = {
+    accepted: '已采纳，待在关联内容条目中落实。',
+    rejected: '未采纳；审核人员未填写补充说明。',
+  }
+  const effectiveNote = note || defaultNotes[intent] || ''
+
+  try {
+    await payload.update({
+      collection: 'feedback-submissions',
+      id,
+      depth: 0,
+      overrideAccess: true,
+      context: { reviewWorkbench: true },
+      data: {
+        workflowStatus: intent,
+        reviewNote: effectiveNote,
+        reviewer: (auth.user as { id?: string | number }).id,
+        reviewedAt: new Date().toISOString(),
+      },
+    })
+  } catch (error) {
+    console.error('Feedback review update failed', error)
+    redirect(actionResultHref(returnTo, 'reviewError', 'save_failed', id))
+  }
 
   revalidatePath('/me/review/feedback')
   revalidatePath('/account')
+  redirect(actionResultHref(returnTo, 'reviewed', intent, id))
 }
 
 export default async function FeedbackReviewPage({ searchParams }: { searchParams: PageSearchParams }) {
@@ -178,7 +208,11 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
     return <main className="page review-workbench"><section className="review-empty"><h1>权限不足</h1><p>该页面只开放给最高领袖、管理员、编辑和审核人员。</p></section></main>
   }
 
-  const filters = parseFilters(await searchParams)
+  const rawParams = await searchParams
+  const filters = parseFilters(rawParams)
+  const reviewError = first(rawParams.reviewError)
+  const reviewed = first(rawParams.reviewed)
+  const reviewID = first(rawParams.reviewId)
   const [result, pending, triaging, needsInformation] = await Promise.all([
     payload.find({
       collection: 'feedback-submissions',
@@ -216,6 +250,17 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
         </div>
       </section>
 
+      {reviewError ? (
+        <div className="review-action-message review-action-message-error" role="alert">
+          {reviewError === 'note_required'
+            ? `反馈 ${reviewID || ''} 选择“要求补充材料”时，请先写明需要用户补充什么。`
+            : reviewError === 'save_failed'
+              ? `反馈 ${reviewID || ''} 保存失败，请刷新后重试；若仍失败请查看开发服务器日志。`
+              : '反馈 ID 或处理动作无效，请刷新页面后重试。'}
+        </div>
+      ) : null}
+      {reviewed ? <div className="review-action-message review-action-message-success" role="status">反馈 {reviewID || ''} 已更新为“{workflowLabels[reviewed as WorkflowStatus] || reviewed}”。</div> : null}
+
       <form action="/me/review/feedback" className="review-filter-panel">
         <label><span>关键词</span><input defaultValue={filters.q} name="q" placeholder="标题、结论、证据、提交者或反馈 ID" type="search" /></label>
         <label><span>处理状态</span><select defaultValue={filters.status} name="status"><option value="all">全部</option>{Object.entries(workflowLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
@@ -252,7 +297,8 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
 
               <form action={reviewFeedbackAction} className="feedback-review-action-form">
                 <input name="id" type="hidden" value={String(doc.id)} />
-                <label><span>审核说明</span><textarea defaultValue={doc.reviewNote || ''} maxLength={4000} name="reviewNote" placeholder="记录为什么采纳、未采纳，或还需要用户补充什么。" /></label>
+                <input name="returnTo" type="hidden" value={queryHref(filters, currentPage)} />
+                <label><span>审核说明</span><textarea defaultValue={doc.reviewNote || ''} maxLength={4000} name="reviewNote" placeholder="采纳和驳回可直接操作；要求补充材料时请写明需要什么。" /></label>
                 <div className="review-content-actions">
                   <button className="review-button" name="intent" type="submit" value="triaging">开始核查</button>
                   <button className="review-button" name="intent" type="submit" value="needs_information">要求补充材料</button>
@@ -265,7 +311,8 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
               <div className="review-row-actions">
                 {workID ? <Link className="review-link" href={canonicalContentUrl('works', workID)}>查看作品前台</Link> : null}
                 {workID ? <Link className="review-link" href={`/me/review/content?collection=works&q=${encodeURIComponent(workID)}`}>编辑关联作品</Link> : null}
-                <Link className="review-link" href={`/admin/collections/feedback-submissions/${doc.id}`}>完整查看反馈</Link>
+                <Link className="review-link" href={`/me/review/feedback/${doc.id}`}>站内完整详情</Link>
+                <Link className="review-link" href={`/admin/collections/feedback-submissions/${doc.id}`}>Payload 原始记录</Link>
               </div>
             </article>
           )

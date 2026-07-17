@@ -96,35 +96,50 @@ function visibilityParams(collection, includeDrafts, profile) {
     params.set('where[status][equals]', 'published')
   }
 
-  // Visibility flags must still apply when draft records are included.
-  // Otherwise manually hidden creator/organization anomalies leak back into Lite indexes.
-  if (collection !== 'evidence') {
-    const visibilityField = profile === 'lite' ? 'isLiteVisible' : 'isFullVisible'
-    params.set(`where[${visibilityField}][not_equals]`, 'false')
+  // The complete profile is intentionally exhaustive. Old imported rows often
+  // have null visibility flags, and SQL `not_equals false` excludes those rows.
+  // Only the explicitly reduced Lite profile applies a visibility boundary.
+  if (collection !== 'evidence' && profile === 'lite') {
+    params.set('where[isLiteVisible][not_equals]', 'false')
   }
 
   return params
 }
 
 async function fetchCollection(baseUrl, token, collection, { includeDrafts, profile }) {
-  const docs = []
-  let page = 1
-  let totalPages = 1
+  const fetchPages = async (drafts) => {
+    const docs = []
+    let page = 1
+    let totalPages = 1
 
-  do {
-    const params = visibilityParams(collection, includeDrafts, profile)
-    params.set('page', String(page))
+    do {
+      const params = visibilityParams(collection, drafts, profile)
+      params.set('page', String(page))
 
-    const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, {
-      headers: authHeaders(token),
-    })
+      const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, {
+        headers: authHeaders(token),
+      })
 
-    docs.push(...(result?.docs || []))
-    totalPages = Number(result?.totalPages || 1)
-    page += 1
-  } while (page <= totalPages)
+      docs.push(...(result?.docs || []))
+      totalPages = Number(result?.totalPages || 1)
+      page += 1
+    } while (page <= totalPages)
 
-  return docs
+    return docs
+  }
+
+  if (collection === 'evidence' && includeDrafts) {
+    console.warn('[warn] private evidence drafts are excluded from public indexes; exporting current confirmed public evidence only')
+    return fetchPages(false)
+  }
+
+  try {
+    return await fetchPages(includeDrafts)
+  } catch (error) {
+    if (collection !== 'evidence' || !includeDrafts) throw error
+    console.warn('[warn] evidence draft history is incompatible with the current database enum; retrying current public evidence only')
+    return fetchPages(false)
+  }
 }
 
 async function fetchResearchRecords(baseUrl, token) {
@@ -332,6 +347,16 @@ function sourceNotes(doc) {
     : []
 }
 
+function candidateSourceValues(doc) {
+  if (!Array.isArray(doc?.candidateSources)) return []
+  return doc.candidateSources.flatMap((item) => [item?.source, item?.label, item?.externalId, item?.url, item?.note])
+}
+
+function externalIdValues(doc) {
+  if (!doc?.externalIds || Array.isArray(doc.externalIds) || typeof doc.externalIds !== 'object') return []
+  return Object.entries(doc.externalIds).flatMap(([key, value]) => [key, value])
+}
+
 function deriveContentAdvisories({ tags, warnings, notes, searchText }) {
   const haystack = [tags, warnings, notes, searchText].flat().join('\n').toLowerCase()
   const advisories = []
@@ -407,6 +432,9 @@ function mapWork(doc) {
       doc.format,
       doc.firstPublishedLabel,
       doc.searchText,
+      notes,
+      candidateSourceValues(doc),
+      externalIdValues(doc),
       summaryText,
       analysisText,
     ]),
