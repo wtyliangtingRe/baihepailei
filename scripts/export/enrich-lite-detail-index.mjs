@@ -42,6 +42,7 @@ function compactFields(item) {
 function detailsFromSearchItem(item) {
   return compactFields({
     id: item.id,
+    recordId: item.recordId,
     collection: item.collection,
     typeLabel: item.typeLabel,
     title: item.title,
@@ -74,6 +75,8 @@ function mergeDetailItem(detailItem, searchItem) {
 
   return compactFields({
     ...detailItem,
+    recordId: searchItem.recordId || detailItem.recordId,
+    url: searchItem.url || detailItem.url,
     organizationType: searchItem.organizationType || detailItem.organizationType,
     evidenceType: searchItem.evidenceType || detailItem.evidenceType,
     organizations: searchItem.organizations || detailItem.organizations,
@@ -115,7 +118,7 @@ function main() {
 
   const payload = {
     ...detailIndex,
-    schemaVersion: Math.max(Number(detailIndex.schemaVersion || 1), 2),
+    schemaVersion: Math.max(Number(detailIndex.schemaVersion || 1), 3),
     counts: countByCollection(mergedItems),
     total: mergedItems.length,
     items: mergedItems,
