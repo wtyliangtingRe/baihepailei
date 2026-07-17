@@ -12,6 +12,7 @@
 }
 
 .collection-card .work-type-chip,
+.assessment-origin-badge,
 .result-type-badges span,
 .recommendation-card-meta span {
   width: fit-content;
@@ -23,6 +24,12 @@
   font-size: 13px;
   font-weight: 800;
   line-height: 1.2;
+}
+
+.assessment-origin-badge {
+  border-color: rgb(139 217 232 / 0.42);
+  background: rgb(139 217 232 / 0.1);
+  color: #8bd9e8;
 }
 
 .work-title-only-card small {
@@ -91,11 +98,18 @@
 }
 
 [data-theme='light'] .collection-card .work-type-chip,
+[data-theme='light'] .assessment-origin-badge,
 [data-theme='light'] .result-type-badges span,
 [data-theme='light'] .recommendation-card-meta span {
   border-color: #e8c1d5;
   background: #fff0f7;
   color: #b64178;
+}
+
+[data-theme='light'] .assessment-origin-badge {
+  border-color: #9acbd4;
+  background: #eefbfc;
+  color: #236b78;
 }
 
 [data-theme='light'] .search-refine-grid label {
