@@ -4,6 +4,7 @@ import path from 'node:path'
 
 const DEFAULT_OUT = 'public/detail-index.json'
 const COLLECTIONS = ['works', 'creators', 'terms', 'rules']
+const PAGE_LIMIT = '1000'
 
 function parseArgs(argv) {
   const args = {}
@@ -24,7 +25,7 @@ function parseArgs(argv) {
 
 function usage() {
   console.log(`Usage:
-  pnpm export:lite-details -- [--url http://localhost:3000] [--out public/detail-index.json] [--include-drafts]
+  pnpm export:lite-details -- [--url http://localhost:3000] [--out public/detail-index.json] [--include-drafts] [--profile full|lite]
 
 Optional environment variables:
   PAYLOAD_EXPORT_EMAIL
@@ -41,6 +42,11 @@ Examples:
   $env:PAYLOAD_EXPORT_PASSWORD="your-password"
   pnpm export:lite-details -- --url "http://localhost:3000" --include-drafts
 `)
+}
+
+function exportProfile(args) {
+  const requested = String(args.profile || (args.lite ? 'lite' : 'full')).trim().toLowerCase()
+  return requested === 'lite' ? 'lite' : 'full'
 }
 
 async function requestJson(url, options = {}) {
@@ -85,14 +91,14 @@ function authHeaders(token) {
   return token ? { Authorization: `JWT ${token}` } : {}
 }
 
-async function fetchCollection(baseUrl, token, collection, { includeDrafts }) {
+async function fetchCollection(baseUrl, token, collection, { includeDrafts, profile }) {
   const docs = []
   let page = 1
   let totalPages = 1
 
   do {
     const params = new URLSearchParams()
-    params.set('limit', '100')
+    params.set('limit', PAGE_LIMIT)
     params.set('page', String(page))
     params.set('depth', '2')
 
@@ -102,7 +108,8 @@ async function fetchCollection(baseUrl, token, collection, { includeDrafts }) {
       params.set('where[status][equals]', 'published')
     }
 
-    params.set('where[isLiteVisible][not_equals]', 'false')
+    const visibilityField = profile === 'lite' ? 'isLiteVisible' : 'isFullVisible'
+    params.set(`where[${visibilityField}][not_equals]`, 'false')
 
     const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, {
       headers: authHeaders(token),
@@ -194,6 +201,55 @@ function mediaImage(value) {
   }
 }
 
+function optionalPercent(value) {
+  if (value === null || value === undefined || value === '') return undefined
+  const number = Number(value)
+  if (!Number.isFinite(number)) return undefined
+  return Math.min(100, Math.max(0, number))
+}
+
+function optionalNonNegativeNumber(value) {
+  if (value === null || value === undefined || value === '') return undefined
+  const number = Number(value)
+  if (!Number.isFinite(number)) return undefined
+  return Math.max(0, Math.round(number))
+}
+
+function optionalText(value) {
+  return String(value || '').trim() || undefined
+}
+
+function normalizeRadarAssessment(value) {
+  if (!value || typeof value !== 'object') return undefined
+  const matchedRules = Array.isArray(value.matchedRules)
+    ? value.matchedRules.map((rule) => ({
+      code: optionalText(rule?.code),
+      grade: optionalText(rule?.grade)?.toUpperCase(),
+      confidencePercent: optionalPercent(rule?.confidencePercent),
+      reason: optionalText(rule?.reason),
+    })).filter((rule) => Object.values(rule).some((item) => item !== undefined))
+    : undefined
+  const contradictions = Array.isArray(value.contradictions)
+    ? value.contradictions.map((item) => optionalText(typeof item === 'string' ? item : item?.value)).filter(Boolean)
+    : undefined
+  const assessment = {
+    confidencePercent: optionalPercent(value.confidencePercent),
+    evidenceCoveragePercent: optionalPercent(value.evidenceCoveragePercent),
+    evidenceStatus: optionalText(value.evidenceStatus),
+    sourceSummary: optionalText(value.sourceSummary),
+    sourceCount: optionalNonNegativeNumber(value.sourceCount),
+    policyVersion: optionalText(value.policyVersion),
+    suggestedGrade: optionalText(value.suggestedGrade)?.toUpperCase(),
+    decisiveRuleCode: optionalText(value.decisiveRuleCode),
+    decisiveRuleReason: optionalText(value.decisiveRuleReason),
+    matchedRules,
+    contradictions,
+    requiresHumanReview: typeof value.requiresHumanReview === 'boolean' ? value.requiresHumanReview : undefined,
+    assessedAt: optionalText(value.assessedAt),
+  }
+  return Object.values(assessment).some((item) => item !== undefined) ? assessment : undefined
+}
+
 function sourceLinks(values) {
   if (!Array.isArray(values)) return []
   return values
@@ -247,6 +303,11 @@ function mapWork(doc) {
   return {
     ...commonFields('works', doc, doc.title, '作品'),
     rank: doc.rank || 'unknown',
+    reviewStatus: doc.reviewStatus || 'pending',
+    evidenceStrength: doc.evidenceStrength || 'unassessed',
+    ratingNotice: doc.ratingNotice || '',
+    reviewReasons: Array.isArray(doc.reviewReasons) ? doc.reviewReasons.map(normalizeText).filter(Boolean) : [],
+    radarAssessment: normalizeRadarAssessment(doc.radarAssessment),
     originalTitle: doc.originalTitle || '',
     aliases: aliasesToValues(doc.aliases),
     localizedTitles: localizedTitleValues(doc.localizedTitles),
@@ -275,6 +336,8 @@ function mapCreator(doc) {
   return {
     ...commonFields('creators', doc, doc.name, '创作者'),
     rank: doc.rank || 'unknown',
+    reviewStatus: doc.reviewStatus || 'pending',
+    reviewOrigin: doc.reviewOrigin || 'unassessed',
     aliases: aliasesToValues(doc.aliases),
     sections: sections([richSection('notes', '备注', doc.notes)]),
   }
@@ -323,6 +386,7 @@ async function main() {
   const baseUrl = String(args.url || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/, '')
   const outFile = String(args.out || DEFAULT_OUT)
   const includeDrafts = Boolean(args['include-drafts'])
+  const profile = exportProfile(args)
   const email = process.env.PAYLOAD_EXPORT_EMAIL || process.env.PAYLOAD_SEED_EMAIL
   const password = process.env.PAYLOAD_EXPORT_PASSWORD || process.env.PAYLOAD_SEED_PASSWORD
 
@@ -335,16 +399,17 @@ async function main() {
   const counts = {}
 
   for (const collection of COLLECTIONS) {
-    const docs = await fetchCollection(baseUrl, token, collection, { includeDrafts })
+    const docs = await fetchCollection(baseUrl, token, collection, { includeDrafts, profile })
     counts[collection] = docs.length
     items.push(...docs.map((doc) => mapDocument(collection, doc)))
   }
 
   const payload = {
-    schemaVersion: 2,
+    schemaVersion: 4,
     generatedAt: new Date().toISOString(),
     source: baseUrl,
     mode: includeDrafts ? 'drafts-and-published' : 'published-only',
+    profile,
     counts,
     total: items.length,
     items,
