@@ -36,9 +36,9 @@ export function isMergedDuplicateWork(doc: ReviewableContentDoc) {
 
 export function safeReviewReturnTo(value: FormDataEntryValue | string | null | undefined) {
   const requested = String(value || '')
-  return requested === '/me/review/content' || requested.startsWith('/me/review/content?')
-    ? requested
-    : '/me/review/content'
+  const isContentQueue = requested === '/me/review/content' || requested.startsWith('/me/review/content?')
+  const isFeedbackQueue = requested === '/me/review/feedback' || requested.startsWith('/me/review/feedback?')
+  return isContentQueue || isFeedbackQueue ? requested : '/me/review/content'
 }
 
 export function reviewActionHref(
