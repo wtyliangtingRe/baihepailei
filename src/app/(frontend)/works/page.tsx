@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 import MissingSearchIndex from '../_components/MissingSearchIndex'
+import AssessmentOriginBadge from '../_components/AssessmentOriginBadge'
 import { readSearchIndex, type SearchItem } from '../_lib/search-index'
 
 const rankOrder = ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'unknown']
@@ -485,6 +486,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
                       <div className="work-card-badges">
                         <p>{rankLabel(item.rank)}</p>
                         <span className="work-type-chip">{typeLabels.specific}</span>
+                        <AssessmentOriginBadge item={item} />
                       </div>
                       <h2>{displayTitle(item)}</h2>
                       {typeLabels.group !== typeLabels.specific ? <small>{typeLabels.group}</small> : null}
