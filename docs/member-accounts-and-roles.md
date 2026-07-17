@@ -30,7 +30,9 @@ The owner identity is explicit and deployment-specific:
 SITE_OWNER_EMAIL=owner@example.com
 ```
 
-For the official Baihepailei deployment, set it to `wty1123581321@gmail.com`. The server promotes that exact verified registration to `owner` and prevents it from being renamed or demoted through ordinary API updates.
+For the official deployment, set the real value only in the local or hosting environment. Do not write it into source files, documentation, screenshots, or public build variables. The server promotes the configured verified registration to `owner` and prevents it from being renamed or demoted through ordinary API updates.
+
+`SITE_OWNER_EMAIL` is server-only and is never reused as a public contact fallback. If a public contact address is wanted, configure a separate `NEXT_PUBLIC_FEEDBACK_EMAIL`; that variable is intentionally visible to browsers.
 
 Self-hosted copies must deliberately set their own owner email. There is no hidden cross-deployment account or universal fallback identity.
 
