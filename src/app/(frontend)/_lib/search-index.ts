@@ -16,6 +16,22 @@ export type SearchCoverImage = {
   height?: number
 }
 
+export type RadarResearchPreview = {
+  researchStatus?: string
+  yuriRelevance?: string
+  riskSignals?: string[]
+  likelyGrade?: string
+  bestGrade?: string
+  worstGrade?: string
+  sourceSummary?: string
+  sourceCount?: number
+  unresolvedQuestionCount?: number
+  confidencePercent?: number
+  recommendedNextAction?: string
+  recommendedNextQueue?: string
+  importedAt?: string
+}
+
 export type SearchItem = {
   id: string
   recordId?: string
@@ -31,7 +47,10 @@ export type SearchItem = {
   reviewStatus?: string
   evidenceStrength?: string
   ratingNotice?: string
+  reviewOrigin?: string
+  reviewReasons?: string[]
   radarAssessment?: RadarAssessmentMetrics
+  researchPreview?: RadarResearchPreview
   originalTitle?: string
   aliases?: string[]
   localizedTitles?: string[]
@@ -64,6 +83,7 @@ export type SearchIndex = {
   counts: Record<string, number>
   visibilityCounts?: Record<string, number>
   mediaMode?: 'text' | 'enhanced'
+  profile?: 'full' | 'lite'
   total: number
   items: SearchItem[]
 }
