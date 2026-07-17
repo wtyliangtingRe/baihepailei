@@ -47,7 +47,7 @@ export const FeedbackSubmissions: CollectionConfig = {
     plural: '用户反馈',
   },
   admin: {
-    defaultColumns: ['targetTitle', 'feedbackType', 'proposedGrade', 'workflowStatus', 'submitterName', 'createdAt'],
+    defaultColumns: ['targetTitle', 'linkedWork', 'feedbackType', 'proposedGrade', 'workflowStatus', 'submitterName', 'createdAt'],
     group: '互动',
     useAsTitle: 'targetTitle',
   },
@@ -64,8 +64,11 @@ export const FeedbackSubmissions: CollectionConfig = {
         if (operation === 'create') {
           return {
             ...data,
+            pageUrl: '',
             submitter: user?.id,
             submitterName: user?.displayName || user?.email || '注册用户',
+            targetCollection: data?.linkedWork ? 'works' : data?.targetCollection,
+            targetSlug: '',
             workflowStatus: 'pending',
           }
         }
@@ -111,9 +114,9 @@ export const FeedbackSubmissions: CollectionConfig = {
       ],
     },
     { name: 'targetCollection', type: 'text', label: '对象类型', defaultValue: 'works' },
-    { name: 'targetSlug', type: 'text', label: '作品 / 页面 Slug' },
+    { name: 'targetSlug', type: 'text', label: '旧作品 / 页面 Slug', admin: { hidden: true } },
     { name: 'targetTitle', type: 'text', label: '作品 / 页面名称', required: true, maxLength: 200 },
-    { name: 'pageUrl', type: 'text', label: '相关页面 URL', maxLength: 500 },
+    { name: 'pageUrl', type: 'text', label: '旧相关页面 URL', maxLength: 500, admin: { hidden: true } },
     { name: 'proposedGrade', type: 'select', label: '建议分级', options: gradeOptions },
     {
       name: 'matchedRuleCodes',
@@ -184,9 +187,11 @@ export const FeedbackSubmissions: CollectionConfig = {
     {
       name: 'linkedWork',
       type: 'relationship',
-      label: '关联正式作品',
+      label: '关联站内作品 ID',
       relationTo: 'works',
-      access: { update: staffFieldAccess },
+      admin: {
+        description: '使用本站 Works 主键建立稳定关系，不依赖外部 URL、第三方 ID 或可变 Slug。',
+      },
     },
   ],
 }
