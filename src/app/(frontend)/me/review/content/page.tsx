@@ -105,13 +105,13 @@ function buildWhere(filters: Filters): Where {
   const titleField = collectionMeta[filters.collection].titleField
 
   if (filters.q) {
-    and.push({
-      or: [
+    const or: Where[] = [
         { [titleField]: { like: filters.q } },
         { slug: { like: filters.q } },
         { siteId: { like: filters.q } },
-      ],
-    })
+    ]
+    if (/^\d+$/u.test(filters.q)) or.push({ id: { equals: filters.q } })
+    and.push({ or })
   }
   if (filters.reviewStatus !== 'all') and.push({ reviewStatus: { equals: filters.reviewStatus } })
 
@@ -183,14 +183,20 @@ async function saveContentAction(formData: FormData) {
   const collection = contentCollection(formData.get('collection'))
   const id = String(formData.get('id') || '').trim()
   const title = String(formData.get('title') || '').trim().slice(0, 300)
-  const reviewStatus = String(formData.get('reviewStatus') || 'pending')
+  const intent = String(formData.get('intent') || 'save')
+  const selectedReviewStatus = String(formData.get('reviewStatus') || 'pending')
+  const reviewStatus = intent === 'approve'
+    ? 'reviewed'
+    : intent === 'reject'
+      ? 'disputed'
+      : selectedReviewStatus
   const status = String(formData.get('status') || 'draft')
   const note = String(formData.get('note') || '').trim().slice(0, 4000)
 
   if (!id || !title) throw new Error('条目 ID 和名称不能为空。')
   if (!['pending', 'reviewed', 'disputed'].includes(reviewStatus)) throw new Error('复核状态无效。')
   if (!['draft', 'review', 'published', 'archived'].includes(status)) throw new Error('发布状态无效。')
-  if (reviewStatus === 'disputed' && !note) throw new Error('标记争议时必须填写人工复核记录。')
+  if (reviewStatus === 'disputed' && !note) throw new Error('驳回或标记争议时必须填写原因。')
 
   const current = await payload.findByID({ collection: collection as never, id, depth: 0, overrideAccess: true }) as unknown as ContentDoc
   const actorID = (auth.user as { id?: string | number }).id
@@ -307,6 +313,7 @@ export default async function ContentReviewPage({ searchParams }: { searchParams
 
       <div className="review-row-actions">
         {filters.collection === 'works' ? <Link className="review-link" href="/me/review/public-catalog">进入作品证据深度审核</Link> : null}
+        <Link className="review-link" href="/me/review/feedback">审核用户反馈</Link>
         <Link className="review-link" href={`/admin/collections/${filters.collection}`}>打开 Payload 完整列表</Link>
       </div>
 
@@ -340,7 +347,9 @@ export default async function ContentReviewPage({ searchParams }: { searchParams
               <label><span>发布状态</span><select defaultValue={doc.status || 'draft'} name="status"><option value="draft">草稿</option><option value="review">待发布审核</option><option value="published">已发布</option><option value="archived">已归档</option></select></label>
               <label className="review-content-note"><span>人工复核记录</span><textarea defaultValue={doc.humanReviewNote || ''} maxLength={4000} name="note" placeholder="记录核对过的来源、结论与尚待确认的问题；标记争议时必填。" /></label>
               <div className="review-content-actions">
-                <button className="review-button review-button-primary" type="submit">保存这一个条目</button>
+                <button className="review-button" name="intent" type="submit" value="save">只保存修改</button>
+                <button className="review-button review-button-primary" name="intent" type="submit" value="approve">通过并记录人工复核</button>
+                <button className="review-button review-button-danger" name="intent" type="submit" value="reject">驳回 / 标记争议</button>
                 <Link className="review-link" href={canonicalContentUrl(filters.collection, doc.id)}>查看前台</Link>
                 <Link className="review-link" href={`/admin/collections/${filters.collection}/${doc.id}`}>完整编辑</Link>
               </div>
