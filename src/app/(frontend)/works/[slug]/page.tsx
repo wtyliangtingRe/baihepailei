@@ -1,10 +1,11 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 
 import DetailIndexDetail from '../../_components/DetailIndexDetail'
 import FeedbackPrompt from '../../_components/FeedbackPrompt'
 import MissingSearchIndex from '../../_components/MissingSearchIndex'
 import SearchIndexDetail from '../../_components/SearchIndexDetail'
 import VersionInfo from '../../_components/VersionInfo'
+import { isCanonicalContentRoute } from '../../_lib/content-identity'
 import { findDetailItem, findEvidenceByWorkTitle } from '../../_lib/detail-index'
 import { findSearchItem, readSearchIndex } from '../../_lib/search-index'
 
@@ -18,6 +19,9 @@ export default async function WorkDetailPage({ params }: Args) {
 
   const detailItem = findDetailItem('works', decodedSlug)
   if (detailItem) {
+    if (detailItem.recordId && !isCanonicalContentRoute('works', decodedSlug, detailItem.recordId)) {
+      redirect(detailItem.url)
+    }
     return (
       <>
         <DetailIndexDetail item={detailItem} relatedEvidence={findEvidenceByWorkTitle(detailItem.title)} />
@@ -32,6 +36,12 @@ export default async function WorkDetailPage({ params }: Args) {
 
   const item = findSearchItem('works', decodedSlug)
   if (!item) notFound()
+  if (item.recordId && !isCanonicalContentRoute('works', decodedSlug, item.recordId)) redirect(item.url)
 
-  return <SearchIndexDetail item={item} />
+  return (
+    <>
+      <SearchIndexDetail item={item} />
+      <FeedbackPrompt item={item} />
+    </>
+  )
 }
