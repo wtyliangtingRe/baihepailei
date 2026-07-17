@@ -170,16 +170,16 @@ export const Works: CollectionConfig = {
       required: true,
       unique: true,
       admin: {
-        description: '用于 URL 和导入匹配，例如 magical-girl-lyrical-nanoha。',
+        description: '仅用于旧链接兼容和导入匹配。公开规范网址使用本站 Works 数据库 ID。',
       },
     },
     {
       name: 'siteId',
       type: 'text',
-      label: '站内 ID',
+      label: '导入追踪 ID（兼容）',
       unique: true,
       admin: {
-        description: '本站内部稳定唯一标识，用于迁移、导入、跨来源合并和人工追踪。',
+        description: '历史导入与跨来源合并用的追踪值；不作为公开网址，也不等于 Works 数据库主键。',
       },
     },
     {
