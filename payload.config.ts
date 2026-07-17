@@ -1,8 +1,9 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import { lexicalEditor as makeEditor } from '@payloadcms/richtext-lexical'
-import { buildConfig } from 'payload'
+import { buildConfig, type CollectionConfig } from 'payload'
 
+import { isAdmin } from './src/access/roles'
 import { Comments } from './src/collections/Comments'
 import { Creators } from './src/collections/Creators'
 import { Evidence } from './src/collections/Evidence'
@@ -20,6 +21,13 @@ import { Works } from './src/collections/Works'
 import { withRadarAssessmentFields } from './src/collections/fields/radarAssessment'
 
 const WorksWithRadarAssessment = withRadarAssessmentFields(Works)
+const UsersWithRestrictedAdmin: CollectionConfig = {
+  ...Users,
+  access: {
+    ...Users.access,
+    admin: ({ req }) => isAdmin(req.user),
+  },
+}
 
 function smtpValue(value: unknown) {
   const normalized = String(value || '').trim()
@@ -54,10 +62,10 @@ const emailAdapter = smtpHost
 
 export default buildConfig({
   admin: {
-    user: Users.slug,
+    user: UsersWithRestrictedAdmin.slug,
   },
   collections: [
-    Users,
+    UsersWithRestrictedAdmin,
     Media,
     WorksWithRadarAssessment,
     Creators,
