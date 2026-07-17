@@ -215,10 +215,10 @@ function buildSearchBlob(parts) {
   return uniqueValues(parts).join('\n')
 }
 
-function itemUrl(collection, slug) {
-  if (collection === 'works') return `/works/${slug}`
-  if (collection === 'creators') return `/creators/${slug}`
-  if (collection === 'organizations') return `/organizations/${slug}`
+function itemUrl(collection, recordId, slug) {
+  if (collection === 'works') return `/works/w-${encodeURIComponent(String(recordId))}`
+  if (collection === 'creators') return `/creators/c-${encodeURIComponent(String(recordId))}`
+  if (collection === 'organizations') return `/organizations/o-${encodeURIComponent(String(recordId))}`
   if (collection === 'evidence') return `/evidence/${slug}`
   if (collection === 'terms') return `/terms/${slug}`
   if (collection === 'rules') return `/rules/${slug}`
@@ -265,11 +265,12 @@ function mapWork(doc) {
 
   return {
     id: `works:${doc.slug}`,
+    recordId: String(doc.id),
     collection: 'works',
     typeLabel: '作品',
     title: doc.title || '',
     slug: doc.slug || '',
-    url: itemUrl('works', doc.slug),
+    url: itemUrl('works', doc.id, doc.slug),
     rank: doc.rank || 'unknown',
     originalTitle: doc.originalTitle || '',
     aliases,
@@ -313,11 +314,12 @@ function mapCreator(doc) {
 
   return {
     id: `creators:${doc.slug}`,
+    recordId: String(doc.id),
     collection: 'creators',
     typeLabel: '创作者',
     title: doc.name || '',
     slug: doc.slug || '',
-    url: itemUrl('creators', doc.slug),
+    url: itemUrl('creators', doc.id, doc.slug),
     rank: doc.rank || 'unknown',
     aliases,
     localizedNames,
@@ -332,11 +334,12 @@ function mapOrganization(doc) {
 
   return {
     id: `organizations:${doc.slug}`,
+    recordId: String(doc.id),
     collection: 'organizations',
     typeLabel: '机构',
     title: doc.name || '',
     slug: doc.slug || '',
-    url: itemUrl('organizations', doc.slug),
+    url: itemUrl('organizations', doc.id, doc.slug),
     organizationType: doc.type || 'other',
     aliases,
     localizedNames,
@@ -351,11 +354,12 @@ function mapEvidence(doc) {
 
   return {
     id: `evidence:${doc.slug}`,
+    recordId: String(doc.id),
     collection: 'evidence',
     typeLabel: '证据材料',
     title: doc.title || '',
     slug: doc.slug || '',
-    url: itemUrl('evidence', doc.slug),
+    url: itemUrl('evidence', doc.id, doc.slug),
     evidenceType: doc.evidenceType || 'other',
     relatedWorks,
     relatedCreators,
@@ -372,11 +376,12 @@ function mapTerm(doc) {
 
   return {
     id: `terms:${doc.slug}`,
+    recordId: String(doc.id),
     collection: 'terms',
     typeLabel: '名词解释',
     title: doc.name || '',
     slug: doc.slug || '',
-    url: itemUrl('terms', doc.slug),
+    url: itemUrl('terms', doc.id, doc.slug),
     relatedTerms,
     relatedWarnings,
     searchText: buildSearchBlob([doc.name, relatedTerms, relatedWarnings, doc.searchText, definitionText]),
@@ -390,11 +395,12 @@ function mapRule(doc) {
 
   return {
     id: `rules:${doc.slug}`,
+    recordId: String(doc.id),
     collection: 'rules',
     typeLabel: '规则',
     title: doc.title || '',
     slug: doc.slug || '',
-    url: itemUrl('rules', doc.slug),
+    url: itemUrl('rules', doc.id, doc.slug),
     category: doc.category || 'principle',
     relatedTags,
     relatedWarnings,
@@ -472,7 +478,7 @@ async function main() {
   }
 
   const payload = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     generatedAt: new Date().toISOString(),
     source: baseUrl,
     mode: includeDrafts ? 'drafts-and-published' : 'published-only',
