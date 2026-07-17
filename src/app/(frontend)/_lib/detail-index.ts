@@ -27,6 +27,22 @@ export type DetailCoverImage = {
   height?: number
 }
 
+export type RadarResearchPreview = {
+  researchStatus?: string
+  yuriRelevance?: string
+  riskSignals?: string[]
+  likelyGrade?: string
+  bestGrade?: string
+  worstGrade?: string
+  sourceSummary?: string
+  sourceCount?: number
+  unresolvedQuestionCount?: number
+  confidencePercent?: number
+  recommendedNextAction?: string
+  recommendedNextQueue?: string
+  importedAt?: string
+}
+
 export type DetailRichTextSection = {
   key: string
   label: string
@@ -72,7 +88,10 @@ export type DetailItem = {
   reviewStatus?: string
   evidenceStrength?: string
   ratingNotice?: string
+  reviewOrigin?: string
+  reviewReasons?: string[]
   radarAssessment?: RadarAssessmentMetrics
+  researchPreview?: RadarResearchPreview
   originalTitle?: string
   aliases?: string[]
   localizedTitles?: string[]
@@ -118,6 +137,7 @@ export type DetailIndex = {
   source: string
   mode: string
   mediaMode?: 'text' | 'enhanced'
+  profile?: 'full' | 'lite'
   counts: Record<string, number>
   total: number
   items: DetailItem[]
