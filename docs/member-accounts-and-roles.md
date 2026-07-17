@@ -15,10 +15,10 @@ For local development, use `ACCOUNT_EMAIL_VERIFICATION_ENABLED=false` and leave 
 
 | Value | Label | Capabilities |
 | --- | --- | --- |
-| `owner` | 最高领袖 | Full content, moderation, user and personnel control |
-| `admin` | 管理员 | Content and moderation; may appoint `editor` or return one to `member` |
-| `editor` | 编辑 | Edit and approve content; moderate comments and feedback |
-| `member` | 注册用户 | Comment, manage private lists, submit feedback |
+| `owner` | 最高领袖 | Full content, feedback review, user suspension and personnel control |
+| `admin` | 管理员 | Content and feedback review; may appoint `editor`, return one to `member`, and suspend non-admin accounts |
+| `editor` | 编辑 | Edit and approve content, review feedback, and delete inappropriate comments |
+| `member` | 注册用户 | Publish comments, delete their own comments, manage private lists and submit feedback |
 
 `reviewer` and `trusted` remain as compatibility roles for existing records. New appointments should use the four roles above.
 
@@ -44,11 +44,22 @@ If the configured email already exists as an older admin or member record, its n
 - `editor` cannot change roles.
 - Public registration cannot choose a privileged role even if a forged `role` value is submitted.
 
+## Personnel and account suspension
+
+`/me/personnel` is the first-party personnel console for `owner` and `admin` accounts.
+
+- The owner may appoint or remove administrators and editors, and may suspend any non-owner account.
+- Administrators may appoint editors or return them to members. They may suspend editors, members and compatibility-role accounts, but cannot modify the owner or another administrator.
+- No staff member can suspend their own currently authenticated account from this console.
+- Suspension uses the independent `accountStatus` field rather than Payload's temporary failed-login lock. Entering the suspended state clears all existing sessions immediately.
+- A suspended account is redirected to `/account/locked` after a successful password check and cannot use authenticated community features.
+
 ## Content boundaries
 
 - Editors may create, edit and publish Works.
 - Only owner/admin may delete Works.
-- Comments and feedback enter pending queues before publication or adoption.
+- Comments publish immediately. Authors can delete their own comments; editors and above can delete any comment.
+- Feedback enters a pending evidence queue before adoption.
 - Accepting feedback never automatically changes a Work rating; a staff member must apply the verified result separately.
 
 ## Local user cleanup
