@@ -3,7 +3,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const DEFAULT_OUT = 'public/detail-index.json'
-const COLLECTIONS = ['works', 'creators', 'terms', 'rules']
+const COLLECTIONS = ['works', 'creators', 'organizations', 'evidence', 'terms', 'rules']
+const OPTIONAL_COLLECTIONS = new Set(['evidence'])
 const PAGE_LIMIT = '1000'
 
 function parseArgs(argv) {
@@ -92,35 +93,54 @@ function authHeaders(token) {
 }
 
 async function fetchCollection(baseUrl, token, collection, { includeDrafts, profile }) {
-  const docs = []
-  let page = 1
-  let totalPages = 1
+  const fetchPages = async (drafts) => {
+    const docs = []
+    let page = 1
+    let totalPages = 1
 
-  do {
-    const params = new URLSearchParams()
-    params.set('limit', PAGE_LIMIT)
-    params.set('page', String(page))
-    params.set('depth', '2')
+    do {
+      const params = new URLSearchParams()
+      params.set('limit', PAGE_LIMIT)
+      params.set('page', String(page))
+      params.set('depth', '2')
 
-    if (includeDrafts) {
-      params.set('draft', 'true')
-    } else {
-      params.set('where[status][equals]', 'published')
-    }
+      if (drafts) {
+        params.set('draft', 'true')
+      } else if (collection === 'evidence') {
+        params.set('where[status][equals]', 'confirmed')
+        params.set('where[isPublic][equals]', 'true')
+      } else {
+        params.set('where[status][equals]', 'published')
+      }
 
-    const visibilityField = profile === 'lite' ? 'isLiteVisible' : 'isFullVisible'
-    params.set(`where[${visibilityField}][not_equals]`, 'false')
+      if (collection !== 'evidence' && profile === 'lite') {
+        params.set('where[isLiteVisible][not_equals]', 'false')
+      }
 
-    const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, {
-      headers: authHeaders(token),
-    })
+      const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, {
+        headers: authHeaders(token),
+      })
 
-    docs.push(...(result?.docs || []))
-    totalPages = Number(result?.totalPages || 1)
-    page += 1
-  } while (page <= totalPages)
+      docs.push(...(result?.docs || []))
+      totalPages = Number(result?.totalPages || 1)
+      page += 1
+    } while (page <= totalPages)
 
-  return docs
+    return docs
+  }
+
+  if (collection === 'evidence' && includeDrafts) {
+    console.warn('[warn] private evidence drafts are excluded from public indexes; exporting current confirmed public evidence only')
+    return fetchPages(false)
+  }
+
+  try {
+    return await fetchPages(includeDrafts)
+  } catch (error) {
+    if (collection !== 'evidence' || !includeDrafts) throw error
+    console.warn('[warn] evidence draft history is incompatible with the current database enum; retrying current public evidence only')
+    return fetchPages(false)
+  }
 }
 
 function richTextToPlainText(value) {
@@ -219,6 +239,76 @@ function optionalText(value) {
   return String(value || '').trim() || undefined
 }
 
+function uniqueTextValues(values) {
+  const seen = new Set()
+  const output = []
+  for (const raw of values.flat(Infinity)) {
+    const value = normalizeText(raw)
+    if (!value) continue
+    const key = value.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    output.push(value)
+  }
+  return output
+}
+
+function candidateSources(values) {
+  if (!Array.isArray(values)) return []
+  const seen = new Set()
+  return values
+    .map((item) => ({
+      source: normalizeText(item?.source),
+      label: normalizeText(item?.label),
+      externalId: normalizeText(item?.externalId),
+      url: normalizeText(item?.url),
+    }))
+    .filter((item) => item.source || item.label || item.externalId || item.url)
+    .filter((item) => {
+      const key = [item.source, item.externalId, item.url, item.label].join('|').toLowerCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+}
+
+function externalIds(value) {
+  if (!value || Array.isArray(value) || typeof value !== 'object') return {}
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([key, item]) => [key, normalizeText(item)])
+      .filter(([, item]) => item),
+  )
+}
+
+function mergedSourceLinks(doc, candidates) {
+  const seen = new Set()
+  return [
+    ...sourceLinks(doc.sourceLinks),
+    ...candidates.filter((item) => item.url).map((item) => ({
+      label: item.label || [item.source, item.externalId].filter(Boolean).join(' '),
+      url: item.url,
+    })),
+  ].filter((item) => {
+    const key = normalizeText(item.url).replace(/\/+$/u, '')
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+function normalizedRiskMatrix(value) {
+  if (!value || typeof value !== 'object') return undefined
+  const matrix = {
+    maleImpact: normalizeText(value.maleImpact),
+    relationshipClarity: normalizeText(value.relationshipClarity),
+    endingSafety: normalizeText(value.endingSafety),
+    creatorSpeechRisk: normalizeText(value.creatorSpeechRisk),
+    note: compactPlainText(value.note),
+  }
+  return Object.values(matrix).some(Boolean) ? matrix : undefined
+}
+
 function normalizeRadarAssessment(value) {
   if (!value || typeof value !== 'object') return undefined
   const matchedRules = Array.isArray(value.matchedRules)
@@ -278,6 +368,8 @@ function sections(values) {
 function itemUrl(collection, recordId, slug) {
   if (collection === 'works') return `/works/w-${encodeURIComponent(String(recordId))}`
   if (collection === 'creators') return `/creators/c-${encodeURIComponent(String(recordId))}`
+  if (collection === 'organizations') return `/organizations/o-${encodeURIComponent(String(recordId))}`
+  if (collection === 'evidence') return `/evidence/${slug}`
   if (collection === 'terms') return `/terms/${slug}`
   if (collection === 'rules') return `/rules/${slug}`
   return `/${collection}/${slug}`
@@ -300,6 +392,9 @@ function commonFields(collection, doc, title, typeLabel) {
 }
 
 function mapWork(doc) {
+  const aliases = aliasesToValues(doc.aliases)
+  const localizedTitles = localizedTitleValues(doc.localizedTitles)
+  const candidates = candidateSources(doc.candidateSources)
   return {
     ...commonFields('works', doc, doc.title, '作品'),
     rank: doc.rank || 'unknown',
@@ -309,8 +404,9 @@ function mapWork(doc) {
     reviewReasons: Array.isArray(doc.reviewReasons) ? doc.reviewReasons.map(normalizeText).filter(Boolean) : [],
     radarAssessment: normalizeRadarAssessment(doc.radarAssessment),
     originalTitle: doc.originalTitle || '',
-    aliases: aliasesToValues(doc.aliases),
-    localizedTitles: localizedTitleValues(doc.localizedTitles),
+    aliases,
+    localizedTitles,
+    allTitles: uniqueTextValues([doc.title, doc.originalTitle, aliases, localizedTitles]),
     mediaGroup: doc.mediaGroup || 'unknown',
     mediaType: doc.mediaType || 'unknown',
     format: doc.format || 'unknown',
@@ -324,7 +420,10 @@ function mapWork(doc) {
     cover: mediaImage(doc.cover),
     hasEvidence: Boolean(doc.hasEvidence),
     evidenceNote: doc.evidenceNote || '',
-    sourceLinks: sourceLinks(doc.sourceLinks),
+    sourceLinks: mergedSourceLinks(doc, candidates),
+    candidateSources: candidates,
+    externalIds: externalIds(doc.externalIds),
+    riskMatrix: normalizedRiskMatrix(doc.riskMatrix),
     sections: sections([
       richSection('summary', '摘要', doc.summary),
       richSection('analysis', '分析', doc.analysis),
@@ -340,6 +439,39 @@ function mapCreator(doc) {
     reviewOrigin: doc.reviewOrigin || 'unassessed',
     aliases: aliasesToValues(doc.aliases),
     sections: sections([richSection('notes', '备注', doc.notes)]),
+  }
+}
+
+function mapOrganization(doc) {
+  const aliases = aliasesToValues(doc.aliases)
+  const localizedNames = Array.isArray(doc.localizedNames)
+    ? doc.localizedNames.map((item) => normalizeText(typeof item === 'string' ? item : item?.name)).filter(Boolean)
+    : []
+  return {
+    ...commonFields('organizations', doc, doc.name, '机构'),
+    organizationType: doc.type || 'other',
+    reviewStatus: doc.reviewStatus || 'pending',
+    reviewOrigin: doc.reviewOrigin || 'unassessed',
+    aliases: uniqueTextValues([aliases, localizedNames]),
+    sections: sections([richSection('notes', '备注', doc.notes)]),
+  }
+}
+
+function mapEvidence(doc) {
+  return {
+    ...commonFields('evidence', doc, doc.title, '证据材料'),
+    evidenceType: doc.evidenceType || 'other',
+    reviewStatus: doc.reviewStatus || 'pending',
+    evidenceStrength: doc.evidenceStrength || 'unassessed',
+    relatedWorks: relationshipNames(doc.relatedWorks),
+    relatedCreators: relationshipNames(doc.relatedCreators),
+    relatedOrganizations: relationshipNames(doc.relatedOrganizations),
+    image: mediaImage(doc.image),
+    description: doc.description || '',
+    sourceLinks: sourceLinks(doc.sourceLinks),
+    capturedAt: doc.capturedAt || '',
+    isPublic: Boolean(doc.isPublic),
+    sections: [],
   }
 }
 
@@ -366,6 +498,8 @@ function mapRule(doc) {
 function mapDocument(collection, doc) {
   if (collection === 'works') return mapWork(doc)
   if (collection === 'creators') return mapCreator(doc)
+  if (collection === 'organizations') return mapOrganization(doc)
+  if (collection === 'evidence') return mapEvidence(doc)
   if (collection === 'terms') return mapTerm(doc)
   if (collection === 'rules') return mapRule(doc)
   throw new Error(`Unsupported collection: ${collection}`)
@@ -397,9 +531,18 @@ async function main() {
 
   const items = []
   const counts = {}
+  const exportWarnings = []
 
   for (const collection of COLLECTIONS) {
-    const docs = await fetchCollection(baseUrl, token, collection, { includeDrafts, profile })
+    let docs = []
+    try {
+      docs = await fetchCollection(baseUrl, token, collection, { includeDrafts, profile })
+    } catch (error) {
+      if (!OPTIONAL_COLLECTIONS.has(collection)) throw error
+      const message = String(error?.message || error).slice(0, 1200)
+      exportWarnings.push({ collection, message })
+      console.warn(`[warn] skipped optional collection ${collection}: ${message.split('\n')[0]}`)
+    }
     counts[collection] = docs.length
     items.push(...docs.map((doc) => mapDocument(collection, doc)))
   }
@@ -411,6 +554,7 @@ async function main() {
     mode: includeDrafts ? 'drafts-and-published' : 'published-only',
     profile,
     counts,
+    exportWarnings,
     total: items.length,
     items,
   }
