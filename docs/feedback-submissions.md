@@ -13,6 +13,6 @@ Members can submit:
 - evidence summary and source URLs;
 - spoiler status.
 
-Every new row is stamped with the authenticated submitter and forced to `pending`. Editors, reviewers, admins and the owner can triage, accept, reject or request more information in Payload Admin.
+Every new row is stamped with the authenticated submitter and forced to `pending`. Editors, reviewers, admins and the owner can use `/me/review/feedback` to search the queue, read all submitted evidence and explicitly triage, accept, reject, archive or request more information. Payload Admin remains available for unusual low-level edits.
 
 Submission does not update `Works.rank`, `reviewStatus`, publication state or Radar fields. A reviewer must verify and apply accepted material separately.
