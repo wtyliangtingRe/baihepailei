@@ -1,0 +1,8 @@
+/*
+ * The third editor section is the legacy risk matrix. Keep the underlying
+ * fields and values for rollback compatibility, but remove the redundant
+ * daily-editing UI while rules, tags, warnings and evidence replace it.
+ */
+.review-editor-form > .review-editor-section:nth-of-type(3) {
+  display: none;
+}
