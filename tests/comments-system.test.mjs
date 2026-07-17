@@ -15,6 +15,9 @@ test('comments publish immediately and preserve server-stamped authorship', () =
   assert.match(collection, /moderationStatus: 'approved'/u)
   assert.match(collection, /author:\s*\{\s*equals: userID/u)
   assert.match(collection, /maxLength: 1200/u)
+  assert.match(collection, /name: 'parentComment'/u)
+  assert.match(collection, /relationTo: 'comments'/u)
+  assert.match(collection, /replyToName/u)
 })
 
 test('frontend shows immediate comments with owner and staff deletion controls', () => {
@@ -24,6 +27,9 @@ test('frontend shows immediate comments with owner and staff deletion controls',
   assert.match(block, /method: 'DELETE'/u)
   assert.match(block, /commentModeratorRoles/u)
   assert.match(block, /评论已发布/u)
+  assert.match(block, /comment-replies/u)
+  assert.match(block, /parentComment: parentComment\?\.id/u)
+  assert.match(block, /发布回复/u)
   assert.match(block, /\/account\/login/u)
   assert.doesNotMatch(block, /登录后台账户/u)
   assert.match(css, /\.comment-list/u)
