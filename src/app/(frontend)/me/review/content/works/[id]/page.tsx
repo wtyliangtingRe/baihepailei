@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import type { ReactNode } from 'react'
 import { getPayload } from 'payload'
 
 import { canonicalContentUrl } from '../../../../../_lib/content-identity'
@@ -60,7 +61,7 @@ type WorkDoc = {
 
 const allowedRoles = new Set<Role>(['owner', 'admin', 'editor', 'reviewer'])
 const rankOptions = ['S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'trash', 'unknown']
-const mediaGroupOptions = ['anime', 'manga', 'novel', 'game', 'audio', 'live_action', 'other', 'unknown']
+const mediaGroupOptions = ['anime', 'manga', 'novel', 'game', 'other', 'unknown']
 const mediaTypeOptions = ['anime', 'manga', 'novel', 'light_novel', 'visual_novel', 'game', 'audio_drama', 'live_action', 'webtoon', 'doujin', 'anthology', 'other', 'unknown']
 const formatOptions = ['tv_anime', 'anime_movie', 'ova', 'ona', 'manga_series', 'manga_oneshot', 'novel_series', 'light_novel_series', 'web_serial', 'visual_novel', 'pc_game', 'console_game', 'mobile_game', 'audio_drama', 'live_action', 'webtoon_series', 'doujin', 'anthology', 'other', 'unknown']
 const reviewStatusOptions = ['pending', 'reviewed', 'disputed', 'deprecated']
@@ -70,7 +71,7 @@ const evidenceStrengthOptions = ['unassessed', 'weak', 'medium', 'strong']
 
 const labels: Record<string, string> = {
   S: 'S', AA: 'S（兼容 AA）', A: 'A', B: 'B', C: 'C', D: 'D', E: 'E', F: 'F', X: 'X', trash: '垃圾', unknown: '未知',
-  anime: '动画', manga: '漫画', novel: '小说', game: '游戏', audio: '音声', live_action: '真人影视', other: '其他',
+  anime: '动画', manga: '漫画', novel: '小说', game: '游戏', live_action: '真人影视', other: '其他',
   light_novel: '轻小说', visual_novel: '视觉小说', audio_drama: '广播剧 / 音声', webtoon: 'Webtoon', doujin: '同人作品', anthology: '合集 / 选集',
   tv_anime: 'TV 动画', anime_movie: '动画电影', ova: 'OVA', ona: 'ONA / 网络动画', manga_series: '漫画连载', manga_oneshot: '漫画短篇', novel_series: '小说系列', light_novel_series: '轻小说系列', web_serial: 'Web 连载', pc_game: 'PC 游戏', console_game: '主机游戏', mobile_game: '手机游戏', webtoon_series: 'Webtoon 连载',
   pending: '待复核', reviewed: '已复核', disputed: '有争议', deprecated: '已合并 / 已废弃',
@@ -78,7 +79,7 @@ const labels: Record<string, string> = {
   ai_synthesized_pending_review: 'AI 综合，待复核', insufficient_information: '信息不足', manual_reviewed: '人工已确认', none: '无',
   unassessed: '未评估', weak: '弱', medium: '中', strong: '强',
   day: '精确到日', month: '精确到月', year: '精确到年',
-  minor: '轻微', noticeable: '明显', severe: '严重', confirmed: '明确恋爱', developing: '发展中', subtext: '暧昧 / 亚文本', friendship: '友情向', unclear: '不明确', safe: '安全', open: '开放式', unfinished: '未完结', risky: '有风险', bad: '明确雷', disputed_risk: '有争议',
+  minor: '轻微', noticeable: '明显', severe: '严重', confirmed: '明确恋爱', developing: '发展中', subtext: '暧昧 / 亚文本', friendship: '友情向', unclear: '不明确', safe: '安全', open: '开放式', unfinished: '未完结', risky: '有风险', bad: '明确雷',
 }
 
 function first(value: string | string[] | undefined) {
@@ -226,7 +227,7 @@ async function saveWorkEditorAction(formData: FormData) {
       collection: 'works',
       id,
       depth: 0,
-      draft: true,
+      draft: false,
       overrideAccess: true,
       context: { reviewWorkbench: true, firstPartyEditor: true },
       data: data as never,
@@ -291,7 +292,7 @@ export default async function WorkEditorPage({ params, searchParams }: { params:
           <p className="eyebrow">站内作品编辑台</p>
           <h1>{work.title || `作品 #${work.id}`}</h1>
           <p className="muted">这是面向日常审核和勘误的包装界面：常用资料、排雷矩阵、来源说明和发布状态都能在站内修改。关系数组、封面上传和富文本仍保留到 Payload 高级维护。</p>
-          <div className="review-safety-note">保存使用 Payload 的草稿更新路径，并记录人工复核人和时间；不会直接执行 PostgreSQL 写入。</div>
+          <div className="review-safety-note">保存通过 Payload 内容 API 写入当前记录并保留版本历史，不会直接执行 PostgreSQL 语句。</div>
         </div>
         <div className="review-stat-grid"><Stat label="作品 ID" value={String(work.id)} /><Stat label="当前分级" value={work.rank || 'unknown'} /></div>
       </section>
@@ -361,7 +362,7 @@ export default async function WorkEditorPage({ params, searchParams }: { params:
         </EditorSection>
 
         <div className="review-editor-submit">
-          <button className="review-button review-button-primary" type="submit">保存到站内作品草稿</button>
+          <button className="review-button review-button-primary" type="submit">保存站内作品修改</button>
           <Link className="review-link" href={returnTo}>取消并返回队列</Link>
           <small>封面、创作者关系、机构关系、标签、注意点和富文本分析暂时仍从 Payload 高级维护处理。</small>
         </div>
@@ -374,11 +375,11 @@ function Stat({ label, value }: { label: string; value: string }) {
   return <div className="review-stat"><span>{label}</span><strong>{value}</strong></div>
 }
 
-function EditorSection({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+function EditorSection({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return <section className="review-editor-section"><header><h2>{title}</h2><p>{description}</p></header><div className="review-editor-grid">{children}</div></section>
 }
 
-function Field({ label, wide = false, children }: { label: string; wide?: boolean; children: React.ReactNode }) {
+function Field({ label, wide = false, children }: { label: string; wide?: boolean; children: ReactNode }) {
   return <label className={wide ? 'review-editor-field review-editor-field-wide' : 'review-editor-field'}><span>{label}</span>{children}</label>
 }
 
