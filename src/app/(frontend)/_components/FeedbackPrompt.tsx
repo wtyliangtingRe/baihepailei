@@ -3,16 +3,15 @@ import Link from 'next/link'
 import type { DetailItem } from '../_lib/detail-index'
 import type { SearchItem } from '../_lib/search-index'
 
-type FeedbackItem = Pick<DetailItem | SearchItem, 'collection' | 'title' | 'url'> & { slug?: string }
+type FeedbackItem = Pick<DetailItem | SearchItem, 'collection' | 'id' | 'title'>
 
 export function feedbackPageUrl(item?: FeedbackItem) {
   if (!item) return '/feedback'
   const params = new URLSearchParams({
     collection: item.collection,
-    slug: item.slug || '',
     title: item.title,
-    page: item.url,
   })
+  if (item.collection === 'works') params.set('workId', item.id)
   return `/feedback?${params.toString()}`
 }
 

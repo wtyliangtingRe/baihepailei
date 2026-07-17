@@ -1,6 +1,6 @@
 import type { Access, CollectionConfig } from 'payload'
 
-import { editorsAndUp, isEditor, signedIn } from '@/access/roles'
+import { isEditor, signedIn } from '@/access/roles'
 
 type CommentUser = {
   id?: string | number
@@ -8,12 +8,25 @@ type CommentUser = {
   displayName?: string
 }
 
-const approvedCommentsOrModerator: Access = ({ req }) => {
+const visibleCommentsOrStaff: Access = ({ req }) => {
   if (isEditor(req.user)) return true
 
   return {
-    moderationStatus: {
-      equals: 'approved',
+    or: [
+      { moderationStatus: { equals: 'approved' } },
+      { moderationStatus: { equals: 'pending' } },
+    ],
+  }
+}
+
+const ownCommentOrStaff: Access = ({ req }) => {
+  if (isEditor(req.user)) return true
+  if (!req.user) return false
+  const userID = (req.user as CommentUser).id
+  if (userID === undefined || userID === null) return false
+  return {
+    author: {
+      equals: userID,
     },
   }
 }
@@ -28,9 +41,9 @@ const targetCollectionOptions = [
 ]
 
 const moderationStatusOptions = [
-  { label: '待审核', value: 'pending' },
+  { label: '旧待审核（按公开处理）', value: 'pending' },
   { label: '已公开', value: 'approved' },
-  { label: '已拒绝', value: 'rejected' },
+  { label: '旧已拒绝', value: 'rejected' },
   { label: '已隐藏', value: 'hidden' },
 ]
 
@@ -41,15 +54,15 @@ export const Comments: CollectionConfig = {
     plural: '评论',
   },
   admin: {
-    defaultColumns: ['targetTitle', 'authorName', 'moderationStatus', 'createdAt'],
+    defaultColumns: ['targetTitle', 'authorName', 'createdAt'],
     group: '互动',
     useAsTitle: 'targetTitle',
   },
   access: {
     create: signedIn,
-    delete: editorsAndUp,
-    read: approvedCommentsOrModerator,
-    update: editorsAndUp,
+    delete: ownCommentOrStaff,
+    read: visibleCommentsOrStaff,
+    update: ({ req }) => isEditor(req.user),
   },
   hooks: {
     beforeChange: [
@@ -71,7 +84,7 @@ export const Comments: CollectionConfig = {
           ...data,
           author: user?.id,
           authorName: user?.displayName || user?.email || '注册用户',
-          moderationStatus: 'pending',
+          moderationStatus: 'approved',
         }
       },
     ],
@@ -102,16 +115,19 @@ export const Comments: CollectionConfig = {
       minLength: 2,
       maxLength: 1200,
       admin: {
-        description: '短评、阅读感想，或提醒条目需要复核。纯文本，审核后公开。',
+        description: '短评、阅读感想，或提醒条目需要复核。纯文本，提交后立即公开。',
       },
     },
     {
       name: 'moderationStatus',
       type: 'select',
       label: '审核状态',
-      defaultValue: 'pending',
+      defaultValue: 'approved',
       required: true,
       options: moderationStatusOptions,
+      admin: {
+        hidden: true,
+      },
     },
   ],
 }

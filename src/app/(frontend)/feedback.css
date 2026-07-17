@@ -67,6 +67,17 @@
   color: #fff;
 }
 
+.feedback-form small {
+  color: #929292;
+  font-weight: 500;
+  line-height: 1.55;
+}
+
+.feedback-form input:read-only {
+  border-color: #4f3743;
+  background: #171217;
+}
+
 .feedback-form textarea {
   min-height: 110px;
   resize: vertical;

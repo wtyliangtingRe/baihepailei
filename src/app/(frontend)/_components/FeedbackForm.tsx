@@ -5,9 +5,8 @@ import { useState, type FormEvent } from 'react'
 
 type FeedbackFormProps = {
   initialCollection?: string
-  initialSlug?: string
   initialTitle?: string
-  initialPageUrl?: string
+  initialWorkId?: string
 }
 
 const feedbackTypes = [
@@ -26,11 +25,10 @@ function cleanLines(value: string) {
   return [...new Set(value.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean))]
 }
 
-export default function FeedbackForm({ initialCollection = 'works', initialSlug = '', initialTitle = '', initialPageUrl = '' }: FeedbackFormProps) {
+export default function FeedbackForm({ initialCollection = 'works', initialTitle = '', initialWorkId = '' }: FeedbackFormProps) {
   const [feedbackType, setFeedbackType] = useState('radar_evidence')
   const [targetTitle, setTargetTitle] = useState(initialTitle)
-  const [targetSlug, setTargetSlug] = useState(initialSlug)
-  const [pageUrl, setPageUrl] = useState(initialPageUrl)
+  const [targetWorkID, setTargetWorkID] = useState(initialWorkId)
   const [proposedGrade, setProposedGrade] = useState('')
   const [ruleCodes, setRuleCodes] = useState('')
   const [claim, setClaim] = useState('')
@@ -54,10 +52,9 @@ export default function FeedbackForm({ initialCollection = 'works', initialSlug 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           feedbackType,
+          linkedWork: targetWorkID.trim() || undefined,
           targetCollection: initialCollection || 'works',
-          targetSlug: targetSlug.trim(),
           targetTitle: targetTitle.trim(),
-          pageUrl: pageUrl.trim(),
           proposedGrade: proposedGrade || undefined,
           matchedRuleCodes: rules,
           claim: claim.trim(),
@@ -114,12 +111,16 @@ export default function FeedbackForm({ initialCollection = 'works', initialSlug 
           <input maxLength={200} onChange={(event) => setTargetTitle(event.target.value)} required value={targetTitle} />
         </label>
         <label>
-          作品 Slug（可选）
-          <input maxLength={200} onChange={(event) => setTargetSlug(event.target.value)} value={targetSlug} />
-        </label>
-        <label>
-          相关页面链接（可选）
-          <input maxLength={500} onChange={(event) => setPageUrl(event.target.value)} type="url" value={pageUrl} />
+          站内作品 ID（已有作品时填写）
+          <input
+            inputMode="numeric"
+            maxLength={80}
+            onChange={(event) => setTargetWorkID(event.target.value)}
+            placeholder="例如：254895"
+            readOnly={Boolean(initialWorkId)}
+            value={targetWorkID}
+          />
+          <small>从作品详情页进入时会自动填写；这是本站数据库主键，不依赖外部网站链接。</small>
         </label>
         <label>
           建议等级（可选）

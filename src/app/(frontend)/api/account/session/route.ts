@@ -4,6 +4,7 @@ import { generatePayloadCookie, getPayload } from 'payload'
 
 type AccountUser = {
   id: number | string
+  accountStatus?: string
   displayName?: string
   email?: string
   role?: string
@@ -14,6 +15,7 @@ function publicUser(value: unknown) {
   if (!user?.id) return null
   return {
     id: String(user.id),
+    accountStatus: user.accountStatus || 'active',
     displayName: user.displayName || '',
     email: user.email || '',
     role: user.role || 'member',
@@ -75,7 +77,16 @@ export async function POST(request: NextRequest) {
       secure: Boolean(authConfig.cookies.secure),
     })
     return noStore(response)
-  } catch {
+  } catch (caught) {
+    const error = caught as { data?: { code?: string }; message?: string; status?: number }
+    if (error?.status === 403 && (error.data?.code === 'account_suspended' || error.message === '此账户已被封停。')) {
+      return noStore(
+        NextResponse.json(
+          { code: 'account_suspended', message: '此账户已被封停。' },
+          { status: 403 },
+        ),
+      )
+    }
     return noStore(
       NextResponse.json(
         { message: '登录失败，请检查邮箱、密码以及邮箱验证状态。' },

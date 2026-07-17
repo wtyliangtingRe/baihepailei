@@ -22,11 +22,11 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
   const channels = publicFeedbackChannels()
   const mediaMode = publicMediaMode()
   const targetTitle = first(params.title)
-  const targetPage = first(params.page)
+  const targetWorkID = first(params.workId)
   const emailSubject = encodeURIComponent(targetTitle ? `Baihepailei 反馈：${targetTitle}` : 'Baihepailei 条目反馈')
   const emailBody = encodeURIComponent([
     targetTitle ? `相关条目：${targetTitle}` : '',
-    targetPage ? `页面：${targetPage}` : '',
+    targetWorkID ? `站内作品 ID：${targetWorkID}` : '',
     '',
     '希望核实的结论：',
     '',
@@ -49,9 +49,8 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
 
       <FeedbackForm
         initialCollection={first(params.collection) || 'works'}
-        initialPageUrl={first(params.page)}
-        initialSlug={first(params.slug)}
         initialTitle={first(params.title)}
+        initialWorkId={targetWorkID}
       />
 
       <section className="detail-card feedback-guide">

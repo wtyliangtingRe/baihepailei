@@ -15,6 +15,8 @@ test('feedback page provides a first-party moderated submission form', () => {
   assert.match(page, /规则与等级纠错/u)
   assert.match(form, /\/api\/feedback-submissions/u)
   assert.match(form, /证据链接/u)
+  assert.match(form, /站内作品 ID/u)
+  assert.doesNotMatch(form, /相关页面链接/u)
   assert.match(prompt, /提交人工材料/u)
 })
 
