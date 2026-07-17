@@ -4,7 +4,7 @@
 
 ## 推荐结论
 
-项目现在默认使用 `enhanced` 完整版：公开索引以 `isFullVisible` 为边界，并显示索引中已有的作品封面。这样先保留全部能力，再由低流量部署显式关闭图片或改用 Lite 可见性。
+项目现在默认使用 `enhanced` 完整版：作品、创作者和机构不再受旧可见性字段为空的影响，并显示索引中已有的作品封面。这样先完整保留数据库内容，再由低流量部署显式关闭图片并应用 Lite 可见性。
 
 需要节省流量时可显式使用 `text`，并在导出时传入 `--profile lite`。是否能“上传反馈图片”取决于分发物是否带可写后端；纯静态文件本身无法接收上传。
 
@@ -43,7 +43,7 @@ NEXT_PUBLIC_FEEDBACK_ISSUE_URL=https://github.com/example/repo/issues/new
 node scripts/export/build-full-public-index.mjs --url "http://localhost:3000"
 ```
 
-该命令默认包含草稿、使用 `isFullVisible`、输出增强媒体索引。只有明确传入 `--profile lite --media-mode text` 时才生成低流量镜像。
+该命令默认包含全部作品、创作者、机构和草稿，并输出增强媒体索引。证据材料仍只导出“已确认且允许公开”的版本，避免内部截图或草稿泄漏。只有明确传入 `--profile lite --media-mode text` 时才应用 Lite 可见性并生成低流量镜像。
 
 ## 渠道取舍
 
