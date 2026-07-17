@@ -6,14 +6,23 @@ import { redirect } from 'next/navigation'
 import { getPayload, type Where } from 'payload'
 
 import { canonicalContentUrl } from '../../../_lib/content-identity'
+import {
+  isMergedDuplicateWork,
+  mergedWorkReference,
+  reviewActionHref,
+  safeReviewReturnTo,
+  type ReviewableContentDoc,
+} from './review-utils'
 
 export const dynamic = 'force-dynamic'
 
 type ContentCollection = 'works' | 'creators' | 'organizations'
 type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted'
+type ReviewQueue = 'pending' | 'processed' | 'all'
+type ReviewStatus = 'all' | 'pending' | 'reviewed' | 'disputed' | 'deprecated'
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
 
-type ContentDoc = {
+type ContentDoc = ReviewableContentDoc & {
   id: string | number
   title?: string
   name?: string
@@ -24,7 +33,6 @@ type ContentDoc = {
   mediaGroup?: string
   mediaType?: string
   format?: string
-  reviewStatus?: string
   reviewOrigin?: string
   ratingNotice?: string
   radarAssessment?: {
@@ -42,8 +50,9 @@ type ContentDoc = {
 
 type Filters = {
   collection: ContentCollection
+  queue: ReviewQueue
   q: string
-  reviewStatus: 'all' | 'pending' | 'reviewed' | 'disputed'
+  reviewStatus: ReviewStatus
   origin: 'all' | 'ai' | 'human' | 'unassessed'
   page: number
   perPage: 20 | 50 | 100
@@ -61,6 +70,7 @@ const organizationTypes = [
   'publisher', 'production_company', 'animation_studio', 'game_company', 'distributor',
   'circle', 'brand', 'platform', 'committee', 'other',
 ]
+const processedStatuses = ['reviewed', 'disputed', 'deprecated']
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] || '' : value || ''
@@ -76,13 +86,15 @@ function contentCollection(value: FormDataEntryValue | string | null | undefined
 }
 
 function parseFilters(params: Record<string, string | string[] | undefined>): Filters {
+  const requestedQueue = first(params.queue)
   const requestedStatus = first(params.reviewStatus)
   const requestedOrigin = first(params.origin)
   return {
     collection: contentCollection(first(params.collection)),
+    queue: requestedQueue === 'processed' || requestedQueue === 'all' ? requestedQueue : 'pending',
     q: first(params.q).trim().slice(0, 160),
-    reviewStatus: ['pending', 'reviewed', 'disputed'].includes(requestedStatus)
-      ? requestedStatus as Filters['reviewStatus']
+    reviewStatus: ['pending', 'reviewed', 'disputed', 'deprecated'].includes(requestedStatus)
+      ? requestedStatus as ReviewStatus
       : 'all',
     origin: ['ai', 'human', 'unassessed'].includes(requestedOrigin)
       ? requestedOrigin as Filters['origin']
@@ -116,14 +128,21 @@ function buildWhere(filters: Filters): Where {
 
   if (filters.q) {
     const or: Where[] = [
-        { [titleField]: { like: filters.q } },
-        { slug: { like: filters.q } },
-        { siteId: { like: filters.q } },
+      { [titleField]: { like: filters.q } },
+      { slug: { like: filters.q } },
+      { siteId: { like: filters.q } },
     ]
     if (/^\d+$/u.test(filters.q)) or.push({ id: { equals: filters.q } })
     and.push({ or })
   }
-  if (filters.reviewStatus !== 'all') and.push({ reviewStatus: { equals: filters.reviewStatus } })
+
+  if (filters.reviewStatus !== 'all') {
+    and.push({ reviewStatus: { equals: filters.reviewStatus } })
+  } else if (filters.queue === 'pending') {
+    and.push({ reviewStatus: { equals: 'pending' } })
+  } else if (filters.queue === 'processed') {
+    and.push({ reviewStatus: { in: processedStatuses } })
+  }
 
   if (filters.origin !== 'all') {
     if (filters.collection === 'works') {
@@ -150,13 +169,15 @@ function buildWhere(filters: Filters): Where {
   return and.length ? { and } : {}
 }
 
-function queryHref(filters: Filters, page: number) {
-  const params = new URLSearchParams({ collection: filters.collection })
-  if (filters.q) params.set('q', filters.q)
-  if (filters.reviewStatus !== 'all') params.set('reviewStatus', filters.reviewStatus)
-  if (filters.origin !== 'all') params.set('origin', filters.origin)
-  if (filters.perPage !== 50) params.set('perPage', String(filters.perPage))
-  if (page > 1) params.set('page', String(page))
+function listHref(filters: Filters, overrides: Partial<Filters> = {}) {
+  const next = { ...filters, ...overrides }
+  const params = new URLSearchParams({ collection: next.collection })
+  if (next.queue !== 'pending') params.set('queue', next.queue)
+  if (next.q) params.set('q', next.q)
+  if (next.reviewStatus !== 'all') params.set('reviewStatus', next.reviewStatus)
+  if (next.origin !== 'all') params.set('origin', next.origin)
+  if (next.perPage !== 50) params.set('perPage', String(next.perPage))
+  if (next.page > 1) params.set('page', String(next.page))
   return `/me/review/content?${params.toString()}`
 }
 
@@ -180,8 +201,14 @@ function assessmentOrigin(collection: ContentCollection, doc: ContentDoc) {
 function reviewStatusLabel(value?: string) {
   if (value === 'reviewed') return '已复核'
   if (value === 'disputed') return '有争议'
-  if (value === 'deprecated') return '已废弃'
+  if (value === 'deprecated') return '已合并 / 已废弃'
   return '待复核'
+}
+
+function reviewResultLabel(value: string) {
+  if (value === 'approve') return '通过并记录人工复核'
+  if (value === 'reject') return '驳回并标记争议'
+  return '保存修改'
 }
 
 async function saveContentAction(formData: FormData) {
@@ -203,13 +230,38 @@ async function saveContentAction(formData: FormData) {
       : selectedReviewStatus
   const status = String(formData.get('status') || 'draft')
   const note = String(formData.get('note') || '').trim().slice(0, 4000)
+  const returnTo = safeReviewReturnTo(formData.get('returnTo'))
 
-  if (!id || !title) throw new Error('条目 ID 和名称不能为空。')
-  if (!['pending', 'reviewed', 'disputed'].includes(reviewStatus)) throw new Error('复核状态无效。')
-  if (!['draft', 'review', 'published', 'archived'].includes(status)) throw new Error('发布状态无效。')
-  if (reviewStatus === 'disputed' && !note) throw new Error('驳回或标记争议时必须填写原因。')
+  if (!id || !title || !['save', 'approve', 'reject'].includes(intent)) {
+    redirect(reviewActionHref(returnTo, 'reviewError', 'invalid_action', { reviewId: id }))
+  }
+  if (!['pending', 'reviewed', 'disputed', 'deprecated'].includes(reviewStatus)) {
+    redirect(reviewActionHref(returnTo, 'reviewError', 'invalid_status', { reviewId: id }))
+  }
+  if (!['draft', 'review', 'published', 'archived'].includes(status)) {
+    redirect(reviewActionHref(returnTo, 'reviewError', 'invalid_status', { reviewId: id }))
+  }
+  if (reviewStatus === 'disputed' && !note) {
+    redirect(reviewActionHref(returnTo, 'reviewError', 'note_required', { reviewId: id }))
+  }
 
-  const current = await payload.findByID({ collection: collection as never, id, depth: 0, overrideAccess: true }) as unknown as ContentDoc
+  const current = await payload.findByID({
+    collection: collection as never,
+    id,
+    depth: 0,
+    draft: true,
+    overrideAccess: true,
+  }) as unknown as ContentDoc
+
+  if (collection === 'works' && isMergedDuplicateWork(current)) {
+    const merged = mergedWorkReference(current)
+    redirect(reviewActionHref(returnTo, 'reviewError', 'merged_duplicate', {
+      reviewId: id,
+      targetId: merged?.id,
+      targetTitle: merged?.title,
+    }))
+  }
+
   const actorID = (auth.user as { id?: string | number }).id
   const data: Record<string, unknown> = {
     [collectionMeta[collection].titleField]: title,
@@ -220,7 +272,9 @@ async function saveContentAction(formData: FormData) {
 
   if (collection === 'works') {
     const rank = String(formData.get('rank') || 'unknown')
-    if (!workRankOptions.includes(rank)) throw new Error('作品分级无效。')
+    if (!workRankOptions.includes(rank)) {
+      redirect(reviewActionHref(returnTo, 'reviewError', 'invalid_status', { reviewId: id }))
+    }
     data.rank = rank
     if (reviewStatus !== 'pending') {
       data.reviewReasons = [...new Set([...reviewReasons(current.reviewReasons), 'manual_review'])]
@@ -228,11 +282,15 @@ async function saveContentAction(formData: FormData) {
     if (reviewStatus === 'reviewed') data.ratingNotice = 'manual_reviewed'
   } else if (collection === 'creators') {
     const rank = String(formData.get('rank') || 'unknown')
-    if (!creatorRankOptions.includes(rank)) throw new Error('创作者分级无效。')
+    if (!creatorRankOptions.includes(rank)) {
+      redirect(reviewActionHref(returnTo, 'reviewError', 'invalid_status', { reviewId: id }))
+    }
     data.rank = rank
   } else {
     const type = String(formData.get('type') || 'other')
-    if (!organizationTypes.includes(type)) throw new Error('机构类型无效。')
+    if (!organizationTypes.includes(type)) {
+      redirect(reviewActionHref(returnTo, 'reviewError', 'invalid_status', { reviewId: id }))
+    }
     data.type = type
   }
 
@@ -242,17 +300,25 @@ async function saveContentAction(formData: FormData) {
     if (collection !== 'works') data.reviewOrigin = 'human_reviewed'
   }
 
-  await payload.update({
-    collection: collection as never,
-    id,
-    depth: 0,
-    overrideAccess: true,
-    data: data as never,
-  })
+  try {
+    await payload.update({
+      collection: collection as never,
+      id,
+      depth: 0,
+      draft: true,
+      overrideAccess: true,
+      context: { reviewWorkbench: true },
+      data: data as never,
+    })
+  } catch (error) {
+    console.error('Content review update failed', { collection, id, error })
+    redirect(reviewActionHref(returnTo, 'reviewError', 'save_failed', { reviewId: id }))
+  }
 
   revalidatePath('/me/review/content')
   revalidatePath(`/${collection}`)
   revalidatePath(canonicalContentUrl(collection, id))
+  redirect(reviewActionHref(returnTo, 'reviewed', intent, { reviewId: id }))
 }
 
 export default async function ContentReviewPage({ searchParams }: { searchParams: PageSearchParams }) {
@@ -264,8 +330,15 @@ export default async function ContentReviewPage({ searchParams }: { searchParams
     return <main className="page review-workbench"><section className="review-empty"><h1>权限不足</h1><p>该页面只开放给最高领袖、管理员、编辑和审核人员。</p></section></main>
   }
 
-  const filters = parseFilters(await searchParams)
-  const [result, workPending, creatorPending, organizationPending] = await Promise.all([
+  const rawParams = await searchParams
+  const filters = parseFilters(rawParams)
+  const reviewError = first(rawParams.reviewError)
+  const reviewed = first(rawParams.reviewed)
+  const reviewID = first(rawParams.reviewId)
+  const targetID = first(rawParams.targetId)
+  const targetTitle = first(rawParams.targetTitle)
+
+  const [result, workPending, creatorPending, organizationPending, processed, all] = await Promise.all([
     payload.find({
       collection: filters.collection as never,
       depth: 0,
@@ -279,11 +352,14 @@ export default async function ContentReviewPage({ searchParams }: { searchParams
     payload.count({ collection: 'works', overrideAccess: true, where: { reviewStatus: { equals: 'pending' } } }),
     payload.count({ collection: 'creators', overrideAccess: true, where: { reviewStatus: { equals: 'pending' } } }),
     payload.count({ collection: 'organizations', overrideAccess: true, where: { reviewStatus: { equals: 'pending' } } }),
+    payload.count({ collection: filters.collection as never, overrideAccess: true, where: { reviewStatus: { in: processedStatuses } } }),
+    payload.count({ collection: filters.collection as never, overrideAccess: true }),
   ])
 
   const docs = result.docs as unknown as ContentDoc[]
   const totalPages = Math.max(1, result.totalPages || 1)
   const currentPage = Math.min(result.page || filters.page, totalPages)
+  const returnTo = listHref(filters, { page: currentPage })
   const pendingCounts: Record<ContentCollection, number> = {
     works: workPending.totalDocs,
     creators: creatorPending.totalDocs,
@@ -294,10 +370,10 @@ export default async function ContentReviewPage({ searchParams }: { searchParams
     <main className="page review-workbench">
       <section className="review-hero">
         <div className="review-hero-copy">
-          <p className="eyebrow">内容审核与快速编辑</p>
-          <h1>作品、创作者、机构放在同一个工作台</h1>
-          <p className="muted">这里适合查找、核对和修改最常用字段；来源数组、关系、富文本等复杂资料仍可从“完整编辑”进入 Payload 内容后台。</p>
-          <div className="review-safety-note">AI 已评估只说明机器整理已经存在，不代表人工通过。只有人工保存“已复核”后，前台才会显示人工复核状态。</div>
+          <p className="eyebrow">内容审核与站内编辑</p>
+          <h1>把待处理、已处理和高级维护分开</h1>
+          <p className="muted">默认只显示仍需碳基生物处理的条目。通过、驳回或归档后会离开当前队列，但仍能在“已处理”中追溯。</p>
+          <div className="review-safety-note">AI 已评估只说明机器整理已经存在，不代表人工通过。合并后的重复作品不会再允许从旧条目保存，审核应转到保留的规范作品。</div>
         </div>
         <div className="review-stat-grid">
           <Stat label="当前筛选" value={result.totalDocs} />
@@ -305,80 +381,129 @@ export default async function ContentReviewPage({ searchParams }: { searchParams
         </div>
       </section>
 
+      {reviewError ? (
+        <div className="review-action-message review-action-message-error" role="alert">
+          {reviewError === 'merged_duplicate'
+            ? <>作品 {reviewID || ''} 已合并，不应再审核旧条目。{targetID ? <>请改为处理 <Link href={`/me/review/content/works/${targetID}?returnTo=${encodeURIComponent(returnTo)}`}>{targetTitle || `规范作品 #${targetID}`}</Link>。</> : null}</>
+            : reviewError === 'note_required'
+              ? `条目 ${reviewID || ''} 标记争议时必须填写人工复核记录。`
+              : reviewError === 'save_failed'
+                ? `条目 ${reviewID || ''} 保存失败；页面已安全返回，没有把错误扩散成整页 Runtime Error。请查看开发服务器日志。`
+                : '审核参数无效，请刷新页面后重试。'}
+        </div>
+      ) : null}
+      {reviewed ? <div className="review-action-message review-action-message-success" role="status">条目 {reviewID || ''} 已完成“{reviewResultLabel(reviewed)}”；若它不再需要处理，已自动离开待处理队列。</div> : null}
+
       <nav className="review-content-tabs" aria-label="内容类型">
         {(Object.keys(collectionMeta) as ContentCollection[]).map((collection) => (
-          <Link aria-current={filters.collection === collection ? 'page' : undefined} href={`/me/review/content?collection=${collection}`} key={collection}>
+          <Link
+            aria-current={filters.collection === collection ? 'page' : undefined}
+            href={listHref(filters, { collection, page: 1, reviewStatus: 'all' })}
+            key={collection}
+          >
             <span>{collectionMeta[collection].label}</span>
             <strong>{pendingCounts[collection].toLocaleString('zh-CN')} 待复核</strong>
           </Link>
         ))}
       </nav>
 
+      <nav className="review-queue-tabs" aria-label="审核队列">
+        <Link aria-current={filters.queue === 'pending' ? 'page' : undefined} href={listHref(filters, { queue: 'pending', reviewStatus: 'all', page: 1 })}>
+          <span>待处理</span><strong>{pendingCounts[filters.collection].toLocaleString('zh-CN')}</strong>
+        </Link>
+        <Link aria-current={filters.queue === 'processed' ? 'page' : undefined} href={listHref(filters, { queue: 'processed', reviewStatus: 'all', page: 1 })}>
+          <span>已处理</span><strong>{processed.totalDocs.toLocaleString('zh-CN')}</strong>
+        </Link>
+        <Link aria-current={filters.queue === 'all' ? 'page' : undefined} href={listHref(filters, { queue: 'all', reviewStatus: 'all', page: 1 })}>
+          <span>全部历史</span><strong>{all.totalDocs.toLocaleString('zh-CN')}</strong>
+        </Link>
+      </nav>
+
       <form action="/me/review/content" className="review-filter-panel">
         <input name="collection" type="hidden" value={filters.collection} />
-        <label><span>关键词</span><input defaultValue={filters.q} name="q" placeholder="名称、Slug 或导入追踪 ID" type="search" /></label>
-        <label><span>复核状态</span><select defaultValue={filters.reviewStatus} name="reviewStatus"><option value="all">全部</option><option value="pending">待复核</option><option value="reviewed">已复核</option><option value="disputed">有争议</option></select></label>
+        <input name="queue" type="hidden" value={filters.queue} />
+        <label><span>关键词</span><input defaultValue={filters.q} name="q" placeholder="名称、Slug、导入追踪 ID 或数据库 ID" type="search" /></label>
+        <label><span>精确复核状态</span><select defaultValue={filters.reviewStatus} name="reviewStatus"><option value="all">沿用当前队列</option><option value="pending">待复核</option><option value="reviewed">已复核</option><option value="disputed">有争议</option><option value="deprecated">已合并 / 已废弃</option></select></label>
         <label><span>评估来源</span><select defaultValue={filters.origin} name="origin"><option value="all">全部</option><option value="ai">AI 已评估</option><option value="human">人工已复核</option><option value="unassessed">尚未评估</option></select></label>
         <label><span>每页数量</span><select defaultValue={filters.perPage} name="perPage"><option value="20">20 条</option><option value="50">50 条</option><option value="100">100 条</option></select></label>
-        <div className="review-filter-actions"><button className="review-button" type="submit">应用筛选</button><Link className="review-link" href={`/me/review/content?collection=${filters.collection}`}>重置</Link></div>
+        <div className="review-filter-actions"><button className="review-button" type="submit">应用筛选</button><Link className="review-link" href={listHref(filters, { q: '', reviewStatus: 'all', origin: 'all', page: 1 })}>清除细筛选</Link></div>
       </form>
 
       <div className="review-row-actions">
         {filters.collection === 'works' ? <Link className="review-link" href="/me/review/public-catalog">进入作品证据深度审核</Link> : null}
         <Link className="review-link" href="/me/review/feedback">审核用户反馈</Link>
-        <Link className="review-link" href={`/admin/collections/${filters.collection}`}>打开 Payload 完整列表</Link>
+        <Link className="review-link" href={`/admin/collections/${filters.collection}`}>Payload 高级维护</Link>
       </div>
 
       <Pagination currentPage={currentPage} filters={filters} totalPages={totalPages} />
 
       <section className="review-list">
-        {docs.map((doc) => (
-          <article className="review-row review-content-row" key={doc.id}>
-            <header className="review-row-header">
-              <div className="review-row-title">
-                <h2><Link href={canonicalContentUrl(filters.collection, doc.id)}>{itemTitle(doc)}</Link></h2>
-                <small>{collectionMeta[filters.collection].label} ID：{doc.id}</small>
-              </div>
-              <div className="review-chip-list">
-                <span className="review-row-chip assessment-origin-badge">{assessmentOrigin(filters.collection, doc)}</span>
-                <span className="review-row-chip">{reviewStatusLabel(doc.reviewStatus)}</span>
-                <span className="review-row-chip">{doc.status || 'draft'}</span>
-              </div>
-            </header>
+        {docs.map((doc) => {
+          const merged = filters.collection === 'works' ? mergedWorkReference(doc) : null
+          return (
+            <article className={`review-row review-content-row${merged ? ' review-merged-row' : ''}`} key={doc.id}>
+              <header className="review-row-header">
+                <div className="review-row-title">
+                  <h2><Link href={canonicalContentUrl(filters.collection, doc.id)}>{itemTitle(doc)}</Link></h2>
+                  <small>{collectionMeta[filters.collection].label} ID：{doc.id}</small>
+                </div>
+                <div className="review-chip-list">
+                  <span className="review-row-chip assessment-origin-badge">{assessmentOrigin(filters.collection, doc)}</span>
+                  <span className={`review-row-chip${doc.reviewStatus === 'deprecated' ? ' review-row-chip-warning' : ''}`}>{reviewStatusLabel(doc.reviewStatus)}</span>
+                  <span className="review-row-chip">{doc.status || 'draft'}</span>
+                </div>
+              </header>
 
-            {filters.collection === 'works' && doc.radarAssessment?.suggestedGrade ? (
-              <aside className="review-ai-suggestion">
-                <strong>AI 建议：{doc.radarAssessment.suggestedGrade} 级</strong>
-                {typeof doc.radarAssessment.confidencePercent === 'number' ? <span>置信度 {doc.radarAssessment.confidencePercent}%</span> : null}
-                {doc.radarAssessment.decisiveRuleCode ? <span>规则 {doc.radarAssessment.decisiveRuleCode}</span> : null}
-                {doc.radarAssessment.decisiveRuleReason ? <p>{doc.radarAssessment.decisiveRuleReason}</p> : null}
-                <small>这里只展示机器建议；人工仍需在下方选择最终分级并明确通过或标记争议。</small>
-              </aside>
-            ) : null}
-
-            <form action={saveContentAction} className="review-content-form">
-              <input name="collection" type="hidden" value={filters.collection} />
-              <input name="id" type="hidden" value={String(doc.id)} />
-              <label className="review-content-title"><span>名称</span><input defaultValue={itemTitle(doc)} maxLength={300} name="title" required /></label>
-              {filters.collection !== 'organizations' ? (
-                <label><span>分级</span><select defaultValue={doc.rank || 'unknown'} name="rank">{(filters.collection === 'works' ? workRankOptions : creatorRankOptions).map((rank) => <option key={rank} value={rank}>{rank === 'AA' ? 'S（兼容 AA）' : rank === 'unknown' ? '未知' : rank}</option>)}</select></label>
+              {merged ? (
+                <aside className="review-merged-warning">
+                  <strong>这个旧条目已经合并，不可继续保存或审核。</strong>
+                  <p>保留作品：{merged.title || `作品 #${merged.id}`}（ID {merged.id}）。旧记录只保留作追踪历史，避免再次制造重复来源或唯一键冲突。</p>
+                  <div className="review-content-actions">
+                    <Link className="review-button review-button-primary" href={`/me/review/content/works/${merged.id}?returnTo=${encodeURIComponent(returnTo)}`}>打开规范作品编辑台</Link>
+                    <Link className="review-link" href={canonicalContentUrl('works', merged.id)}>查看规范作品前台</Link>
+                    <Link className="review-link" href={`/admin/collections/works/${doc.id}`}>Payload 查看旧记录</Link>
+                  </div>
+                </aside>
               ) : (
-                <label><span>机构类型</span><select defaultValue={doc.type || 'other'} name="type">{organizationTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
+                <>
+                  {filters.collection === 'works' && doc.radarAssessment?.suggestedGrade ? (
+                    <aside className="review-ai-suggestion">
+                      <strong>AI 建议：{doc.radarAssessment.suggestedGrade} 级</strong>
+                      {typeof doc.radarAssessment.confidencePercent === 'number' ? <span>置信度 {doc.radarAssessment.confidencePercent}%</span> : null}
+                      {doc.radarAssessment.decisiveRuleCode ? <span>规则 {doc.radarAssessment.decisiveRuleCode}</span> : null}
+                      {doc.radarAssessment.decisiveRuleReason ? <p>{doc.radarAssessment.decisiveRuleReason}</p> : null}
+                      <small>这里只展示机器建议；人工仍需在下方选择最终分级并明确通过或标记争议。</small>
+                    </aside>
+                  ) : null}
+
+                  <form action={saveContentAction} className="review-content-form">
+                    <input name="collection" type="hidden" value={filters.collection} />
+                    <input name="id" type="hidden" value={String(doc.id)} />
+                    <input name="returnTo" type="hidden" value={returnTo} />
+                    <label className="review-content-title"><span>名称</span><input defaultValue={itemTitle(doc)} maxLength={300} name="title" required /></label>
+                    {filters.collection !== 'organizations' ? (
+                      <label><span>分级</span><select defaultValue={doc.rank || 'unknown'} name="rank">{(filters.collection === 'works' ? workRankOptions : creatorRankOptions).map((rank) => <option key={rank} value={rank}>{rank === 'AA' ? 'S（兼容 AA）' : rank === 'unknown' ? '未知' : rank}</option>)}</select></label>
+                    ) : (
+                      <label><span>机构类型</span><select defaultValue={doc.type || 'other'} name="type">{organizationTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
+                    )}
+                    <label><span>复核状态</span><select defaultValue={doc.reviewStatus || 'pending'} name="reviewStatus"><option value="pending">待复核</option><option value="reviewed">已复核</option><option value="disputed">有争议</option><option value="deprecated">已废弃</option></select></label>
+                    <label><span>发布状态</span><select defaultValue={doc.status || 'draft'} name="status"><option value="draft">草稿</option><option value="review">待发布审核</option><option value="published">已发布</option><option value="archived">已归档</option></select></label>
+                    <label className="review-content-note"><span>人工复核记录</span><textarea defaultValue={doc.humanReviewNote || ''} maxLength={4000} name="note" placeholder="记录核对过的来源、结论与尚待确认的问题；标记争议时必填。" /></label>
+                    <div className="review-content-actions">
+                      <button className="review-button" name="intent" type="submit" value="save">只保存修改</button>
+                      <button className="review-button review-button-primary" name="intent" type="submit" value="approve">通过并移入已处理</button>
+                      <button className="review-button review-button-danger" name="intent" type="submit" value="reject">驳回并移入已处理</button>
+                      {filters.collection === 'works' ? <Link className="review-link" href={`/me/review/content/works/${doc.id}?returnTo=${encodeURIComponent(returnTo)}`}>站内完整编辑</Link> : null}
+                      <Link className="review-link" href={canonicalContentUrl(filters.collection, doc.id)}>查看前台</Link>
+                      <Link className="review-link" href={`/admin/collections/${filters.collection}/${doc.id}`}>Payload 高级维护</Link>
+                    </div>
+                  </form>
+                </>
               )}
-              <label><span>复核状态</span><select defaultValue={doc.reviewStatus || 'pending'} name="reviewStatus"><option value="pending">待复核</option><option value="reviewed">已复核</option><option value="disputed">有争议</option></select></label>
-              <label><span>发布状态</span><select defaultValue={doc.status || 'draft'} name="status"><option value="draft">草稿</option><option value="review">待发布审核</option><option value="published">已发布</option><option value="archived">已归档</option></select></label>
-              <label className="review-content-note"><span>人工复核记录</span><textarea defaultValue={doc.humanReviewNote || ''} maxLength={4000} name="note" placeholder="记录核对过的来源、结论与尚待确认的问题；标记争议时必填。" /></label>
-              <div className="review-content-actions">
-                <button className="review-button" name="intent" type="submit" value="save">只保存修改</button>
-                <button className="review-button review-button-primary" name="intent" type="submit" value="approve">通过并记录人工复核</button>
-                <button className="review-button review-button-danger" name="intent" type="submit" value="reject">驳回 / 标记争议</button>
-                <Link className="review-link" href={canonicalContentUrl(filters.collection, doc.id)}>查看前台</Link>
-                <Link className="review-link" href={`/admin/collections/${filters.collection}/${doc.id}`}>完整编辑</Link>
-              </div>
-            </form>
-          </article>
-        ))}
-        {docs.length === 0 ? <section className="review-empty"><h2>没有匹配条目</h2><p>可以切换复核状态、评估来源，或减少关键词。</p></section> : null}
+            </article>
+          )
+        })}
+        {docs.length === 0 ? <section className="review-empty"><h2>{filters.queue === 'pending' ? '待处理队列已经清空' : '没有匹配条目'}</h2><p>{filters.queue === 'pending' ? '做得好。已通过、已驳回和已合并的记录都在“已处理”中保留。' : '可以切换队列、复核状态、评估来源，或减少关键词。'}</p></section> : null}
       </section>
 
       <Pagination currentPage={currentPage} filters={filters} totalPages={totalPages} />
@@ -394,9 +519,9 @@ function Pagination({ filters, currentPage, totalPages }: { filters: Filters; cu
   if (totalPages <= 1) return null
   return (
     <nav className="review-pagination" aria-label="内容审核分页">
-      {currentPage > 1 ? <Link href={queryHref(filters, currentPage - 1)}>上一页</Link> : null}
+      {currentPage > 1 ? <Link href={listHref(filters, { page: currentPage - 1 })}>上一页</Link> : null}
       <span aria-current="page">第 {currentPage} / {totalPages} 页</span>
-      {currentPage < totalPages ? <Link href={queryHref(filters, currentPage + 1)}>下一页</Link> : null}
+      {currentPage < totalPages ? <Link href={listHref(filters, { page: currentPage + 1 })}>下一页</Link> : null}
     </nav>
   )
 }
