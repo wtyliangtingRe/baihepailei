@@ -7,6 +7,7 @@ const works = read('src/app/(frontend)/works/page.tsx')
 const search = read('src/app/(frontend)/search/search-client.tsx')
 const recommendations = read('src/app/(frontend)/_lib/recommendations.ts')
 const detailLayout = read('src/app/(frontend)/detail-layout-fixes.css')
+const assessmentBadge = read('src/app/(frontend)/_components/AssessmentOriginBadge.tsx')
 
 test('works page caches sort, titles and normalized search blobs', () => {
   assert.match(works, /cachedSortedWorks/u)
@@ -41,4 +42,12 @@ test('detail titles wrap in full instead of using an ellipsis', () => {
   assert.doesNotMatch(detailHeadingRule, /white-space:\s*nowrap/u)
   assert.match(detailLayout, /\.detail-hero-layout > div:only-child/u)
   assert.match(detailLayout, /grid-column:\s*1 \/ -1/u)
+})
+
+test('AI assessment origin is visible without pretending it is human review', () => {
+  assert.match(works, /AssessmentOriginBadge/u)
+  assert.match(search, /AssessmentOriginBadge/u)
+  assert.match(assessmentBadge, /AI 已评估 · 待人工复核/u)
+  assert.match(assessmentBadge, /AI 辅助 · 人工已复核/u)
+  assert.doesNotMatch(assessmentBadge, /AI 已人工审核/u)
 })
