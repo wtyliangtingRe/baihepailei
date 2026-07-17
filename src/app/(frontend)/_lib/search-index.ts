@@ -40,6 +40,7 @@ export type SearchItem = {
   title: string
   slug: string
   url: string
+  status?: string
   rank?: string
   category?: string
   organizationType?: string
@@ -91,6 +92,10 @@ export type SearchIndex = {
 const searchIndexPath = path.join(process.cwd(), 'public', 'search-index.json')
 
 let cachedIndex: SearchIndex | null | undefined
+
+export function clearSearchIndexCache() {
+  cachedIndex = undefined
+}
 
 export function readSearchIndex() {
   if (cachedIndex !== undefined) return cachedIndex
