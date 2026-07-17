@@ -219,9 +219,9 @@ function sections(values) {
   return values.filter(Boolean)
 }
 
-function itemUrl(collection, slug) {
-  if (collection === 'works') return `/works/${slug}`
-  if (collection === 'creators') return `/creators/${slug}`
+function itemUrl(collection, recordId, slug) {
+  if (collection === 'works') return `/works/w-${encodeURIComponent(String(recordId))}`
+  if (collection === 'creators') return `/creators/c-${encodeURIComponent(String(recordId))}`
   if (collection === 'terms') return `/terms/${slug}`
   if (collection === 'rules') return `/rules/${slug}`
   return `/${collection}/${slug}`
@@ -230,11 +230,12 @@ function itemUrl(collection, slug) {
 function commonFields(collection, doc, title, typeLabel) {
   return {
     id: `${collection}:${doc.slug}`,
+    recordId: String(doc.id),
     collection,
     typeLabel,
     title: title || '',
     slug: doc.slug || '',
-    url: itemUrl(collection, doc.slug),
+    url: itemUrl(collection, doc.id, doc.slug),
     legacyXWikiPage: doc.legacyXWikiPage || '',
     updatedAt: doc.updatedAt || '',
     createdAt: doc.createdAt || '',
@@ -340,7 +341,7 @@ async function main() {
   }
 
   const payload = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: new Date().toISOString(),
     source: baseUrl,
     mode: includeDrafts ? 'drafts-and-published' : 'published-only',

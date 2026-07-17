@@ -37,13 +37,21 @@ export default function FeedbackForm({ initialCollection = 'works', initialTitle
   const [containsSpoilers, setContainsSpoilers] = useState(false)
   const [state, setState] = useState<'idle' | 'submitting' | 'submitted' | 'login-required' | 'error'>('idle')
   const [submissionID, setSubmissionID] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setState('submitting')
+    setErrorMessage('')
 
     const rules = cleanLines(ruleCodes).map((code) => ({ code }))
     const links = cleanLines(evidenceLinks).map((url, index) => ({ label: `来源 ${index + 1}`, url }))
+    const workID = targetWorkID.trim()
+    if (workID && !/^\d+$/u.test(workID)) {
+      setErrorMessage('站内作品 ID 必须是作品详情页自动带入的数字主键。')
+      setState('error')
+      return
+    }
 
     try {
       const response = await fetch('/api/feedback-submissions', {
@@ -52,7 +60,7 @@ export default function FeedbackForm({ initialCollection = 'works', initialTitle
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           feedbackType,
-          linkedWork: targetWorkID.trim() || undefined,
+          linkedWork: workID ? Number(workID) : undefined,
           targetCollection: initialCollection || 'works',
           targetTitle: targetTitle.trim(),
           proposedGrade: proposedGrade || undefined,
@@ -68,13 +76,17 @@ export default function FeedbackForm({ initialCollection = 'works', initialTitle
         setState('login-required')
         return
       }
-      if (!response.ok) throw new Error('feedback-submit-failed')
+      if (!response.ok) {
+        const failure = await response.json().catch(() => null)
+        throw new Error(String(failure?.errors?.[0]?.message || '提交内容未通过校验，请检查站内作品 ID 和必填项。'))
+      }
 
       const payload = await response.json()
       const doc = payload?.doc || payload
       setSubmissionID(String(doc?.id || ''))
       setState('submitted')
-    } catch {
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : '提交失败，请稍后重试。')
       setState('error')
     }
   }
@@ -116,7 +128,8 @@ export default function FeedbackForm({ initialCollection = 'works', initialTitle
             inputMode="numeric"
             maxLength={80}
             onChange={(event) => setTargetWorkID(event.target.value)}
-            placeholder="例如：254895"
+            pattern="[0-9]+"
+            placeholder="例如：31179"
             readOnly={Boolean(initialWorkId)}
             value={targetWorkID}
           />
@@ -158,7 +171,7 @@ export default function FeedbackForm({ initialCollection = 'works', initialTitle
       {state === 'login-required' ? (
         <p className="feedback-message">需要先<Link href="/account/login?redirect=/feedback">登录或注册</Link>，才能提交人工材料。</p>
       ) : null}
-      {state === 'error' ? <p className="feedback-message feedback-message-error">提交失败，请检查内容后稍后重试。</p> : null}
+      {state === 'error' ? <p className="feedback-message feedback-message-error">{errorMessage || '提交失败，请检查内容后稍后重试。'}</p> : null}
     </form>
   )
 }

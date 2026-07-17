@@ -124,7 +124,7 @@ export default function AccountClient() {
         <Link className="detail-card account-feature" href="/me/lists"><strong>我的列表</strong><span>想看、在看、已看、喜欢、避雷与待复核。</span></Link>
         <Link className="detail-card account-feature" href="/feedback"><strong>提交人工排雷</strong><span>补充规则、等级建议、来源链接与证据说明。</span></Link>
         {isStaff ? <Link className="detail-card account-feature" href="/admin"><strong>内容后台</strong><span>编辑条目、核查反馈并删除不当评论。</span></Link> : null}
-        {isStaff ? <Link className="detail-card account-feature" href="/me/review/public-catalog"><strong>条目复核工作台</strong><span>查看待复核目录与证据情况。</span></Link> : null}
+        {isStaff ? <Link className="detail-card account-feature" href="/me/review/content"><strong>内容审核与编辑</strong><span>统一处理作品、创作者和机构；作品还可进入证据深度审核。</span></Link> : null}
         {mayManagePersonnel ? <Link className="detail-card account-feature" href="/me/personnel"><strong>人员与封停管理</strong><span>任命管理员或编辑，封停违规账户并查看锁定状态。</span></Link> : null}
       </section>
     </div>

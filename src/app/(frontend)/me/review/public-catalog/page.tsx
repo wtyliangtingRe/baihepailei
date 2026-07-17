@@ -402,7 +402,7 @@ export default async function ReviewWorkbenchPage({ searchParams }: { searchPara
       </section>
 
       <form action="/me/review/public-catalog" className="review-filter-panel">
-        <label><span>关键词</span><input defaultValue={filters.q} name="q" placeholder="标题、Slug、站内 ID、证据或冲突说明" type="search" /></label>
+        <label><span>关键词</span><input defaultValue={filters.q} name="q" placeholder="标题、Slug、导入追踪 ID、证据或冲突说明" type="search" /></label>
         <label><span>队列</span><select defaultValue={filters.mode} name="mode"><option value="priority">优先处理</option><option value="all">全部待复核</option></select></label>
         <FilterSelect labelText="作品大类" name="media" options={mediaOptions} value={filters.media} />
         <FilterSelect labelText="来源" name="source" options={sourceOptions.map((value) => ({ value, label: value }))} value={filters.source} />
@@ -431,7 +431,7 @@ export default async function ReviewWorkbenchPage({ searchParams }: { searchPara
           return (
             <article className="review-row" key={doc.id}>
               <header className="review-row-header">
-                <div className="review-row-title"><h2><Link href={doc.slug ? `/works/${doc.slug}` : '/works'}>{doc.title || '未命名作品'}</Link></h2><small>{doc.siteId || doc.slug || `ID ${doc.id}`}</small></div>
+                <div className="review-row-title"><h2><Link href={`/works/w-${doc.id}`}>{doc.title || '未命名作品'}</Link></h2><small>作品 ID：{doc.id}</small></div>
                 <div className="review-chip-list"><span className="review-row-chip">{rankLabel(doc.rank)}</span><span className="review-row-chip">{workTypeLabel(doc)}</span><span className="review-row-chip">{reviewStatusLabel(doc.reviewStatus)}</span><span className="review-row-chip">{publicationLabel(doc.status)}</span></div>
               </header>
 
@@ -454,7 +454,7 @@ export default async function ReviewWorkbenchPage({ searchParams }: { searchPara
                 </details>
               ) : null}
 
-              <div className="review-row-actions"><Link className="review-link" href={doc.slug ? `/works/${doc.slug}` : '/works'}>查看前台条目</Link><Link className="review-link" href={`/admin/collections/works/${doc.id}`}>完整编辑</Link></div>
+              <div className="review-row-actions"><Link className="review-link" href={`/works/w-${doc.id}`}>查看前台条目</Link><Link className="review-link" href={`/admin/collections/works/${doc.id}`}>完整编辑</Link></div>
 
               <details>
                 <summary>执行单条审核操作</summary>

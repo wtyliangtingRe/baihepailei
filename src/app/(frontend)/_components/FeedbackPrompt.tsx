@@ -3,7 +3,7 @@ import Link from 'next/link'
 import type { DetailItem } from '../_lib/detail-index'
 import type { SearchItem } from '../_lib/search-index'
 
-type FeedbackItem = Pick<DetailItem | SearchItem, 'collection' | 'id' | 'title'>
+type FeedbackItem = Pick<DetailItem | SearchItem, 'collection' | 'recordId' | 'title'>
 
 export function feedbackPageUrl(item?: FeedbackItem) {
   if (!item) return '/feedback'
@@ -11,7 +11,7 @@ export function feedbackPageUrl(item?: FeedbackItem) {
     collection: item.collection,
     title: item.title,
   })
-  if (item.collection === 'works') params.set('workId', item.id)
+  if (item.collection === 'works' && item.recordId) params.set('workId', item.recordId)
   return `/feedback?${params.toString()}`
 }
 

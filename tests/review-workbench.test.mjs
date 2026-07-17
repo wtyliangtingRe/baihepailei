@@ -4,7 +4,11 @@ import test from 'node:test'
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 const page = read('src/app/(frontend)/me/review/public-catalog/page.tsx')
+const contentPage = read('src/app/(frontend)/me/review/content/page.tsx')
 const works = read('src/collections/Works.ts')
+const creators = read('src/collections/Creators.ts')
+const organizations = read('src/collections/Organizations.ts')
+const reviewFields = read('src/collections/fields/contentReview.ts')
 const css = read('src/app/(frontend)/review-workbench.css')
 
 test('review workbench is paginated and queries the database', () => {
@@ -29,4 +33,17 @@ test('research queues remain clearly separate from formal ratings', () => {
   assert.match(page, /radar-research-records/u)
   assert.match(page, /研究建议，不等于正式评级/u)
   assert.match(page, /不会把 25,048 条研究建议写进正式评级/u)
+})
+
+test('unified content workbench covers works, creators and organizations', () => {
+  assert.match(contentPage, /type ContentCollection = 'works' \| 'creators' \| 'organizations'/u)
+  assert.match(contentPage, /saveContentAction/u)
+  assert.match(contentPage, /AI 已评估只说明机器整理已经存在，不代表人工通过/u)
+  assert.match(contentPage, /canonicalContentUrl/u)
+  assert.match(contentPage, /完整编辑/u)
+  assert.match(creators, /contentReviewFields/u)
+  assert.match(organizations, /contentReviewFields/u)
+  assert.match(reviewFields, /name: 'reviewOrigin'/u)
+  assert.match(reviewFields, /value: 'ai_assessed'/u)
+  assert.match(css, /\.review-content-form/u)
 })
