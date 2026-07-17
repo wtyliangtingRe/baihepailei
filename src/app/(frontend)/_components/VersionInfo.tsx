@@ -22,13 +22,13 @@ export default function VersionInfo({ item }: { item: DetailItem }) {
   if (!updatedAt && !createdAt) return null
 
   return (
-    <section className="page version-note-shell" aria-label="版本说明">
+    <section className="page version-note-shell" aria-label="本条目版本信息">
       <div className="detail-card version-note">
-        <h2>版本说明</h2>
-        {updatedAt ? <p>最近更新：{updatedAt}</p> : null}
-        {createdAt ? <p>创建时间：{createdAt}</p> : null}
-        <p className="muted">这里只展示新站当前条目的时间信息。更完整的站内更新列表可查看最近更新页。</p>
-        <Link className="back-link" href="/updates">查看最近更新</Link>
+        <h2>本条目版本</h2>
+        {updatedAt ? <p>本条目最近更新：{updatedAt}</p> : null}
+        {createdAt ? <p>本条目创建时间：{createdAt}</p> : null}
+        <p className="muted">以上时间只属于当前作品或资料条目，不是全站更新时间。后续编辑可以据此确认这一个条目何时被修改。</p>
+        <Link className="back-link" href="/updates">另看全站最近更新</Link>
       </div>
     </section>
   )
