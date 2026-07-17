@@ -338,10 +338,22 @@ export default async function ContentReviewPage({ searchParams }: { searchParams
   const targetID = first(rawParams.targetId)
   const targetTitle = first(rawParams.targetTitle)
 
+  const draftCount = (collection: ContentCollection, where: Where = {}) => payload.find({
+    collection: collection as never,
+    depth: 0,
+    draft: true,
+    limit: 1,
+    page: 1,
+    pagination: true,
+    overrideAccess: true,
+    where,
+  })
+
   const [result, workPending, creatorPending, organizationPending, processed, all] = await Promise.all([
     payload.find({
       collection: filters.collection as never,
       depth: 0,
+      draft: true,
       limit: filters.perPage,
       page: filters.page,
       pagination: true,
@@ -349,11 +361,11 @@ export default async function ContentReviewPage({ searchParams }: { searchParams
       sort: '-updatedAt',
       where: buildWhere(filters),
     }),
-    payload.count({ collection: 'works', overrideAccess: true, where: { reviewStatus: { equals: 'pending' } } }),
-    payload.count({ collection: 'creators', overrideAccess: true, where: { reviewStatus: { equals: 'pending' } } }),
-    payload.count({ collection: 'organizations', overrideAccess: true, where: { reviewStatus: { equals: 'pending' } } }),
-    payload.count({ collection: filters.collection as never, overrideAccess: true, where: { reviewStatus: { in: processedStatuses } } }),
-    payload.count({ collection: filters.collection as never, overrideAccess: true }),
+    draftCount('works', { reviewStatus: { equals: 'pending' } }),
+    draftCount('creators', { reviewStatus: { equals: 'pending' } }),
+    draftCount('organizations', { reviewStatus: { equals: 'pending' } }),
+    draftCount(filters.collection, { reviewStatus: { in: processedStatuses } }),
+    draftCount(filters.collection),
   ])
 
   const docs = result.docs as unknown as ContentDoc[]
