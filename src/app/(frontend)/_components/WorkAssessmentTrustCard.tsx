@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { radarClassDefinitions, radarGradeLabels, type RadarGrade, type RadarRatingClass } from '@/lib/radar/ratingPolicy'
 import { buildRadarAssessmentPresentation, type RadarAssessmentMetrics } from '@/lib/radar/assessmentPresentation'
 
-import type { DetailItem } from '../_lib/detail-index'
+import type { DetailItem, RadarResearchPreview } from '../_lib/detail-index'
 
 type AssessmentDetailItem = DetailItem & {
   radarAssessment?: RadarAssessmentMetrics
@@ -13,6 +13,8 @@ type AssessmentDetailItem = DetailItem & {
 }
 
 const radarGrades = new Set<RadarGrade>(['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X'])
+const researchStatusLabels: Record<string, string> = { resolved: '已解决', partial: '部分解决', insufficient: '信息不足', identity_problem: '身份问题' }
+const riskSignalLabels: Record<string, string> = { male_involvement: '男性介入', ntr: 'NTR', futa: '扶她', otokonoko: '男娘 / 伪娘', ts: 'TS / 性别转换', prior_male_relationship: '既往男性关系', abo: 'ABO', other: '其他风险' }
 
 function normalizeGrade(value?: string | null): RadarGrade | '' {
   const grade = String(value || '').trim().toUpperCase()
@@ -56,13 +58,41 @@ function Metric({ description, label, value }: { description: string; label: str
   )
 }
 
+function ResearchPreview({ research }: { research: RadarResearchPreview }) {
+  const risks = (research.riskSignals || []).map((value) => riskSignalLabels[value] || value)
+  return (
+    <section className="work-assessment-research-preview" aria-label="AI 研究档案预览">
+      <div>
+        <span>AI 研究档案 · 非正式评级</span>
+        <h3>{research.likelyGrade && research.likelyGrade !== 'UNKNOWN' ? `最可能 ${research.likelyGrade} 级` : '等级仍待确认'}</h3>
+        <p>这部分来自 25,048 条研究归档中的关联记录，用于公开辅助复核；它没有被伪装成人工审核，也不会覆盖 Works 的正式分级。</p>
+      </div>
+      <dl>
+        <div><dt>研究状态</dt><dd>{researchStatusLabels[research.researchStatus || ''] || research.researchStatus || '未知'}</dd></div>
+        <div><dt>等级范围</dt><dd>{research.bestGrade && research.bestGrade !== 'UNKNOWN' ? research.bestGrade : '?'} ～ {research.worstGrade && research.worstGrade !== 'UNKNOWN' ? research.worstGrade : '?'}</dd></div>
+        <div><dt>研究置信度</dt><dd>{typeof research.confidencePercent === 'number' ? `${Math.round(research.confidencePercent)}%` : '尚未计算'}</dd></div>
+        <div><dt>未解决问题</dt><dd>{typeof research.unresolvedQuestionCount === 'number' ? `${research.unresolvedQuestionCount} 项` : '尚未统计'}</dd></div>
+      </dl>
+      {risks.length ? <p><strong>风险信号：</strong>{risks.join('、')}</p> : null}
+    </section>
+  )
+}
+
 export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) {
   if (item.collection !== 'works') return null
 
   const assessmentItem = item as AssessmentDetailItem
+  const research = item.researchPreview
+  const researchAssessment: RadarAssessmentMetrics | undefined = research ? {
+    confidencePercent: research.confidencePercent,
+    sourceSummary: research.sourceSummary,
+    sourceCount: research.sourceCount,
+    suggestedGrade: research.likelyGrade,
+    requiresHumanReview: true,
+  } : undefined
   const presentation = buildRadarAssessmentPresentation({
-    radarAssessment: assessmentItem.radarAssessment,
-    ratingNotice: assessmentItem.ratingNotice,
+    radarAssessment: assessmentItem.radarAssessment || researchAssessment,
+    ratingNotice: assessmentItem.ratingNotice || (research ? 'ai_synthesized_pending_review' : undefined),
     reviewStatus: assessmentItem.reviewStatus,
     evidenceStrength: assessmentItem.evidenceStrength,
   })
@@ -70,7 +100,7 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
   const suggestedGrade = normalizeGrade(presentation.suggestedGrade)
   const isHumanReviewed = assessmentItem.ratingNotice === 'manual_reviewed' || assessmentItem.reviewStatus === 'reviewed'
   const grade = isHumanReviewed ? recordedGrade || suggestedGrade : suggestedGrade || recordedGrade
-  const gradeBasis = isHumanReviewed ? '人工确认分级' : suggestedGrade ? '规则建议等级' : recordedGrade ? '当前收录等级' : '尚未分级'
+  const gradeBasis = isHumanReviewed ? '人工确认分级' : research && !assessmentItem.radarAssessment ? 'AI 研究建议（非正式评级）' : suggestedGrade ? '规则建议等级' : recordedGrade ? '当前收录等级' : '尚未分级'
   const sourceCount = publicSourceCount(item, presentation.sourceCount)
   const decisiveDefinition = ruleDefinition(presentation.decisiveRuleCode)
 
@@ -129,6 +159,8 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
       ) : (
         <p className="work-assessment-empty-note">本条目可以先收录；当前来源摘要尚未补齐，评级详情会保持待复核或信息不足提示。</p>
       )}
+
+      {research ? <ResearchPreview research={research} /> : null}
 
       {presentation.decisiveRuleCode ? (
         <section className="work-assessment-decisive" data-grade={normalizeGrade(decisiveDefinition?.grade) || grade || 'unknown'}>
