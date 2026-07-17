@@ -63,9 +63,8 @@ function visibilityParams(collection, includeDrafts, profile) {
   } else {
     params.set('where[status][equals]', 'published')
   }
-  if (collection !== 'evidence') {
-    const visibilityField = profile === 'lite' ? 'isLiteVisible' : 'isFullVisible'
-    params.set(`where[${visibilityField}][not_equals]`, 'false')
+  if (collection !== 'evidence' && profile === 'lite') {
+    params.set('where[isLiteVisible][not_equals]', 'false')
   }
   return params
 }
