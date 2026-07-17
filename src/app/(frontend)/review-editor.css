@@ -1,0 +1,227 @@
+.review-queue-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.review-queue-tabs a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 17px;
+  border: 1px solid #303030;
+  border-radius: 18px;
+  background: #151515;
+  color: #ddd;
+  text-decoration: none;
+}
+
+.review-queue-tabs a[aria-current='page'] {
+  border-color: #8fe3a2;
+  background: rgb(143 227 162 / 0.08);
+}
+
+.review-queue-tabs strong {
+  color: #8fe3a2;
+  font-size: 20px;
+}
+
+.review-merged-row {
+  border-color: rgb(255 177 92 / 0.45);
+}
+
+.review-merged-warning {
+  display: grid;
+  gap: 12px;
+  padding: 17px;
+  border: 1px solid rgb(255 177 92 / 0.48);
+  border-radius: 16px;
+  background: rgb(255 177 92 / 0.07);
+  color: #f5d4ad;
+}
+
+.review-merged-warning strong,
+.review-merged-warning p {
+  margin: 0;
+}
+
+.review-merged-warning p {
+  line-height: 1.7;
+}
+
+.review-action-message a {
+  color: inherit;
+  font-weight: 900;
+}
+
+.review-editor-page {
+  width: min(1180px, 100%);
+}
+
+.review-editor-form {
+  display: grid;
+  gap: 18px;
+}
+
+.review-editor-section {
+  display: grid;
+  gap: 17px;
+  padding: 22px;
+  border: 1px solid #303030;
+  border-radius: 22px;
+  background: #151515;
+}
+
+.review-editor-section > header {
+  display: grid;
+  gap: 6px;
+}
+
+.review-editor-section h2,
+.review-editor-section p {
+  margin: 0;
+}
+
+.review-editor-section h2 {
+  font-size: clamp(20px, 3vw, 28px);
+}
+
+.review-editor-section p,
+.review-editor-submit small {
+  color: #aaa;
+  line-height: 1.65;
+}
+
+.review-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.review-editor-field {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  color: #ddd;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.review-editor-field-wide,
+.review-editor-checks {
+  grid-column: 1 / -1;
+}
+
+.review-editor-field input,
+.review-editor-field select,
+.review-editor-field textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #414141;
+  border-radius: 13px;
+  background: #0f0f0f;
+  color: #fff;
+  font: inherit;
+}
+
+.review-editor-field textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.review-editor-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.review-editor-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #363636;
+  border-radius: 14px;
+  background: #111;
+  color: #ddd;
+  font-weight: 800;
+}
+
+.review-editor-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: #8fe3a2;
+}
+
+.review-editor-submit {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  border: 1px solid #3a3a3a;
+  border-radius: 18px;
+  background: rgb(15 15 15 / 0.96);
+  box-shadow: 0 14px 40px rgb(0 0 0 / 0.32);
+  backdrop-filter: blur(12px);
+}
+
+.review-editor-submit small {
+  flex-basis: 100%;
+}
+
+@media (max-width: 760px) {
+  .review-queue-tabs,
+  .review-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .review-editor-field-wide,
+  .review-editor-checks {
+    grid-column: auto;
+  }
+
+  .review-editor-submit {
+    position: static;
+  }
+}
+
+[data-theme='light'] .review-queue-tabs a,
+[data-theme='light'] .review-editor-section {
+  border-color: #e2d6cc;
+  background: #fffaf6;
+}
+
+[data-theme='light'] .review-merged-warning {
+  border-color: #e7b36f;
+  background: #fff8ed;
+  color: #6f451c;
+}
+
+[data-theme='light'] .review-editor-field,
+[data-theme='light'] .review-editor-check {
+  color: #191716;
+}
+
+[data-theme='light'] .review-editor-field input,
+[data-theme='light'] .review-editor-field select,
+[data-theme='light'] .review-editor-field textarea {
+  border-color: #e2d6cc;
+  background: #fff;
+  color: #191716;
+}
+
+[data-theme='light'] .review-editor-check {
+  border-color: #e2d6cc;
+  background: #fff;
+}
+
+[data-theme='light'] .review-editor-submit {
+  border-color: #e2d6cc;
+  background: rgb(255 250 246 / 0.96);
+  box-shadow: 0 14px 40px rgb(90 68 51 / 0.14);
+}
