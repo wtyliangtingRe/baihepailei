@@ -249,6 +249,7 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
   const totalPages = Math.max(1, result.totalPages || 1)
   const currentPage = Math.min(result.page || filters.page, totalPages)
   const activeTotal = pending.totalDocs + triaging.totalDocs + needsInformation.totalDocs
+  const currentReturnTo = queryHref(filters, currentPage)
 
   return (
     <main className="page review-workbench feedback-review-page">
@@ -321,7 +322,7 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
 
               <form action={reviewFeedbackAction} className="feedback-review-action-form">
                 <input name="id" type="hidden" value={String(doc.id)} />
-                <input name="returnTo" type="hidden" value={queryHref(filters, currentPage)} />
+                <input name="returnTo" type="hidden" value={currentReturnTo} />
                 <label><span>审核说明</span><textarea defaultValue={doc.reviewNote || ''} maxLength={4000} name="reviewNote" placeholder="采纳和驳回可直接操作；要求补充材料时请写明需要什么。" /></label>
                 <div className="review-content-actions">
                   <button className="review-button" name="intent" type="submit" value="triaging">开始核查</button>
@@ -334,7 +335,7 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
 
               <div className="review-row-actions">
                 {workID ? <Link className="review-link" href={canonicalContentUrl('works', workID)}>查看作品前台</Link> : null}
-                {workID ? <Link className="review-link" href={`/me/review/content?collection=works&q=${encodeURIComponent(workID)}`}>编辑关联作品</Link> : null}
+                {workID ? <Link className="review-link" href={`/me/review/content/works/${workID}?returnTo=${encodeURIComponent(currentReturnTo)}`}>站内编辑关联作品</Link> : null}
                 <Link className="review-link" href={`/me/review/feedback/${doc.id}`}>站内完整详情</Link>
                 <Link className="review-link" href={`/admin/collections/feedback-submissions/${doc.id}`}>Payload 原始记录</Link>
               </div>
