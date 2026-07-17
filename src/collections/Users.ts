@@ -1,4 +1,4 @@
-import type { Access, CollectionConfig, FieldAccess, TextFieldSingleValidation } from 'payload'
+import { APIError, type Access, type CollectionConfig, type FieldAccess, type TextFieldSingleValidation } from 'payload'
 
 import {
   adminsOnly,
@@ -14,13 +14,21 @@ import {
 type UserLike = {
   id?: string | number
   _verified?: boolean | null
+  accountStatus?: AccountStatus
   email?: string
   displayName?: string
   role?: Role
+  sessions?: unknown[]
+  suspendedAt?: string | null
+  suspendedBy?: string | number | null
+  suspensionReason?: string | null
 }
+
+type AccountStatus = 'active' | 'suspended'
 
 const assignableRoles = new Set<Role>(['owner', 'admin', 'editor', 'reviewer', 'trusted', 'member'])
 const adminAssignableRoles = new Set<Role>(['editor', 'member'])
+const accountStatuses = new Set<AccountStatus>(['active', 'suspended'])
 
 function normalizeEmail(value: unknown) {
   return String(value || '').trim().toLowerCase()
@@ -70,6 +78,43 @@ const selfOrStaff: Access = ({ req }) => {
 }
 
 const personnelRoleAccess: FieldAccess = ({ req }) => isOwner(req.user) || getRole(req.user) === 'admin'
+const personnelStatusAccess: FieldAccess = ({ req }) => isAdmin(req.user)
+
+function preserveAccountState(data: Record<string, unknown>, original: UserLike) {
+  return {
+    ...data,
+    accountStatus: original.accountStatus || 'active',
+    suspendedAt: original.suspendedAt,
+    suspendedBy: original.suspendedBy,
+    suspensionReason: original.suspensionReason,
+  }
+}
+
+function applyManagedAccountState(data: Record<string, unknown>, original: UserLike, actor: UserLike | undefined) {
+  const requested = String(data.accountStatus || '') as AccountStatus
+  if (!accountStatuses.has(requested)) return preserveAccountState(data, original)
+
+  const previous = original.accountStatus || 'active'
+  if (requested === 'active') {
+    return {
+      ...data,
+      accountStatus: 'active' as const,
+      suspendedAt: null,
+      suspendedBy: null,
+      suspensionReason: null,
+    }
+  }
+
+  const newlySuspended = previous !== 'suspended'
+  return {
+    ...data,
+    accountStatus: 'suspended' as const,
+    sessions: newlySuspended ? [] : original.sessions,
+    suspendedAt: newlySuspended ? new Date().toISOString() : original.suspendedAt,
+    suspendedBy: newlySuspended ? actor?.id : original.suspendedBy,
+    suspensionReason: String(data.suspensionReason || original.suspensionReason || '由站点管理人员封停。').trim(),
+  }
+}
 
 const validateDisplayName: TextFieldSingleValidation = (value, { operation }) => {
   const normalized = String(value || '').trim()
@@ -108,7 +153,7 @@ export const Users: CollectionConfig = {
     },
   },
   admin: {
-    defaultColumns: ['email', 'displayName', 'role', 'updatedAt'],
+    defaultColumns: ['email', 'displayName', 'role', 'accountStatus', 'updatedAt'],
     group: '系统',
     useAsTitle: 'email',
   },
@@ -124,13 +169,18 @@ export const Users: CollectionConfig = {
     beforeLogin: [
       async ({ user, req }) => {
         const current = user as UserLike
+        if (current.accountStatus === 'suspended' && !isConfiguredOwnerEmail(current.email)) {
+          throw new APIError('此账户已被封停。', 403, { code: 'account_suspended' }, true)
+        }
+
         if (!current.id || !isConfiguredOwnerEmail(current.email)) {
           return user
         }
 
         const verificationNeedsNormalization = accountEmailVerificationEnabled() && current._verified !== true
         const roleNeedsNormalization = current.role !== 'owner'
-        if (!verificationNeedsNormalization && !roleNeedsNormalization) return user
+        const statusNeedsNormalization = current.accountStatus !== 'active'
+        if (!verificationNeedsNormalization && !roleNeedsNormalization && !statusNeedsNormalization) return user
 
         return req.payload.update({
           collection: 'users',
@@ -138,6 +188,7 @@ export const Users: CollectionConfig = {
           data: {
             ...(verificationNeedsNormalization ? { _verified: true } : {}),
             ...(roleNeedsNormalization ? { role: 'owner' as const } : {}),
+            ...(statusNeedsNormalization ? { accountStatus: 'active' as const } : {}),
           },
           overrideAccess: true,
           req,
@@ -147,6 +198,7 @@ export const Users: CollectionConfig = {
     beforeValidate: [
       ({ data, operation, originalDoc, req }) => {
         const actorRole = getRole(req.user)
+        const actor = req.user as UserLike | undefined
         const original = originalDoc as UserLike | undefined
         const email = normalizeEmail(data?.email || original?.email)
         const desired = requestedRole(data?.role)
@@ -154,8 +206,12 @@ export const Users: CollectionConfig = {
         if (operation === 'create') {
           const created = {
             ...data,
+            accountStatus: 'active' as const,
             displayName: String(data?.displayName || '').trim(),
             email,
+            suspendedAt: null,
+            suspendedBy: null,
+            suspensionReason: null,
             termsAcceptedAt: new Date().toISOString(),
           }
           if (isConfiguredOwnerEmail(email)) return { ...created, role: 'owner' }
@@ -170,30 +226,49 @@ export const Users: CollectionConfig = {
 
         // The configured owner identity cannot be renamed or demoted through the API.
         if (original.role === 'owner' || isConfiguredOwnerEmail(original.email)) {
-          return { ...data, email: normalizeEmail(original.email), role: 'owner' }
+          const editingSelf = String(actor?.id) === String(original.id)
+          return {
+            ...data,
+            accountStatus: 'active',
+            ...(editingSelf ? {} : { displayName: original.displayName, password: undefined }),
+            email: normalizeEmail(original.email),
+            role: 'owner',
+            suspendedAt: null,
+            suspendedBy: null,
+            suspensionReason: null,
+          }
         }
 
         if (actorRole === 'owner') {
           const role = desired === 'owner' && !isConfiguredOwnerEmail(email) ? 'admin' : desired || original.role || 'member'
-          return { ...data, email, role }
+          return applyManagedAccountState({ ...data, email, role }, original, actor)
         }
 
         if (actorRole === 'admin') {
-          const actorID = (req.user as UserLike | undefined)?.id
-          if (original.role === 'admin' && String(actorID) !== String(original.id)) {
-            return {
-              ...data,
-              displayName: original.displayName,
-              email: normalizeEmail(original.email),
-              password: undefined,
-              role: 'admin',
-            }
+          const actorID = actor?.id
+          if (original.role === 'admin') {
+            const editingSelf = String(actorID) === String(original.id)
+            return preserveAccountState(editingSelf
+              ? { ...data, email, role: 'admin' }
+              : {
+                  ...data,
+                  displayName: original.displayName,
+                  email: normalizeEmail(original.email),
+                  password: undefined,
+                  role: 'admin',
+                }, original)
           }
           const role = desired && adminAssignableRoles.has(desired) ? desired : original.role || 'member'
-          return { ...data, email, role }
+          const mayManageStatus = String(actorID) !== String(original.id)
+          const next = { ...data, email, role }
+          return mayManageStatus ? applyManagedAccountState(next, original, actor) : preserveAccountState(next, original)
         }
 
-        return { ...data, email: normalizeEmail(original.email), role: original.role || 'member' }
+        return preserveAccountState({
+          ...data,
+          email: normalizeEmail(original.email),
+          role: original.role || 'member',
+        }, original)
       },
     ],
   },
@@ -214,6 +289,51 @@ export const Users: CollectionConfig = {
         { label: '审核（旧角色兼容）', value: 'reviewer' },
         { label: '可信投稿者（旧角色兼容）', value: 'trusted' },
       ],
+    },
+    {
+      name: 'accountStatus',
+      type: 'select',
+      label: '账户状态',
+      defaultValue: 'active',
+      required: true,
+      access: {
+        update: personnelStatusAccess,
+      },
+      options: [
+        { label: '正常', value: 'active' },
+        { label: '已封停', value: 'suspended' },
+      ],
+    },
+    {
+      name: 'suspensionReason',
+      type: 'textarea',
+      label: '封停原因',
+      maxLength: 500,
+      access: {
+        read: personnelStatusAccess,
+        update: personnelStatusAccess,
+      },
+    },
+    {
+      name: 'suspendedAt',
+      type: 'date',
+      label: '封停时间',
+      access: {
+        read: personnelStatusAccess,
+        update: personnelStatusAccess,
+      },
+      admin: { readOnly: true },
+    },
+    {
+      name: 'suspendedBy',
+      type: 'relationship',
+      label: '操作人',
+      relationTo: 'users',
+      access: {
+        read: personnelStatusAccess,
+        update: personnelStatusAccess,
+      },
+      admin: { readOnly: true },
     },
     {
       name: 'displayName',
