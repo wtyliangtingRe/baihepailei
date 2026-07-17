@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { publicContentImagesEnabled } from '@/lib/deploymentProfile'
 
 import { readDetailIndex, type DetailCoverImage, type DetailItem, type DetailSourceLink } from '../_lib/detail-index'
+import AssessmentOriginBadge from './AssessmentOriginBadge'
 import CommentBlock from './CommentBlock'
 import ContentCallout, { type ContentCalloutItem } from './ContentCallout'
 import RichTextRenderer from './RichTextRenderer'
@@ -558,6 +559,7 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
             <p className="eyebrow">{collectionLabel(item.collection)}</p>
             <h1>{title}</h1>
             <div className="detail-chips">
+              <AssessmentOriginBadge item={item} />
               {rank ? <span>{rank}</span> : null}
               {mediaGroup ? <span>{mediaGroup}</span> : null}
               {mediaType && mediaType !== mediaGroup ? <span>{mediaType}</span> : null}
