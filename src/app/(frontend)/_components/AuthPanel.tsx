@@ -87,6 +87,11 @@ export default function AuthPanel({ mode, redirectTo, token = '' }: AuthPanelPro
           body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
         })
         if (!loginResponse.ok) {
+          const failure = await loginResponse.clone().json().catch(() => null)
+          if (failure?.code === 'account_suspended') {
+            window.location.assign('/account/locked')
+            return
+          }
           throw new Error(await responseMessage(loginResponse) || '登录失败，请稍后重试。')
         }
 
@@ -203,7 +208,7 @@ export default function AuthPanel({ mode, redirectTo, token = '' }: AuthPanelPro
         {mode === 'register' ? (
           <label className="account-check">
             <input checked={accepted} onChange={(event) => setAccepted(event.target.checked)} required type="checkbox" />
-            <span>我会友善交流，并理解评论和人工排雷材料需要经过审核。</span>
+            <span>我会友善交流，并理解人工排雷材料需要经过核验；公开评论应遵守社区规则。</span>
           </label>
         ) : null}
 
