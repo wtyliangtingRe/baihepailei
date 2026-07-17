@@ -124,8 +124,8 @@ export default function AccountClient() {
       <section className="account-feature-grid" aria-label="账户功能">
         <Link className="detail-card account-feature" href="/me/lists"><strong>我的列表</strong><span>想看、在看、已看、喜欢、避雷与待复核。</span></Link>
         <Link className="detail-card account-feature" href="/feedback"><strong>提交人工排雷</strong><span>补充规则、等级建议、来源链接与证据说明。</span></Link>
-        <Link className="detail-card account-feature" href="/feedback?type=new_work"><strong>提交新作品</strong><span>提议收录尚未建档的作品；编辑审核后才会创建草稿条目。</span></Link>
-        {isStaff ? <Link className="detail-card account-feature" href="/me/review/content"><strong>站内编辑台</strong><span>日常审核与修改作品、创作者和机构；这是编辑默认使用的后台。</span></Link> : null}
+        <Link className="detail-card account-feature" href="/me/studio"><strong>{isStaff ? '站内内容管理' : '提交新作品'}</strong><span>{isStaff ? '直接搜索、创建、编辑、隐藏和恢复作品；不是 AI 审核队列。' : '普通用户只提交新作品申请，由编辑审核后创建草稿。'}</span></Link>
+        {isStaff ? <Link className="detail-card account-feature" href="/me/review/content"><strong>AI / 内容审核</strong><span>处理机器建议和旧数据的待复核队列，不承担日常完整编辑。</span></Link> : null}
         {isStaff ? <Link className="detail-card account-feature" href="/me/review/feedback"><strong>用户反馈审核</strong><span>独立处理人工排雷、纠错和新作品申请，并明确采纳、退回或要求补充。</span></Link> : null}
         {mayManagePersonnel ? <Link className="detail-card account-feature" href="/me/personnel"><strong>人员与封停管理</strong><span>任命管理员或编辑，封停违规账户并查看锁定状态。</span></Link> : null}
         {mayUsePayload ? <Link className="detail-card account-feature" href="/admin"><strong>Payload 高级维护</strong><span>仅最高领袖和管理员使用；处理危险操作、底层关系与永久删除。</span></Link> : null}
