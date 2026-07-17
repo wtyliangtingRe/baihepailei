@@ -21,6 +21,18 @@
   margin-top: 0;
 }
 
+.account-card h1 {
+  overflow-wrap: anywhere;
+}
+
+.account-locked-card {
+  border-color: #5b3035;
+}
+
+.account-locked-card p {
+  line-height: 1.75;
+}
+
 .account-form label {
   display: grid;
   gap: 7px;
@@ -157,4 +169,153 @@
 
 [data-theme='light'] .account-feature span {
   color: #766a61;
+}
+
+.personnel-page,
+.personnel-dashboard,
+.personnel-list,
+.personnel-card,
+.personnel-suspension {
+  display: grid;
+  gap: 16px;
+}
+
+.personnel-page {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.personnel-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.personnel-stats > div {
+  display: grid;
+  gap: 6px;
+}
+
+.personnel-stats span,
+.personnel-card header span,
+.personnel-card small {
+  color: #969696;
+}
+
+.personnel-stats strong {
+  font-size: 24px;
+}
+
+.personnel-filters,
+.personnel-role-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  align-items: end;
+  gap: 12px;
+}
+
+.personnel-filters label,
+.personnel-role-row label,
+.personnel-suspension label {
+  display: grid;
+  gap: 7px;
+  color: #ddd;
+  font-weight: 750;
+}
+
+.personnel-filters input,
+.personnel-filters select,
+.personnel-role-row select,
+.personnel-suspension textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #343434;
+  border-radius: 12px;
+  background: #101010;
+  color: #fff;
+}
+
+.personnel-suspension textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.personnel-card > header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.personnel-card > header > div {
+  display: grid;
+  gap: 5px;
+}
+
+.personnel-status {
+  width: fit-content;
+  padding: 5px 10px;
+  border: 1px solid #35533b;
+  border-radius: 999px;
+  color: #8fe3a2 !important;
+}
+
+.personnel-status-suspended {
+  border-color: #65333b;
+  color: #ff9caa !important;
+}
+
+.personnel-role-row button,
+.personnel-suspension button {
+  width: fit-content;
+  padding: 9px 13px;
+  border: 1px solid #4f3743;
+  border-radius: 999px;
+  background: #251923;
+  color: #ffb5d7;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 760;
+}
+
+.personnel-role-row button:disabled,
+.personnel-suspension button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.personnel-danger {
+  border-color: #6b333b !important;
+  color: #ff9caa !important;
+}
+
+.personnel-suspension p {
+  margin: 0;
+}
+
+.personnel-state {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+  .personnel-card > header,
+  .personnel-role-row {
+    align-items: stretch;
+  }
+}
+
+[data-theme='light'] .personnel-filters input,
+[data-theme='light'] .personnel-filters select,
+[data-theme='light'] .personnel-role-row select,
+[data-theme='light'] .personnel-suspension textarea {
+  border-color: #e2d6cc;
+  background: #fff7f2;
+  color: #191716;
+}
+
+[data-theme='light'] .personnel-filters label,
+[data-theme='light'] .personnel-role-row label,
+[data-theme='light'] .personnel-suspension label {
+  color: #191716;
 }
