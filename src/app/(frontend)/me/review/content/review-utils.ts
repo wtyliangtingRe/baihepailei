@@ -10,6 +10,17 @@ export type MergedWorkReference = {
   title?: string
 }
 
+const transientReviewParams = [
+  'reviewError',
+  'reviewed',
+  'saved',
+  'reviewId',
+  'targetId',
+  'targetTitle',
+  'editorError',
+  'sourceId',
+]
+
 function text(value: unknown) {
   return String(value ?? '').trim()
 }
@@ -34,6 +45,12 @@ export function isMergedDuplicateWork(doc: ReviewableContentDoc) {
   return Boolean(mergedWorkReference(doc))
 }
 
+export function normalizePublicationStatus(value: unknown) {
+  const status = text(value)
+  if (status === 'published' || status === 'archived') return status
+  return 'draft'
+}
+
 export function safeReviewReturnTo(value: FormDataEntryValue | string | null | undefined) {
   const requested = String(value || '')
   const isContentQueue = requested === '/me/review/content' || requested.startsWith('/me/review/content?')
@@ -49,6 +66,7 @@ export function reviewActionHref(
 ) {
   const [pathname, rawQuery = ''] = returnTo.split('?', 2)
   const params = new URLSearchParams(rawQuery)
+  for (const name of transientReviewParams) params.delete(name)
   params.set(key, value)
   for (const [name, item] of Object.entries(extras)) {
     if (item !== undefined && item !== '') params.set(name, String(item))
