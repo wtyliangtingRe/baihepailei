@@ -3,6 +3,8 @@ import type { RadarAssessmentMetrics } from '@/lib/radar/assessmentPresentation'
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { recordIdFromContentRoute } from './content-identity'
+
 export type SearchCollection = 'works' | 'creators' | 'organizations' | 'evidence' | 'terms' | 'rules'
 export type ContentVisibility = 'ordinary' | 'adult' | 'restricted'
 
@@ -16,6 +18,7 @@ export type SearchCoverImage = {
 
 export type SearchItem = {
   id: string
+  recordId?: string
   collection: SearchCollection | string
   typeLabel: string
   title: string
@@ -85,6 +88,20 @@ export function readSearchIndex() {
 export function findSearchItem(collection: SearchCollection, slug: string) {
   const index = readSearchIndex()
   if (!index) return null
+
+  const canonicalCollection = ['works', 'creators', 'organizations'].includes(collection)
+    ? collection as 'works' | 'creators' | 'organizations'
+    : null
+
+  if (canonicalCollection) {
+    const recordId = recordIdFromContentRoute(canonicalCollection, slug)
+    if (recordId) {
+      const byRecordId = index.items.find(
+        (item) => item.collection === collection && String(item.recordId || '') === recordId,
+      )
+      if (byRecordId) return byRecordId
+    }
+  }
 
   return index.items.find((item) => item.collection === collection && item.slug === slug) || null
 }
