@@ -2,6 +2,7 @@
 
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 
+import AssessmentOriginBadge from '../_components/AssessmentOriginBadge'
 import { isPublicSearchItem } from '../_lib/public-entity-guards'
 import { filterAndRankItems, getCollectionLabel, resultMeta, resultSummary, splitQuery, workTypeLabel } from './search-utils.mjs'
 
@@ -16,6 +17,12 @@ type SearchItem = {
   slug: string
   url: string
   rank?: string
+  reviewStatus?: string
+  ratingNotice?: string
+  radarAssessment?: {
+    assessedAt?: string
+    suggestedGrade?: string
+  }
   originalTitle?: string
   aliases?: string[]
   localizedTitles?: string[]
@@ -206,7 +213,7 @@ export default function SearchClient() {
           const specificType = item.collection === 'works' ? workTypeLabel(item) : ''
           return (
             <article className="result-card" data-content-visibility={item.contentVisibility || 'ordinary'} key={item.id}>
-              <div className="result-card-header"><div className="result-type-badges"><span>{resultMeta(item)}</span>{specificType ? <span>{specificType}</span> : null}</div>{visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}</div>
+              <div className="result-card-header"><div className="result-type-badges"><span>{resultMeta(item)}</span>{specificType ? <span>{specificType}</span> : null}<AssessmentOriginBadge item={item} /></div>{visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}</div>
               <h2><HighlightedText query={deferredQuery} text={item.title} /></h2>
               {resultSummary(item) ? <p className="result-text">{resultSummary(item)}</p> : null}
               <a className="result-link" href={item.url}>查看详情</a>
