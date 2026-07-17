@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic'
 
 type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted' | 'member'
 type WorkflowStatus = 'pending' | 'triaging' | 'needs_information' | 'accepted' | 'rejected' | 'archived'
+type FeedbackQueue = 'active' | 'processed' | 'all'
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
 
 type RelatedWork = {
@@ -37,6 +38,7 @@ type FeedbackDoc = {
 }
 
 type Filters = {
+  queue: FeedbackQueue
   q: string
   status: 'all' | WorkflowStatus
   type: 'all' | string
@@ -44,6 +46,8 @@ type Filters = {
 }
 
 const allowedRoles = new Set<Role>(['owner', 'admin', 'editor', 'reviewer'])
+const activeStatuses: WorkflowStatus[] = ['pending', 'triaging', 'needs_information']
+const processedStatuses: WorkflowStatus[] = ['accepted', 'rejected', 'archived']
 const workflowLabels: Record<WorkflowStatus, string> = {
   pending: '待审核',
   triaging: '核查中',
@@ -82,9 +86,11 @@ function positiveInteger(value: string, fallback = 1) {
 }
 
 function parseFilters(params: Record<string, string | string[] | undefined>): Filters {
+  const requestedQueue = first(params.queue)
   const status = first(params.status)
   const type = first(params.type)
   return {
+    queue: requestedQueue === 'processed' || requestedQueue === 'all' ? requestedQueue : 'active',
     q: first(params.q).trim().slice(0, 160),
     status: status in workflowLabels ? status as WorkflowStatus : 'all',
     type: type && type in feedbackTypeLabels ? type : 'all',
@@ -94,7 +100,13 @@ function parseFilters(params: Record<string, string | string[] | undefined>): Fi
 
 function buildWhere(filters: Filters): Where {
   const and: Where[] = []
-  if (filters.status !== 'all') and.push({ workflowStatus: { equals: filters.status } })
+  if (filters.status !== 'all') {
+    and.push({ workflowStatus: { equals: filters.status } })
+  } else if (filters.queue === 'active') {
+    and.push({ workflowStatus: { in: activeStatuses } })
+  } else if (filters.queue === 'processed') {
+    and.push({ workflowStatus: { in: processedStatuses } })
+  }
   if (filters.type !== 'all') and.push({ feedbackType: { equals: filters.type } })
   if (filters.q) {
     const or: Where[] = [
@@ -109,12 +121,14 @@ function buildWhere(filters: Filters): Where {
   return and.length ? { and } : {}
 }
 
-function queryHref(filters: Filters, page: number) {
+function queryHref(filters: Filters, page: number, overrides: Partial<Filters> = {}) {
+  const next = { ...filters, ...overrides, page }
   const params = new URLSearchParams()
-  if (filters.q) params.set('q', filters.q)
-  if (filters.status !== 'all') params.set('status', filters.status)
-  if (filters.type !== 'all') params.set('type', filters.type)
-  if (page > 1) params.set('page', String(page))
+  if (next.queue !== 'active') params.set('queue', next.queue)
+  if (next.q) params.set('q', next.q)
+  if (next.status !== 'all') params.set('status', next.status)
+  if (next.type !== 'all') params.set('type', next.type)
+  if (next.page > 1) params.set('page', String(next.page))
   const query = params.toString()
   return query ? `/me/review/feedback?${query}` : '/me/review/feedback'
 }
@@ -213,7 +227,7 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
   const reviewError = first(rawParams.reviewError)
   const reviewed = first(rawParams.reviewed)
   const reviewID = first(rawParams.reviewId)
-  const [result, pending, triaging, needsInformation] = await Promise.all([
+  const [result, pending, triaging, needsInformation, processed, all] = await Promise.all([
     payload.find({
       collection: 'feedback-submissions',
       depth: 1,
@@ -227,20 +241,23 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
     payload.count({ collection: 'feedback-submissions', overrideAccess: true, where: { workflowStatus: { equals: 'pending' } } }),
     payload.count({ collection: 'feedback-submissions', overrideAccess: true, where: { workflowStatus: { equals: 'triaging' } } }),
     payload.count({ collection: 'feedback-submissions', overrideAccess: true, where: { workflowStatus: { equals: 'needs_information' } } }),
+    payload.count({ collection: 'feedback-submissions', overrideAccess: true, where: { workflowStatus: { in: processedStatuses } } }),
+    payload.count({ collection: 'feedback-submissions', overrideAccess: true }),
   ])
 
   const docs = result.docs as unknown as FeedbackDoc[]
   const totalPages = Math.max(1, result.totalPages || 1)
   const currentPage = Math.min(result.page || filters.page, totalPages)
+  const activeTotal = pending.totalDocs + triaging.totalDocs + needsInformation.totalDocs
 
   return (
     <main className="page review-workbench feedback-review-page">
       <section className="review-hero">
         <div className="review-hero-copy">
           <p className="eyebrow">用户反馈审核</p>
-          <h1>人工排雷、纠错和新证据集中处理</h1>
-          <p className="muted">这里显示注册用户提交的全部材料。采纳反馈只记录审核结论，不会自动覆盖作品等级；需要改条目时再进入内容工作台逐项保存。</p>
-          <div className="review-safety-note">“已采纳”代表材料被审核人员接受，不等于关联作品已经完成整条人工复核。</div>
+          <h1>把待处理表单和已处理历史分开</h1>
+          <p className="muted">默认只显示仍需处理的人工排雷、纠错和新证据。采纳、驳回或归档后会离开当前队列，但审核结论仍可在“已处理”中追溯。</p>
+          <div className="review-safety-note">“已采纳”代表材料被审核人员接受，不等于关联作品已经完成整条人工复核，也不会自动覆盖作品等级。</div>
         </div>
         <div className="review-stat-grid">
           <Stat label="待审核" value={pending.totalDocs} />
@@ -259,18 +276,25 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
               : '反馈 ID 或处理动作无效，请刷新页面后重试。'}
         </div>
       ) : null}
-      {reviewed ? <div className="review-action-message review-action-message-success" role="status">反馈 {reviewID || ''} 已更新为“{workflowLabels[reviewed as WorkflowStatus] || reviewed}”。</div> : null}
+      {reviewed ? <div className="review-action-message review-action-message-success" role="status">反馈 {reviewID || ''} 已更新为“{workflowLabels[reviewed as WorkflowStatus] || reviewed}”；完成态表单会自动离开待处理队列。</div> : null}
+
+      <nav className="review-queue-tabs" aria-label="用户反馈队列">
+        <Link aria-current={filters.queue === 'active' ? 'page' : undefined} href={queryHref(filters, 1, { queue: 'active', status: 'all' })}><span>待处理</span><strong>{activeTotal.toLocaleString('zh-CN')}</strong></Link>
+        <Link aria-current={filters.queue === 'processed' ? 'page' : undefined} href={queryHref(filters, 1, { queue: 'processed', status: 'all' })}><span>已处理</span><strong>{processed.totalDocs.toLocaleString('zh-CN')}</strong></Link>
+        <Link aria-current={filters.queue === 'all' ? 'page' : undefined} href={queryHref(filters, 1, { queue: 'all', status: 'all' })}><span>全部历史</span><strong>{all.totalDocs.toLocaleString('zh-CN')}</strong></Link>
+      </nav>
 
       <form action="/me/review/feedback" className="review-filter-panel">
+        <input name="queue" type="hidden" value={filters.queue} />
         <label><span>关键词</span><input defaultValue={filters.q} name="q" placeholder="标题、结论、证据、提交者或反馈 ID" type="search" /></label>
-        <label><span>处理状态</span><select defaultValue={filters.status} name="status"><option value="all">全部</option>{Object.entries(workflowLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <label><span>精确处理状态</span><select defaultValue={filters.status} name="status"><option value="all">沿用当前队列</option>{Object.entries(workflowLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label><span>反馈类型</span><select defaultValue={filters.type} name="type"><option value="all">全部</option>{Object.entries(feedbackTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-        <div className="review-filter-actions"><button className="review-button" type="submit">应用筛选</button><Link className="review-link" href="/me/review/feedback">重置</Link></div>
+        <div className="review-filter-actions"><button className="review-button" type="submit">应用筛选</button><Link className="review-link" href={queryHref(filters, 1, { q: '', status: 'all', type: 'all' })}>清除细筛选</Link></div>
       </form>
 
       <div className="review-row-actions">
         <Link className="review-link" href="/me/review/content">作品、创作者与机构工作台</Link>
-        <Link className="review-link" href="/admin/collections/feedback-submissions">打开 Payload 完整列表</Link>
+        <Link className="review-link" href="/admin/collections/feedback-submissions">Payload 高级维护</Link>
       </div>
 
       <Pagination currentPage={currentPage} filters={filters} totalPages={totalPages} />
@@ -302,9 +326,9 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
                 <div className="review-content-actions">
                   <button className="review-button" name="intent" type="submit" value="triaging">开始核查</button>
                   <button className="review-button" name="intent" type="submit" value="needs_information">要求补充材料</button>
-                  <button className="review-button review-button-primary" name="intent" type="submit" value="accepted">采纳反馈</button>
-                  <button className="review-button review-button-danger" name="intent" type="submit" value="rejected">未采纳 / 驳回</button>
-                  <button className="review-button" name="intent" type="submit" value="archived">归档</button>
+                  <button className="review-button review-button-primary" name="intent" type="submit" value="accepted">采纳反馈并移入已处理</button>
+                  <button className="review-button review-button-danger" name="intent" type="submit" value="rejected">驳回并移入已处理</button>
+                  <button className="review-button" name="intent" type="submit" value="archived">归档并移入已处理</button>
                 </div>
               </form>
 
@@ -317,7 +341,7 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
             </article>
           )
         })}
-        {docs.length === 0 ? <section className="review-empty"><h2>没有匹配的用户反馈</h2><p>可以切换处理状态、反馈类型，或减少关键词。</p></section> : null}
+        {docs.length === 0 ? <section className="review-empty"><h2>{filters.queue === 'active' ? '待处理反馈已经清空' : '没有匹配的用户反馈'}</h2><p>{filters.queue === 'active' ? '采纳、驳回和归档的表单都保存在“已处理”中。' : '可以切换队列、处理状态、反馈类型，或减少关键词。'}</p></section> : null}
       </section>
 
       <Pagination currentPage={currentPage} filters={filters} totalPages={totalPages} />
