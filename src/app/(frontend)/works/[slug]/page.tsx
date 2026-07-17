@@ -100,11 +100,11 @@ async function unindexedStaffWork(routeKey: string) {
   return (
     <main className="page collection-page">
       <section className="detail-card unindexed-content-notice">
-        <p className="eyebrow">内部条目预览</p>
+        <p className="eyebrow">工作人员数据库预览</p>
         <h1>{doc.title || `作品 ${doc.id}`}</h1>
         <div className="work-card-badges"><span className="work-type-chip">{doc.rank && doc.rank !== 'unknown' ? `${doc.rank} 级` : '尚未分级'}</span><AssessmentOriginBadge item={{ collection: 'works', ratingNotice: doc.ratingNotice, reviewStatus: doc.reviewStatus, radarAssessment: doc.radarAssessment }} /><span className="work-type-chip">{doc.status || 'draft'}</span></div>
-        <p>这条记录已经存在于数据库，但你当前的公开索引还没有包含它，所以此前会显示 404。重新生成完整版索引后，普通访客也能从这个站内 ID 地址查看完整页面。</p>
-        <div className="collection-actions"><Link className="result-link" href={`/me/review/content/works/${doc.id}`}>在站内编辑台修改</Link><Link className="back-link" href={`/admin/collections/works/${doc.id}`}>Payload 高级维护</Link><Link className="back-link" href="/works">返回作品列表</Link></div>
+        <p>这条记录存在于数据库，但还没有进入公开索引。草稿、刚恢复的作品和未完成的新建条目都可能处于这种状态。</p>
+        <div className="collection-actions"><Link className="result-link" href={`/me/studio/works/${doc.id}`}>在站内内容管理中编辑</Link><Link className="back-link" href="/me/studio">返回内容管理</Link></div>
       </section>
     </main>
   )
@@ -116,18 +116,18 @@ export default async function WorkDetailPage({ params }: Args) {
 
   const detailItem = findDetailItem('works', decodedSlug)
   if (detailItem) {
-    if (detailItem.recordId && !isCanonicalContentRoute('works', decodedSlug, detailItem.recordId)) {
-      redirect(detailItem.url)
-    }
+    if (detailItem.recordId && !isCanonicalContentRoute('works', decodedSlug, detailItem.recordId)) redirect(detailItem.url)
     const live = detailItem.recordId ? await staffLiveWork(String(detailItem.recordId)) : null
+    if (detailItem.status === 'archived' && !live) notFound()
     const visibleItem = live ? liveDetailItem(detailItem, live) : detailItem
     return (
       <>
         {live ? (
           <section className="page" aria-label="工作人员实时预览提示">
             <div className="detail-card review-safety-note">
-              <strong>工作人员实时预览</strong>
-              <p>下面的标题、正式分级、复核状态和更新时间已叠加数据库最新值。普通访客仍读取稳定的公开索引，完成一批审核后再统一导出即可。</p>
+              <strong>{visibleItem.status === 'archived' ? '工作人员回收站预览' : '工作人员实时预览'}</strong>
+              <p>{visibleItem.status === 'archived' ? '这个作品已经软隐藏，普通访客无法从列表、搜索或详情页查看；工作人员仍可预览并从内容管理恢复。' : '标题、正式分级、复核状态和更新时间已叠加数据库最新值；站内编辑保存时也会尝试同步现有公开索引。'}</p>
+              <Link className="review-link" href={`/me/studio/works/${visibleItem.recordId || live.id}`}>编辑这个作品</Link>
             </div>
           </section>
         ) : null}
@@ -147,6 +147,7 @@ export default async function WorkDetailPage({ params }: Args) {
     if (staffFallback) return staffFallback
     notFound()
   }
+  if (item.status === 'archived') notFound()
   if (item.recordId && !isCanonicalContentRoute('works', decodedSlug, item.recordId)) redirect(item.url)
 
   return (
