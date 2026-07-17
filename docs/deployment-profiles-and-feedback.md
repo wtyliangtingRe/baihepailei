@@ -4,9 +4,9 @@
 
 ## 推荐结论
 
-正式在线站默认使用 `text`：不显示作品封面、证据截图和图文提示图片；站内反馈只接收文字、规则代码与来源链接。这样能显著减少页面请求、图片存储和出口流量。
+项目现在默认使用 `enhanced` 完整版：公开索引以 `isFullVisible` 为边界，并显示索引中已有的作品封面。这样先保留全部能力，再由低流量部署显式关闭图片或改用 Lite 可见性。
 
-通过网盘或 Hugging Face 分发的完整包可使用 `enhanced`：保留并显示索引中已有的图片元数据。是否能“上传反馈图片”取决于分发物是否带可写后端；纯静态文件本身无法接收上传。
+需要节省流量时可显式使用 `text`，并在导出时传入 `--profile lite`。是否能“上传反馈图片”取决于分发物是否带可写后端；纯静态文件本身无法接收上传。
 
 ## 三种可组合方案
 
@@ -23,11 +23,11 @@
 ## 环境变量
 
 ```env
-# 正式低流量版（默认）
-NEXT_PUBLIC_MEDIA_MODE=text
+# 完整增强版（默认）
+NEXT_PUBLIC_MEDIA_MODE=enhanced
 
-# 增强媒体版
-# NEXT_PUBLIC_MEDIA_MODE=enhanced
+# 低流量文字镜像
+# NEXT_PUBLIC_MEDIA_MODE=text
 
 # 可选反馈渠道；留空即不显示
 NEXT_PUBLIC_FEEDBACK_EMAIL=feedback@example.com
@@ -36,6 +36,14 @@ NEXT_PUBLIC_FEEDBACK_ISSUE_URL=https://github.com/example/repo/issues/new
 ```
 
 `NEXT_PUBLIC_MEDIA_MODE=text` 只影响公开渲染，不删除数据库或索引里的封面 URL 元数据。因此同一份数据可以用于低流量正式站，也可以在增强分发版重新构建后显示图片。
+
+完整索引可一次生成：
+
+```powershell
+node scripts/export/build-full-public-index.mjs --url "http://localhost:3000"
+```
+
+该命令默认包含草稿、使用 `isFullVisible`、输出增强媒体索引。只有明确传入 `--profile lite --media-mode text` 时才生成低流量镜像。
 
 ## 渠道取舍
 
@@ -50,6 +58,6 @@ NEXT_PUBLIC_FEEDBACK_ISSUE_URL=https://github.com/example/repo/issues/new
 ## 数据边界
 
 - 用户提交不会自动更改 Works 的分级或发布状态。
-- 25,048 条 `radar-research-records` 是内部研究档案，不等于正式评级。
+- 25,048 条 `radar-research-records` 仍是研究档案，不等于正式评级。完整索引只把与作品关联的研究状态、等级范围、风险信号和来源摘要作为“AI 研究档案”预览展示，不会写回 `Works.rank` 或伪装成人工复核。
 - 后台审核工作台只允许逐条确认或标记争议，并记录审核人、时间与说明。
 - “增强媒体”只改变公开展示，不改变证据状态、人工确认状态或页面提示。
