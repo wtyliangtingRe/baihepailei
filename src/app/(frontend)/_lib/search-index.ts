@@ -106,7 +106,17 @@ export function readSearchIndex() {
   }
 
   const raw = fs.readFileSync(searchIndexPath, 'utf8')
-  cachedIndex = JSON.parse(raw) as SearchIndex
+  const parsed = JSON.parse(raw) as SearchIndex
+  const visibleItems = parsed.items.filter((item) => !(item.collection === 'works' && item.status === 'archived'))
+  cachedIndex = {
+    ...parsed,
+    items: visibleItems,
+    counts: visibleItems.reduce<Record<string, number>>((counts, item) => {
+      counts[item.collection] = (counts[item.collection] || 0) + 1
+      return counts
+    }, {}),
+    total: visibleItems.length,
+  }
   return cachedIndex
 }
 
