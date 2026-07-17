@@ -182,6 +182,59 @@
   line-height: 1.7;
 }
 
+.work-assessment-research-preview {
+  display: grid;
+  gap: 13px;
+  padding: 16px;
+  border: 1px solid rgb(139 217 232 / 0.34);
+  border-radius: 17px;
+  background: rgb(139 217 232 / 0.06);
+}
+
+.work-assessment-research-preview h3,
+.work-assessment-research-preview p {
+  margin: 0;
+}
+
+.work-assessment-research-preview > div {
+  display: grid;
+  gap: 7px;
+}
+
+.work-assessment-research-preview > div > span {
+  color: #8bd9e8;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.work-assessment-research-preview dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 9px;
+  margin: 0;
+}
+
+.work-assessment-research-preview dl > div {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid #303a3c;
+  border-radius: 12px;
+  background: #111718;
+}
+
+.work-assessment-research-preview dt {
+  color: #8ea4a8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.work-assessment-research-preview dd {
+  margin: 0;
+  color: #f2f7f8;
+  font-weight: 850;
+}
+
 .work-assessment-decisive {
   display: grid;
   gap: 8px;
@@ -425,6 +478,22 @@
 [data-theme='light'] .work-assessment-actions a {
   border-color: #e2d6cc;
   background: #fff7f2;
+}
+
+[data-theme='light'] .work-assessment-research-preview {
+  border-color: #9acbd4;
+  background: #eefbfc;
+  color: #203a3f;
+}
+
+[data-theme='light'] .work-assessment-research-preview dl > div {
+  border-color: #b9dce2;
+  background: #fff;
+}
+
+[data-theme='light'] .work-assessment-research-preview dd,
+[data-theme='light'] .work-assessment-research-preview h3 {
+  color: #16343a;
 }
 
 [data-theme='light'] .work-assessment-rating-copy h2,
