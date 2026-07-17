@@ -2,6 +2,8 @@
 
 `feedback-submissions` is the internal queue for member corrections and human Radar evidence.
 
+Existing Works are linked through the Payload `linkedWork` relationship, using the internal `Works.id`. New frontend submissions no longer depend on a page URL, third-party identifier or mutable Slug. The old `targetSlug` and `pageUrl` columns remain hidden for compatibility with archived rows.
+
 Members can submit:
 
 - target work or page;
