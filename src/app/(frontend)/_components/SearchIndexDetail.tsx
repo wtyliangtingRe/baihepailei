@@ -4,6 +4,7 @@ import { publicContentImagesEnabled } from '@/lib/deploymentProfile'
 
 import type { DetailCandidateSource, DetailCoverImage, DetailItem, DetailSourceLink } from '../_lib/detail-index'
 import type { SearchItem } from '../_lib/search-index'
+import AssessmentOriginBadge from './AssessmentOriginBadge'
 import CommentBlock from './CommentBlock'
 import WorkAssessmentTrustCard from './WorkAssessmentTrustCard'
 import WorkListControl from './WorkListControl'
@@ -457,6 +458,7 @@ export default function SearchIndexDetail({ item }: { item: SearchItem }) {
             <h1>{title}</h1>
             {contentVisibility ? <p className="content-visibility-note">此条目标记为「{contentVisibility}」。普通模式下不会出现在列表和搜索结果中。</p> : null}
             <div className="detail-chips">
+              <AssessmentOriginBadge item={item} />
               {rank ? <span>{rank}</span> : null}
               {mediaGroup ? <span>{mediaGroup}</span> : null}
               {mediaType && mediaType !== mediaGroup ? <span>{mediaType}</span> : null}
