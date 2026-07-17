@@ -25,7 +25,6 @@ function run(commandArgs) {
 try {
   console.log(`[export] Search index mode: ${publishedOnly ? 'published-only' : 'drafts-and-published'}; visibility profile defaults to full`)
   run(['scripts/export/build-lite-search-index.mjs', ...args])
-  run(['scripts/export/enrich-lite-title-search-fields.mjs', ...args])
   run(['scripts/export/compact-public-index.mjs', '--file', outputFile, ...args])
 } catch (error) {
   if (previous) {
