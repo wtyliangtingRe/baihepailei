@@ -16,7 +16,7 @@ const reviewFields = read('src/collections/fields/contentReview.ts')
 const css = read('src/app/(frontend)/review-workbench.css')
 const editorCss = read('src/app/(frontend)/review-editor.css')
 
- test('review workbench is paginated and queries the database', () => {
+test('review workbench is paginated and queries the database', () => {
   assert.match(page, /limit: filters\.perPage/u)
   assert.match(page, /page: filters\.page/u)
   assert.match(page, /buildWhere\(filters\)/u)
@@ -74,7 +74,7 @@ test('merged duplicate works are guarded before Payload updates', () => {
   assert.match(contentPage, /isMergedDuplicateWork\(current\)/u)
   assert.match(contentPage, /reviewError', 'merged_duplicate'/u)
   assert.match(contentPage, /这个旧条目已经合并，不可继续保存或审核/u)
-  assert.match(contentPage, /draft: true/u)
+  assert.match(contentPage, /draft: false/u)
   assert.match(contentPage, /Content review update failed/u)
 })
 
@@ -86,7 +86,7 @@ test('first-party work editor handles routine corrections without replacing Payl
   assert.match(workEditorPage, /firstPublishedPrecision/u)
   assert.match(workEditorPage, /Payload 高级维护/u)
   assert.match(workEditorPage, /firstPartyEditor: true/u)
-  assert.match(workEditorPage, /draft: true/u)
+  assert.match(workEditorPage, /draft: false/u)
   assert.match(editorCss, /\.review-editor-section/u)
   assert.match(editorCss, /\.review-editor-submit/u)
 })
@@ -103,4 +103,13 @@ test('user submissions have a first-party queue with explicit accept and reject 
   assert.doesNotMatch(feedbackPage, /采纳、未采纳或要求补充材料时必须填写/u)
   assert.match(feedbackDetailPage, /用户反馈完整详情/u)
   assert.match(feedbackDetailPage, /全部证据链接/u)
+})
+
+test('feedback forms default to active work and move completed decisions into history', () => {
+  assert.match(feedbackPage, /type FeedbackQueue = 'active' \| 'processed' \| 'all'/u)
+  assert.match(feedbackPage, /workflowStatus: \{ in: activeStatuses \}/u)
+  assert.match(feedbackPage, /workflowStatus: \{ in: processedStatuses \}/u)
+  assert.match(feedbackPage, /完成态表单会自动离开待处理队列/u)
+  assert.match(feedbackPage, /采纳反馈并移入已处理/u)
+  assert.match(feedbackPage, /驳回并移入已处理/u)
 })
