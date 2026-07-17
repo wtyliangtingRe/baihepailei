@@ -27,7 +27,13 @@ type ContentDoc = {
   reviewStatus?: string
   reviewOrigin?: string
   ratingNotice?: string
-  radarAssessment?: { assessedAt?: string; suggestedGrade?: string }
+  radarAssessment?: {
+    assessedAt?: string
+    suggestedGrade?: string
+    confidencePercent?: number
+    decisiveRuleCode?: string
+    decisiveRuleReason?: string
+  }
   humanReviewNote?: string
   reviewReasons?: string[] | string
   status?: string
@@ -40,6 +46,7 @@ type Filters = {
   reviewStatus: 'all' | 'pending' | 'reviewed' | 'disputed'
   origin: 'all' | 'ai' | 'human' | 'unassessed'
   page: number
+  perPage: 20 | 50 | 100
 }
 
 const allowedRoles: Role[] = ['owner', 'admin', 'editor', 'reviewer']
@@ -81,6 +88,9 @@ function parseFilters(params: Record<string, string | string[] | undefined>): Fi
       ? requestedOrigin as Filters['origin']
       : 'all',
     page: positiveInteger(first(params.page)),
+    perPage: [20, 50, 100].includes(positiveInteger(first(params.perPage), 50))
+      ? positiveInteger(first(params.perPage), 50) as Filters['perPage']
+      : 50,
   }
 }
 
@@ -145,6 +155,7 @@ function queryHref(filters: Filters, page: number) {
   if (filters.q) params.set('q', filters.q)
   if (filters.reviewStatus !== 'all') params.set('reviewStatus', filters.reviewStatus)
   if (filters.origin !== 'all') params.set('origin', filters.origin)
+  if (filters.perPage !== 50) params.set('perPage', String(filters.perPage))
   if (page > 1) params.set('page', String(page))
   return `/me/review/content?${params.toString()}`
 }
@@ -258,7 +269,7 @@ export default async function ContentReviewPage({ searchParams }: { searchParams
     payload.find({
       collection: filters.collection as never,
       depth: 0,
-      limit: 20,
+      limit: filters.perPage,
       page: filters.page,
       pagination: true,
       overrideAccess: true,
@@ -308,6 +319,7 @@ export default async function ContentReviewPage({ searchParams }: { searchParams
         <label><span>关键词</span><input defaultValue={filters.q} name="q" placeholder="名称、Slug 或导入追踪 ID" type="search" /></label>
         <label><span>复核状态</span><select defaultValue={filters.reviewStatus} name="reviewStatus"><option value="all">全部</option><option value="pending">待复核</option><option value="reviewed">已复核</option><option value="disputed">有争议</option></select></label>
         <label><span>评估来源</span><select defaultValue={filters.origin} name="origin"><option value="all">全部</option><option value="ai">AI 已评估</option><option value="human">人工已复核</option><option value="unassessed">尚未评估</option></select></label>
+        <label><span>每页数量</span><select defaultValue={filters.perPage} name="perPage"><option value="20">20 条</option><option value="50">50 条</option><option value="100">100 条</option></select></label>
         <div className="review-filter-actions"><button className="review-button" type="submit">应用筛选</button><Link className="review-link" href={`/me/review/content?collection=${filters.collection}`}>重置</Link></div>
       </form>
 
@@ -333,6 +345,16 @@ export default async function ContentReviewPage({ searchParams }: { searchParams
                 <span className="review-row-chip">{doc.status || 'draft'}</span>
               </div>
             </header>
+
+            {filters.collection === 'works' && doc.radarAssessment?.suggestedGrade ? (
+              <aside className="review-ai-suggestion">
+                <strong>AI 建议：{doc.radarAssessment.suggestedGrade} 级</strong>
+                {typeof doc.radarAssessment.confidencePercent === 'number' ? <span>置信度 {doc.radarAssessment.confidencePercent}%</span> : null}
+                {doc.radarAssessment.decisiveRuleCode ? <span>规则 {doc.radarAssessment.decisiveRuleCode}</span> : null}
+                {doc.radarAssessment.decisiveRuleReason ? <p>{doc.radarAssessment.decisiveRuleReason}</p> : null}
+                <small>这里只展示机器建议；人工仍需在下方选择最终分级并明确通过或标记争议。</small>
+              </aside>
+            ) : null}
 
             <form action={saveContentAction} className="review-content-form">
               <input name="collection" type="hidden" value={filters.collection} />
