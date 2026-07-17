@@ -59,6 +59,33 @@
   gap: 12px;
 }
 
+.review-content-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.review-content-tabs a {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid #303030;
+  border-radius: 18px;
+  background: #151515;
+  color: #ddd;
+  text-decoration: none;
+}
+
+.review-content-tabs a[aria-current='page'] {
+  border-color: #ffb5d7;
+  background: rgb(255 181 215 / 0.08);
+}
+
+.review-content-tabs strong {
+  color: #ffb5d7;
+  font-size: 14px;
+}
+
 .review-stat,
 .review-queue-card {
   display: grid;
@@ -259,6 +286,51 @@
   line-height: 1.7;
 }
 
+.review-content-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.review-content-form label {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  color: #ddd;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.review-content-form input,
+.review-content-form select,
+.review-content-form textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #414141;
+  border-radius: 13px;
+  background: #0f0f0f;
+  color: #fff;
+  font: inherit;
+}
+
+.review-content-form textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.review-content-title,
+.review-content-note,
+.review-content-actions {
+  grid-column: 1 / -1;
+}
+
+.review-content-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+}
+
 .review-decision {
   display: grid;
   gap: 12px;
@@ -287,6 +359,11 @@
   .review-row-facts {
     grid-template-columns: 1fr;
   }
+
+  .review-content-tabs,
+  .review-content-form {
+    grid-template-columns: 1fr;
+  }
 }
 
 [data-theme='light'] .review-hero,
@@ -297,6 +374,11 @@
 [data-theme='light'] .review-empty,
 [data-theme='light'] .review-row-fact,
 [data-theme='light'] .review-row details {
+  border-color: #e2d6cc;
+  background: #fffaf6;
+}
+
+[data-theme='light'] .review-content-tabs a {
   border-color: #e2d6cc;
   background: #fffaf6;
 }
@@ -314,6 +396,18 @@
 [data-theme='light'] .review-filter-panel input,
 [data-theme='light'] .review-filter-panel select,
 [data-theme='light'] .review-decision textarea {
+  border-color: #e2d6cc;
+  background: #fff;
+  color: #191716;
+}
+
+[data-theme='light'] .review-content-form label {
+  color: #191716;
+}
+
+[data-theme='light'] .review-content-form input,
+[data-theme='light'] .review-content-form select,
+[data-theme='light'] .review-content-form textarea {
   border-color: #e2d6cc;
   background: #fff;
   color: #191716;
