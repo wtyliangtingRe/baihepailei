@@ -13,7 +13,7 @@ export const Rules: CollectionConfig = {
     { name: 'siteId', type: 'text', label: '站内 ID', unique: true, admin: { description: '本站内部稳定唯一标识，用于导入、跨来源合并和人工追踪。' } },
     { name: 'category', type: 'select', defaultValue: 'principle', required: true, options: ['principle', 'ranking', 'editorial', 'migration'] },
     { name: 'isLiteVisible', type: 'checkbox', defaultValue: true },
-    { name: 'isFullVisible', type: 'checkbox', defaultValue: true },
+    { name: 'isFullVisible', type: 'checkbox', label: '旧 Full 可见标记（兼容保留）', defaultValue: true, admin: { description: '完整版现默认收录全部记录；仅为旧导出器兼容保留。' } },
     { name: 'body', type: 'richText' },
     { name: 'relatedWarnings', type: 'relationship', relationTo: 'warnings', hasMany: true },
     { name: 'relatedTags', type: 'relationship', relationTo: 'tags', hasMany: true },
