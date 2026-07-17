@@ -5,6 +5,8 @@ import test from 'node:test'
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 const page = read('src/app/(frontend)/me/review/public-catalog/page.tsx')
 const contentPage = read('src/app/(frontend)/me/review/content/page.tsx')
+const workEditorPage = read('src/app/(frontend)/me/review/content/works/[id]/page.tsx')
+const reviewUtils = read('src/app/(frontend)/me/review/content/review-utils.ts')
 const feedbackPage = read('src/app/(frontend)/me/review/feedback/page.tsx')
 const feedbackDetailPage = read('src/app/(frontend)/me/review/feedback/[id]/page.tsx')
 const works = read('src/collections/Works.ts')
@@ -12,8 +14,9 @@ const creators = read('src/collections/Creators.ts')
 const organizations = read('src/collections/Organizations.ts')
 const reviewFields = read('src/collections/fields/contentReview.ts')
 const css = read('src/app/(frontend)/review-workbench.css')
+const editorCss = read('src/app/(frontend)/review-editor.css')
 
-test('review workbench is paginated and queries the database', () => {
+ test('review workbench is paginated and queries the database', () => {
   assert.match(page, /limit: filters\.perPage/u)
   assert.match(page, /page: filters\.page/u)
   assert.match(page, /buildWhere\(filters\)/u)
@@ -42,7 +45,7 @@ test('unified content workbench covers works, creators and organizations', () =>
   assert.match(contentPage, /saveContentAction/u)
   assert.match(contentPage, /AI 已评估只说明机器整理已经存在，不代表人工通过/u)
   assert.match(contentPage, /canonicalContentUrl/u)
-  assert.match(contentPage, /完整编辑/u)
+  assert.match(contentPage, /站内完整编辑/u)
   assert.match(contentPage, /value="approve"/u)
   assert.match(contentPage, /value="reject"/u)
   assert.match(contentPage, /limit: filters\.perPage/u)
@@ -52,6 +55,40 @@ test('unified content workbench covers works, creators and organizations', () =>
   assert.match(reviewFields, /name: 'reviewOrigin'/u)
   assert.match(reviewFields, /value: 'ai_assessed'/u)
   assert.match(css, /\.review-content-form/u)
+})
+
+test('content review defaults to a pending queue and keeps processed history separate', () => {
+  assert.match(contentPage, /type ReviewQueue = 'pending' \| 'processed' \| 'all'/u)
+  assert.match(contentPage, /requestedQueue === 'processed' \|\| requestedQueue === 'all' \? requestedQueue : 'pending'/u)
+  assert.match(contentPage, /reviewStatus: \{ equals: 'pending' \}/u)
+  assert.match(contentPage, /reviewStatus: \{ in: processedStatuses \}/u)
+  assert.match(contentPage, />待处理</u)
+  assert.match(contentPage, />已处理</u)
+  assert.match(contentPage, /通过并移入已处理/u)
+  assert.match(editorCss, /\.review-queue-tabs/u)
+})
+
+test('merged duplicate works are guarded before Payload updates', () => {
+  assert.match(reviewUtils, /mergedIntoWorkId/u)
+  assert.match(reviewUtils, /duplicate of work/u)
+  assert.match(contentPage, /isMergedDuplicateWork\(current\)/u)
+  assert.match(contentPage, /reviewError', 'merged_duplicate'/u)
+  assert.match(contentPage, /这个旧条目已经合并，不可继续保存或审核/u)
+  assert.match(contentPage, /draft: true/u)
+  assert.match(contentPage, /Content review update failed/u)
+})
+
+test('first-party work editor handles routine corrections without replacing Payload maintenance', () => {
+  assert.match(workEditorPage, /站内作品编辑台/u)
+  assert.match(workEditorPage, /aliasesFromText/u)
+  assert.match(workEditorPage, /sourceLinksFromText/u)
+  assert.match(workEditorPage, /riskMatrix/u)
+  assert.match(workEditorPage, /firstPublishedPrecision/u)
+  assert.match(workEditorPage, /Payload 高级维护/u)
+  assert.match(workEditorPage, /firstPartyEditor: true/u)
+  assert.match(workEditorPage, /draft: true/u)
+  assert.match(editorCss, /\.review-editor-section/u)
+  assert.match(editorCss, /\.review-editor-submit/u)
 })
 
 test('user submissions have a first-party queue with explicit accept and reject decisions', () => {
