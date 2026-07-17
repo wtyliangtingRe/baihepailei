@@ -106,6 +106,10 @@ function collectionBackLabel(collection: string) {
   return `返回${collectionLabel(collection)}列表`
 }
 
+function collectionBackHref(collection: string) {
+  return collection === 'evidence' ? '/search?collection=evidence' : `/${collection}`
+}
+
 function displayRank(rank?: string) {
   if (!rank || rank === 'unknown') return ''
   if (rank === 'AA') return 'S级'
@@ -548,7 +552,7 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
           <Link className="back-link" href="/search">
             ← 返回搜索
           </Link>
-          <Link className="back-link" href={`/${item.collection}`}>
+          <Link className="back-link" href={collectionBackHref(item.collection)}>
             {collectionBackLabel(item.collection)}
           </Link>
         </div>
