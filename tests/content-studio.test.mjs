@@ -16,10 +16,18 @@ const fullExport = read('scripts/export/build-full-public-index.mjs')
 
 test('content studio is database-backed and separate from review queues', () => {
   assert.match(studio, /collection: 'works'/u)
-  assert.match(studio, /draft: true/u)
+  assert.match(studio, /draft: false/u)
   assert.match(studio, /搜索数据库/u)
   assert.match(studio, /AI \/ 内容审核台/u)
   assert.match(studio, /用户反馈审核/u)
+})
+
+test('studio does not send business archive values through Payload version rows', () => {
+  assert.match(studio, /activePublicationStatuses = \['draft', 'published'\]/u)
+  assert.match(studio, /_works_v\.version_status/u)
+  assert.match(studio, /archiveSchemaReady/u)
+  assert.match(studio, /回收站状态尚未与数据库版本 enum 对齐/u)
+  assert.doesNotMatch(studio, /draft: true/u)
 })
 
 test('members can only submit new-work proposals while staff can edit', () => {
@@ -47,6 +55,7 @@ test('soft delete archives and hides without deleting the record', () => {
   assert.match(studio, /isLiteVisible: false/u)
   assert.match(studio, /isFullVisible: false/u)
   assert.match(studio, /恢复为待复核草稿/u)
+  assert.match(studio, /First-party studio soft hide failed/u)
   assert.doesNotMatch(studio, /payload\.delete/u)
   assert.doesNotMatch(studio, /DELETE FROM/u)
 })
