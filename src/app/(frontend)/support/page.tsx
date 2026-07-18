@@ -69,9 +69,9 @@ export default function SupportPage() {
         <h2>本期概览</h2>
         <p className="muted">期间：{report.period}{report.updatedAt ? ` · 最近更新：${report.updatedAt}` : ''}</p>
         <div className="review-stat-grid">
-          <article className="review-stat"><span>收入</span><strong>{formatAmount(incomeTotal, report.currency)}</strong></article>
-          <article className="review-stat"><span>支出</span><strong>{formatAmount(expenseTotal, report.currency)}</strong></article>
-          <article className="review-stat"><span>本期结余</span><strong>{formatAmount(balance, report.currency)}</strong></article>
+          <article className="review-stat"><span>收入</span><strong>{report.configured ? formatAmount(incomeTotal, report.currency) : '尚未录入'}</strong></article>
+          <article className="review-stat"><span>支出</span><strong>{report.configured ? formatAmount(expenseTotal, report.currency) : '尚未录入'}</strong></article>
+          <article className="review-stat"><span>本期结余</span><strong>{report.configured ? formatAmount(balance, report.currency) : '尚未计算'}</strong></article>
         </div>
       </section>
 
