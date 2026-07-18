@@ -5,7 +5,10 @@ import {
   type MergedWorkReference,
 } from '@/lib/mergedWork'
 
-export type ReviewableContentDoc = MergeMarkedWork
+export type ReviewableContentDoc = Omit<MergeMarkedWork, 'reviewStatus' | 'status'> & {
+  reviewStatus?: string
+  status?: string
+}
 export type { MergedWorkReference }
 export { isMergedDuplicateWork, mergedWorkReference }
 
