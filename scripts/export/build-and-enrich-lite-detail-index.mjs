@@ -26,6 +26,7 @@ try {
   console.log(`[export] Detail index mode: ${publishedOnly ? 'published-only' : 'drafts-and-published'}; visibility profile defaults to full`)
   run(['scripts/export/build-lite-detail-index.mjs', ...args])
   run(['scripts/export/enrich-lite-detail-index.mjs', ...args])
+  run(['scripts/export/enrich-stewardship-notices.mjs', ...args])
   run(['scripts/export/compact-public-index.mjs', '--file', outputFile, ...args])
 } catch (error) {
   if (previous) {

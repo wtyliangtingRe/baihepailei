@@ -6,7 +6,14 @@ import { notFound, redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { getPayload } from 'payload'
 
+import RadarRuleSelector from '../../../../_components/RadarRuleSelector'
+import PendingSubmitButton from '../../_components/PendingSubmitButton'
 import { syncWorkToPublicIndexes } from '@/lib/publicIndexSync'
+import {
+  radarClassDefinitions,
+  type RadarRatingClass,
+} from '@/lib/radar/ratingPolicy'
+import { plainTextToRichText, richTextToPlainText } from '@/lib/richTextPlain'
 
 import { canonicalContentUrl } from '../../../../_lib/content-identity'
 import {
@@ -19,6 +26,7 @@ import {
   sourceLinksFromText,
   sourceLinksToText,
 } from '../../../review/content/review-utils'
+import StewardshipNoticeSelector, { type StewardshipNoticeOption } from './StewardshipNoticeSelector'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +42,31 @@ type LocalizedTitle = {
   source?: string
   note?: string
 }
+type StewardshipNoticeDoc = {
+  id?: string | number
+  title?: string
+  slug?: string
+  category?: string
+  severity?: string
+  summary?: string
+  sortOrder?: number
+}
+type RadarMatchedRuleDoc = {
+  code?: string
+  grade?: string
+  confidencePercent?: number
+  reason?: string
+}
+type RadarAssessmentDoc = {
+  sourceSummary?: string
+  suggestedGrade?: string
+  decisiveRuleCode?: string
+  decisiveRuleReason?: string
+  matchedRules?: RadarMatchedRuleDoc[]
+  requiresHumanReview?: boolean
+  assessedAt?: string
+  [key: string]: unknown
+}
 type WorkDoc = {
   id: string | number
   title?: string
@@ -41,6 +74,9 @@ type WorkDoc = {
   originalTitle?: string
   aliases?: Array<{ value?: string } | string>
   localizedTitles?: LocalizedTitle[]
+  stewardshipNotices?: Array<string | number | StewardshipNoticeDoc>
+  summary?: unknown
+  radarAssessment?: RadarAssessmentDoc | null
   mediaGroup?: string
   mediaType?: string
   format?: string
@@ -86,6 +122,7 @@ const ratingNoticeOptions = ['ai_synthesized_pending_review', 'insufficient_info
 const evidenceStrengthOptions = ['unassessed', 'weak', 'medium', 'strong']
 const languageOptions = new Set(['ja', 'zh-Hans', 'zh-Hant', 'en', 'ko', 'fr', 'de', 'es', 'und', 'other', 'unknown'])
 const titleKindOptions = new Set(['original', 'official', 'localized', 'romanized', 'alias', 'fan', 'literal', 'search_only', 'other'])
+const validRuleCodes = new Set(Object.keys(radarClassDefinitions))
 
 const labels: Record<string, string> = {
   S: 'S', AA: 'S（兼容 AA）', A: 'A', B: 'B', C: 'C', D: 'D', E: 'E', F: 'F', X: 'X', trash: '垃圾', unknown: '未知',
@@ -125,6 +162,37 @@ function reviewReasons(value: WorkDoc['reviewReasons']) {
   if (Array.isArray(value)) return value.map(String).map((item) => item.trim()).filter(Boolean)
   if (typeof value === 'string') return value.split(/[;|,]/u).map((item) => item.trim()).filter(Boolean)
   return []
+}
+
+function relationID(value: string | number | StewardshipNoticeDoc) {
+  if (value && typeof value === 'object') return String(value.id || '')
+  return String(value || '')
+}
+
+function relationIDs(values: WorkDoc['stewardshipNotices']) {
+  return [...new Set((values || []).map(relationID).filter(Boolean))]
+}
+
+function submittedRelationIDs(formData: FormData, name: string) {
+  return [...new Set(formData.getAll(name).map((value) => String(value).trim()).filter((value) => /^\d+$/u.test(value)).map(Number))]
+}
+
+function normalizedRuleCode(value: unknown): RadarRatingClass | null {
+  const code = String(value || '').trim()
+  return validRuleCodes.has(code) ? code as RadarRatingClass : null
+}
+
+function matchedRuleCodes(value: RadarAssessmentDoc['matchedRules']) {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.map((item) => normalizedRuleCode(item?.code)).filter(Boolean))] as RadarRatingClass[]
+}
+
+function submittedRuleCodes(formData: FormData) {
+  return [...new Set(formData.getAll('matchedRuleCodes').map(normalizedRuleCode).filter(Boolean))] as RadarRatingClass[]
+}
+
+function sameValues(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index])
 }
 
 function dateInputValue(value?: string) {
@@ -219,6 +287,14 @@ async function saveStudioWorkAction(formData: FormData) {
   const humanReviewNote = text(formData.get('humanReviewNote'), 4000)
   if (reviewStatus === 'disputed' && !humanReviewNote) redirect(editorHref(id, returnTo, { editorError: 'note_required' }))
 
+  const decisiveRuleCode = normalizedRuleCode(formData.get('decisiveRuleCode'))
+  const submittedMatchedRuleCodes = submittedRuleCodes(formData)
+  const resolvedDecisiveRuleCode = decisiveRuleCode || submittedMatchedRuleCodes[0] || null
+  const orderedRuleCodes = [...new Set([resolvedDecisiveRuleCode, ...submittedMatchedRuleCodes].filter(Boolean))] as RadarRatingClass[]
+  const currentRuleCodes = matchedRuleCodes(current.radarAssessment?.matchedRules)
+  const currentDecisiveRuleCode = normalizedRuleCode(current.radarAssessment?.decisiveRuleCode)
+  const rulesChanged = currentDecisiveRuleCode !== resolvedDecisiveRuleCode || !sameValues(currentRuleCodes, orderedRuleCodes)
+
   const actorID = (auth.user as { id?: string | number }).id
   const archived = status === 'archived'
   const data: Record<string, unknown> = {
@@ -253,6 +329,38 @@ async function saveStudioWorkAction(formData: FormData) {
       malId: text(formData.get('malId'), 120),
       officialUrl: text(formData.get('officialUrl'), 1000),
     },
+  }
+
+  const summaryText = text(formData.get('summary'), 12000)
+  if (summaryText !== richTextToPlainText(current.summary)) data.summary = plainTextToRichText(summaryText)
+
+  const sourceSummary = text(formData.get('sourceSummary'), 4000)
+  const currentAssessment = current.radarAssessment || {}
+  const currentSourceSummary = String(currentAssessment.sourceSummary || '').trim()
+  if (sourceSummary !== currentSourceSummary || rulesChanged) {
+    const previousRules = new Map(
+      (currentAssessment.matchedRules || [])
+        .map((rule) => [String(rule?.code || '').trim(), rule] as const)
+        .filter(([code]) => Boolean(code)),
+    )
+    data.radarAssessment = {
+      ...currentAssessment,
+      sourceSummary,
+      suggestedGrade: resolvedDecisiveRuleCode ? radarClassDefinitions[resolvedDecisiveRuleCode].grade : null,
+      decisiveRuleCode: resolvedDecisiveRuleCode,
+      decisiveRuleReason: currentDecisiveRuleCode === resolvedDecisiveRuleCode ? currentAssessment.decisiveRuleReason : null,
+      matchedRules: orderedRuleCodes.map((code) => ({
+        ...(previousRules.get(code) || {}),
+        code,
+        grade: radarClassDefinitions[code].grade,
+      })),
+      requiresHumanReview: reviewStatus !== 'reviewed',
+      assessedAt: rulesChanged ? new Date().toISOString() : currentAssessment.assessedAt,
+    }
+  }
+
+  if (formData.get('stewardshipNoticeSelectorReady') === 'true') {
+    data.stewardshipNotices = submittedRelationIDs(formData, 'stewardshipNotices')
   }
   if (!archived && reviewStatus !== 'pending') {
     data.humanReviewedAt = new Date().toISOString()
@@ -290,6 +398,9 @@ async function saveStudioWorkAction(formData: FormData) {
   revalidatePath('/me/studio')
   revalidatePath('/works')
   revalidatePath('/search')
+  revalidatePath('/terms')
+  revalidatePath('/support')
+  revalidatePath('/transparency')
   revalidatePath(canonicalContentUrl('works', id))
   revalidatePath(`/me/studio/works/${id}`)
   redirect(editorHref(id, returnTo, { saved: 'true', sync: syncStatus }))
@@ -312,6 +423,38 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
     notFound()
   }
 
+  let notices: StewardshipNoticeDoc[] = []
+  let noticeSelectorReady = false
+  try {
+    const result = await payload.find({
+      collection: 'stewardship-notices' as never,
+      depth: 0,
+      limit: 200,
+      pagination: false,
+      overrideAccess: true,
+      sort: 'sortOrder',
+      where: { isPublic: { equals: true } },
+    }) as unknown as { docs?: StewardshipNoticeDoc[] }
+    notices = result.docs || []
+    noticeSelectorReady = true
+  } catch {
+    noticeSelectorReady = false
+  }
+
+  const selectedNoticeIDs = relationIDs(work.stewardshipNotices)
+  const noticeOptions: StewardshipNoticeOption[] = notices.flatMap((notice) => {
+    const noticeID = String(notice.id || '').trim()
+    if (!noticeID) return []
+    return [{
+      id: noticeID,
+      title: notice.title || notice.slug || `提示 #${noticeID}`,
+      category: notice.category || 'operation',
+      severity: notice.severity || 'low',
+      summary: notice.summary || '',
+    }]
+  })
+  const initialRuleCodes = matchedRuleCodes(work.radarAssessment?.matchedRules)
+  const initialDecisiveRuleCode = normalizedRuleCode(work.radarAssessment?.decisiveRuleCode) || initialRuleCodes[0] || ''
   const merged = mergedWorkReference(work)
   const editorError = first(rawSearch.editorError)
   const saved = first(rawSearch.saved)
@@ -333,10 +476,10 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
         <div className="review-hero-copy">
           <p className="eyebrow">站内内容管理 · 作品编辑</p>
           <h1>{work.title || `作品 #${work.id}`}</h1>
-          <p className="muted">这里直接修改作品正式字段。保存后会同步现有公开索引中的标题、等级、状态、类型、日期和来源摘要；草稿仍不会自动公开。</p>
+          <p className="muted">这里直接修改作品正式字段。保存后会同步标题、正式分级、作品简介、规则建议、状态、类型、日期和公开来源；草稿仍不会自动公开。</p>
           <div className="review-safety-note">写入通过 Payload 并保留版本历史。回收站只是 status=archived 与关闭可见性，不会永久删除数据。</div>
         </div>
-        <div className="review-stat-grid"><Stat label="作品 ID" value={String(work.id)} /><Stat label="当前分级" value={work.rank || 'unknown'} /></div>
+        <div className="review-stat-grid"><Stat label="作品 ID" value={String(work.id)} /><Stat label="人工正式分级字段" value={work.rank || 'unknown'} /><Stat label="AI 建议等级" value={work.radarAssessment?.suggestedGrade || '尚无'} /></div>
       </section>
 
       {saved ? <div className="review-action-message review-action-message-success" role="status">作品 #{work.id} 已保存。{sync === 'ok' ? '现有前台索引也已同步。' : sync === 'draft_not_public' ? '它仍是未进入索引的新草稿，发布时再进入前台。' : sync === 'missing_index' ? '本地缺少公开索引文件，需要先生成索引。' : sync === 'failed' ? '数据库已保存，但前台索引同步失败，请查看服务器日志。' : ''}</div> : null}
@@ -346,6 +489,7 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
 
       <form action={saveStudioWorkAction} className="review-editor-form">
         <input name="id" type="hidden" value={String(work.id)} /><input name="returnTo" type="hidden" value={returnTo} />
+        {noticeSelectorReady ? <input name="stewardshipNoticeSelectorReady" type="hidden" value="true" /> : null}
 
         <EditorSection title="基础身份与多语言标题" description="标题、别名和多语言名称会直接参与前台显示、搜索和跨来源去重。">
           <Field wide label="显示标题"><input defaultValue={work.title || ''} maxLength={300} name="title" required /></Field>
@@ -360,11 +504,32 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
           <Field label="日期显示文本"><input defaultValue={work.firstPublishedLabel || ''} maxLength={120} name="firstPublishedLabel" /></Field>
         </EditorSection>
 
-        <EditorSection title="正式分级、发布与可见性" description="这里保存正式网站状态，不是 AI 建议。发布状态与人工复核状态分开。">
-          <Field label="正式分级"><Select name="rank" options={rankOptions} value={work.rank || 'unknown'} /></Field>
-          <Field label="复核状态"><Select name="reviewStatus" options={reviewStatusOptions} value={work.reviewStatus || 'pending'} /></Field>
+        <EditorSection title="作品简介与评级来源" description="作品简介讲作品本身；来源摘要讲排雷判断依据。两者会在前台不同区域展示，不再混用。">
+          <Field wide label="作品简介（面向读者）"><textarea defaultValue={richTextToPlainText(work.summary)} maxLength={12000} name="summary" /><small>客观介绍题材、设定和故事前提，不在这里写评级结论或证据判断。只有实际修改时才会把该字段规范化为纯文本段落，未改动时保留原富文本。</small></Field>
+          <Field wide label="来源摘要（AI / 规则评级依据）"><textarea defaultValue={String(work.radarAssessment?.sourceSummary || '')} maxLength={4000} name="sourceSummary" /><small>简述评级参考了哪些官方材料、原作内容、平台资料或社群来源；具体网址仍填写在“来源链接”。</small></Field>
+        </EditorSection>
+
+        <EditorSection title="主规则与全部命中规则" description="这里编辑 AI / 规则建议层，不会覆盖下面的人工正式分级。主规则决定建议等级，全部命中规则保留其他同时成立的注意点。">
+          <div className="review-editor-field review-editor-field-wide">
+            <RadarRuleSelector initialDecisiveRuleCode={initialDecisiveRuleCode} initialMatchedRuleCodes={initialRuleCodes} />
+          </div>
+        </EditorSection>
+
+        <EditorSection title="站务与用语提示（可选）" description="勾选状态会立即显示“已选”；只有点击页面底部保存按钮才会写入作品。">
+          {noticeSelectorReady ? (
+            <div className="review-editor-field review-editor-field-wide">
+              <span>关联提示</span>
+              <StewardshipNoticeSelector notices={noticeOptions} selectedIDs={selectedNoticeIDs} />
+            </div>
+          ) : <p className="review-editor-field review-editor-field-wide">站务提示集合尚未完成数据库迁移，因此本次保存不会清空现有提示关系。</p>}
+          <div className="review-row-actions"><Link className="review-link" href="/terms">查看站务与用语</Link><Link className="review-link" href="/support">运营收支与支持</Link></div>
+        </EditorSection>
+
+        <EditorSection title="人工正式分级、发布与可见性" description="这里保存人工正式字段。AI 建议等级保留在 radarAssessment 中，前台会与人工评级分开显示。">
+          <Field label="人工正式分级"><Select name="rank" options={rankOptions} value={work.rank || 'unknown'} /></Field>
+          <Field label="人工复核状态"><Select name="reviewStatus" options={reviewStatusOptions} value={work.reviewStatus || 'pending'} /></Field>
           <Field label="发布状态"><Select name="status" options={publicationStatusOptions} value={normalizePublicationStatus(work.status)} /></Field>
-          <Field label="分级提示"><Select name="ratingNotice" options={ratingNoticeOptions} value={work.ratingNotice || 'none'} /></Field>
+          <Field label="页面分级提示"><Select name="ratingNotice" options={ratingNoticeOptions} value={work.ratingNotice || 'none'} /></Field>
           <Field label="证据强度"><Select name="evidenceStrength" options={evidenceStrengthOptions} value={work.evidenceStrength || 'unassessed'} /></Field>
           <Field wide label="人工复核 / 编辑记录"><textarea defaultValue={work.humanReviewNote || ''} maxLength={4000} name="humanReviewNote" /></Field>
           <div className="review-editor-checks"><Check defaultChecked={work.isLiteVisible !== false} label="进入 Lite 文字版" name="isLiteVisible" /><Check defaultChecked={work.isFullVisible !== false} label="完整版可见" name="isFullVisible" /><Check defaultChecked={Boolean(work.hasEvidence)} label="有证据材料" name="hasEvidence" /></div>
@@ -383,9 +548,9 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
           <Field wide label="搜索补充文本"><textarea defaultValue={work.searchText || ''} name="searchText" /></Field>
         </EditorSection>
 
-        <section className="review-safety-note"><strong>关系、封面与富文本</strong><p>创作者、机构、标签、注意点、封面上传、摘要和分析需要做成可搜索的关系选择器与富文本编辑器，不能用容易误删数据的原始 ID 文本框冒充完成。它们会作为编辑台下一阶段继续补齐。</p></section>
+        <section className="review-safety-note"><strong>仍待补齐的复杂编辑器</strong><p>创作者、机构、标签、注意点、封面上传和“分析”富文本仍需要可搜索关系选择器或完整富文本编辑器，不能用容易误删数据的原始 ID 文本框冒充完成。作品简介现已提供安全的纯文本段落编辑。</p></section>
 
-        <div className="review-editor-submit"><button className="review-button review-button-primary" type="submit">保存并同步前台</button><Link className="review-link" href={returnTo}>取消</Link></div>
+        <div className="review-editor-submit"><PendingSubmitButton idleLabel="保存并同步前台" pendingLabel="正在保存，请勿重复点击……" /><span>站务提示、规则建议、作品简介和来源摘要都在此按钮后统一确认。</span><Link className="review-link" href={returnTo}>取消</Link></div>
       </form>
     </main>
   )

@@ -706,7 +706,6 @@ export const Works: CollectionConfig = {
       required: true,
       options: [
         { label: '草稿', value: 'draft' },
-        { label: '待审核', value: 'review' },
         { label: '已发布', value: 'published' },
         { label: '归档', value: 'archived' },
       ],

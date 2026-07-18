@@ -1,0 +1,209 @@
+.selector {
+  display: grid;
+  gap: 12px;
+}
+
+.heading,
+.decisive,
+.details {
+  border: 1px solid #3a3a3a;
+  border-radius: 16px;
+  background: #101010;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.heading > div,
+.decisive {
+  display: grid;
+  gap: 6px;
+}
+
+.heading strong,
+.decisive > span {
+  color: #fff;
+  font-weight: 900;
+}
+
+.heading span,
+.details > p {
+  color: #aaa;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.heading button {
+  padding: 8px 12px;
+  border: 1px solid #4a4a4a;
+  border-radius: 999px;
+  background: #181818;
+  color: #eee;
+  cursor: pointer;
+}
+
+.decisive {
+  padding: 14px 16px;
+}
+
+.decisive select {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #414141;
+  border-radius: 13px;
+  background: #0f0f0f;
+  color: #fff;
+  font: inherit;
+}
+
+.selected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.selected span {
+  padding: 7px 10px;
+  border: 1px solid rgb(255 181 215 / 0.45);
+  border-radius: 999px;
+  background: rgb(255 181 215 / 0.08);
+  color: #ffc5df;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.selected span[data-decisive='true'] {
+  border-color: rgb(143 227 162 / 0.5);
+  background: rgb(143 227 162 / 0.09);
+  color: #a9efb8;
+}
+
+.details {
+  overflow: hidden;
+}
+
+.details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.details summary strong {
+  color: #8fe3a2;
+  font-size: 13px;
+}
+
+.details > p {
+  margin: 0;
+  padding: 0 16px 14px;
+}
+
+.groups {
+  display: grid;
+  gap: 16px;
+  padding: 0 16px 16px;
+}
+
+.groups section {
+  display: grid;
+  gap: 8px;
+}
+
+.groups h3 {
+  margin: 0;
+  color: #ffb5d7;
+  font-size: 14px;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.list label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 9px;
+  padding: 11px;
+  border: 1px solid #363636;
+  border-radius: 13px;
+  background: #121212;
+  cursor: pointer;
+}
+
+.list label[data-selected='true'] {
+  border-color: #8fe3a2;
+  background: rgb(143 227 162 / 0.07);
+}
+
+.list input {
+  width: 18px;
+  height: 18px;
+  accent-color: #8fe3a2;
+}
+
+.list label > span {
+  display: grid;
+  gap: 3px;
+}
+
+.list strong {
+  color: #fff;
+  font-size: 12px;
+}
+
+.list small {
+  color: #aaa;
+  line-height: 1.45;
+}
+
+.list em {
+  color: #8fe3a2;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+@media (max-width: 760px) {
+  .heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .list {
+    grid-template-columns: 1fr;
+  }
+}
+
+:global([data-theme='light']) .heading,
+:global([data-theme='light']) .decisive,
+:global([data-theme='light']) .details,
+:global([data-theme='light']) .list label {
+  border-color: #e2d6cc;
+  background: #fff;
+}
+
+:global([data-theme='light']) .heading strong,
+:global([data-theme='light']) .decisive > span,
+:global([data-theme='light']) .details summary,
+:global([data-theme='light']) .list strong {
+  color: #191716;
+}
+
+:global([data-theme='light']) .decisive select {
+  border-color: #e2d6cc;
+  background: #fff;
+  color: #191716;
+}

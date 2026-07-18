@@ -1,4 +1,5 @@
 import type { RadarAssessmentMetrics } from '@/lib/radar/assessmentPresentation'
+import { isMergedDuplicateWork } from '@/lib/mergedWork'
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -52,6 +53,7 @@ export type SearchItem = {
   reviewReasons?: string[]
   radarAssessment?: RadarAssessmentMetrics
   researchPreview?: RadarResearchPreview
+  mergedIntoWorkId?: string
   originalTitle?: string
   aliases?: string[]
   localizedTitles?: string[]
@@ -97,6 +99,25 @@ export function clearSearchIndexCache() {
   cachedIndex = undefined
 }
 
+function isRetiredWork(item: SearchItem) {
+  if (item.collection !== 'works') return false
+  if (item.status === 'archived' || item.reviewStatus === 'deprecated') return true
+  const currentID = String(item.recordId || item.id)
+  if (item.mergedIntoWorkId && item.mergedIntoWorkId !== currentID) return true
+  return isMergedDuplicateWork({
+    id: currentID,
+    reviewStatus: item.reviewStatus,
+    status: item.status,
+    searchText: item.searchText,
+  })
+}
+
+function cleanImportedOrganizationTitle(item: SearchItem): SearchItem {
+  if (item.collection !== 'organizations') return item
+  const title = String(item.title || '').replace(/^[\s.:：·•・．∙⋅◦]+(?=[\p{L}\p{N}])/u, '')
+  return title && title !== item.title ? { ...item, title } : item
+}
+
 export function readSearchIndex() {
   if (cachedIndex !== undefined) return cachedIndex
 
@@ -107,7 +128,9 @@ export function readSearchIndex() {
 
   const raw = fs.readFileSync(searchIndexPath, 'utf8')
   const parsed = JSON.parse(raw) as SearchIndex
-  const visibleItems = parsed.items.filter((item) => !(item.collection === 'works' && item.status === 'archived'))
+  const visibleItems = parsed.items
+    .filter((item) => !isRetiredWork(item))
+    .map(cleanImportedOrganizationTitle)
   cachedIndex = {
     ...parsed,
     items: visibleItems,

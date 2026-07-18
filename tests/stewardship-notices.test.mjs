@@ -1,0 +1,125 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import test from 'node:test'
+
+const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+const collection = read('src/collections/StewardshipNotices.ts')
+const fields = read('src/collections/fields/stewardshipNotices.ts')
+const payload = read('payload.config.ts')
+const editor = read('src/app/(frontend)/me/studio/works/[id]/page.tsx')
+const selector = read('src/app/(frontend)/me/studio/works/[id]/StewardshipNoticeSelector.tsx')
+const selectorCss = read('src/app/(frontend)/me/studio/works/[id]/StewardshipNoticeSelector.module.css')
+const display = read('src/app/(frontend)/_components/StewardshipNoticeBlock.tsx')
+const displayCss = read('src/app/(frontend)/stewardship-notices.css')
+const layout = read('src/app/(frontend)/layout.tsx')
+const assessment = read('src/app/(frontend)/_components/WorkAssessmentTrustCard.tsx')
+const terms = read('src/app/(frontend)/terms/page.tsx')
+const support = read('src/app/(frontend)/support/page.tsx')
+const finance = read('src/lib/siteFinance.ts')
+const transparency = read('src/app/(frontend)/transparency/page.tsx')
+const exportWrapper = read('scripts/export/build-and-enrich-lite-detail-index.mjs')
+const exportNotices = read('scripts/export/enrich-stewardship-notices.mjs')
+const seed = read('scripts/import/seed-stewardship-notices-v01.mjs')
+
+test('stewardship notices are reusable administrator-owned records rather than fixed per-page text', () => {
+  assert.match(collection, /slug:\s*'stewardship-notices'/u)
+  assert.match(collection, /name:\s*'summary'/u)
+  assert.match(collection, /name:\s*'category'/u)
+  assert.match(collection, /name:\s*'tone'/u)
+  assert.match(collection, /name:\s*'severity'/u)
+  assert.match(collection, /name:\s*'isPublic'/u)
+  assert.match(collection, /create:\s*adminsOnly/u)
+  assert.match(collection, /update:\s*adminsOnly/u)
+  assert.match(collection, /delete:\s*adminsOnly/u)
+})
+
+test('new relationship schema is explicitly gated until its reviewed migration is applied', () => {
+  assert.match(fields, /name:\s*'stewardshipNotices'/u)
+  assert.match(fields, /hasMany:\s*true/u)
+  assert.match(payload, /STEWARDSHIP_NOTICES_SCHEMA_READY/u)
+  assert.match(payload, /stewardshipSchemaReady \? withStewardshipNotices\(Works\) : Works/u)
+  assert.match(payload, /stewardshipSchemaReady \? \[StewardshipNotices\] : \[\]/u)
+})
+
+test('works creators and organizations can receive optional many-notice relationships after migration', () => {
+  assert.match(payload, /withStewardshipNotices\(Works\)/u)
+  assert.match(payload, /withStewardshipNotices\(Creators\)/u)
+  assert.match(payload, /withStewardshipNotices\(Organizations\)/u)
+})
+
+test('work studio uses explicit collapsible choices and avoids clearing relationships when schema is unavailable', () => {
+  assert.match(editor, /StewardshipNoticeSelector/u)
+  assert.match(editor, /stewardshipNoticeSelectorReady/u)
+  assert.match(editor, /data\.stewardshipNotices = submittedRelationIDs/u)
+  assert.match(editor, /站务与用语提示（可选）/u)
+  assert.match(selector, /name="stewardshipNotices"/u)
+  assert.match(selector, /type="checkbox"/u)
+  assert.match(selector, /<details/u)
+  assert.match(selector, /<summary>/u)
+  assert.match(selector, /选择站务与用语提示/u)
+  assert.match(selector, /href="#stewardship-notices"/u)
+  assert.match(selector, /已选择 \{selected\.size\} 条/u)
+  assert.match(selector, /保存并同步前台/u)
+  assert.match(selector, /清空选择/u)
+  assert.match(selectorCss, /position:\s*fixed/u)
+  assert.match(selectorCss, /scroll-margin-top/u)
+})
+
+test('detail pages place full notices before separate human and AI assessments', () => {
+  assert.match(assessment, /StewardshipNoticeBlock/u)
+  assert.match(assessment, /if \(item\.collection !== 'works'\) return stewardship/u)
+  assert.match(assessment, /人工正式评级/u)
+  assert.match(assessment, /AI 建议与规则分析/u)
+  assert.match(assessment, /不会被冒充为正式评级/u)
+  assert.match(assessment, /评级来源摘要（不是作品简介）/u)
+  assert.match(display, /站务与用语/u)
+  assert.match(display, /notices\.length/u)
+  assert.match(layout, /stewardship-notices\.css/u)
+  assert.match(displayCss, /\.stewardship-notice\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\)/u)
+  assert.match(displayCss, /\.stewardship-notice-copy\s*\{[\s\S]*grid-column:\s*1 \/ -1/u)
+  assert.match(displayCss, /white-space:\s*normal/u)
+  assert.match(displayCss, /overflow-wrap:\s*anywhere/u)
+})
+
+test('terms page keeps the original grouped visual guide and removes the useless total counter', () => {
+  assert.match(terms, /noticeSections/u)
+  assert.match(terms, /noticeImagePath/u)
+  assert.match(terms, /站务与用语/u)
+  assert.match(terms, /排雷协作/u)
+  assert.match(terms, /不适内容/u)
+  assert.doesNotMatch(terms, /warningTemplates\.length/u)
+  assert.match(terms, /href="\/support"/u)
+  assert.doesNotMatch(terms, /collection:\s*'stewardship-notices'/u)
+})
+
+test('support page reports income expenses balance and an optional donation QR', () => {
+  assert.match(support, /网站运营收支与支持/u)
+  assert.match(support, /收入明细/u)
+  assert.match(support, /支出明细/u)
+  assert.match(support, /本期结余/u)
+  assert.match(support, /网站自愿支持二维码/u)
+  assert.match(support, /捐赠不影响作品评级/u)
+  assert.match(finance, /SITE_FINANCE_REPORT_JSON/u)
+  assert.match(finance, /SITE_DONATION_QR_IMAGE/u)
+  assert.match(finance, /configured:\s*Boolean\(raw\)/u)
+})
+
+test('legacy transparency route redirects to the clearer support route', () => {
+  assert.match(transparency, /redirect\('\/support'\)/u)
+})
+
+test('full detail exports carry public stewardship notices', () => {
+  assert.match(exportWrapper, /enrich-stewardship-notices\.mjs/u)
+  assert.match(exportNotices, /stewardshipNotices/u)
+  assert.match(exportNotices, /value\.isPublic === false/u)
+  assert.match(exportNotices, /COLLECTIONS = \['works', 'creators', 'organizations'\]/u)
+})
+
+test('notice bootstrap enforces dry-run, published records, single-item validation and explicit bulk confirmation', () => {
+  assert.match(seed, /const apply = process\.argv\.includes\('--apply'\)/u)
+  assert.match(seed, /const only = String\(arg\('--only'\)/u)
+  assert.match(seed, /_status:\s*'published'/u)
+  assert.match(seed, /Bulk apply requires --confirm-bulk/u)
+  assert.match(seed, /Dry-run only/u)
+  assert.match(seed, /method: row\.action === 'create' \? 'POST' : 'PATCH'/u)
+})

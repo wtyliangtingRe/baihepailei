@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic'
 
 type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted' | 'member'
 type Relation = { id?: string | number; title?: string; displayName?: string }
+type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
 type FeedbackDoc = {
   id: string | number
   feedbackType?: string
@@ -42,6 +43,10 @@ const feedbackTypeLabels: Record<string, string> = {
   display_problem: '页面问题', other: '其他',
 }
 
+function first(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] || '' : value || ''
+}
+
 function roleOf(user: unknown) {
   return user && typeof user === 'object' ? (user as { role?: Role }).role : undefined
 }
@@ -65,8 +70,10 @@ function formatDate(value?: string) {
   }
 }
 
-export default async function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function FeedbackDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: PageSearchParams }) {
   const { id } = await params
+  const rawSearch = await searchParams
+  const createdWork = first(rawSearch.createdWork)
   const payload = await getPayload({ config: configPromise })
   const auth = await payload.auth({ headers: await headers() })
   if (!auth.user) redirect(`/account/login?redirect=${encodeURIComponent(`/me/review/feedback/${id}`)}`)
@@ -84,7 +91,8 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
 
   const workID = relationID(doc.linkedWork)
   const links = (doc.evidenceLinks || []).filter((item) => item.url)
-  const rules = (doc.matchedRuleCodes || []).map((item) => item.code).filter(Boolean)
+  const rules = [...new Set((doc.matchedRuleCodes || []).map((item) => String(item.code || '').trim()).filter(Boolean))]
+  const decisiveRule = rules[0] || ''
   const isAccepted = doc.workflowStatus === 'accepted'
   const isNewWork = doc.feedbackType === 'new_work'
   const mayUsePayload = role === 'owner' || role === 'admin'
@@ -106,12 +114,19 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
         </div>
       </section>
 
+      {createdWork ? (
+        <div className="review-action-message review-action-message-success" role="status">
+          已创建待复核作品草稿 #{createdWork}，并返回本反馈。草稿尚未公开。
+          <Link href={`/me/studio/works/${createdWork}?returnTo=${encodeURIComponent(returnTo)}`}>打开草稿</Link>
+        </div>
+      ) : null}
+
       {isAccepted ? (
         <section className="review-safety-note" role="status">
           <strong>“已采纳”只表示材料成立，不会自动改作品。</strong>
           <p>{isNewWork && !workID ? '这是一份新作品申请。下一步由编辑在内容管理中检查重复候选并创建待复核草稿。' : '请进入关联作品的站内内容管理，把采纳结论落实到正式等级、标题、来源或可见性字段。'}</p>
           {workID ? <Link className="review-button review-button-primary" href={`/me/studio/works/${workID}?returnTo=${encodeURIComponent(returnTo)}`}>现在编辑关联作品</Link> : null}
-          {isNewWork && !workID ? <Link className="review-button review-button-primary" href={`/me/studio/works/new?feedbackId=${encodeURIComponent(String(doc.id))}`}>检查重复并创建草稿</Link> : null}
+          {isNewWork && !workID ? <Link className="review-button review-button-primary" href={`/me/studio/works/new?feedbackId=${encodeURIComponent(String(doc.id))}&returnTo=${encodeURIComponent(returnTo)}`}>检查重复并创建草稿</Link> : null}
         </section>
       ) : null}
 
@@ -123,7 +138,8 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
           <div><dt>最后更新</dt><dd>{formatDate(doc.updatedAt)}</dd></div>
           <div className="feedback-review-wide"><dt>希望网站核实的结论</dt><dd>{doc.claim || '未填写'}</dd></div>
           <div className="feedback-review-wide"><dt>证据说明</dt><dd>{doc.evidenceSummary || '未填写'}</dd></div>
-          <div className="feedback-review-wide"><dt>建议命中规则</dt><dd>{rules.length ? rules.join('、') : '未指定'}</dd></div>
+          <div className="feedback-review-wide"><dt>主规则 / 决定性规则</dt><dd>{decisiveRule || '未指定'}</dd></div>
+          <div className="feedback-review-wide"><dt>全部命中规则</dt><dd>{rules.length ? rules.join('、') : '未指定'}</dd></div>
           <div className="feedback-review-wide"><dt>当前审核说明</dt><dd>{doc.reviewNote || '尚未填写'}</dd></div>
           <div><dt>审核人</dt><dd>{relationLabel(doc.reviewer) || '尚未分配'}</dd></div>
           <div><dt>审核时间</dt><dd>{formatDate(doc.reviewedAt)}</dd></div>
@@ -138,7 +154,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
           <Link className="review-link" href="/me/review/feedback">返回反馈审核队列</Link>
           {workID ? <Link className="review-link" href={canonicalContentUrl('works', workID)}>查看关联作品</Link> : null}
           {workID ? <Link className="review-link" href={`/me/studio/works/${workID}?returnTo=${encodeURIComponent(returnTo)}`}>编辑关联作品</Link> : null}
-          {isNewWork && !workID ? <Link className="review-link" href={`/me/studio/works/new?feedbackId=${encodeURIComponent(String(doc.id))}`}>创建作品草稿</Link> : null}
+          {isNewWork && !workID ? <Link className="review-link" href={`/me/studio/works/new?feedbackId=${encodeURIComponent(String(doc.id))}&returnTo=${encodeURIComponent(returnTo)}`}>创建作品草稿</Link> : null}
           {mayUsePayload ? <Link className="review-link" href={`/admin/collections/feedback-submissions/${doc.id}`}>Payload 原始记录</Link> : null}
         </div>
       </section>

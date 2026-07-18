@@ -16,6 +16,7 @@ import './comments.css'
 import './xwiki-renderer.css'
 import './work-conclusion.css'
 import './work-assessment-trust.css'
+import './work-assessment-split.css'
 import './work-list.css'
 import './recommendations.css'
 import './profile-lists.css'
@@ -30,6 +31,7 @@ import './theme.css'
 import './detail-layout-fixes.css'
 import './ui-visual-assets.css'
 import './ui-visual-polish.css'
+import './stewardship-notices.css'
 
 export const metadata: Metadata = {
   title: 'Baihepailei',

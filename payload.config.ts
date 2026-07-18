@@ -12,6 +12,7 @@ import { Media } from './src/collections/Media'
 import { Organizations } from './src/collections/Organizations'
 import { RadarResearchRecords } from './src/collections/RadarResearchRecords'
 import { Rules } from './src/collections/Rules'
+import { StewardshipNotices } from './src/collections/StewardshipNotices'
 import { Tags } from './src/collections/Tags'
 import { Terms } from './src/collections/Terms'
 import { UserLists } from './src/collections/UserLists'
@@ -19,9 +20,21 @@ import { Users } from './src/collections/Users'
 import { Warnings } from './src/collections/Warnings'
 import { Works } from './src/collections/Works'
 import { withRadarAssessmentFields } from './src/collections/fields/radarAssessment'
+import { withStewardshipNotices } from './src/collections/fields/stewardshipNotices'
 import { syncWorkToPublicIndexes } from './src/lib/publicIndexSync'
 
-const WorksWithRadarAssessment = withRadarAssessmentFields(Works)
+/**
+ * Keep this false until the reviewed Payload migration has been executed.
+ * To generate/review the migration, run the Payload command with
+ * STEWARDSHIP_NOTICES_SCHEMA_READY=true for that process only. After the
+ * migration succeeds, set the same server-side variable for build/runtime.
+ */
+const stewardshipSchemaReady = String(process.env['STEWARDSHIP_NOTICES_SCHEMA_READY'] || '').toLowerCase() === 'true'
+
+const WorksWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Works) : Works
+const CreatorsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Creators) : Creators
+const OrganizationsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Organizations) : Organizations
+const WorksWithRadarAssessment = withRadarAssessmentFields(WorksWithOptionalStewardship)
 const WorksWithSafePublicationStatus: CollectionConfig = {
   ...WorksWithRadarAssessment,
   hooks: {
@@ -97,9 +110,10 @@ export default buildConfig({
     UsersWithRestrictedAdmin,
     Media,
     WorksWithSafePublicationStatus,
-    Creators,
-    Organizations,
+    CreatorsWithOptionalStewardship,
+    OrganizationsWithOptionalStewardship,
     Evidence,
+    ...(stewardshipSchemaReady ? [StewardshipNotices] : []),
     RadarResearchRecords,
     Comments,
     UserLists,

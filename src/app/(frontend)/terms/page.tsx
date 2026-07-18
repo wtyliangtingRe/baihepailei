@@ -60,7 +60,7 @@ export default function TermsIndexPage() {
           <a className="back-link" href="#radar-help">排雷协作</a>
           <a className="back-link" href="#discomfort">不适内容</a>
           <Link className="back-link" href="/rules">排雷规则</Link>
-          <span>{warningTemplates.length} 个提示模板</span>
+          <Link className="back-link" href="/support">运营收支与支持</Link>
         </div>
       </section>
 
