@@ -52,6 +52,7 @@ export type SearchItem = {
   reviewReasons?: string[]
   radarAssessment?: RadarAssessmentMetrics
   researchPreview?: RadarResearchPreview
+  mergedIntoWorkId?: string
   originalTitle?: string
   aliases?: string[]
   localizedTitles?: string[]
@@ -97,6 +98,11 @@ export function clearSearchIndexCache() {
   cachedIndex = undefined
 }
 
+function isRetiredWork(item: SearchItem) {
+  return item.collection === 'works'
+    && (item.status === 'archived' || item.reviewStatus === 'deprecated' || Boolean(item.mergedIntoWorkId))
+}
+
 export function readSearchIndex() {
   if (cachedIndex !== undefined) return cachedIndex
 
@@ -107,7 +113,7 @@ export function readSearchIndex() {
 
   const raw = fs.readFileSync(searchIndexPath, 'utf8')
   const parsed = JSON.parse(raw) as SearchIndex
-  const visibleItems = parsed.items.filter((item) => !(item.collection === 'works' && item.status === 'archived'))
+  const visibleItems = parsed.items.filter((item) => !isRetiredWork(item))
   cachedIndex = {
     ...parsed,
     items: visibleItems,
