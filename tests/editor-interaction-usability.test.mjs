@@ -6,6 +6,8 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), '
 const rules = read('src/app/(frontend)/_components/RadarRuleSelector.tsx')
 const feedback = read('src/app/(frontend)/_components/FeedbackForm.tsx')
 const create = read('src/app/(frontend)/me/studio/works/new/page.tsx')
+const editor = read('src/app/(frontend)/me/studio/works/[id]/page.tsx')
+const pending = read('src/app/(frontend)/me/studio/_components/PendingSubmitButton.tsx')
 const feedbackCollection = read('src/collections/FeedbackSubmissions.ts')
 const searchIndex = read('src/app/(frontend)/_lib/search-index.ts')
 
@@ -33,6 +35,18 @@ test('staff draft creation derives its suggestion from the selected primary rule
   assert.match(create, /decisiveRuleCode: decisiveRuleCode \|\| undefined/u)
   assert.match(create, /matchedRules: orderedRuleCodes\.map/u)
   assert.match(create, /requiresHumanReview: true/u)
+})
+
+test('full work editor maintains rule suggestions separately from the human grade', () => {
+  assert.match(editor, /RadarRuleSelector/u)
+  assert.match(editor, /主规则与全部命中规则/u)
+  assert.match(editor, /resolvedDecisiveRuleCode/u)
+  assert.match(editor, /suggestedGrade: resolvedDecisiveRuleCode/u)
+  assert.match(editor, /matchedRules: orderedRuleCodes\.map/u)
+  assert.match(editor, /人工正式分级/u)
+  assert.match(editor, /PendingSubmitButton/u)
+  assert.match(pending, /useFormStatus/u)
+  assert.match(pending, /disabled=\{pending\}/u)
 })
 
 test('organization cards hide imported leading punctuation without rewriting source data', () => {
