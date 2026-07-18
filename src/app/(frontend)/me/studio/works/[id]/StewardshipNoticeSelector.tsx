@@ -43,29 +43,36 @@ export default function StewardshipNoticeSelector({ notices, selectedIDs }: { no
         </div>
       ) : null}
 
-      <div className={styles.list}>
-        {notices.map((notice) => {
-          const isSelected = selected.has(notice.id)
-          return (
-            <label className={styles.option} data-selected={isSelected ? 'true' : 'false'} key={notice.id}>
-              <input
-                checked={isSelected}
-                name="stewardshipNotices"
-                onChange={(event) => toggle(notice.id, event.currentTarget.checked)}
-                type="checkbox"
-                value={notice.id}
-              />
-              <span className={styles.checkmark} aria-hidden="true">{isSelected ? '✓' : ''}</span>
-              <span className={styles.copy}>
-                <strong>{notice.title}</strong>
-                <small>{notice.category} · {notice.severity}</small>
-                {notice.summary ? <em>{notice.summary}</em> : null}
-              </span>
-              <span className={styles.badge}>{isSelected ? '已选' : '未选'}</span>
-            </label>
-          )
-        })}
-      </div>
+      <details className={styles.details} defaultOpen={selected.size > 0}>
+        <summary>
+          <span>选择站务与用语提示</span>
+          <strong>{selected.size} 条已选</strong>
+        </summary>
+        <p>点击小三角展开列表。每条都有明确勾选状态，可同时选择多条。</p>
+        <div className={styles.list}>
+          {notices.map((notice) => {
+            const isSelected = selected.has(notice.id)
+            return (
+              <label className={styles.option} data-selected={isSelected ? 'true' : 'false'} key={notice.id}>
+                <input
+                  checked={isSelected}
+                  name="stewardshipNotices"
+                  onChange={(event) => toggle(notice.id, event.currentTarget.checked)}
+                  type="checkbox"
+                  value={notice.id}
+                />
+                <span className={styles.checkmark} aria-hidden="true">{isSelected ? '✓' : ''}</span>
+                <span className={styles.copy}>
+                  <strong>{notice.title}</strong>
+                  <small>{notice.category} · {notice.severity}</small>
+                  {notice.summary ? <em>{notice.summary}</em> : null}
+                </span>
+                <span className={styles.badge}>{isSelected ? '已选' : '未选'}</span>
+              </label>
+            )
+          })}
+        </div>
+      </details>
     </div>
   )
 }
