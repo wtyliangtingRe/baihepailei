@@ -1,6 +1,31 @@
 .selector {
   display: grid;
   gap: 12px;
+  scroll-margin-top: 18px;
+}
+
+.jump {
+  position: fixed;
+  right: 18px;
+  bottom: 88px;
+  z-index: 7;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 13px;
+  border: 1px solid rgb(255 181 215 / 0.55);
+  border-radius: 999px;
+  background: rgb(18 18 18 / 0.94);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.35);
+  color: #ffc5df;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+  backdrop-filter: blur(10px);
+}
+
+.jump:hover {
+  border-color: #8fe3a2;
+  color: #a9efb8;
 }
 
 .status {
@@ -202,6 +227,16 @@
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .jump {
+    right: 12px;
+    bottom: 12px;
+  }
+}
+
+:global([data-theme='light']) .jump {
+  background: rgb(255 250 246 / 0.96);
+  box-shadow: 0 10px 28px rgb(90 68 51 / 0.18);
 }
 
 :global([data-theme='light']) .status,
