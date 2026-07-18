@@ -91,9 +91,10 @@ test('full detail exports carry public stewardship notices', () => {
   assert.match(exportNotices, /COLLECTIONS = \['works', 'creators', 'organizations'\]/u)
 })
 
-test('notice bootstrap enforces dry-run, single-item validation and explicit bulk confirmation', () => {
+test('notice bootstrap enforces dry-run, published records, single-item validation and explicit bulk confirmation', () => {
   assert.match(seed, /const apply = process\.argv\.includes\('--apply'\)/u)
   assert.match(seed, /const only = String\(arg\('--only'\)/u)
+  assert.match(seed, /_status:\s*'published'/u)
   assert.match(seed, /Bulk apply requires --confirm-bulk/u)
   assert.match(seed, /Dry-run only/u)
   assert.match(seed, /method: row\.action === 'create' \? 'POST' : 'PATCH'/u)
