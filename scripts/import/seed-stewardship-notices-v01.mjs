@@ -26,6 +26,7 @@ const DEFAULTS = [
   applicableCollections: ['works', 'creators', 'organizations'],
   sortOrder: (index + 1) * 10,
   isPublic: true,
+  _status: 'published',
 }))
 
 function arg(name) {
