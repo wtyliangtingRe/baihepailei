@@ -132,7 +132,6 @@ export default function RadarRuleSelector({
           <span>全部命中规则</span>
           <strong>{selected.size} 条已选</strong>
         </summary>
-        <p>展开后可勾选多条。首次勾选会自动成为主规则，之后仍可在上方切换。</p>
         <div className={styles.groups}>
           {gradeOrder.map((grade) => (
             <section key={grade}>
