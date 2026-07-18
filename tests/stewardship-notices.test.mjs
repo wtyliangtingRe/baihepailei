@@ -10,6 +10,8 @@ const editor = read('src/app/(frontend)/me/studio/works/[id]/page.tsx')
 const selector = read('src/app/(frontend)/me/studio/works/[id]/StewardshipNoticeSelector.tsx')
 const selectorCss = read('src/app/(frontend)/me/studio/works/[id]/StewardshipNoticeSelector.module.css')
 const display = read('src/app/(frontend)/_components/StewardshipNoticeBlock.tsx')
+const displayCss = read('src/app/(frontend)/stewardship-notices.css')
+const layout = read('src/app/(frontend)/layout.tsx')
 const assessment = read('src/app/(frontend)/_components/WorkAssessmentTrustCard.tsx')
 const terms = read('src/app/(frontend)/terms/page.tsx')
 const support = read('src/app/(frontend)/support/page.tsx')
@@ -63,7 +65,7 @@ test('work studio uses explicit collapsible choices and avoids clearing relation
   assert.match(selectorCss, /scroll-margin-top/u)
 })
 
-test('detail pages place notices before separate human and AI assessments', () => {
+test('detail pages place full notices before separate human and AI assessments', () => {
   assert.match(assessment, /StewardshipNoticeBlock/u)
   assert.match(assessment, /if \(item\.collection !== 'works'\) return stewardship/u)
   assert.match(assessment, /人工正式评级/u)
@@ -72,6 +74,11 @@ test('detail pages place notices before separate human and AI assessments', () =
   assert.match(assessment, /评级来源摘要（不是作品简介）/u)
   assert.match(display, /站务与用语/u)
   assert.match(display, /notices\.length/u)
+  assert.match(layout, /stewardship-notices\.css/u)
+  assert.match(displayCss, /\.stewardship-notice\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\)/u)
+  assert.match(displayCss, /\.stewardship-notice-copy\s*\{[\s\S]*grid-column:\s*1 \/ -1/u)
+  assert.match(displayCss, /white-space:\s*normal/u)
+  assert.match(displayCss, /overflow-wrap:\s*anywhere/u)
 })
 
 test('terms page keeps the original grouped visual guide and removes the useless total counter', () => {
