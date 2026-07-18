@@ -29,10 +29,11 @@ test('feedback preserves primary-first rule ordering without changing its schema
   assert.doesNotMatch(feedbackCollection, /name: 'decisiveRuleCode'/u)
 })
 
-test('staff draft creation derives its suggestion from the selected primary rule', () => {
-  assert.match(create, /radarClassDefinitions\[decisiveRuleCode\]\.grade/u)
+test('staff draft creation resolves a primary rule on both client and server', () => {
+  assert.match(create, /const resolvedDecisiveRuleCode = decisiveRuleCode \|\| matchedRuleCodes\[0\] \|\| null/u)
+  assert.match(create, /radarClassDefinitions\[resolvedDecisiveRuleCode\]\.grade/u)
   assert.match(create, /policyVersion: RADAR_RATING_POLICY_ID/u)
-  assert.match(create, /decisiveRuleCode: decisiveRuleCode \|\| undefined/u)
+  assert.match(create, /decisiveRuleCode: resolvedDecisiveRuleCode \|\| undefined/u)
   assert.match(create, /matchedRules: orderedRuleCodes\.map/u)
   assert.match(create, /requiresHumanReview: true/u)
 })
