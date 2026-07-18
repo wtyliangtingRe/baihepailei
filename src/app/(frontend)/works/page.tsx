@@ -1,9 +1,14 @@
 import Link from 'next/link'
 
 import { publicContentImagesEnabled } from '@/lib/deploymentProfile'
+import {
+  effectiveWorkGrade,
+  effectiveWorkGradeLabel,
+  type EffectiveWorkGrade,
+} from '@/lib/radar/effectiveWorkGrade'
 
-import MissingSearchIndex from '../_components/MissingSearchIndex'
 import AssessmentOriginBadge from '../_components/AssessmentOriginBadge'
+import MissingSearchIndex from '../_components/MissingSearchIndex'
 import { readSearchIndex, type SearchItem } from '../_lib/search-index'
 
 const rankOrder = ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'unknown']
@@ -63,6 +68,7 @@ let cachedSortedWorks: SearchItem[] = []
 let cachedMarkedWorks = 0
 const titleCache = new WeakMap<SearchItem, string>()
 const searchBlobCache = new WeakMap<SearchItem, string>()
+const gradeCache = new WeakMap<SearchItem, EffectiveWorkGrade>()
 
 const rankDescriptions: Record<string, string> = {
   AA: '高度稳定的百合作品。核心关系明确，整体风险极低，通常适合作为优先阅读对象。',
@@ -135,6 +141,14 @@ function assessmentKey(item: SearchItem) {
   return 'unassessed'
 }
 
+function displayedGrade(item: SearchItem) {
+  const cached = gradeCache.get(item)
+  if (cached) return cached
+  const grade = effectiveWorkGrade(item)
+  gradeCache.set(item, grade)
+  return grade
+}
+
 function rankLabel(rank?: string) {
   if (!rank || rank === 'unknown') return '未录入'
   if (rank === 'AA') return 'S级'
@@ -147,21 +161,13 @@ function rankAnchor(rank?: string) {
   return `rank-${rank.toLowerCase()}`
 }
 
-function storedRankKey(rank?: string) {
-  const normalized = String(rank || 'unknown').trim().toUpperCase()
-  if (normalized === 'S' || normalized === 'AA') return 'AA'
-  return normalized.toLowerCase() === 'unknown' ? 'unknown' : normalized
-}
-
 function rankSortValue(rank?: string) {
-  const normalizedRank = storedRankKey(rank)
-  const index = rankOrder.indexOf(normalizedRank)
+  const index = rankOrder.indexOf(rank || 'unknown')
   return index === -1 ? rankOrder.length : index
 }
 
 function contentVisibilityLabel(value?: string) {
-  if (value === 'adult') return '限制展示'
-  if (value === 'restricted') return '限制展示'
+  if (value === 'adult' || value === 'restricted') return '限制展示'
   return ''
 }
 
@@ -209,7 +215,7 @@ function sortedWorks(items: SearchItem[]) {
   cachedSourceItems = items
   cachedSortedWorks = items
     .filter((item) => item.collection === 'works')
-    .sort((a, b) => rankSortValue(a.rank) - rankSortValue(b.rank) || displayTitle(a).localeCompare(displayTitle(b), 'zh-CN'))
+    .sort((a, b) => rankSortValue(displayedGrade(a).grade) - rankSortValue(displayedGrade(b).grade) || displayTitle(a).localeCompare(displayTitle(b), 'zh-CN'))
   cachedMarkedWorks = cachedSortedWorks.filter((item) => item.contentVisibility && item.contentVisibility !== 'ordinary').length
   return cachedSortedWorks
 }
@@ -218,6 +224,7 @@ function searchBlob(item: SearchItem) {
   const cached = searchBlobCache.get(item)
   if (cached !== undefined) return cached
 
+  const grade = displayedGrade(item)
   const value = [
     item.title,
     item.originalTitle,
@@ -227,7 +234,11 @@ function searchBlob(item: SearchItem) {
     ...(item.organizations || []),
     ...(item.tags || []),
     ...(item.warnings || []),
+    grade.grade,
+    effectiveWorkGradeLabel(grade.source),
     item.rank,
+    item.radarAssessment?.suggestedGrade,
+    item.researchPreview?.likelyGrade,
     item.mediaGroup,
     item.mediaType,
     item.format,
@@ -255,17 +266,12 @@ function workTypeLabels(item: SearchItem) {
 function itemMatchesQuery(item: SearchItem, query: string) {
   const normalizedQuery = normalizeText(query)
   if (!normalizedQuery) return true
-
   const haystack = searchBlob(item)
-
-  return normalizedQuery
-    .split(/\s+/g)
-    .filter(Boolean)
-    .every((term) => haystack.includes(term))
+  return normalizedQuery.split(/\s+/g).filter(Boolean).every((term) => haystack.includes(term))
 }
 
 function itemMatchesFilters(item: SearchItem, filters: NormalizedFilters) {
-  const rank = storedRankKey(item.rank)
+  const rank = displayedGrade(item).grade
   const mediaGroup = item.mediaGroup || 'unknown'
   if (filters.rank !== 'all' && rank !== filters.rank) return false
   if (filters.media !== 'all' && mediaGroup !== filters.media) return false
@@ -276,7 +282,7 @@ function itemMatchesFilters(item: SearchItem, filters: NormalizedFilters) {
 function filterLabel(filters: NormalizedFilters) {
   const labels = []
   if (filters.q) labels.push(`关键词：${filters.q}`)
-  if (filters.rank !== 'all') labels.push(`分级：${rankLabel(filters.rank)}`)
+  if (filters.rank !== 'all') labels.push(`展示分级：${rankLabel(filters.rank)}`)
   if (filters.media !== 'all') labels.push(`作品类型：${filters.media}`)
   if (filters.assessment !== 'all') labels.push(`评估状态：${filters.assessment}`)
   return labels
@@ -299,16 +305,13 @@ function pageHref(filters: NormalizedFilters, page: number, pageSize: number) {
   if (filters.assessment !== 'all') params.set('assessment', filters.assessment)
   if (page > 1) params.set('page', String(page))
   if (pageSize !== defaultPageSize) params.set('perPage', String(pageSize))
-
   const query = params.toString()
   return query ? `/works?${query}` : '/works'
 }
 
 function paginationPages(currentPage: number, totalPages: number) {
   const pages = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1])
-  return [...pages]
-    .filter((page) => page >= 1 && page <= totalPages)
-    .sort((a, b) => a - b)
+  return [...pages].filter((page) => page >= 1 && page <= totalPages).sort((a, b) => a - b)
 }
 
 function HiddenFilterInputs({ filters, pageSize }: { filters: NormalizedFilters; pageSize: number }) {
@@ -327,10 +330,7 @@ function WorksFilterForm({ filters }: { filters: NormalizedFilters }) {
   return (
     <form action="/works" className="works-filter-panel">
       <div className="works-filter-grid">
-        <label>
-          <span>关键词</span>
-          <input defaultValue={filters.q} name="q" placeholder="作品名、译名、原名、作者、机构、标签" type="search" />
-        </label>
+        <label><span>关键词</span><input defaultValue={filters.q} name="q" placeholder="作品名、译名、原名、作者、机构、标签" type="search" /></label>
         <label>
           <span>评估状态</span>
           <select defaultValue={filters.assessment} name="assessment">
@@ -346,65 +346,40 @@ function WorksFilterForm({ filters }: { filters: NormalizedFilters }) {
           <span>作品类型</span>
           <select defaultValue={filters.media} name="media">
             <option value="all">全部类型</option>
-            {mediaGroupOptions.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
+            {mediaGroupOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
         </label>
         <label>
-          <span>分级</span>
+          <span>展示分级（人工优先）</span>
           <select defaultValue={filters.rank} name="rank">
             <option value="all">全部分级</option>
-            <option value="AA">S级</option>
-            <option value="A">A级</option>
-            <option value="B">B级</option>
-            <option value="C">C级</option>
-            <option value="D">D级</option>
-            <option value="E">E级</option>
-            <option value="F">F级</option>
-            <option value="X">X级</option>
+            <option value="AA">S级</option><option value="A">A级</option><option value="B">B级</option><option value="C">C级</option>
+            <option value="D">D级</option><option value="E">E级</option><option value="F">F级</option><option value="X">X级</option>
             <option value="unknown">未录入</option>
           </select>
         </label>
       </div>
-      <div className="works-filter-actions">
-        <button className="result-link" type="submit">筛选作品</button>
-        <Link className="back-link" href="/works">清除筛选</Link>
-      </div>
+      <div className="works-filter-actions"><button className="result-link" type="submit">筛选作品</button><Link className="back-link" href="/works">清除筛选</Link></div>
     </form>
   )
 }
 
 function WorksPagination({ currentPage, filters, pageSize, totalItems, totalPages }: { currentPage: number; filters: NormalizedFilters; pageSize: number; totalItems: number; totalPages: number }) {
   if (totalItems === 0) return null
-
   const firstItem = (currentPage - 1) * pageSize + 1
   const lastItem = Math.min(totalItems, currentPage * pageSize)
   const pages = paginationPages(currentPage, totalPages)
-
   return (
     <nav className="collection-actions" aria-label="作品分页">
-      <span>第 {currentPage} / {totalPages} 页</span>
-      <span>显示 {firstItem}-{lastItem} / {totalItems} 条</span>
+      <span>第 {currentPage} / {totalPages} 页</span><span>显示 {firstItem}-{lastItem} / {totalItems} 条</span>
       {currentPage > 1 ? <Link className="back-link" href={pageHref(filters, currentPage - 1, pageSize)}>上一页</Link> : <span>上一页</span>}
-      {pages.map((page) => (
-        page === currentPage
-          ? <span key={page}>{page}</span>
-          : <Link className="back-link" href={pageHref(filters, page, pageSize)} key={page}>{page}</Link>
-      ))}
+      {pages.map((page) => page === currentPage ? <span key={page}>{page}</span> : <Link className="back-link" href={pageHref(filters, page, pageSize)} key={page}>{page}</Link>)}
       {currentPage < totalPages ? <Link className="back-link" href={pageHref(filters, currentPage + 1, pageSize)}>下一页</Link> : <span>下一页</span>}
       <span>每页</span>
-      {pageSizeOptions.map((option) => (
-        option === pageSize
-          ? <span key={option}>{option}</span>
-          : <Link className="back-link" href={pageHref(filters, 1, option)} key={option}>{option}</Link>
-      ))}
+      {pageSizeOptions.map((option) => option === pageSize ? <span key={option}>{option}</span> : <Link className="back-link" href={pageHref(filters, 1, option)} key={option}>{option}</Link>)}
       <form action="/works" className="page-jump-form">
         <HiddenFilterInputs filters={filters} pageSize={pageSize} />
-        <label>
-          跳到
-          <input aria-label="跳到页码" defaultValue={currentPage} min="1" max={totalPages} name="page" type="number" />
-        </label>
+        <label>跳到<input aria-label="跳到页码" defaultValue={currentPage} min="1" max={totalPages} name="page" type="number" /></label>
         <button className="back-link" type="submit">跳转</button>
       </form>
     </nav>
@@ -419,7 +394,6 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
   const filters = parseFilters(params)
   const pageSize = normalizePageSize(firstParam(params.perPage))
   const requestedPage = normalizePositiveInteger(firstParam(params.page), 1)
-
   const allItems = sortedWorks(index.items)
   const items = allItems.filter((item) => itemMatchesFilters(item, filters))
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
@@ -429,121 +403,73 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
   const activeFilterLabels = filterLabel(filters)
   const showImages = publicContentImagesEnabled() && index.mediaMode !== 'text'
   const aiPendingCount = allItems.filter((item) => assessmentKey(item) === 'ai').length
+  const humanGradeCount = allItems.filter((item) => displayedGrade(item).source === 'human').length
+  const aiGradeCount = allItems.filter((item) => ['ai', 'ai_legacy'].includes(displayedGrade(item).source)).length
 
   const groups = rankOrder
-    .map((rank) => ({
-      rank,
-      items: pageItems.filter((item) => storedRankKey(item.rank) === rank),
-    }))
+    .map((rank) => ({ rank, items: pageItems.filter((item) => displayedGrade(item).grade === rank) }))
     .filter((group) => group.items.length > 0)
 
   return (
     <main className="page collection-page">
       <section className="page-heading collection-heading">
-        <p className="eyebrow">作品</p>
-        <h1>作品</h1>
-        <p>浏览作品条目、排雷分级与页面提示，并按作品类型、分级或关键词筛选。</p>
+        <p className="eyebrow">作品</p><h1>作品</h1>
+        <p>分组等级统一按“人工正式评级优先；尚未人工标注时采用 AI 建议；两者皆无则未录入”计算。</p>
         <div className="collection-actions">
-          <Link className="back-link" href="/search?collection=works">搜索作品</Link>
-          <Link className="back-link" href="/browse">浏览全部</Link>
-          <span>{items.length} / {allItems.length} 条</span>
-          <span>当前页 {pageItems.length} 条</span>
-          <span>AI 已评估待复核 {aiPendingCount} 条</span>
-          <span>{index.profile === 'lite' ? '轻量索引' : '完整索引'}</span>
-          {cachedMarkedWorks ? <span>普通模式隐藏 {cachedMarkedWorks} 条标记作品</span> : null}
+          <Link className="back-link" href="/search?collection=works">搜索作品</Link><Link className="back-link" href="/browse">浏览全部</Link>
+          <span>{items.length} / {allItems.length} 条</span><span>当前页 {pageItems.length} 条</span>
+          <span>人工正式 {humanGradeCount} 条</span><span>AI 展示等级 {aiGradeCount} 条</span><span>AI 已评估待复核 {aiPendingCount} 条</span>
+          <span>{index.profile === 'lite' ? '轻量索引' : '完整索引'}</span>{cachedMarkedWorks ? <span>普通模式隐藏 {cachedMarkedWorks} 条标记作品</span> : null}
         </div>
         <nav className="media-group-links" aria-label="作品类型快速筛选">
-          <Link href="/works">全部</Link>
-          {mediaGroupOptions.map((option) => (
-            <Link href={`/works?media=${option.value}`} key={option.value}>{option.label}</Link>
-          ))}
+          <Link href="/works">全部</Link>{mediaGroupOptions.map((option) => <Link href={`/works?media=${option.value}`} key={option.value}>{option.label}</Link>)}
         </nav>
         <WorksFilterForm filters={filters} />
-        {activeFilterLabels.length ? (
-          <div className="active-filter-list" aria-label="当前筛选条件">
-            {activeFilterLabels.map((label) => <span key={label}>{label}</span>)}
-          </div>
-        ) : null}
+        {activeFilterLabels.length ? <div className="active-filter-list" aria-label="当前筛选条件">{activeFilterLabels.map((label) => <span key={label}>{label}</span>)}</div> : null}
         <WorksPagination currentPage={currentPage} filters={filters} pageSize={pageSize} totalItems={items.length} totalPages={totalPages} />
-        {groups.length ? (
-          <nav className="rank-jump-list" id="works-rank-nav" aria-label="当前页作品分级快速跳转">
-            {groups.map((group) => (
-              <a href={`#${rankAnchor(group.rank)}`} key={group.rank}>
-                {rankLabel(group.rank)} <span>{group.items.length}</span>
-              </a>
-            ))}
-          </nav>
-        ) : null}
+        {groups.length ? <nav className="rank-jump-list" id="works-rank-nav" aria-label="当前页作品分级快速跳转">{groups.map((group) => <a href={`#${rankAnchor(group.rank)}`} key={group.rank}>{rankLabel(group.rank)} <span>{group.items.length}</span></a>)}</nav> : null}
       </section>
 
       <details className="rank-explainer" aria-label="排雷分级说明">
-        <summary>
-          <span>分级说明</span>
-          <strong>如何理解这些分级？</strong>
-        </summary>
-        <p>分级用于帮助读者快速判断作品的大致排雷风险与阅读优先级，但不等于完整结论。实际判断仍应结合作品正文、标签、证据材料、页面提示与完整排雷规则综合理解。</p>
+        <summary><span>分级说明</span><strong>如何理解这些分级？</strong></summary>
+        <p>这里显示的是统一展示等级：人工已经确认时以人工正式等级为准；没有人工结论时显示 AI / 规则建议。卡片会明确标记来源，AI 建议不会冒充人工结论。</p>
         <div className="rank-explainer-grid">
-          {rankOrder.map((rank) => (
-            <article className="rank-explainer-card" key={rank}>
-              <h3>{rankLabel(rank)}</h3>
-              <p>{rankDescriptions[rank]}</p>
-            </article>
-          ))}
-          <Link className="rank-explainer-card rank-explainer-link" href="/rules">
-            <h3>完整规则</h3>
-            <p>查看排雷规则全文，了解 S / A / B / C / D / E / F / X 各级的完整判断边界。</p>
-          </Link>
+          {rankOrder.map((rank) => <article className="rank-explainer-card" key={rank}><h3>{rankLabel(rank)}</h3><p>{rankDescriptions[rank]}</p></article>)}
+          <Link className="rank-explainer-card rank-explainer-link" href="/rules"><h3>完整规则</h3><p>查看排雷规则全文，了解 S / A / B / C / D / E / F / X 各级的完整判断边界。</p></Link>
         </div>
       </details>
 
       <section className="ranked-collection-list">
         {groups.length === 0 ? (
-          <section className="empty-state small">
-            <h2>没有符合条件的作品</h2>
-            <p>可以放宽作品类型、分级或关键词筛选条件。</p>
-            <Link className="result-link" href="/works">清除筛选</Link>
-          </section>
-        ) : (
-          groups.map((group) => (
-            <section className="rank-group" id={rankAnchor(group.rank)} key={group.rank}>
-              <div className="rank-group-heading">
-                <h2>{rankLabel(group.rank)}</h2>
-                <span>{group.items.length} 条</span>
-              </div>
-
-              <div className="collection-grid work-title-only-grid">
-                {group.items.map((item) => {
-                  const visibilityLabel = contentVisibilityLabel(item.contentVisibility)
-                  const typeLabels = workTypeLabels(item)
-
-                  return (
-                    <Link className={`collection-card work-card work-title-only-card${showImages ? ' work-card-with-cover' : ''}`} data-content-visibility={item.contentVisibility || 'ordinary'} href={item.url} key={item.id}>
-                      {showImages ? (
-                        item.cover?.url
-                          ? <img alt={item.cover.alt || `${displayTitle(item)}封面`} className="work-card-cover" height={item.cover.height} loading="lazy" src={item.cover.url} width={item.cover.width} />
-                          : <span aria-hidden="true" className="work-card-cover work-card-cover-placeholder">百合</span>
-                      ) : null}
-                      <div className="work-card-copy">
-                        <div className="work-card-badges">
-                          <p>{rankLabel(item.rank)}</p>
-                          <span className="work-type-chip">{typeLabels.specific}</span>
-                          <AssessmentOriginBadge item={item} />
-                        </div>
-                        <h2>{displayTitle(item)}</h2>
-                        {typeLabels.group !== typeLabels.specific ? <small>{typeLabels.group}</small> : null}
-                        {visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}
+          <section className="empty-state small"><h2>没有符合条件的作品</h2><p>可以放宽作品类型、分级或关键词筛选条件。</p><Link className="result-link" href="/works">清除筛选</Link></section>
+        ) : groups.map((group) => (
+          <section className="rank-group" id={rankAnchor(group.rank)} key={group.rank}>
+            <div className="rank-group-heading"><h2>{rankLabel(group.rank)}</h2><span>{group.items.length} 条</span></div>
+            <div className="collection-grid work-title-only-grid">
+              {group.items.map((item) => {
+                const visibilityLabel = contentVisibilityLabel(item.contentVisibility)
+                const typeLabels = workTypeLabels(item)
+                const grade = displayedGrade(item)
+                return (
+                  <Link className={`collection-card work-card work-title-only-card${showImages ? ' work-card-with-cover' : ''}`} data-content-visibility={item.contentVisibility || 'ordinary'} href={item.url} key={item.id}>
+                    {showImages ? item.cover?.url
+                      ? <img alt={item.cover.alt || `${displayTitle(item)}封面`} className="work-card-cover" height={item.cover.height} loading="lazy" src={item.cover.url} width={item.cover.width} />
+                      : <span aria-hidden="true" className="work-card-cover work-card-cover-placeholder">百合</span> : null}
+                    <div className="work-card-copy">
+                      <div className="work-card-badges">
+                        <p>{rankLabel(grade.grade)}</p><span className="work-type-chip">{typeLabels.specific}</span><span className="work-type-chip">{effectiveWorkGradeLabel(grade.source)}</span><AssessmentOriginBadge item={item} />
                       </div>
-                    </Link>
-                  )
-                })}
-              </div>
-
-              <div className="rank-group-actions">
-                <a href="#works-rank-nav">返回分级导航</a>
-              </div>
-            </section>
-          ))
-        )}
+                      <h2>{displayTitle(item)}</h2>
+                      {typeLabels.group !== typeLabels.specific ? <small>{typeLabels.group}</small> : null}
+                      {visibilityLabel ? <span className="content-visibility-chip">{visibilityLabel}</span> : null}
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+            <div className="rank-group-actions"><a href="#works-rank-nav">返回分级导航</a></div>
+          </section>
+        ))}
       </section>
       <WorksPagination currentPage={currentPage} filters={filters} pageSize={pageSize} totalItems={items.length} totalPages={totalPages} />
     </main>
