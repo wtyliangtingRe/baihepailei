@@ -15,15 +15,15 @@ const exportWrapper = read('scripts/export/build-and-enrich-lite-detail-index.mj
 const exportNotices = read('scripts/export/enrich-stewardship-notices.mjs')
 const seed = read('scripts/import/seed-stewardship-notices-v01.mjs')
 
-test('stewardship notices are reusable records rather than fixed per-page text', () => {
+test('stewardship notices are reusable administrator-owned records rather than fixed per-page text', () => {
   assert.match(collection, /slug:\s*'stewardship-notices'/u)
   assert.match(collection, /name:\s*'summary'/u)
   assert.match(collection, /name:\s*'category'/u)
   assert.match(collection, /name:\s*'tone'/u)
   assert.match(collection, /name:\s*'severity'/u)
   assert.match(collection, /name:\s*'isPublic'/u)
-  assert.match(collection, /create:\s*editorsAndUp/u)
-  assert.match(collection, /update:\s*editorsAndUp/u)
+  assert.match(collection, /create:\s*adminsOnly/u)
+  assert.match(collection, /update:\s*adminsOnly/u)
   assert.match(collection, /delete:\s*adminsOnly/u)
 })
 
