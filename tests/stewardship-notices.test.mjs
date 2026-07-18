@@ -22,6 +22,8 @@ test('stewardship notices are reusable records rather than fixed per-page text',
   assert.match(collection, /name:\s*'tone'/u)
   assert.match(collection, /name:\s*'severity'/u)
   assert.match(collection, /name:\s*'isPublic'/u)
+  assert.match(collection, /create:\s*editorsAndUp/u)
+  assert.match(collection, /update:\s*editorsAndUp/u)
   assert.match(collection, /delete:\s*adminsOnly/u)
 })
 
