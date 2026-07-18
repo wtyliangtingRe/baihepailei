@@ -18,7 +18,12 @@ function nodeText(value: unknown): string {
 }
 
 export function richTextToPlainText(value: unknown) {
+  if (typeof value === 'string') return value.trim()
   if (!value || typeof value !== 'object') return ''
+
+  const fallback = (value as { plainText?: unknown }).plainText
+  if (typeof fallback === 'string' && fallback.trim()) return fallback.trim()
+
   const root = (value as { root?: unknown }).root || value
   return nodeText(root)
     .replace(/[ \t]+\n/gu, '\n')
