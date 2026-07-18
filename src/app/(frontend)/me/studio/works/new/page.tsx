@@ -34,10 +34,11 @@ type DuplicateCandidate = {
 }
 
 const staffRoles = new Set<Role>(['owner', 'admin', 'editor', 'reviewer'])
-const rankOptions = ['S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'trash', 'unknown']
-const mediaGroupOptions = ['anime', 'manga', 'novel', 'game', 'other', 'unknown']
-const mediaTypeOptions = ['anime', 'manga', 'novel', 'light_novel', 'visual_novel', 'game', 'audio_drama', 'live_action', 'webtoon', 'doujin', 'anthology', 'other', 'unknown']
-const formatOptions = ['tv_anime', 'anime_movie', 'ova', 'ona', 'manga_series', 'manga_oneshot', 'novel_series', 'light_novel_series', 'web_serial', 'visual_novel', 'pc_game', 'console_game', 'mobile_game', 'audio_drama', 'live_action', 'webtoon_series', 'doujin', 'anthology', 'other', 'unknown']
+const rankOptions = ['S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'trash', 'unknown'] as const
+const mediaGroupOptions = ['anime', 'manga', 'novel', 'game', 'other', 'unknown'] as const
+const mediaTypeOptions = ['anime', 'manga', 'novel', 'light_novel', 'visual_novel', 'game', 'audio_drama', 'live_action', 'webtoon', 'doujin', 'anthology', 'other', 'unknown'] as const
+const formatOptions = ['tv_anime', 'anime_movie', 'ova', 'ona', 'manga_series', 'manga_oneshot', 'novel_series', 'light_novel_series', 'web_serial', 'visual_novel', 'pc_game', 'console_game', 'mobile_game', 'audio_drama', 'live_action', 'webtoon_series', 'doujin', 'anthology', 'other', 'unknown'] as const
+const datePrecisionOptions = ['day', 'month', 'year', 'unknown'] as const
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] || '' : value || ''
@@ -55,6 +56,15 @@ function canEdit(user: unknown) {
 
 function text(value: FormDataEntryValue | null, max = 12000) {
   return String(value || '').trim().slice(0, max)
+}
+
+function enumValue<const T extends readonly string[]>(options: T, value: string): T[number] | null {
+  return (options as readonly string[]).includes(value) ? value as T[number] : null
+}
+
+function numericID(value: unknown) {
+  const number = Number(value)
+  return Number.isSafeInteger(number) && number > 0 ? number : null
 }
 
 function slugPart(value: string) {
@@ -90,15 +100,17 @@ async function createWorkAction(formData: FormData) {
 
   const title = text(formData.get('title'), 300)
   const originalTitle = text(formData.get('originalTitle'), 300)
-  const rank = text(formData.get('rank'), 40) || 'unknown'
-  const mediaGroup = text(formData.get('mediaGroup'), 40) || 'unknown'
-  const mediaType = text(formData.get('mediaType'), 40) || 'unknown'
-  const format = text(formData.get('format'), 60) || 'unknown'
+  const rank = enumValue(rankOptions, text(formData.get('rank'), 40) || 'unknown')
+  const mediaGroup = enumValue(mediaGroupOptions, text(formData.get('mediaGroup'), 40) || 'unknown')
+  const mediaType = enumValue(mediaTypeOptions, text(formData.get('mediaType'), 40) || 'unknown')
+  const format = enumValue(formatOptions, text(formData.get('format'), 60) || 'unknown')
+  const firstPublishedPrecision = enumValue(datePrecisionOptions, text(formData.get('firstPublishedPrecision'), 40) || 'unknown')
   const duplicateConfirmed = formData.get('duplicateConfirmed') === 'on'
-  const feedbackID = text(formData.get('feedbackId'), 40)
+  const feedbackIDText = text(formData.get('feedbackId'), 40)
+  const feedbackID = feedbackIDText ? numericID(feedbackIDText) : null
 
-  if (!title || !rankOptions.includes(rank) || !mediaGroupOptions.includes(mediaGroup) || !mediaTypeOptions.includes(mediaType) || !formatOptions.includes(format)) {
-    redirect(`/me/studio/works/new?createError=invalid_fields${feedbackID ? `&feedbackId=${encodeURIComponent(feedbackID)}` : ''}`)
+  if (!title || !rank || !mediaGroup || !mediaType || !format || !firstPublishedPrecision || (feedbackIDText && !feedbackID)) {
+    redirect(`/me/studio/works/new?createError=invalid_fields${feedbackIDText ? `&feedbackId=${encodeURIComponent(feedbackIDText)}` : ''}`)
   }
 
   const candidates = await payload.find({
@@ -113,13 +125,15 @@ async function createWorkAction(formData: FormData) {
   })
   if (candidates.docs.length && !duplicateConfirmed) {
     const params = new URLSearchParams({ duplicateWarning: 'true', q: title })
-    if (feedbackID) params.set('feedbackId', feedbackID)
+    if (feedbackID) params.set('feedbackId', String(feedbackID))
     redirect(`/me/studio/works/new?${params.toString()}`)
   }
 
   const token = randomUUID()
   const slug = `manual-${slugPart(title)}-${token.slice(0, 8)}`
-  const actorID = (auth.user as { id?: string | number }).id
+  const actorID = numericID((auth.user as { id?: string | number }).id)
+  if (!actorID) throw new Error('当前账户缺少有效的数字用户 ID，未创建作品。')
+
   const humanNote = text(formData.get('humanReviewNote'), 4000)
   const sourceLinks = sourceLinksFromText(formData.get('sourceLinks'))
   const evidenceNote = text(formData.get('evidenceNote'), 12000)
@@ -145,7 +159,7 @@ async function createWorkAction(formData: FormData) {
       mediaType,
       format,
       firstPublishedAt: text(formData.get('firstPublishedAt'), 40) || null,
-      firstPublishedPrecision: text(formData.get('firstPublishedPrecision'), 40) || 'unknown',
+      firstPublishedPrecision,
       firstPublishedLabel: text(formData.get('firstPublishedLabel'), 120),
       status: 'draft',
       isLiteVisible: false,
@@ -154,23 +168,25 @@ async function createWorkAction(formData: FormData) {
       sourceLinks,
       evidenceNote,
       searchText,
-      humanReviewNote: humanNote || `[${new Date().toISOString()}] 由站内内容管理创建草稿；actor=${actorID || 'unknown'}`,
+      humanReviewNote: humanNote || `[${new Date().toISOString()}] 由站内内容管理创建草稿；actor=${actorID}`,
       humanReviewedBy: actorID,
     },
-  }) as unknown as { id: string | number }
+  })
+  const createdID = numericID(created.id)
+  if (!createdID) throw new Error('Payload 已创建记录，但返回了无效作品 ID；未继续关联反馈。')
 
   if (feedbackID) {
     try {
       const feedback = await payload.findByID({ collection: 'feedback-submissions', id: feedbackID, depth: 0, overrideAccess: true }) as unknown as FeedbackDoc
       const previousNote = String(feedback.reviewNote || '').trim()
-      const note = `已创建待复核作品草稿 #${created.id}；尚未公开。`
+      const note = `已创建待复核作品草稿 #${createdID}；尚未公开。`
       await payload.update({
         collection: 'feedback-submissions',
         id: feedbackID,
         depth: 0,
         overrideAccess: true,
         data: {
-          linkedWork: created.id,
+          linkedWork: createdID,
           workflowStatus: 'accepted',
           reviewer: actorID,
           reviewedAt: new Date().toISOString(),
@@ -178,11 +194,11 @@ async function createWorkAction(formData: FormData) {
         },
       })
     } catch (error) {
-      console.error('Created work but could not link feedback', { feedbackID, workID: created.id, error })
+      console.error('Created work but could not link feedback', { feedbackID, workID: createdID, error })
     }
   }
 
-  redirect(`/me/studio/works/${created.id}?created=true&returnTo=${encodeURIComponent('/me/studio')}`)
+  redirect(`/me/studio/works/${createdID}?created=true&returnTo=${encodeURIComponent('/me/studio')}`)
 }
 
 function optionLabel(value: string) {
@@ -203,8 +219,10 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
   const query = first(raw.q)
   let feedback: FeedbackDoc | null = null
   if (feedbackID) {
+    const feedbackRecordID = numericID(feedbackID)
+    if (!feedbackRecordID) notFound()
     try {
-      feedback = await payload.findByID({ collection: 'feedback-submissions', id: feedbackID, depth: 0, overrideAccess: true }) as unknown as FeedbackDoc
+      feedback = await payload.findByID({ collection: 'feedback-submissions', id: feedbackRecordID, depth: 0, overrideAccess: true }) as unknown as FeedbackDoc
     } catch {
       notFound()
     }
@@ -216,7 +234,7 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
   const createError = first(raw.createError)
   const duplicateWarning = first(raw.duplicateWarning)
   const suggestedTitle = feedback?.targetTitle || query
-  const suggestedRank = rankOptions.includes(String(feedback?.proposedGrade || '')) ? String(feedback?.proposedGrade) : 'unknown'
+  const suggestedRank = rankOptions.includes(String(feedback?.proposedGrade || '') as typeof rankOptions[number]) ? String(feedback?.proposedGrade) : 'unknown'
   const feedbackSources = evidenceLinksToText(feedback?.evidenceLinks)
 
   return (
