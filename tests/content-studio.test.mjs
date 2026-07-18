@@ -89,6 +89,8 @@ test('work introduction and rating source summary are editable but remain separa
   assert.match(editor, /sourceSummary,/u)
   assert.match(richText, /richTextToPlainText/u)
   assert.match(richText, /plainTextToRichText/u)
+  assert.match(richText, /typeof value === 'string'/u)
+  assert.match(richText, /plainText\?: unknown/u)
 })
 
 test('studio edits synchronize public indexes and remove hidden records', () => {
