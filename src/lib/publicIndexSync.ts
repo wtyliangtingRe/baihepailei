@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import { clearDetailIndexCache, type DetailIndex, type DetailItem } from '../app/(frontend)/_lib/detail-index'
 import { clearSearchIndexCache, type SearchIndex, type SearchItem } from '../app/(frontend)/_lib/search-index'
+import { isMergedDuplicateWork, mergedWorkReference } from './mergedWork'
 import type { RadarAssessmentMetrics } from './radar/assessmentPresentation'
 import { richTextToPlainText } from './richTextPlain'
 
@@ -61,6 +62,7 @@ type WorkDoc = {
   warnings?: Relation[]
   hasEvidence?: boolean
   evidenceNote?: string
+  sourceConflictNotes?: string
   sourceLinks?: Array<{ label?: string; url?: string }>
   externalIds?: Record<string, unknown>
   searchText?: string
@@ -117,7 +119,7 @@ function stewardshipNoticeViews(values: WorkDoc['stewardshipNotices']): Stewards
       const title = text(value.title)
       const summary = text(value.summary)
       if (!title && !summary) return null
-      const notice: StewardshipNoticeView = {
+      return {
         id: value.id,
         slug: text(value.slug),
         title,
@@ -128,7 +130,6 @@ function stewardshipNoticeViews(values: WorkDoc['stewardshipNotices']): Stewards
         helpUrl: text(value.helpUrl),
         sortOrder: Number.isFinite(Number(value.sortOrder)) ? Number(value.sortOrder) : 100,
       }
-      return notice
     })
     .filter((value): value is StewardshipNoticeView => value !== null)
     .filter((value) => {
@@ -141,7 +142,9 @@ function stewardshipNoticeViews(values: WorkDoc['stewardshipNotices']): Stewards
 }
 
 function shouldRemoveFromPublicIndexes(work: WorkDoc) {
-  return work.status === 'archived' || (work.isLiteVisible === false && work.isFullVisible === false)
+  return isMergedDuplicateWork(work)
+    || work.status === 'archived'
+    || (work.isLiteVisible === false && work.isFullVisible === false)
 }
 
 function relationName(value: Relation | undefined) {
@@ -175,6 +178,7 @@ function searchBlob(work: WorkDoc, existing?: SearchItem) {
     notices.flatMap((notice) => [notice.title, notice.summary]),
     richTextToPlainText(work.summary),
     work.radarAssessment?.sourceSummary,
+    work.radarAssessment?.suggestedGrade,
     work.rank,
     work.mediaGroup,
     work.mediaType,
@@ -182,6 +186,7 @@ function searchBlob(work: WorkDoc, existing?: SearchItem) {
     work.firstPublishedLabel,
     work.searchText,
     work.evidenceNote,
+    work.sourceConflictNotes,
     Object.entries(work.externalIds || {}).flatMap(([key, value]) => [key, value]),
     (work.sourceLinks || []).flatMap((item) => [item.label, item.url]),
     existing?.searchText,
@@ -206,6 +211,7 @@ function searchPatch(work: WorkDoc, existing?: SearchItem): SearchItem {
   const recordID = String(work.id)
   const slug = text(work.slug) || existing?.slug || `work-${recordID}`
   const reasons = reviewReasonValues(work.reviewReasons)
+  const mergeTarget = mergedWorkReference(work)
   return {
     ...(existing || {}),
     id: existing?.id || `works:${slug}`,
@@ -221,6 +227,8 @@ function searchPatch(work: WorkDoc, existing?: SearchItem): SearchItem {
     evidenceStrength: text(work.evidenceStrength) || existing?.evidenceStrength || 'unassessed',
     ratingNotice: text(work.ratingNotice) || existing?.ratingNotice,
     reviewReasons: reasons.length ? reasons : existing?.reviewReasons,
+    radarAssessment: work.radarAssessment || existing?.radarAssessment,
+    mergedIntoWorkId: mergeTarget?.id,
     originalTitle: text(work.originalTitle) || existing?.originalTitle,
     aliases: aliases(work.aliases).length ? aliases(work.aliases) : existing?.aliases,
     localizedTitles: localizedTitles(work.localizedTitles).length ? localizedTitles(work.localizedTitles) : existing?.localizedTitles,
@@ -252,7 +260,7 @@ function detailPatch(work: WorkDoc, existing?: DetailItem): DetailItem {
   const reasons = reviewReasonValues(work.reviewReasons)
   const existingWithNotices = existing as DetailItemWithNotices | undefined
   const noticeValues = stewardshipNoticeViews(work.stewardshipNotices)
-  const next: DetailItemWithNotices = {
+  return {
     ...(existing || {}),
     id: existing?.id || `works:${slug}`,
     recordId: recordID,
@@ -284,13 +292,14 @@ function detailPatch(work: WorkDoc, existing?: DetailItem): DetailItem {
     hasEvidence: typeof work.hasEvidence === 'boolean' ? work.hasEvidence : existing?.hasEvidence,
     evidenceNote: text(work.evidenceNote) || existing?.evidenceNote,
     sourceLinks: Array.isArray(work.sourceLinks) ? work.sourceLinks : existing?.sourceLinks,
-    externalIds: work.externalIds ? Object.fromEntries(Object.entries(work.externalIds).map(([key, value]) => [key, text(value)]).filter(([, value]) => value)) : existing?.externalIds,
+    externalIds: work.externalIds
+      ? Object.fromEntries(Object.entries(work.externalIds).map(([key, value]) => [key, text(value)]).filter(([, value]) => value))
+      : existing?.externalIds,
     updatedAt: text(work.updatedAt) || new Date().toISOString(),
     createdAt: text(work.createdAt) || existing?.createdAt,
     sections: detailSections(work, existing),
     stewardshipNotices: Array.isArray(work.stewardshipNotices) ? noticeValues : existingWithNotices?.stewardshipNotices,
-  }
-  return next
+  } as DetailItemWithNotices
 }
 
 function updateSearch(work: WorkDoc): SyncResult['search'] {
