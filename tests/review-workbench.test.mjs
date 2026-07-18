@@ -8,6 +8,7 @@ const contentPage = read('src/app/(frontend)/me/review/content/page.tsx')
 const legacyWorkEditorRedirect = read('src/app/(frontend)/me/review/content/works/[id]/page.tsx')
 const studioWorkEditor = read('src/app/(frontend)/me/studio/works/[id]/page.tsx')
 const reviewUtils = read('src/app/(frontend)/me/review/content/review-utils.ts')
+const mergedWork = read('src/lib/mergedWork.ts')
 const feedbackPage = read('src/app/(frontend)/me/review/feedback/page.tsx')
 const feedbackDetailPage = read('src/app/(frontend)/me/review/feedback/[id]/page.tsx')
 const works = read('src/collections/Works.ts')
@@ -16,6 +17,13 @@ const organizations = read('src/collections/Organizations.ts')
 const reviewFields = read('src/collections/fields/contentReview.ts')
 const css = read('src/app/(frontend)/review-workbench.css')
 const editorCss = read('src/app/(frontend)/review-editor.css')
+
+function functionBody(source, name, nextName) {
+  const start = source.indexOf(`async function ${name}`)
+  const end = source.indexOf(`async function ${nextName}`, start + 1)
+  assert.notEqual(start, -1, `missing function ${name}`)
+  return source.slice(start, end === -1 ? source.length : end)
+}
 
 test('review workbench is paginated and queries the database', () => {
   assert.match(page, /limit: filters\.perPage/u)
@@ -71,9 +79,12 @@ test('content review defaults to a pending queue and keeps processed history sep
   assert.match(editorCss, /\.review-queue-tabs/u)
 })
 
-test('merged duplicate works are guarded before Payload updates', () => {
-  assert.match(reviewUtils, /mergedIntoWorkId/u)
-  assert.match(reviewUtils, /duplicate of work/u)
+test('merged duplicate works require explicit markers or retired legacy rows', () => {
+  assert.match(reviewUtils, /from '@\/lib\/mergedWork'/u)
+  assert.match(mergedWork, /mergedIntoWorkId/u)
+  assert.match(mergedWork, /mergedIntoWorkTitle/u)
+  assert.match(mergedWork, /doc\.reviewStatus === 'deprecated' \|\| doc\.status === 'archived'/u)
+  assert.match(mergedWork, /duplicate of work/u)
   assert.match(contentPage, /isMergedDuplicateWork\(current\)/u)
   assert.match(contentPage, /reviewError', 'merged_duplicate'/u)
   assert.match(contentPage, /这个旧条目已经合并，不可继续保存或审核/u)
