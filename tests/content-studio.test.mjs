@@ -10,6 +10,7 @@ const legacyEditor = read('src/app/(frontend)/me/review/content/works/[id]/page.
 const account = read('src/app/(frontend)/_components/AccountClient.tsx')
 const feedback = read('src/app/(frontend)/me/review/feedback/[id]/page.tsx')
 const sync = read('src/lib/publicIndexSync.ts')
+const richText = read('src/lib/richTextPlain.ts')
 const guards = read('src/app/(frontend)/_lib/public-entity-guards.ts')
 const config = read('payload.config.ts')
 const fullExport = read('scripts/export/build-full-public-index.mjs')
@@ -78,6 +79,18 @@ test('legacy review editor links redirect into the studio', () => {
   assert.doesNotMatch(legacyEditor, /payload\.update/u)
 })
 
+test('work introduction and rating source summary are editable but remain separate fields', () => {
+  assert.match(editor, /name="summary"/u)
+  assert.match(editor, /name="sourceSummary"/u)
+  assert.match(editor, /作品简介（面向读者）/u)
+  assert.match(editor, /来源摘要（AI \/ 规则评级依据）/u)
+  assert.match(editor, /data\.summary = plainTextToRichText/u)
+  assert.match(editor, /data\.radarAssessment/u)
+  assert.match(editor, /sourceSummary,/u)
+  assert.match(richText, /richTextToPlainText/u)
+  assert.match(richText, /plainTextToRichText/u)
+})
+
 test('studio edits synchronize public indexes and remove hidden records', () => {
   assert.match(editor, /syncWorkToPublicIndexes/u)
   assert.match(config, /context\?\.firstPartyStudio/u)
@@ -85,6 +98,10 @@ test('studio edits synchronize public indexes and remove hidden records', () => 
   assert.match(sync, /detail-index\.json/u)
   assert.match(sync, /status: text\(work\.status\)/u)
   assert.match(sync, /reviewReasonValues/u)
+  assert.match(sync, /detailSections/u)
+  assert.match(sync, /radarAssessment: work\.radarAssessment/u)
+  assert.match(sync, /richTextToPlainText\(work\.summary\)/u)
+  assert.match(sync, /work\.radarAssessment\?\.sourceSummary/u)
   assert.match(sync, /shouldRemoveFromPublicIndexes/u)
   assert.match(sync, /work\.isLiteVisible === false && work\.isFullVisible === false/u)
   assert.match(sync, /index\.items\.splice\(position, 1\)/u)
