@@ -101,9 +101,10 @@ export function clearSearchIndexCache() {
 
 function isRetiredWork(item: SearchItem) {
   if (item.collection !== 'works') return false
-  if (item.mergedIntoWorkId) return true
+  const currentID = String(item.recordId || item.id)
+  if (item.mergedIntoWorkId && item.mergedIntoWorkId !== currentID) return true
   return isMergedDuplicateWork({
-    id: item.recordId || item.id,
+    id: currentID,
     reviewStatus: item.reviewStatus,
     status: item.status,
     searchText: item.searchText,
