@@ -103,6 +103,7 @@ function isRetiredWork(item: SearchItem) {
   if (item.collection !== 'works') return false
   if (item.mergedIntoWorkId) return true
   return isMergedDuplicateWork({
+    id: item.recordId || item.id,
     reviewStatus: item.reviewStatus,
     status: item.status,
     searchText: item.searchText,
