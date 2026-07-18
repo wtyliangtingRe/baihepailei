@@ -34,6 +34,15 @@ type LocalizedTitle = {
   source?: string
   note?: string
 }
+type StewardshipNoticeDoc = {
+  id?: string | number
+  title?: string
+  slug?: string
+  category?: string
+  severity?: string
+  summary?: string
+  sortOrder?: number
+}
 type WorkDoc = {
   id: string | number
   title?: string
@@ -41,6 +50,7 @@ type WorkDoc = {
   originalTitle?: string
   aliases?: Array<{ value?: string } | string>
   localizedTitles?: LocalizedTitle[]
+  stewardshipNotices?: Array<string | number | StewardshipNoticeDoc>
   mediaGroup?: string
   mediaType?: string
   format?: string
@@ -125,6 +135,19 @@ function reviewReasons(value: WorkDoc['reviewReasons']) {
   if (Array.isArray(value)) return value.map(String).map((item) => item.trim()).filter(Boolean)
   if (typeof value === 'string') return value.split(/[;|,]/u).map((item) => item.trim()).filter(Boolean)
   return []
+}
+
+function relationID(value: string | number | StewardshipNoticeDoc) {
+  if (value && typeof value === 'object') return String(value.id || '')
+  return String(value || '')
+}
+
+function relationIDs(values: WorkDoc['stewardshipNotices']) {
+  return [...new Set((values || []).map(relationID).filter(Boolean))]
+}
+
+function submittedRelationIDs(formData: FormData, name: string) {
+  return [...new Set(formData.getAll(name).map((value) => String(value).trim()).filter(/^\d+$/u.test.bind(/^\d+$/u)).map(Number))]
 }
 
 function dateInputValue(value?: string) {
@@ -254,6 +277,9 @@ async function saveStudioWorkAction(formData: FormData) {
       officialUrl: text(formData.get('officialUrl'), 1000),
     },
   }
+  if (formData.get('stewardshipNoticeSelectorReady') === 'true') {
+    data.stewardshipNotices = submittedRelationIDs(formData, 'stewardshipNotices')
+  }
   if (!archived && reviewStatus !== 'pending') {
     data.humanReviewedAt = new Date().toISOString()
     data.humanReviewedBy = actorID
@@ -290,6 +316,8 @@ async function saveStudioWorkAction(formData: FormData) {
   revalidatePath('/me/studio')
   revalidatePath('/works')
   revalidatePath('/search')
+  revalidatePath('/terms')
+  revalidatePath('/transparency')
   revalidatePath(canonicalContentUrl('works', id))
   revalidatePath(`/me/studio/works/${id}`)
   redirect(editorHref(id, returnTo, { saved: 'true', sync: syncStatus }))
@@ -312,6 +340,25 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
     notFound()
   }
 
+  let notices: StewardshipNoticeDoc[] = []
+  let noticeSelectorReady = false
+  try {
+    const result = await payload.find({
+      collection: 'stewardship-notices' as never,
+      depth: 0,
+      limit: 200,
+      pagination: false,
+      overrideAccess: true,
+      sort: 'sortOrder',
+      where: { isPublic: { equals: true } },
+    }) as unknown as { docs?: StewardshipNoticeDoc[] }
+    notices = result.docs || []
+    noticeSelectorReady = true
+  } catch {
+    noticeSelectorReady = false
+  }
+
+  const selectedNoticeIDs = relationIDs(work.stewardshipNotices)
   const merged = mergedWorkReference(work)
   const editorError = first(rawSearch.editorError)
   const saved = first(rawSearch.saved)
@@ -346,6 +393,7 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
 
       <form action={saveStudioWorkAction} className="review-editor-form">
         <input name="id" type="hidden" value={String(work.id)} /><input name="returnTo" type="hidden" value={returnTo} />
+        {noticeSelectorReady ? <input name="stewardshipNoticeSelectorReady" type="hidden" value="true" /> : null}
 
         <EditorSection title="基础身份与多语言标题" description="标题、别名和多语言名称会直接参与前台显示、搜索和跨来源去重。">
           <Field wide label="显示标题"><input defaultValue={work.title || ''} maxLength={300} name="title" required /></Field>
@@ -358,6 +406,18 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
           <Field label="首次日期"><input defaultValue={dateInputValue(work.firstPublishedAt)} name="firstPublishedAt" type="date" /></Field>
           <Field label="日期精度"><Select name="firstPublishedPrecision" options={['day', 'month', 'year', 'unknown']} value={work.firstPublishedPrecision || 'unknown'} /></Field>
           <Field label="日期显示文本"><input defaultValue={work.firstPublishedLabel || ''} maxLength={120} name="firstPublishedLabel" /></Field>
+        </EditorSection>
+
+        <EditorSection title="站务与用语提示（可选）" description="只在特殊情况下使用。可以不选，也可以同时选择多条；提示会显示在作品标题与基础资料之间。">
+          {noticeSelectorReady ? (
+            <Field wide label="关联提示">
+              <select className="review-editor-multiselect" defaultValue={selectedNoticeIDs} multiple name="stewardshipNotices" size={Math.min(12, Math.max(4, notices.length))}>
+                {notices.map((notice) => <option key={String(notice.id)} value={String(notice.id)}>{notice.title || notice.slug || `提示 #${notice.id}`} · {notice.category || 'operation'} · {notice.severity || 'low'}</option>)}
+              </select>
+              <small className="review-editor-selection-help">按住 Ctrl（Windows）或 Command（macOS）可选择多条。提示库为空时，可先在站务后台导入或新增提示。</small>
+            </Field>
+          ) : <p className="review-editor-field review-editor-field-wide">站务提示集合尚未完成数据库迁移，因此本次保存不会清空现有提示关系。</p>}
+          <div className="review-row-actions"><Link className="review-link" href="/terms">查看站务与用语</Link><Link className="review-link" href="/transparency">透明度报告</Link></div>
         </EditorSection>
 
         <EditorSection title="正式分级、发布与可见性" description="这里保存正式网站状态，不是 AI 建议。发布状态与人工复核状态分开。">
