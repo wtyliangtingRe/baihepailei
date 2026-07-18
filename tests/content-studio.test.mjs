@@ -30,12 +30,15 @@ test('members can only submit new-work proposals while staff can edit', () => {
   assert.match(editor, /没有作品编辑权限/u)
 })
 
-test('staff creation produces a hidden pending draft and can link feedback', () => {
+test('staff creation produces a hidden pending draft and links feedback with numeric IDs', () => {
   assert.match(create, /status: 'draft'/u)
   assert.match(create, /reviewStatus: 'pending'/u)
   assert.match(create, /isLiteVisible: false/u)
   assert.match(create, /isFullVisible: false/u)
-  assert.match(create, /linkedWork: created\.id/u)
+  assert.match(create, /const actorID = numericID/u)
+  assert.match(create, /const createdID = numericID\(created\.id\)/u)
+  assert.match(create, /linkedWork: createdID/u)
+  assert.match(create, /reviewer: actorID/u)
   assert.match(feedback, /检查重复并创建草稿/u)
 })
 
@@ -59,6 +62,7 @@ test('studio edits synchronize existing public indexes and hide archived works',
   assert.match(sync, /search-index\.json/u)
   assert.match(sync, /detail-index\.json/u)
   assert.match(sync, /status: text\(work\.status\)/u)
+  assert.match(sync, /reviewReasonValues/u)
   assert.match(guards, /item\.status === 'archived'/u)
   assert.match(fullExport, /enrich-public-work-status\.mjs/u)
 })
