@@ -46,10 +46,9 @@ export function effectiveWorkGrade(item: WorkGradeInput): EffectiveWorkGrade {
     return { grade: suggestedGrade, source: 'ai', humanReviewed: false }
   }
 
-  // Older AI-assisted rows often stored the recommendation only in rank.
-  const hasLegacyAISignal = item.ratingNotice === 'ai_synthesized_pending_review'
-    || Boolean(item.radarAssessment?.assessedAt || item.researchPreview)
-  if (hasLegacyAISignal && storedGrade !== 'unknown') {
+  // Before formal human confirmation, historical rank values are recommendations,
+  // not official ratings. Keep them visible as AI / legacy suggestions.
+  if (storedGrade !== 'unknown') {
     return { grade: storedGrade, source: 'ai_legacy', humanReviewed: false }
   }
 
