@@ -5,7 +5,15 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getPayload, type Where } from 'payload'
 
-import { aliasesFromText, sourceLinksFromText } from '../../../review/content/review-utils'
+import RadarRuleSelector from '../../../../_components/RadarRuleSelector'
+import PendingSubmitButton from '../../_components/PendingSubmitButton'
+import {
+  RADAR_RATING_POLICY_ID,
+  radarClassDefinitions,
+  type RadarRatingClass,
+} from '@/lib/radar/ratingPolicy'
+
+import { aliasesFromText, safeReviewReturnTo, sourceLinksFromText } from '../../../review/content/review-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +24,7 @@ type FeedbackDoc = {
   feedbackType?: string
   targetTitle?: string
   proposedGrade?: string
+  matchedRuleCodes?: Array<{ code?: string }>
   claim?: string
   evidenceSummary?: string
   evidenceLinks?: Array<{ label?: string; url?: string }>
@@ -39,6 +48,7 @@ const mediaGroupOptions = ['anime', 'manga', 'novel', 'game', 'other', 'unknown'
 const mediaTypeOptions = ['anime', 'manga', 'novel', 'light_novel', 'visual_novel', 'game', 'audio_drama', 'live_action', 'webtoon', 'doujin', 'anthology', 'other', 'unknown'] as const
 const formatOptions = ['tv_anime', 'anime_movie', 'ova', 'ona', 'manga_series', 'manga_oneshot', 'novel_series', 'light_novel_series', 'web_serial', 'visual_novel', 'pc_game', 'console_game', 'mobile_game', 'audio_drama', 'live_action', 'webtoon_series', 'doujin', 'anthology', 'other', 'unknown'] as const
 const datePrecisionOptions = ['day', 'month', 'year', 'unknown'] as const
+const validRuleCodes = new Set(Object.keys(radarClassDefinitions))
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] || '' : value || ''
@@ -80,6 +90,15 @@ function evidenceLinksToText(value: FeedbackDoc['evidenceLinks']) {
   return value.map((item) => item?.url ? `${item.label ? `${item.label} | ` : ''}${item.url}` : '').filter(Boolean).join('\n')
 }
 
+function feedbackRuleCodes(value: FeedbackDoc['matchedRuleCodes']) {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.map((item) => String(item?.code || '').trim()).filter((code) => validRuleCodes.has(code)))]
+}
+
+function submittedRuleCodes(formData: FormData) {
+  return [...new Set(formData.getAll('matchedRuleCodes').map(String).map((code) => code.trim()).filter((code) => validRuleCodes.has(code)))] as RadarRatingClass[]
+}
+
 function candidateWhere(title: string, originalTitle: string): Where {
   const or: Where[] = [
     { title: { like: title } },
@@ -92,6 +111,10 @@ function candidateWhere(title: string, originalTitle: string): Where {
   return { or }
 }
 
+function withCreatedWork(returnTo: string, workID: number) {
+  return `${returnTo}${returnTo.includes('?') ? '&' : '?'}createdWork=${encodeURIComponent(String(workID))}`
+}
+
 async function createWorkAction(formData: FormData) {
   'use server'
   const payload = await getPayload({ config: configPromise })
@@ -100,7 +123,7 @@ async function createWorkAction(formData: FormData) {
 
   const title = text(formData.get('title'), 300)
   const originalTitle = text(formData.get('originalTitle'), 300)
-  const rank = enumValue(rankOptions, text(formData.get('rank'), 40) || 'unknown')
+  const requestedRank = enumValue(rankOptions, text(formData.get('rank'), 40) || 'unknown')
   const mediaGroup = enumValue(mediaGroupOptions, text(formData.get('mediaGroup'), 40) || 'unknown')
   const mediaType = enumValue(mediaTypeOptions, text(formData.get('mediaType'), 40) || 'unknown')
   const format = enumValue(formatOptions, text(formData.get('format'), 60) || 'unknown')
@@ -108,8 +131,15 @@ async function createWorkAction(formData: FormData) {
   const duplicateConfirmed = formData.get('duplicateConfirmed') === 'on'
   const feedbackIDText = text(formData.get('feedbackId'), 40)
   const feedbackID = feedbackIDText ? numericID(feedbackIDText) : null
+  const defaultReturnTo = feedbackID ? `/me/review/feedback/${feedbackID}` : '/me/studio'
+  const requestedReturnTo = text(formData.get('returnTo'), 1000)
+  const returnTo = requestedReturnTo ? safeReviewReturnTo(requestedReturnTo) : defaultReturnTo
+  const decisiveRuleCodeText = text(formData.get('decisiveRuleCode'), 80)
+  const decisiveRuleCode = validRuleCodes.has(decisiveRuleCodeText) ? decisiveRuleCodeText as RadarRatingClass : null
+  const matchedRuleCodes = submittedRuleCodes(formData)
+  const orderedRuleCodes = [...new Set([decisiveRuleCode, ...matchedRuleCodes].filter(Boolean))] as RadarRatingClass[]
 
-  if (!title || !rank || !mediaGroup || !mediaType || !format || !firstPublishedPrecision || (feedbackIDText && !feedbackID)) {
+  if (!title || !requestedRank || !mediaGroup || !mediaType || !format || !firstPublishedPrecision || (feedbackIDText && !feedbackID)) {
     redirect(`/me/studio/works/new?createError=invalid_fields${feedbackIDText ? `&feedbackId=${encodeURIComponent(feedbackIDText)}` : ''}`)
   }
 
@@ -124,7 +154,7 @@ async function createWorkAction(formData: FormData) {
     where: candidateWhere(title, originalTitle),
   })
   if (candidates.docs.length && !duplicateConfirmed) {
-    const params = new URLSearchParams({ duplicateWarning: 'true', q: title })
+    const params = new URLSearchParams({ duplicateWarning: 'true', q: title, returnTo })
     if (feedbackID) params.set('feedbackId', String(feedbackID))
     redirect(`/me/studio/works/new?${params.toString()}`)
   }
@@ -138,6 +168,8 @@ async function createWorkAction(formData: FormData) {
   const sourceLinks = sourceLinksFromText(formData.get('sourceLinks'))
   const evidenceNote = text(formData.get('evidenceNote'), 12000)
   const searchText = text(formData.get('searchText'), 30000)
+  const derivedRank = decisiveRuleCode ? radarClassDefinitions[decisiveRuleCode].grade : requestedRank
+  const hasRuleSuggestion = orderedRuleCodes.length > 0
 
   const created = await payload.create({
     collection: 'works',
@@ -151,9 +183,9 @@ async function createWorkAction(formData: FormData) {
       aliases: aliasesFromText(formData.get('aliases')),
       slug,
       siteId: `manual:${token}`,
-      rank,
+      rank: derivedRank,
       reviewStatus: 'pending',
-      ratingNotice: 'none',
+      ratingNotice: hasRuleSuggestion ? 'ai_synthesized_pending_review' : 'none',
       evidenceStrength: 'unassessed',
       mediaGroup,
       mediaType,
@@ -170,6 +202,18 @@ async function createWorkAction(formData: FormData) {
       searchText,
       humanReviewNote: humanNote || `[${new Date().toISOString()}] 由站内内容管理创建草稿；actor=${actorID}`,
       humanReviewedBy: actorID,
+      ...(hasRuleSuggestion ? {
+        radarAssessment: {
+          policyVersion: RADAR_RATING_POLICY_ID,
+          suggestedGrade: derivedRank,
+          decisiveRuleCode: decisiveRuleCode || undefined,
+          matchedRules: orderedRuleCodes.map((code) => ({
+            code,
+            grade: radarClassDefinitions[code].grade,
+          })),
+          requiresHumanReview: true,
+        },
+      } : {}),
     },
   })
   const createdID = numericID(created.id)
@@ -198,7 +242,7 @@ async function createWorkAction(formData: FormData) {
     }
   }
 
-  redirect(`/me/studio/works/${createdID}?created=true&returnTo=${encodeURIComponent('/me/studio')}`)
+  redirect(withCreatedWork(returnTo, createdID))
 }
 
 function optionLabel(value: string) {
@@ -217,6 +261,8 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
   const raw = await searchParams
   const feedbackID = first(raw.feedbackId)
   const query = first(raw.q)
+  const defaultReturnTo = feedbackID ? `/me/review/feedback/${feedbackID}` : '/me/studio'
+  const returnTo = safeReviewReturnTo(first(raw.returnTo) || defaultReturnTo)
   let feedback: FeedbackDoc | null = null
   if (feedbackID) {
     const feedbackRecordID = numericID(feedbackID)
@@ -236,6 +282,8 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
   const suggestedTitle = feedback?.targetTitle || query
   const suggestedRank = rankOptions.includes(String(feedback?.proposedGrade || '') as typeof rankOptions[number]) ? String(feedback?.proposedGrade) : 'unknown'
   const feedbackSources = evidenceLinksToText(feedback?.evidenceLinks)
+  const initialRuleCodes = feedbackRuleCodes(feedback?.matchedRuleCodes)
+  const initialDecisiveRuleCode = initialRuleCodes[0] || ''
 
   return (
     <main className="page review-workbench review-editor-page studio-create-page">
@@ -243,13 +291,13 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
         <div className="review-hero-copy">
           <p className="eyebrow">站内内容管理</p>
           <h1>创建作品草稿</h1>
-          <p className="muted">工作人员可以直接建档，但新作品默认不可见、待复核、未发布。先检查重复作品，再补齐资料和人工结论。</p>
-          <div className="review-safety-note">这一步只通过 Payload 创建一个可追踪草稿，不执行 PostgreSQL 直写，也不会自动把用户建议当成正式评级。</div>
+          <p className="muted">工作人员可以直接建档，但新作品默认不可见、待复核、未发布。先检查重复作品，再补齐资料和规则建议。</p>
+          <div className="review-safety-note">提交后会返回上一级并显示新作品 ID。按钮在创建过程中会禁用，避免重复建档。</div>
         </div>
       </section>
 
-      {feedback ? <div className="review-action-message" role="status">正在处理用户新作品申请 #{feedback.id}：{feedback.targetTitle || '未命名作品'}。创建成功后会自动关联该反馈。</div> : null}
-      {createError ? <div className="review-action-message review-action-message-error" role="alert">必填字段无效，请检查标题、作品类型和分级。</div> : null}
+      {feedback ? <div className="review-action-message" role="status">正在处理用户新作品申请 #{feedback.id}：{feedback.targetTitle || '未命名作品'}。创建成功后会自动关联该反馈并返回本页上一级。</div> : null}
+      {createError ? <div className="review-action-message review-action-message-error" role="alert">必填字段无效，请检查标题、作品类型、规则和分级。</div> : null}
       {duplicateWarning ? <div className="review-action-message review-action-message-error" role="alert">发现可能重复的现有作品。请先核对下方候选；确认不是重复项后，再勾选“仍然创建”。</div> : null}
 
       {duplicateCandidates.length ? (
@@ -263,12 +311,13 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
 
       <form action={createWorkAction} className="review-editor-form">
         <input name="feedbackId" type="hidden" value={feedbackID} />
+        <input name="returnTo" type="hidden" value={returnTo} />
         <section className="review-editor-section">
           <header><h2>基础身份</h2><p>公开网址使用创建后的数据库 ID；Slug 只作为兼容字段自动生成。</p></header>
           <div className="review-editor-grid">
             <label className="review-editor-field review-editor-field-wide"><span>显示标题</span><input defaultValue={suggestedTitle} maxLength={300} name="title" required /></label>
             <label className="review-editor-field"><span>原始标题</span><input maxLength={300} name="originalTitle" /></label>
-            <label className="review-editor-field"><span>正式分级初值</span><select defaultValue={suggestedRank} name="rank">{rankOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></label>
+            <label className="review-editor-field"><span>建议分级初值</span><select defaultValue={suggestedRank} name="rank">{rankOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select><small>尚未人工复核时只是建议；指定主规则后以主规则等级为准。</small></label>
             <label className="review-editor-field"><span>作品大类</span><select defaultValue="unknown" name="mediaGroup">{mediaGroupOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></label>
             <label className="review-editor-field"><span>作品类型</span><select defaultValue="unknown" name="mediaType">{mediaTypeOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></label>
             <label className="review-editor-field"><span>作品形态</span><select defaultValue="unknown" name="format">{formatOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></label>
@@ -277,6 +326,11 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
             <label className="review-editor-field"><span>日期显示文本</span><input maxLength={120} name="firstPublishedLabel" /></label>
             <label className="review-editor-field review-editor-field-wide"><span>别名（每行一个）</span><textarea defaultValue={feedback?.evidenceSummary || ''} name="aliases" placeholder={'中文译名\n日本語タイトル\nEnglish title'} /></label>
           </div>
+        </section>
+
+        <section className="review-editor-section">
+          <header><h2>主规则与全部命中规则</h2><p>从反馈创建时会自动继承用户建议；这里只形成待人工复核的规则建议，不是正式人工裁决。</p></header>
+          <RadarRuleSelector initialDecisiveRuleCode={initialDecisiveRuleCode} initialMatchedRuleCodes={initialRuleCodes} />
         </section>
 
         <section className="review-editor-section">
@@ -290,7 +344,7 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
         </section>
 
         <label className="review-editor-check"><input defaultChecked={Boolean(duplicateWarning)} name="duplicateConfirmed" type="checkbox" /><span>我已核对可能重复的现有作品，确认仍应创建一个独立草稿。</span></label>
-        <div className="review-editor-submit"><button className="review-button review-button-primary" type="submit">创建待复核草稿</button><Link className="review-link" href={feedbackID ? `/me/review/feedback/${feedbackID}` : '/me/studio'}>取消</Link></div>
+        <div className="review-editor-submit"><PendingSubmitButton idleLabel="创建待复核草稿" pendingLabel="正在创建，请勿重复点击……" /><Link className="review-link" href={returnTo}>取消并返回上一级</Link></div>
       </form>
     </main>
   )
