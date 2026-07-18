@@ -36,11 +36,11 @@ test('detail page may keep the compatibility component because it renders nothin
   assert.ok(detailComponent.includes('<WorkRiskMatrixCard item={item} />'))
 })
 
-test('legacy matrix stylesheet is no longer loaded and editor controls are hidden', () => {
+test('legacy matrix stylesheet is retired without hiding current editor sections by position', () => {
   assert.doesNotMatch(layout, /work-risk-matrix\.css/u)
   assert.match(layout, /review-editor-retirements\.css/u)
-  assert.match(retirements, /nth-of-type\(3\)/u)
-  assert.match(retirements, /display:\s*none/u)
+  assert.doesNotMatch(retirements, /nth-of-type\(3\)/u)
+  assert.match(retirements, /review-editor-page:has/u)
 })
 
 test('export keeps existing matrix values without running the retired enrichment step', () => {
