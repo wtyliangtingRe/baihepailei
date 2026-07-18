@@ -90,7 +90,7 @@ test('new work proposals and staff drafts share main and all-matched rule contro
   assert.match(create, /RADAR_RATING_POLICY_ID/u)
   assert.match(create, /decisiveRuleCode/u)
   assert.match(create, /matchedRules: orderedRuleCodes/u)
-  assert.match(create, /suggestedGrade: derivedRank/u)
+  assert.match(create, /suggestedGrade: suggestedRuleGrade/u)
   assert.match(feedback, /主规则 \/ 决定性规则/u)
   assert.match(feedback, /全部命中规则/u)
 })
