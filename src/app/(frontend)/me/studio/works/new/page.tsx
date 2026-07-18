@@ -13,6 +13,7 @@ import {
   type RadarGrade,
   type RadarRatingClass,
 } from '@/lib/radar/ratingPolicy'
+import { plainTextToRichText } from '@/lib/richTextPlain'
 
 import { aliasesFromText, safeReviewReturnTo, sourceLinksFromText } from '../../../review/content/review-utils'
 
@@ -166,6 +167,7 @@ async function createWorkAction(formData: FormData) {
   const actorID = numericID((auth.user as { id?: string | number }).id)
   if (!actorID) throw new Error('当前账户缺少有效的数字用户 ID，未创建作品。')
 
+  const summary = text(formData.get('summary'), 12000)
   const humanNote = text(formData.get('humanReviewNote'), 4000)
   const sourceLinks = sourceLinksFromText(formData.get('sourceLinks'))
   const evidenceNote = text(formData.get('evidenceNote'), 12000)
@@ -185,6 +187,7 @@ async function createWorkAction(formData: FormData) {
       title,
       originalTitle,
       aliases: aliasesFromText(formData.get('aliases')),
+      ...(summary ? { summary: plainTextToRichText(summary) } : {}),
       slug,
       siteId: `manual:${token}`,
       rank: derivedRank,
@@ -333,7 +336,14 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
         </section>
 
         <section className="review-editor-section">
-          <header><h2>主规则与全部命中规则</h2><p>从反馈创建时会自动继承用户建议；这里只形成待人工复核的规则建议，不是正式人工裁决。</p></header>
+          <header><h2>作品简介</h2><p>面向读者介绍题材、设定和故事前提；不要在这里写评级结论或证据判断。</p></header>
+          <div className="review-editor-grid">
+            <label className="review-editor-field review-editor-field-wide"><span>作品简介（面向读者）</span><textarea maxLength={12000} name="summary" placeholder="简要介绍作品的故事、主要角色和基本设定。创建后仍可在完整编辑页继续修改。" /></label>
+          </div>
+        </section>
+
+        <section className="review-editor-section">
+          <header><h2>主规则（单选）与全部命中规则（多选）</h2><p>主规则决定建议等级；全部命中规则可同时保留多个成立的注意点。从反馈创建时会自动继承用户建议。</p></header>
           <RadarRuleSelector initialDecisiveRuleCode={initialDecisiveRuleCode} initialMatchedRuleCodes={initialRuleCodes} />
         </section>
 
