@@ -16,6 +16,8 @@ type WorkDoc = {
   ratingNotice?: string
   reviewReasons?: string[] | string
   status?: string
+  isLiteVisible?: boolean
+  isFullVisible?: boolean
   aliases?: Array<string | { value?: string }>
   localizedTitles?: Array<string | { title?: string }>
   mediaGroup?: string
@@ -75,6 +77,10 @@ function reviewReasonValues(value: WorkDoc['reviewReasons']) {
   if (Array.isArray(value)) return unique(value)
   if (typeof value === 'string') return unique(value.split(/[;|,]/u))
   return []
+}
+
+function shouldRemoveFromPublicIndexes(work: WorkDoc) {
+  return work.status === 'archived' || (work.isLiteVisible === false && work.isFullVisible === false)
 }
 
 function relationName(value: Relation | undefined) {
@@ -212,9 +218,12 @@ function updateSearch(work: WorkDoc): SyncResult['search'] {
   if (!fs.existsSync(searchPath)) return 'missing'
   const index = JSON.parse(fs.readFileSync(searchPath, 'utf8')) as SearchIndex
   const position = index.items.findIndex((item) => item.collection === 'works' && String(item.recordId || '') === String(work.id))
-  if (position < 0 && work.status !== 'published') return 'skipped'
-  if (position >= 0) index.items[position] = searchPatch(work, index.items[position])
-  else index.items.push(searchPatch(work))
+  if (shouldRemoveFromPublicIndexes(work)) {
+    if (position < 0) return 'skipped'
+    index.items.splice(position, 1)
+  } else if (position >= 0) index.items[position] = searchPatch(work, index.items[position])
+  else if (work.status === 'published') index.items.push(searchPatch(work))
+  else return 'skipped'
   index.generatedAt = new Date().toISOString()
   index.counts = countByCollection(index.items)
   index.total = index.items.length
@@ -227,9 +236,12 @@ function updateDetail(work: WorkDoc): SyncResult['detail'] {
   if (!fs.existsSync(detailPath)) return 'missing'
   const index = JSON.parse(fs.readFileSync(detailPath, 'utf8')) as DetailIndex
   const position = index.items.findIndex((item) => item.collection === 'works' && String(item.recordId || '') === String(work.id))
-  if (position < 0 && work.status !== 'published') return 'skipped'
-  if (position >= 0) index.items[position] = detailPatch(work, index.items[position])
-  else index.items.push(detailPatch(work))
+  if (shouldRemoveFromPublicIndexes(work)) {
+    if (position < 0) return 'skipped'
+    index.items.splice(position, 1)
+  } else if (position >= 0) index.items[position] = detailPatch(work, index.items[position])
+  else if (work.status === 'published') index.items.push(detailPatch(work))
+  else return 'skipped'
   index.generatedAt = new Date().toISOString()
   index.counts = countByCollection(index.items)
   index.total = index.items.length
