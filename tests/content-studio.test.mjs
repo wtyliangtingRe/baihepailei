@@ -56,13 +56,16 @@ test('legacy review editor links redirect into the studio', () => {
   assert.doesNotMatch(legacyEditor, /payload\.update/u)
 })
 
-test('studio edits synchronize existing public indexes and hide archived works', () => {
+test('studio edits synchronize public indexes and remove hidden records', () => {
   assert.match(editor, /syncWorkToPublicIndexes/u)
   assert.match(config, /context\?\.firstPartyStudio/u)
   assert.match(sync, /search-index\.json/u)
   assert.match(sync, /detail-index\.json/u)
   assert.match(sync, /status: text\(work\.status\)/u)
   assert.match(sync, /reviewReasonValues/u)
+  assert.match(sync, /shouldRemoveFromPublicIndexes/u)
+  assert.match(sync, /work\.isLiteVisible === false && work\.isFullVisible === false/u)
+  assert.match(sync, /index\.items\.splice\(position, 1\)/u)
   assert.match(guards, /item\.status === 'archived'/u)
   assert.match(fullExport, /enrich-public-work-status\.mjs/u)
 })
