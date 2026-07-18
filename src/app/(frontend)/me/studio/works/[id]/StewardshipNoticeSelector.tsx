@@ -15,6 +15,7 @@ export type StewardshipNoticeOption = {
 export default function StewardshipNoticeSelector({ notices, selectedIDs }: { notices: StewardshipNoticeOption[]; selectedIDs: string[] }) {
   const validIDs = useMemo(() => new Set(notices.map((notice) => notice.id)), [notices])
   const [selected, setSelected] = useState(() => new Set(selectedIDs.filter((id) => validIDs.has(id))))
+  const [isOpen, setIsOpen] = useState(() => selectedIDs.some((id) => validIDs.has(id)))
 
   function toggle(id: string, checked: boolean) {
     setSelected((previous) => {
@@ -44,7 +45,11 @@ export default function StewardshipNoticeSelector({ notices, selectedIDs }: { no
         </div>
       ) : null}
 
-      <details className={styles.details} defaultOpen={selected.size > 0}>
+      <details
+        className={styles.details}
+        onToggle={(event) => setIsOpen(event.currentTarget.open)}
+        open={isOpen}
+      >
         <summary>
           <span>选择站务与用语提示</span>
           <strong>{selected.size} 条已选</strong>
