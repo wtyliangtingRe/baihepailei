@@ -12,14 +12,15 @@ const workRoute = read('src/app/(frontend)/works/[slug]/page.tsx')
 const reviewUtils = read('src/app/(frontend)/me/review/content/review-utils.ts')
 const retirements = read('src/app/(frontend)/review-editor-retirements.css')
 
- test('Payload admin is restricted to owner and admin through the configured auth collection', () => {
+test('Payload admin is restricted to owner and admin through the configured auth collection', () => {
   assert.match(payloadConfig, /UsersWithRestrictedAdmin/u)
   assert.match(payloadConfig, /admin:\s*\(\{ req \}\) => isAdmin\(req\.user\)/u)
   assert.match(payloadConfig, /user: UsersWithRestrictedAdmin\.slug/u)
 })
 
 test('account dashboard separates content management, review queues and advanced maintenance', () => {
-  assert.match(account, /<strong>站内内容管理<\/strong>/u)
+  assert.match(account, /href="\/me\/studio"/u)
+  assert.match(account, /'站内内容管理'/u)
   assert.match(account, /<strong>AI \/ 内容审核<\/strong>/u)
   assert.match(account, /<strong>用户反馈审核<\/strong>/u)
   assert.match(account, /mayUsePayload/u)
@@ -28,7 +29,7 @@ test('account dashboard separates content management, review queues and advanced
 })
 
 test('all signed-in users can choose a dedicated new-work proposal mode', () => {
-  assert.match(account, /\/feedback\?type=new_work/u)
+  assert.match(account, /'提交新作品'/u)
   assert.match(feedbackPage, /requestedType/u)
   assert.match(feedback, /initialType/u)
   assert.match(feedback, /feedbackType === 'new_work'/u)
