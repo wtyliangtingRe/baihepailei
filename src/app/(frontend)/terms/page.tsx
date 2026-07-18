@@ -1,32 +1,12 @@
-import configPromise from '@payload-config'
 import Link from 'next/link'
-import { getPayload } from 'payload'
 
 import { warningTemplates } from '@/lib/radar/warningTemplates'
 
-export const dynamic = 'force-dynamic'
-
-type NoticeCard = {
-  id?: string | number
-  slug?: string
-  title?: string
-  summary?: string
-  category?: string
-  tone?: string
-  severity?: string
-  helpUrl?: string
-  sortOrder?: number
-}
-
 const categoryLabels: Record<string, string> = {
-  operation: '站务状态',
-  terminology: '用语解释',
-  identity: '身份与版本',
-  editorial: '编辑与裁量',
-  content: '内容警示',
-  transparency: '透明度说明',
-  creator: '创作者提示',
+  content: '内容提示',
   relationship: '关系提示',
+  creator: '创作者提示',
+  operation: '站务提示',
   other: '其他提示',
 }
 
@@ -37,88 +17,104 @@ const severityLabels: Record<string, string> = {
   critical: '关键',
 }
 
-function fallbackNotices(): NoticeCard[] {
-  return warningTemplates.map((template, index) => ({
-    id: template.id,
-    slug: template.id,
-    title: template.title,
-    summary: template.text,
-    category: template.category,
-    tone: template.style,
-    severity: template.severity,
-    sortOrder: index + 1,
-  }))
+const noticeSections = [
+  {
+    id: 'site-language',
+    title: '站务与用语',
+    description: '用于说明页面性质、编辑立场、站点裁量和特殊状态。之后真正的“用语解释”也可以继续放到这个入口下面。',
+    templateIds: ['terminology-page', 'ongoing-page', 'neutral-stance', 'creator-visited', 'final-adjudication', 'no-hype'],
+  },
+  {
+    id: 'radar-help',
+    title: '排雷协作',
+    description: '用于提示资料不足、外部资料、AI 综合、匹配冲突，以及需要读者协助补充排雷证据的页面。',
+    templateIds: ['info-insufficient', 'external-source-pending-review', 'ai-synthesized-pending-review', 'identity-conflict', 'needs-radar'],
+  },
+  {
+    id: 'discomfort',
+    title: '不适内容',
+    description: '用于提示可能造成严重不适的内容。它们可以与排雷等级相关，但不替代具体评级和证据说明。',
+    templateIds: ['heavy-radar-warning', 'high-risk-radar-warning', 'adult-visibility-warning', 'ideology-discomfort-warning'],
+  },
+]
+
+function templateById(id: string) {
+  return warningTemplates.find((template) => template.id === id)
 }
 
-async function publicNotices() {
-  try {
-    const payload = await getPayload({ config: configPromise })
-    const result = await payload.find({
-      collection: 'stewardship-notices' as never,
-      depth: 0,
-      limit: 200,
-      pagination: false,
-      overrideAccess: true,
-      sort: 'sortOrder',
-      where: { isPublic: { equals: true } },
-    }) as unknown as { docs?: NoticeCard[] }
-    const docs = (result.docs || []).filter((notice) => notice.title || notice.summary)
-    return docs.length ? docs : fallbackNotices()
-  } catch {
-    return fallbackNotices()
-  }
+function noticeImagePath(id: string) {
+  return `/ui/notices/${id}.webp`
 }
 
-export default async function TermsIndexPage() {
-  const notices = await publicNotices()
-
+export default function TermsIndexPage() {
   return (
     <main className="page collection-page">
       <section className="page-heading collection-heading site-guide-heading">
-        <div>
-          <p className="eyebrow">站点说明</p>
-          <h1>站务与用语</h1>
-          <p>这里集中说明页面性质、编辑立场、特殊状态与站务裁量。作品、创作者和机构可以按需关联零条、一条或多条提示；没有特殊情况时不会显示提示区块。</p>
-        </div>
+        <p className="eyebrow">站点说明</p>
+        <h1>站点说明</h1>
+        <p>
+          这里合并放置页面提示、用语解释入口与排雷规则入口。页面提示负责说明页面状态，排雷规则负责说明分级原则，用语解释之后可以继续扩展成概念说明页。
+        </p>
         <div className="collection-actions">
-          <a className="back-link" href="#stewardship-language">查看站务提示</a>
+          <a className="back-link" href="#site-language">站务与用语</a>
+          <a className="back-link" href="#radar-help">排雷协作</a>
+          <a className="back-link" href="#discomfort">不适内容</a>
           <Link className="back-link" href="/rules">排雷规则</Link>
-          <Link className="back-link" href="/transparency">透明度报告</Link>
+          <Link className="back-link" href="/support">运营收支与支持</Link>
         </div>
       </section>
 
       <section className="rank-explainer">
         <div>
-          <h2>站务提示不等于评级</h2>
-          <p>提示负责说明身份争议、版本差异、特殊裁量、用语或阅读注意事项；正式分级仍由排雷规则、人工审核和证据材料决定。</p>
+          <h2>排雷规则入口</h2>
+          <p>
+            S / A / B / C / D / E / F / X 的完整分级细则仍然保留在独立规则页。这里作为统一入口，避免顶部导航同时塞入太多相近按钮。
+          </p>
         </div>
         <div className="collection-actions">
-          <Link className="back-link" href="/rules">打开完整分级细则</Link>
+          <Link className="back-link" href="/rules">打开排雷规则</Link>
         </div>
       </section>
 
-      <section className="ranked-collection-list" id="stewardship-language">
-        <section className="rank-group">
-          <div className="rank-group-heading">
-            <div>
-              <h2>可复用的站务与用语提示</h2>
-              <p>这些提示由站务人员集中维护。之后新增提示不需要修改每个条目，也不需要重新写死页面组件。</p>
+      <section className="ranked-collection-list">
+        {noticeSections.map((section) => (
+          <section className="rank-group" id={section.id} key={section.id}>
+            <div className="rank-group-heading">
+              <div>
+                <h2>{section.title}</h2>
+                <p>{section.description}</p>
+              </div>
+              <span>{section.templateIds.length} 条</span>
             </div>
-          </div>
-          <div className="collection-grid collection-grid-compact notice-template-grid">
-            {notices.map((notice, index) => (
-              <article className="collection-card collection-card-compact notice-template-card" key={String(notice.id || notice.slug || index)}>
-                <div className="notice-template-copy">
-                  <p>{categoryLabels[notice.category || ''] || '站务提示'}</p>
-                  <h2>{notice.title || '未命名提示'}</h2>
-                  {notice.summary ? <span>{notice.summary}</span> : null}
-                  <span>样式：{notice.tone || 'note'} / 强度：{severityLabels[notice.severity || ''] || '低'}</span>
-                  {notice.helpUrl ? <Link href={notice.helpUrl}>进一步说明</Link> : null}
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+            <div className="collection-grid collection-grid-compact notice-template-grid">
+              {section.templateIds.map((id) => {
+                const template = templateById(id)
+                if (!template) return null
+
+                return (
+                  <article className="collection-card collection-card-compact notice-template-card" key={template.id}>
+                    <img
+                      alt=""
+                      aria-hidden="true"
+                      className="notice-template-icon"
+                      loading="lazy"
+                      src={noticeImagePath(template.id)}
+                    />
+                    <div className="notice-template-copy">
+                      <p>{categoryLabels[template.category] || template.category}</p>
+                      <h2>{template.title}</h2>
+                      <span>{template.text}</span>
+                      <span>样式：{template.style} / 强度：{severityLabels[template.severity] || template.severity}</span>
+                      {template.relatedRatingClasses?.length ? (
+                        <span>关联细则：{template.relatedRatingClasses.join('、')}</span>
+                      ) : null}
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          </section>
+        ))}
       </section>
     </main>
   )
