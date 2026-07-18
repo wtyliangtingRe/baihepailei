@@ -104,16 +104,16 @@ function reviewReasonValues(value: WorkDoc['reviewReasons']) {
   return []
 }
 
-function stewardshipNoticeViews(values: WorkDoc['stewardshipNotices']) {
+function stewardshipNoticeViews(values: WorkDoc['stewardshipNotices']): StewardshipNoticeView[] {
   if (!Array.isArray(values)) return []
   const seen = new Set<string>()
   return values
-    .map((value) => {
+    .map<StewardshipNoticeView | null>((value) => {
       if (!value || typeof value !== 'object' || value.isPublic === false) return null
       const title = text(value.title)
       const summary = text(value.summary)
       if (!title && !summary) return null
-      return {
+      const notice: StewardshipNoticeView = {
         id: value.id,
         slug: text(value.slug),
         title,
@@ -123,9 +123,10 @@ function stewardshipNoticeViews(values: WorkDoc['stewardshipNotices']) {
         severity: text(value.severity) || 'low',
         helpUrl: text(value.helpUrl),
         sortOrder: Number.isFinite(Number(value.sortOrder)) ? Number(value.sortOrder) : 100,
-      } satisfies StewardshipNoticeView
+      }
+      return notice
     })
-    .filter((value): value is StewardshipNoticeView => Boolean(value))
+    .filter((value): value is StewardshipNoticeView => value !== null)
     .filter((value) => {
       const key = text(value.id || value.slug || value.title).toLowerCase()
       if (!key || seen.has(key)) return false
