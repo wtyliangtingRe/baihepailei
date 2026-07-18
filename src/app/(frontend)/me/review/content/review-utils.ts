@@ -1,14 +1,13 @@
-export type ReviewableContentDoc = {
-  reviewStatus?: string
-  searchText?: string
-  evidenceNote?: string
-  sourceConflictNotes?: string
-}
+import {
+  isMergedDuplicateWork,
+  mergedWorkReference,
+  type MergeMarkedWork,
+  type MergedWorkReference,
+} from '@/lib/mergedWork'
 
-export type MergedWorkReference = {
-  id: string
-  title?: string
-}
+export type ReviewableContentDoc = MergeMarkedWork
+export type { MergedWorkReference }
+export { isMergedDuplicateWork, mergedWorkReference }
 
 const transientReviewParams = [
   'reviewError',
@@ -23,26 +22,6 @@ const transientReviewParams = [
 
 function text(value: unknown) {
   return String(value ?? '').trim()
-}
-
-export function mergedWorkReference(doc: ReviewableContentDoc): MergedWorkReference | null {
-  const haystack = [doc.searchText, doc.evidenceNote, doc.sourceConflictNotes]
-    .map(text)
-    .filter(Boolean)
-    .join('\n')
-
-  const explicitID = haystack.match(/mergedIntoWorkId:\s*(\d+)/iu)?.[1]
-  const explicitTitle = haystack.match(/mergedIntoWorkTitle:\s*([^\r\n]+)/iu)?.[1]?.trim()
-  if (explicitID) return { id: explicitID, title: explicitTitle || undefined }
-
-  const legacy = haystack.match(/duplicate of work\s+#(\d+)\s*(?:\(([^)]+)\))?/iu)
-  if (legacy?.[1]) return { id: legacy[1], title: legacy[2]?.trim() || undefined }
-
-  return null
-}
-
-export function isMergedDuplicateWork(doc: ReviewableContentDoc) {
-  return Boolean(mergedWorkReference(doc))
 }
 
 export function normalizePublicationStatus(value: unknown) {
