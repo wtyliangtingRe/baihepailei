@@ -1,10 +1,10 @@
-import type { CollectionConfig, Field } from 'payload'
+import type { CollectionConfig, CollectionSlug, Field } from 'payload'
 
 export function stewardshipNoticesField(): Field {
   return {
     name: 'stewardshipNotices',
     type: 'relationship',
-    relationTo: 'stewardship-notices',
+    relationTo: 'stewardship-notices' as CollectionSlug,
     hasMany: true,
     label: '站务与用语提示',
     admin: {
