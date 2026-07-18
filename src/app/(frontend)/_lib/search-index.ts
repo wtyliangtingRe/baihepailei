@@ -1,4 +1,5 @@
 import type { RadarAssessmentMetrics } from '@/lib/radar/assessmentPresentation'
+import { isMergedDuplicateWork } from '@/lib/mergedWork'
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -99,8 +100,13 @@ export function clearSearchIndexCache() {
 }
 
 function isRetiredWork(item: SearchItem) {
-  return item.collection === 'works'
-    && (item.status === 'archived' || item.reviewStatus === 'deprecated' || Boolean(item.mergedIntoWorkId))
+  if (item.collection !== 'works') return false
+  if (item.mergedIntoWorkId) return true
+  return isMergedDuplicateWork({
+    reviewStatus: item.reviewStatus,
+    status: item.status,
+    searchText: item.searchText,
+  })
 }
 
 export function readSearchIndex() {
