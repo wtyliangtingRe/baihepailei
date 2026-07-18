@@ -4,6 +4,45 @@ type RichNode = {
   children?: unknown[]
 }
 
+type RichTextFormat = '' | 'left' | 'start' | 'center' | 'right' | 'end' | 'justify'
+type RichTextDirection = 'ltr' | 'rtl' | null
+
+type PlainTextNode = {
+  [key: string]: unknown
+  detail: number
+  format: number
+  mode: 'normal'
+  style: string
+  text: string
+  type: 'text'
+  version: number
+}
+
+type PlainParagraphNode = {
+  [key: string]: unknown
+  children: PlainTextNode[]
+  direction: RichTextDirection
+  format: RichTextFormat
+  indent: number
+  type: 'paragraph'
+  version: number
+  textFormat: number
+  textStyle: string
+}
+
+export type PlainRichTextValue = {
+  [key: string]: unknown
+  root: {
+    [key: string]: unknown
+    children: PlainParagraphNode[]
+    direction: RichTextDirection
+    format: RichTextFormat
+    indent: number
+    type: 'root'
+    version: number
+  }
+}
+
 const blockTypes = new Set(['paragraph', 'heading', 'quote', 'listitem'])
 
 function nodeText(value: unknown): string {
@@ -31,7 +70,7 @@ export function richTextToPlainText(value: unknown) {
     .trim()
 }
 
-function textNode(text: string) {
+function textNode(text: string): PlainTextNode {
   return {
     detail: 0,
     format: 0,
@@ -43,7 +82,7 @@ function textNode(text: string) {
   }
 }
 
-function paragraphNode(text: string) {
+function paragraphNode(text: string): PlainParagraphNode {
   return {
     children: text ? [textNode(text)] : [],
     direction: null,
@@ -56,7 +95,7 @@ function paragraphNode(text: string) {
   }
 }
 
-export function plainTextToRichText(value: string) {
+export function plainTextToRichText(value: string): PlainRichTextValue {
   const normalized = String(value || '').replace(/\r\n?/gu, '\n').trim()
   const lines = normalized ? normalized.split('\n') : []
   return {
