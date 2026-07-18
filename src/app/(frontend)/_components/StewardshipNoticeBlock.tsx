@@ -46,27 +46,25 @@ export default function StewardshipNoticeBlock({ item }: { item: NoticeItem }) {
 
   return (
     <section className="detail-card stewardship-notice-block" aria-label="站务与用语">
-      <header className="stewardship-notice-heading">
+      <header className="rank-group-heading stewardship-notice-heading">
         <div>
           <p className="eyebrow">站务与用语</p>
           <h2>阅读本条目前请注意</h2>
         </div>
-        <span>{notices.length} 条</span>
       </header>
-      <div className="stewardship-notice-list">
+      <div className="collection-grid collection-grid-compact notice-template-grid stewardship-notice-list">
         {notices.map((notice, index) => {
           const tone = String(notice.tone || 'note')
           const title = String(notice.title || '站务提示')
           const key = String(notice.id || notice.slug || `${title}-${index}`)
           return (
-            <article className="stewardship-notice" data-severity={notice.severity || 'low'} data-tone={tone} key={key}>
-              <div className="stewardship-notice-meta">
-                <span>{categoryLabels[notice.category || ''] || '站务提示'}</span>
-                <span>{severityLabels[notice.severity || ''] || '提示'}</span>
+            <article className="collection-card collection-card-compact notice-template-card stewardship-notice" data-severity={notice.severity || 'low'} data-tone={tone} key={key}>
+              <div className="notice-template-copy stewardship-notice-copy">
+                <p>{categoryLabels[notice.category || ''] || '站务提示'} · {severityLabels[notice.severity || ''] || '提示'}</p>
+                <h2>{title}</h2>
+                {notice.summary ? <span>{notice.summary}</span> : null}
+                {notice.helpUrl ? <Link href={notice.helpUrl}>查看进一步说明</Link> : null}
               </div>
-              <h3>{title}</h3>
-              {notice.summary ? <p>{notice.summary}</p> : null}
-              {notice.helpUrl ? <Link href={notice.helpUrl}>查看进一步说明</Link> : null}
             </article>
           )
         })}
