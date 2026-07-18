@@ -23,9 +23,18 @@ import { withRadarAssessmentFields } from './src/collections/fields/radarAssessm
 import { withStewardshipNotices } from './src/collections/fields/stewardshipNotices'
 import { syncWorkToPublicIndexes } from './src/lib/publicIndexSync'
 
-const WorksWithRadarAssessment = withRadarAssessmentFields(withStewardshipNotices(Works))
-const CreatorsWithStewardshipNotices = withStewardshipNotices(Creators)
-const OrganizationsWithStewardshipNotices = withStewardshipNotices(Organizations)
+/**
+ * Keep this false until the reviewed Payload migration has been executed.
+ * To generate/review the migration, run the Payload command with
+ * STEWARDSHIP_NOTICES_SCHEMA_READY=true for that process only. After the
+ * migration succeeds, set the same server-side variable for build/runtime.
+ */
+const stewardshipSchemaReady = String(process.env['STEWARDSHIP_NOTICES_SCHEMA_READY'] || '').toLowerCase() === 'true'
+
+const WorksWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Works) : Works
+const CreatorsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Creators) : Creators
+const OrganizationsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Organizations) : Organizations
+const WorksWithRadarAssessment = withRadarAssessmentFields(WorksWithOptionalStewardship)
 const WorksWithSafePublicationStatus: CollectionConfig = {
   ...WorksWithRadarAssessment,
   hooks: {
@@ -101,10 +110,10 @@ export default buildConfig({
     UsersWithRestrictedAdmin,
     Media,
     WorksWithSafePublicationStatus,
-    CreatorsWithStewardshipNotices,
-    OrganizationsWithStewardshipNotices,
+    CreatorsWithOptionalStewardship,
+    OrganizationsWithOptionalStewardship,
     Evidence,
-    StewardshipNotices,
+    ...(stewardshipSchemaReady ? [StewardshipNotices] : []),
     RadarResearchRecords,
     Comments,
     UserLists,
