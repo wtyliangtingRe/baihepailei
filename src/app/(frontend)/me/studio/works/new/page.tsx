@@ -298,12 +298,11 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
         <div className="review-hero-copy">
           <p className="eyebrow">站内内容管理</p>
           <h1>创建作品草稿</h1>
-          <p className="muted">工作人员可以直接建档，但新作品默认不可见、待复核、未发布。先检查重复作品，再补齐资料和规则建议。</p>
-          <div className="review-safety-note">提交后会返回上一级并显示新作品 ID。按钮在创建过程中会禁用，避免重复建档。</div>
+          <p className="muted">新作品默认不可见、待复核、未发布。请先核对重复作品，再补齐资料。</p>
         </div>
       </section>
 
-      {feedback ? <div className="review-action-message" role="status">正在处理用户新作品申请 #{feedback.id}：{feedback.targetTitle || '未命名作品'}。创建成功后会自动关联该反馈并返回本页上一级。</div> : null}
+      {feedback ? <div className="review-action-message" role="status">正在处理用户新作品申请 #{feedback.id}：{feedback.targetTitle || '未命名作品'}。</div> : null}
       {createError ? <div className="review-action-message review-action-message-error" role="alert">必填字段无效，请检查标题、作品类型、规则和分级。</div> : null}
       {duplicateWarning ? <div className="review-action-message review-action-message-error" role="alert">发现可能重复的现有作品。请先核对下方候选；确认不是重复项后，再勾选“仍然创建”。</div> : null}
 
@@ -320,7 +319,7 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
         <input name="feedbackId" type="hidden" value={feedbackID} />
         <input name="returnTo" type="hidden" value={returnTo} />
         <section className="review-editor-section">
-          <header><h2>基础身份</h2><p>公开网址使用创建后的数据库 ID；Slug 只作为兼容字段自动生成。</p></header>
+          <header><h2>基础身份</h2><p>创建后会生成作品 ID。</p></header>
           <div className="review-editor-grid">
             <label className="review-editor-field review-editor-field-wide"><span>显示标题</span><input defaultValue={suggestedTitle} maxLength={300} name="title" required /></label>
             <label className="review-editor-field"><span>原始标题</span><input maxLength={300} name="originalTitle" /></label>
@@ -338,12 +337,12 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
         <section className="review-editor-section">
           <header><h2>作品简介</h2><p>面向读者介绍题材、设定和故事前提；不要在这里写评级结论或证据判断。</p></header>
           <div className="review-editor-grid">
-            <label className="review-editor-field review-editor-field-wide"><span>作品简介（面向读者）</span><textarea maxLength={12000} name="summary" placeholder="简要介绍作品的故事、主要角色和基本设定。创建后仍可在完整编辑页继续修改。" /></label>
+            <label className="review-editor-field review-editor-field-wide"><span>作品简介（面向读者）</span><textarea maxLength={12000} name="summary" placeholder="简要介绍作品的故事、主要角色和基本设定。" /></label>
           </div>
         </section>
 
         <section className="review-editor-section">
-          <header><h2>主规则（单选）与全部命中规则（多选）</h2><p>主规则决定建议等级；全部命中规则可同时保留多个成立的注意点。从反馈创建时会自动继承用户建议。</p></header>
+          <header><h2>主规则（单选）与全部命中规则（多选）</h2><p>主规则决定建议等级；全部命中规则可同时保留多个成立的注意点。</p></header>
           <RadarRuleSelector initialDecisiveRuleCode={initialDecisiveRuleCode} initialMatchedRuleCodes={initialRuleCodes} />
         </section>
 
@@ -358,7 +357,7 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
         </section>
 
         <label className="review-editor-check"><input defaultChecked={Boolean(duplicateWarning)} name="duplicateConfirmed" type="checkbox" /><span>我已核对可能重复的现有作品，确认仍应创建一个独立草稿。</span></label>
-        <div className="review-editor-submit"><PendingSubmitButton idleLabel="创建待复核草稿" pendingLabel="正在创建，请勿重复点击……" /><Link className="review-link" href={returnTo}>取消并返回上一级</Link></div>
+        <div className="review-editor-submit"><PendingSubmitButton idleLabel="创建待复核草稿" pendingLabel="正在创建……" /><Link className="review-link" href={returnTo}>取消并返回上一级</Link></div>
       </form>
     </main>
   )
