@@ -14,6 +14,13 @@ const guards = read('src/app/(frontend)/_lib/public-entity-guards.ts')
 const config = read('payload.config.ts')
 const fullExport = read('scripts/export/build-full-public-index.mjs')
 
+function functionBody(source, name, nextName) {
+  const start = source.indexOf(`async function ${name}`)
+  const end = source.indexOf(`async function ${nextName}`, start + 1)
+  assert.notEqual(start, -1, `missing function ${name}`)
+  return source.slice(start, end === -1 ? source.length : end)
+}
+
 test('content studio is database-backed and separate from review queues', () => {
   assert.match(studio, /collection: 'works'/u)
   assert.match(studio, /draft: false/u)
@@ -27,7 +34,13 @@ test('studio does not send business archive values through Payload version rows'
   assert.match(studio, /_works_v\.version_status/u)
   assert.match(studio, /archiveSchemaReady/u)
   assert.match(studio, /回收站状态尚未与数据库版本 enum 对齐/u)
-  assert.doesNotMatch(studio, /draft: true/u)
+
+  const pageQuery = functionBody(studio, 'findStudioPage', 'countByStatus')
+  const statusCount = functionBody(studio, 'countByStatus', 'ContentStudioPage')
+  assert.match(pageQuery, /draft: false/u)
+  assert.match(statusCount, /draft: false/u)
+  assert.doesNotMatch(pageQuery, /draft: true/u)
+  assert.doesNotMatch(statusCount, /draft: true/u)
 })
 
 test('members can only submit new-work proposals while staff can edit', () => {
