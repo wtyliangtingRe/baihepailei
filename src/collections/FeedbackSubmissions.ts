@@ -126,6 +126,9 @@ export const FeedbackSubmissions: CollectionConfig = {
       type: 'array',
       label: '建议命中规则',
       maxRows: 20,
+      admin: {
+        description: '第一项作为主规则 / 决定性规则；后续项目保存其他同时命中的规则。它们都只是提交建议。',
+      },
       fields: [{ name: 'code', type: 'text', label: '规则代码', maxLength: 80 }],
     },
     {
