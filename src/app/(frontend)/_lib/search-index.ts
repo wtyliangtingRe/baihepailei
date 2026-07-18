@@ -112,6 +112,12 @@ function isRetiredWork(item: SearchItem) {
   })
 }
 
+function cleanImportedOrganizationTitle(item: SearchItem): SearchItem {
+  if (item.collection !== 'organizations') return item
+  const title = String(item.title || '').replace(/^[\s.:：·•・．∙⋅◦]+(?=[\p{L}\p{N}])/u, '')
+  return title && title !== item.title ? { ...item, title } : item
+}
+
 export function readSearchIndex() {
   if (cachedIndex !== undefined) return cachedIndex
 
@@ -122,7 +128,9 @@ export function readSearchIndex() {
 
   const raw = fs.readFileSync(searchIndexPath, 'utf8')
   const parsed = JSON.parse(raw) as SearchIndex
-  const visibleItems = parsed.items.filter((item) => !isRetiredWork(item))
+  const visibleItems = parsed.items
+    .filter((item) => !isRetiredWork(item))
+    .map(cleanImportedOrganizationTitle)
   cachedIndex = {
     ...parsed,
     items: visibleItems,
