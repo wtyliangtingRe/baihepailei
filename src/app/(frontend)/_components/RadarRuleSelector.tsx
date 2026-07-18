@@ -53,14 +53,12 @@ export default function RadarRuleSelector({
   description = '主规则决定建议等级；全部命中规则用于保留其他同时成立的注意点。',
 }: RadarRuleSelectorProps) {
   const initialDecisive = validCode(initialDecisiveRuleCode)
-  const [decisive, setDecisive] = useState<RadarRatingClass | ''>(initialDecisive)
+  const initialMatched = initialMatchedRuleCodes.map(validCode).filter(Boolean) as RadarRatingClass[]
+  const [decisive, setDecisive] = useState<RadarRatingClass | ''>(initialDecisive || initialMatched[0] || '')
   const [selected, setSelected] = useState<Set<RadarRatingClass>>(() => {
-    const next = new Set<RadarRatingClass>()
-    for (const code of initialMatchedRuleCodes) {
-      const normalized = validCode(code)
-      if (normalized) next.add(normalized)
-    }
-    if (initialDecisive) next.add(initialDecisive)
+    const next = new Set<RadarRatingClass>(initialMatched)
+    const first = initialDecisive || initialMatched[0]
+    if (first) next.add(first)
     return next
   })
 
@@ -77,6 +75,7 @@ export default function RadarRuleSelector({
   }
 
   function toggle(code: RadarRatingClass, checked: boolean) {
+    if (checked && !decisive) setDecisive(code)
     setSelected((previous) => {
       const next = new Set(previous)
       if (checked) next.add(code)
@@ -133,7 +132,7 @@ export default function RadarRuleSelector({
           <span>全部命中规则</span>
           <strong>{selected.size} 条已选</strong>
         </summary>
-        <p>展开后可勾选多条。主规则会自动保持在全部命中规则中。</p>
+        <p>展开后可勾选多条。首次勾选会自动成为主规则，之后仍可在上方切换。</p>
         <div className={styles.groups}>
           {gradeOrder.map((grade) => (
             <section key={grade}>
