@@ -7,6 +7,7 @@ const collection = read('src/collections/StewardshipNotices.ts')
 const fields = read('src/collections/fields/stewardshipNotices.ts')
 const payload = read('payload.config.ts')
 const editor = read('src/app/(frontend)/me/studio/works/[id]/page.tsx')
+const selector = read('src/app/(frontend)/me/studio/works/[id]/StewardshipNoticeSelector.tsx')
 const display = read('src/app/(frontend)/_components/StewardshipNoticeBlock.tsx')
 const assessment = read('src/app/(frontend)/_components/WorkAssessmentTrustCard.tsx')
 const terms = read('src/app/(frontend)/terms/page.tsx')
@@ -43,16 +44,25 @@ test('works creators and organizations can receive optional many-notice relation
   assert.match(payload, /withStewardshipNotices\(Organizations\)/u)
 })
 
-test('work studio uses a multi-select and avoids clearing relationships when schema is unavailable', () => {
-  assert.match(editor, /multiple name="stewardshipNotices"/u)
+test('work studio uses explicit checkboxes and avoids clearing relationships when schema is unavailable', () => {
+  assert.match(editor, /StewardshipNoticeSelector/u)
   assert.match(editor, /stewardshipNoticeSelectorReady/u)
   assert.match(editor, /data\.stewardshipNotices = submittedRelationIDs/u)
   assert.match(editor, /站务与用语提示（可选）/u)
+  assert.match(selector, /name="stewardshipNotices"/u)
+  assert.match(selector, /type="checkbox"/u)
+  assert.match(selector, /已选择 \{selected\.size\} 条/u)
+  assert.match(selector, /保存并同步前台/u)
+  assert.match(selector, /清空选择/u)
 })
 
-test('detail pages place notices before assessment and basic information', () => {
+test('detail pages place notices before separate human and AI assessments', () => {
   assert.match(assessment, /StewardshipNoticeBlock/u)
   assert.match(assessment, /if \(item\.collection !== 'works'\) return stewardship/u)
+  assert.match(assessment, /人工正式评级/u)
+  assert.match(assessment, /AI 建议与规则分析/u)
+  assert.match(assessment, /不会被冒充为正式评级/u)
+  assert.match(assessment, /评级来源摘要（不是作品简介）/u)
   assert.match(display, /站务与用语/u)
   assert.match(display, /notices\.length/u)
 })
