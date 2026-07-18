@@ -1,6 +1,6 @@
 import type { Access, CollectionConfig } from 'payload'
 
-import { adminsOnly, trustedAndUp } from '@/access/roles'
+import { adminsOnly, editorsAndUp } from '@/access/roles'
 
 const publicNoticeOrSignedIn: Access = ({ req }) => req.user ? true : { isPublic: { equals: true } }
 
@@ -14,13 +14,12 @@ export const StewardshipNotices: CollectionConfig = {
     defaultColumns: ['title', 'category', 'tone', 'severity', 'isPublic', 'sortOrder', 'updatedAt'],
     group: '站务',
     useAsTitle: 'title',
-    description: '集中维护可复用于作品、创作者和机构页面的站务警示、用语说明与特殊状态。',
   },
   access: {
-    create: trustedAndUp,
+    create: editorsAndUp,
     delete: adminsOnly,
     read: publicNoticeOrSignedIn,
-    update: trustedAndUp,
+    update: editorsAndUp,
   },
   versions: {
     drafts: true,
