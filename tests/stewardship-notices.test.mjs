@@ -8,6 +8,7 @@ const fields = read('src/collections/fields/stewardshipNotices.ts')
 const payload = read('payload.config.ts')
 const editor = read('src/app/(frontend)/me/studio/works/[id]/page.tsx')
 const selector = read('src/app/(frontend)/me/studio/works/[id]/StewardshipNoticeSelector.tsx')
+const selectorCss = read('src/app/(frontend)/me/studio/works/[id]/StewardshipNoticeSelector.module.css')
 const display = read('src/app/(frontend)/_components/StewardshipNoticeBlock.tsx')
 const assessment = read('src/app/(frontend)/_components/WorkAssessmentTrustCard.tsx')
 const terms = read('src/app/(frontend)/terms/page.tsx')
@@ -44,16 +45,22 @@ test('works creators and organizations can receive optional many-notice relation
   assert.match(payload, /withStewardshipNotices\(Organizations\)/u)
 })
 
-test('work studio uses explicit checkboxes and avoids clearing relationships when schema is unavailable', () => {
+test('work studio uses explicit collapsible choices and avoids clearing relationships when schema is unavailable', () => {
   assert.match(editor, /StewardshipNoticeSelector/u)
   assert.match(editor, /stewardshipNoticeSelectorReady/u)
   assert.match(editor, /data\.stewardshipNotices = submittedRelationIDs/u)
   assert.match(editor, /站务与用语提示（可选）/u)
   assert.match(selector, /name="stewardshipNotices"/u)
   assert.match(selector, /type="checkbox"/u)
+  assert.match(selector, /<details/u)
+  assert.match(selector, /<summary>/u)
+  assert.match(selector, /选择站务与用语提示/u)
+  assert.match(selector, /href="#stewardship-notices"/u)
   assert.match(selector, /已选择 \{selected\.size\} 条/u)
   assert.match(selector, /保存并同步前台/u)
   assert.match(selector, /清空选择/u)
+  assert.match(selectorCss, /position:\s*fixed/u)
+  assert.match(selectorCss, /scroll-margin-top/u)
 })
 
 test('detail pages place notices before separate human and AI assessments', () => {
