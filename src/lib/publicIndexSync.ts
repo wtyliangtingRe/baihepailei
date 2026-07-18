@@ -14,7 +14,7 @@ type WorkDoc = {
   reviewStatus?: string
   evidenceStrength?: string
   ratingNotice?: string
-  reviewReasons?: string[]
+  reviewReasons?: string[] | string
   status?: string
   aliases?: Array<string | { value?: string }>
   localizedTitles?: Array<string | { title?: string }>
@@ -69,6 +69,12 @@ function aliases(value: WorkDoc['aliases']) {
 
 function localizedTitles(value: WorkDoc['localizedTitles']) {
   return unique((value || []).map((item) => typeof item === 'string' ? item : item?.title))
+}
+
+function reviewReasonValues(value: WorkDoc['reviewReasons']) {
+  if (Array.isArray(value)) return unique(value)
+  if (typeof value === 'string') return unique(value.split(/[;|,]/u))
+  return []
 }
 
 function relationName(value: Relation | undefined) {
@@ -128,6 +134,7 @@ function atomicJsonWrite(file: string, value: unknown) {
 function searchPatch(work: WorkDoc, existing?: SearchItem): SearchItem {
   const recordID = String(work.id)
   const slug = text(work.slug) || existing?.slug || `work-${recordID}`
+  const reasons = reviewReasonValues(work.reviewReasons)
   return {
     ...(existing || {}),
     id: existing?.id || `works:${slug}`,
@@ -142,7 +149,7 @@ function searchPatch(work: WorkDoc, existing?: SearchItem): SearchItem {
     reviewStatus: text(work.reviewStatus) || existing?.reviewStatus || 'pending',
     evidenceStrength: text(work.evidenceStrength) || existing?.evidenceStrength || 'unassessed',
     ratingNotice: text(work.ratingNotice) || existing?.ratingNotice,
-    reviewReasons: Array.isArray(work.reviewReasons) ? work.reviewReasons.map(text).filter(Boolean) : existing?.reviewReasons,
+    reviewReasons: reasons.length ? reasons : existing?.reviewReasons,
     originalTitle: text(work.originalTitle) || existing?.originalTitle,
     aliases: aliases(work.aliases).length ? aliases(work.aliases) : existing?.aliases,
     localizedTitles: localizedTitles(work.localizedTitles).length ? localizedTitles(work.localizedTitles) : existing?.localizedTitles,
@@ -162,6 +169,7 @@ function searchPatch(work: WorkDoc, existing?: SearchItem): SearchItem {
 function detailPatch(work: WorkDoc, existing?: DetailItem): DetailItem {
   const recordID = String(work.id)
   const slug = text(work.slug) || existing?.slug || `work-${recordID}`
+  const reasons = reviewReasonValues(work.reviewReasons)
   return {
     ...(existing || {}),
     id: existing?.id || `works:${slug}`,
@@ -176,7 +184,7 @@ function detailPatch(work: WorkDoc, existing?: DetailItem): DetailItem {
     reviewStatus: text(work.reviewStatus) || existing?.reviewStatus || 'pending',
     evidenceStrength: text(work.evidenceStrength) || existing?.evidenceStrength || 'unassessed',
     ratingNotice: text(work.ratingNotice) || existing?.ratingNotice,
-    reviewReasons: Array.isArray(work.reviewReasons) ? work.reviewReasons.map(text).filter(Boolean) : existing?.reviewReasons,
+    reviewReasons: reasons.length ? reasons : existing?.reviewReasons,
     originalTitle: text(work.originalTitle) || existing?.originalTitle,
     aliases: aliases(work.aliases).length ? aliases(work.aliases) : existing?.aliases,
     localizedTitles: localizedTitles(work.localizedTitles).length ? localizedTitles(work.localizedTitles) : existing?.localizedTitles,
