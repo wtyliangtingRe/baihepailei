@@ -18,8 +18,8 @@ test('effective catalog grade uses human review before AI suggestions', () => {
 
 test('works catalog filters sorts groups and cards by one displayed grade', () => {
   assert.match(worksPage, /function displayedGrade/u)
-  assert.match(worksPage, /rankSortValue\(displayedGrade\(a\)\.grade\)/u)
-  assert.match(worksPage, /const rank = displayedGrade\(item\)\.grade/u)
+  assert.match(worksPage, /rankSortValue\(displayedGrade\(left\)\.grade\)/u)
+  assert.match(worksPage, /displayedGrade\(item\)\.grade !== filters\.rank/u)
   assert.match(worksPage, /pageItems\.filter\(\(item\) => displayedGrade\(item\)\.grade === rank\)/u)
   assert.match(worksPage, /rankLabel\(grade\.grade\)/u)
   assert.match(worksPage, /effectiveWorkGradeLabel\(grade\.source\)/u)
