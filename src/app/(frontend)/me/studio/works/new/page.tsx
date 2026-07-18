@@ -137,7 +137,8 @@ async function createWorkAction(formData: FormData) {
   const decisiveRuleCodeText = text(formData.get('decisiveRuleCode'), 80)
   const decisiveRuleCode = validRuleCodes.has(decisiveRuleCodeText) ? decisiveRuleCodeText as RadarRatingClass : null
   const matchedRuleCodes = submittedRuleCodes(formData)
-  const orderedRuleCodes = [...new Set([decisiveRuleCode, ...matchedRuleCodes].filter(Boolean))] as RadarRatingClass[]
+  const resolvedDecisiveRuleCode = decisiveRuleCode || matchedRuleCodes[0] || null
+  const orderedRuleCodes = [...new Set([resolvedDecisiveRuleCode, ...matchedRuleCodes].filter(Boolean))] as RadarRatingClass[]
 
   if (!title || !requestedRank || !mediaGroup || !mediaType || !format || !firstPublishedPrecision || (feedbackIDText && !feedbackID)) {
     redirect(`/me/studio/works/new?createError=invalid_fields${feedbackIDText ? `&feedbackId=${encodeURIComponent(feedbackIDText)}` : ''}`)
@@ -168,7 +169,7 @@ async function createWorkAction(formData: FormData) {
   const sourceLinks = sourceLinksFromText(formData.get('sourceLinks'))
   const evidenceNote = text(formData.get('evidenceNote'), 12000)
   const searchText = text(formData.get('searchText'), 30000)
-  const derivedRank = decisiveRuleCode ? radarClassDefinitions[decisiveRuleCode].grade : requestedRank
+  const derivedRank = resolvedDecisiveRuleCode ? radarClassDefinitions[resolvedDecisiveRuleCode].grade : requestedRank
   const hasRuleSuggestion = orderedRuleCodes.length > 0
 
   const created = await payload.create({
@@ -206,7 +207,7 @@ async function createWorkAction(formData: FormData) {
         radarAssessment: {
           policyVersion: RADAR_RATING_POLICY_ID,
           suggestedGrade: derivedRank,
-          decisiveRuleCode: decisiveRuleCode || undefined,
+          decisiveRuleCode: resolvedDecisiveRuleCode || undefined,
           matchedRules: orderedRuleCodes.map((code) => ({
             code,
             grade: radarClassDefinitions[code].grade,
