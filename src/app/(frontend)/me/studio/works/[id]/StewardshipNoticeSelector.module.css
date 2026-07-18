@@ -59,10 +59,42 @@
   font-weight: 800;
 }
 
+.details {
+  overflow: hidden;
+  border: 1px solid #3b3b3b;
+  border-radius: 16px;
+  background: #101010;
+}
+
+.details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.details summary strong {
+  color: #8fe3a2;
+  font-size: 13px;
+}
+
+.details > p {
+  margin: 0;
+  padding: 0 16px 14px;
+  color: #aaa;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  padding: 0 16px 16px;
 }
 
 .option {
@@ -173,9 +205,15 @@
 }
 
 :global([data-theme='light']) .status,
+:global([data-theme='light']) .details,
 :global([data-theme='light']) .option {
   border-color: #e2d6cc;
   background: #fff;
+}
+
+:global([data-theme='light']) .details summary,
+:global([data-theme='light']) .copy strong {
+  color: #191716;
 }
 
 :global([data-theme='light']) .option[data-selected='true'] {
@@ -183,11 +221,8 @@
   background: #f2fbf4;
 }
 
-:global([data-theme='light']) .copy strong {
-  color: #191716;
-}
-
 :global([data-theme='light']) .copy em,
-:global([data-theme='light']) .status span {
+:global([data-theme='light']) .status span,
+:global([data-theme='light']) .details > p {
   color: #6e655f;
 }
