@@ -10,6 +10,7 @@ import PendingSubmitButton from '../../_components/PendingSubmitButton'
 import {
   RADAR_RATING_POLICY_ID,
   radarClassDefinitions,
+  type RadarGrade,
   type RadarRatingClass,
 } from '@/lib/radar/ratingPolicy'
 
@@ -169,8 +170,10 @@ async function createWorkAction(formData: FormData) {
   const sourceLinks = sourceLinksFromText(formData.get('sourceLinks'))
   const evidenceNote = text(formData.get('evidenceNote'), 12000)
   const searchText = text(formData.get('searchText'), 30000)
-  const derivedRank = resolvedDecisiveRuleCode ? radarClassDefinitions[resolvedDecisiveRuleCode].grade : requestedRank
-  const hasRuleSuggestion = orderedRuleCodes.length > 0
+  const suggestedRuleGrade: RadarGrade | null = resolvedDecisiveRuleCode
+    ? radarClassDefinitions[resolvedDecisiveRuleCode].grade
+    : null
+  const derivedRank = suggestedRuleGrade || requestedRank
 
   const created = await payload.create({
     collection: 'works',
@@ -186,7 +189,7 @@ async function createWorkAction(formData: FormData) {
       siteId: `manual:${token}`,
       rank: derivedRank,
       reviewStatus: 'pending',
-      ratingNotice: hasRuleSuggestion ? 'ai_synthesized_pending_review' : 'none',
+      ratingNotice: suggestedRuleGrade ? 'ai_synthesized_pending_review' : 'none',
       evidenceStrength: 'unassessed',
       mediaGroup,
       mediaType,
@@ -203,10 +206,10 @@ async function createWorkAction(formData: FormData) {
       searchText,
       humanReviewNote: humanNote || `[${new Date().toISOString()}] 由站内内容管理创建草稿；actor=${actorID}`,
       humanReviewedBy: actorID,
-      ...(hasRuleSuggestion ? {
+      ...(suggestedRuleGrade ? {
         radarAssessment: {
           policyVersion: RADAR_RATING_POLICY_ID,
-          suggestedGrade: derivedRank,
+          suggestedGrade: suggestedRuleGrade,
           decisiveRuleCode: resolvedDecisiveRuleCode || undefined,
           matchedRules: orderedRuleCodes.map((code) => ({
             code,
