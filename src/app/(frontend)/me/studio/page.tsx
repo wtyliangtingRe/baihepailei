@@ -102,12 +102,6 @@ function whereFor(filters: StudioFilters): Where {
     and.push({ or })
   }
   if (filters.rank !== 'all') and.push({ rank: { equals: filters.rank } })
-
-  // Works has both Payload drafts and a historical business field named `status`.
-  // With `draft: true`, Payload resolves this filter through `_works_v.version_status`,
-  // whose enum is not guaranteed to contain the business value `archived`.
-  // The studio therefore reads canonical records with `draft: false` and only sends
-  // `archived` to the main Works table when the archive view is explicitly requested.
   if (filters.status === 'active') and.push({ status: { in: activePublicationStatuses } })
   if (filters.status === 'archived') and.push({ status: { equals: 'archived' } })
   return and.length ? { and } : {}
@@ -142,17 +136,10 @@ async function hideWorkAction(formData: FormData) {
   try {
     const current = await payload.findByID({ collection: 'works', id, depth: 0, draft: false, overrideAccess: true }) as unknown as StudioWork
     await payload.update({
-      collection: 'works',
-      id,
-      depth: 0,
-      draft: false,
-      overrideAccess: true,
+      collection: 'works', id, depth: 0, draft: false, overrideAccess: true,
       context: { firstPartyStudio: true, softHide: true },
       data: {
-        status: 'archived',
-        reviewStatus: 'deprecated',
-        isLiteVisible: false,
-        isFullVisible: false,
+        status: 'archived', reviewStatus: 'deprecated', isLiteVisible: false, isFullVisible: false,
         humanReviewNote: appendAuditNote(current.humanReviewNote, 'soft-hidden', reason, (auth.user as { id?: string | number }).id),
       },
     })
@@ -180,17 +167,10 @@ async function restoreWorkAction(formData: FormData) {
   try {
     const current = await payload.findByID({ collection: 'works', id, depth: 0, draft: false, overrideAccess: true }) as unknown as StudioWork
     await payload.update({
-      collection: 'works',
-      id,
-      depth: 0,
-      draft: false,
-      overrideAccess: true,
+      collection: 'works', id, depth: 0, draft: false, overrideAccess: true,
       context: { firstPartyStudio: true, restoreSoftHidden: true },
       data: {
-        status: 'draft',
-        reviewStatus: 'pending',
-        isLiteVisible: false,
-        isFullVisible: false,
+        status: 'draft', reviewStatus: 'pending', isLiteVisible: false, isFullVisible: false,
         humanReviewNote: appendAuditNote(current.humanReviewNote, 'restored-to-draft', '从回收站恢复，需重新复核后发布', (auth.user as { id?: string | number }).id),
       },
     })
@@ -222,15 +202,8 @@ function formatDate(value?: string) {
 
 async function findStudioPage(payload: Awaited<ReturnType<typeof getPayload>>, filters: StudioFilters) {
   return payload.find({
-    collection: 'works',
-    depth: 0,
-    draft: false,
-    limit: filters.perPage,
-    page: filters.page,
-    pagination: true,
-    overrideAccess: true,
-    sort: '-updatedAt',
-    where: whereFor(filters),
+    collection: 'works', depth: 0, draft: false, limit: filters.perPage, page: filters.page,
+    pagination: true, overrideAccess: true, sort: '-updatedAt', where: whereFor(filters),
   })
 }
 
@@ -238,16 +211,7 @@ async function countByStatus(payload: Awaited<ReturnType<typeof getPayload>>, st
   const where: Where = status === 'active'
     ? { status: { in: activePublicationStatuses } }
     : { status: { equals: 'archived' } }
-  return payload.find({
-    collection: 'works',
-    depth: 0,
-    draft: false,
-    limit: 1,
-    page: 1,
-    pagination: true,
-    overrideAccess: true,
-    where,
-  })
+  return payload.find({ collection: 'works', depth: 0, draft: false, limit: 1, page: 1, pagination: true, overrideAccess: true, where })
 }
 
 export default async function ContentStudioPage({ searchParams }: { searchParams: PageSearchParams }) {
@@ -282,7 +246,7 @@ export default async function ContentStudioPage({ searchParams }: { searchParams
 
   try {
     archivedCount = await countByStatus(payload, 'archived')
-  } catch (error) {
+  } catch {
     archiveSchemaReady = false
     console.warn('First-party studio archive enum is not aligned yet')
     archivedCount = { totalDocs: 0 }
@@ -295,6 +259,7 @@ export default async function ContentStudioPage({ searchParams }: { searchParams
   const studioError = first(raw.studioError)
   const hidden = first(raw.hidden)
   const restored = first(raw.restored)
+  const createdWork = first(raw.createdWork)
   const errorMessage = studioError === 'hide_confirmation'
     ? '隐藏作品需要填写至少 4 个字的理由，并在确认框输入“隐藏”。'
     : studioError === 'archive_schema'
@@ -314,10 +279,11 @@ export default async function ContentStudioPage({ searchParams }: { searchParams
 
       {!archiveSchemaReady ? <div className="review-action-message review-action-message-error" role="alert">回收站状态尚未与数据库版本 enum 对齐。编辑和新建功能仍可使用，但在诊断完成前不要测试隐藏或恢复。</div> : null}
       {errorMessage ? <div className="review-action-message review-action-message-error" role="alert">{errorMessage}</div> : null}
+      {createdWork ? <div className="review-action-message review-action-message-success" role="status">作品草稿 #{createdWork} 已创建，当前仍未公开。<Link href={`/me/studio/works/${createdWork}?returnTo=${encodeURIComponent(currentHref)}`}>打开草稿继续编辑</Link></div> : null}
       {hidden ? <div className="review-action-message review-action-message-success" role="status">作品 #{hidden} 已移入回收站，没有永久删除。</div> : null}
       {restored ? <div className="review-action-message review-action-message-success" role="status">作品 #{restored} 已恢复为待复核草稿。</div> : null}
 
-      <div className="review-row-actions"><Link className="review-button review-button-primary" href="/me/studio/works/new">工作人员新建作品草稿</Link><Link className="review-link" href="/me/review/content">AI / 内容审核台</Link><Link className="review-link" href="/me/review/feedback">用户反馈审核</Link></div>
+      <div className="review-row-actions"><Link className="review-button review-button-primary" href={`/me/studio/works/new?returnTo=${encodeURIComponent(currentHref)}`}>工作人员新建作品草稿</Link><Link className="review-link" href="/me/review/content">AI / 内容审核台</Link><Link className="review-link" href="/me/review/feedback">用户反馈审核</Link></div>
 
       <nav className="review-queue-tabs" aria-label="内容管理范围">
         <Link aria-current={filters.status === 'active' ? 'page' : undefined} href={studioHref(filters, { status: 'active', page: 1 })}><span>可编辑作品</span><strong>{activeCount.totalDocs.toLocaleString('zh-CN')}</strong></Link>
@@ -344,7 +310,7 @@ export default async function ContentStudioPage({ searchParams }: { searchParams
               <p className="muted">{work.mediaGroup || 'unknown'} / {work.mediaType || 'unknown'} / {work.format || 'unknown'}</p>
               <div className="review-content-actions">{!archived ? <Link className="review-button review-button-primary" href={`/me/studio/works/${work.id}?returnTo=${encodeURIComponent(currentHref)}`}>编辑完整条目</Link> : null}<Link className="review-link" href={canonicalContentUrl('works', work.id)}>查看前台</Link></div>
               {!archived ? (
-                <details className="review-safety-note" open={false}><summary>隐藏 / 移入回收站</summary><form action={hideWorkAction} className="review-content-form"><input name="id" type="hidden" value={String(work.id)} /><input name="returnTo" type="hidden" value={currentHref} /><label className="review-content-note"><span>隐藏理由</span><textarea maxLength={800} name="reason" placeholder="例如：重复条目、误建条目、版权或身份信息待核查。" required /></label><label><span>确认</span><input name="confirmation" placeholder="输入：隐藏" required /></label><button className="review-button review-button-danger" disabled={!archiveSchemaReady} type="submit">移入回收站</button></form></details>
+                <details className="review-safety-note"><summary>隐藏 / 移入回收站</summary><form action={hideWorkAction} className="review-content-form"><input name="id" type="hidden" value={String(work.id)} /><input name="returnTo" type="hidden" value={currentHref} /><label className="review-content-note"><span>隐藏理由</span><textarea maxLength={800} name="reason" placeholder="例如：重复条目、误建条目、版权或身份信息待核查。" required /></label><label><span>确认</span><input name="confirmation" placeholder="输入：隐藏" required /></label><button className="review-button review-button-danger" disabled={!archiveSchemaReady} type="submit">移入回收站</button></form></details>
               ) : (
                 <form action={restoreWorkAction} className="review-content-actions"><input name="id" type="hidden" value={String(work.id)} /><input name="returnTo" type="hidden" value={currentHref} /><button className="review-button review-button-primary" type="submit">恢复为待复核草稿</button></form>
               )}
