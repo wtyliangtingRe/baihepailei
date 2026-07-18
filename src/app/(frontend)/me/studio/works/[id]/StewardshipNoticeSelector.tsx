@@ -28,7 +28,8 @@ export default function StewardshipNoticeSelector({ notices, selectedIDs }: { no
   const selectedNotices = notices.filter((notice) => selected.has(notice.id))
 
   return (
-    <div className={styles.selector}>
+    <div className={styles.selector} id="stewardship-notices">
+      <a className={styles.jump} href="#stewardship-notices">站务提示 · 已选 {selected.size}</a>
       <div className={styles.status} aria-live="polite">
         <div>
           <strong>已选择 {selected.size} 条</strong>
