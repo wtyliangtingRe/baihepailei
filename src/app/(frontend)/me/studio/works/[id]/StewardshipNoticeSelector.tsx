@@ -34,7 +34,7 @@ export default function StewardshipNoticeSelector({ notices, selectedIDs }: { no
       <div className={styles.status} aria-live="polite">
         <div>
           <strong>已选择 {selected.size} 条</strong>
-          <span>{selected.size ? '点击页面底部“保存并同步前台”后生效。' : '当前不会显示额外站务提示。'}</span>
+          <span>{selected.size ? '保存后生效。' : '未选择提示。'}</span>
         </div>
         {selected.size ? <button onClick={() => setSelected(new Set())} type="button">清空选择</button> : null}
       </div>
@@ -54,7 +54,6 @@ export default function StewardshipNoticeSelector({ notices, selectedIDs }: { no
           <span>选择站务与用语提示</span>
           <strong>{selected.size} 条已选</strong>
         </summary>
-        <p>点击小三角展开列表。每条都有明确勾选状态，可同时选择多条。</p>
         <div className={styles.list}>
           {notices.map((notice) => {
             const isSelected = selected.has(notice.id)
