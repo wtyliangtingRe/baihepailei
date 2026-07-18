@@ -39,7 +39,8 @@ async function json(url, options = {}) {
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
   })
   const body = await response.text()
-  const payload = body ? JSON.parse(body) : null
+  let payload = null
+  try { payload = body ? JSON.parse(body) : null } catch { payload = { raw: body } }
   if (!response.ok) throw new Error(`HTTP ${response.status}: ${body.slice(0, 1200)}`)
   return payload
 }
@@ -47,6 +48,14 @@ async function json(url, options = {}) {
 async function main() {
   const baseUrl = String(arg('--url') || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/+$/u, '')
   const apply = process.argv.includes('--apply')
+  const only = String(arg('--only') || '').trim()
+  const bulkConfirmed = process.argv.includes('--confirm-bulk')
+  const selectedDefaults = only ? DEFAULTS.filter((notice) => notice.slug === only) : DEFAULTS
+  if (only && selectedDefaults.length !== 1) throw new Error(`Unknown stewardship notice slug for --only: ${only}`)
+  if (apply && !only && !bulkConfirmed) {
+    throw new Error('Bulk apply requires --confirm-bulk. First validate one notice with --only <slug> --apply.')
+  }
+
   const email = process.env.PAYLOAD_EXPORT_EMAIL || process.env.PAYLOAD_SEED_EMAIL
   const password = process.env.PAYLOAD_EXPORT_PASSWORD || process.env.PAYLOAD_SEED_PASSWORD
   if (!email || !password) throw new Error('Missing Payload login credentials in environment variables.')
@@ -58,15 +67,21 @@ async function main() {
   const headers = { Authorization: `JWT ${login.token}` }
   const result = await json(`${baseUrl}/api/stewardship-notices?limit=200&depth=0`, { headers })
   const existing = new Map((result.docs || []).map((doc) => [doc.slug, doc]))
-  const plan = DEFAULTS.map((notice) => ({
+  const plan = selectedDefaults.map((notice) => ({
     action: existing.has(notice.slug) ? 'update' : 'create',
     id: existing.get(notice.slug)?.id,
     notice,
   }))
 
-  console.log(JSON.stringify({ mode: apply ? 'apply' : 'dry-run', count: plan.length, plan: plan.map((row) => ({ action: row.action, id: row.id, slug: row.notice.slug, title: row.notice.title })) }, null, 2))
+  console.log(JSON.stringify({
+    mode: apply ? 'apply' : 'dry-run',
+    scope: only || 'all',
+    count: plan.length,
+    bulkConfirmed,
+    plan: plan.map((row) => ({ action: row.action, id: row.id, slug: row.notice.slug, title: row.notice.title })),
+  }, null, 2))
   if (!apply) {
-    console.log('Dry-run only. Re-run with --apply after reviewing the plan.')
+    console.log('Dry-run only. Validate one item with --only <slug> --apply before using --apply --confirm-bulk.')
     return
   }
 
