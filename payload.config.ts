@@ -12,6 +12,7 @@ import { Media } from './src/collections/Media'
 import { Organizations } from './src/collections/Organizations'
 import { RadarResearchRecords } from './src/collections/RadarResearchRecords'
 import { Rules } from './src/collections/Rules'
+import { StewardshipNotices } from './src/collections/StewardshipNotices'
 import { Tags } from './src/collections/Tags'
 import { Terms } from './src/collections/Terms'
 import { UserLists } from './src/collections/UserLists'
@@ -100,6 +101,7 @@ export default buildConfig({
     Creators,
     Organizations,
     Evidence,
+    StewardshipNotices,
     RadarResearchRecords,
     Comments,
     UserLists,
