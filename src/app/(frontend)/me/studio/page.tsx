@@ -157,7 +157,7 @@ async function hideWorkAction(formData: FormData) {
       },
     })
   } catch (error) {
-    console.error('First-party studio soft hide failed', { id, error })
+    console.warn('First-party studio soft hide failed', { id, error })
     redirect(withMessage(returnTo, 'studioError', 'archive_schema'))
   }
 
@@ -195,7 +195,7 @@ async function restoreWorkAction(formData: FormData) {
       },
     })
   } catch (error) {
-    console.error('First-party studio restore failed', { id, error })
+    console.warn('First-party studio restore failed', { id, error })
     redirect(withMessage(returnTo, 'studioError', 'restore_failed'))
   }
 
@@ -284,7 +284,7 @@ export default async function ContentStudioPage({ searchParams }: { searchParams
     archivedCount = await countByStatus(payload, 'archived')
   } catch (error) {
     archiveSchemaReady = false
-    console.error('First-party studio archive enum is not aligned yet', { error })
+    console.warn('First-party studio archive enum is not aligned yet')
     archivedCount = { totalDocs: 0 }
     if (filters.status === 'archived') result = { ...result, docs: [], totalDocs: 0, totalPages: 1, page: 1 }
   }
