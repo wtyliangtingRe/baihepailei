@@ -1,6 +1,6 @@
 import type { Access, CollectionConfig } from 'payload'
 
-import { adminsOnly, editorsAndUp } from '@/access/roles'
+import { adminsOnly } from '@/access/roles'
 
 const publicNoticeOrSignedIn: Access = ({ req }) => req.user ? true : { isPublic: { equals: true } }
 
@@ -16,10 +16,10 @@ export const StewardshipNotices: CollectionConfig = {
     useAsTitle: 'title',
   },
   access: {
-    create: editorsAndUp,
+    create: adminsOnly,
     delete: adminsOnly,
     read: publicNoticeOrSignedIn,
-    update: editorsAndUp,
+    update: adminsOnly,
   },
   versions: {
     drafts: true,
