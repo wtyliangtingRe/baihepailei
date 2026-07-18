@@ -12,14 +12,16 @@ const workRoute = read('src/app/(frontend)/works/[slug]/page.tsx')
 const reviewUtils = read('src/app/(frontend)/me/review/content/review-utils.ts')
 const retirements = read('src/app/(frontend)/review-editor-retirements.css')
 
-test('Payload admin is restricted to owner and admin through the configured auth collection', () => {
+ test('Payload admin is restricted to owner and admin through the configured auth collection', () => {
   assert.match(payloadConfig, /UsersWithRestrictedAdmin/u)
   assert.match(payloadConfig, /admin:\s*\(\{ req \}\) => isAdmin\(req\.user\)/u)
   assert.match(payloadConfig, /user: UsersWithRestrictedAdmin\.slug/u)
 })
 
-test('account dashboard uses the first-party studio for editors and separates advanced maintenance', () => {
-  assert.match(account, /<strong>站内编辑台<\/strong>/u)
+test('account dashboard separates content management, review queues and advanced maintenance', () => {
+  assert.match(account, /<strong>站内内容管理<\/strong>/u)
+  assert.match(account, /<strong>AI \/ 内容审核<\/strong>/u)
+  assert.match(account, /<strong>用户反馈审核<\/strong>/u)
   assert.match(account, /mayUsePayload/u)
   assert.match(account, /<strong>Payload 高级维护<\/strong>/u)
   assert.match(account, /user\.role === 'owner' \|\| user\.role === 'admin'/u)
@@ -34,16 +36,18 @@ test('all signed-in users can choose a dedicated new-work proposal mode', () => 
   assert.match(feedback, /linkedWork: workID \? Number\(workID\) : undefined/u)
 })
 
-test('accepted feedback clearly requires an explicit implementation step', () => {
+test('accepted feedback clearly requires an explicit implementation step in content management', () => {
   assert.match(feedbackDetail, /已采纳”只表示材料成立，不会自动改作品/u)
-  assert.match(feedbackDetail, /现在落实到关联作品/u)
-  assert.match(feedbackDetail, /新作品申请/u)
+  assert.match(feedbackDetail, /现在编辑关联作品/u)
+  assert.match(feedbackDetail, /检查重复并创建草稿/u)
+  assert.match(feedbackDetail, /\/me\/studio\/works\//u)
 })
 
 test('legacy review publication values are normalized without direct database writes', () => {
   assert.match(payloadConfig, /data\.status !== 'review'/u)
   assert.match(payloadConfig, /data\.reviewStatus === 'reviewed' \? 'published' : 'draft'/u)
   assert.match(reviewUtils, /normalizePublicationStatus/u)
+  assert.match(reviewUtils, /isStudio/u)
 })
 
 test('staff work pages can overlay current Payload values while public indexes stay stable', () => {
