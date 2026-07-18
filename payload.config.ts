@@ -19,6 +19,7 @@ import { Users } from './src/collections/Users'
 import { Warnings } from './src/collections/Warnings'
 import { Works } from './src/collections/Works'
 import { withRadarAssessmentFields } from './src/collections/fields/radarAssessment'
+import { syncWorkToPublicIndexes } from './src/lib/publicIndexSync'
 
 const WorksWithRadarAssessment = withRadarAssessmentFields(Works)
 const WorksWithSafePublicationStatus: CollectionConfig = {
@@ -33,6 +34,18 @@ const WorksWithSafePublicationStatus: CollectionConfig = {
           ...data,
           status: data.reviewStatus === 'reviewed' ? 'published' : 'draft',
         }
+      },
+    ],
+    afterChange: [
+      ...(WorksWithRadarAssessment.hooks?.afterChange || []),
+      async ({ context, doc }) => {
+        if (!context?.firstPartyStudio) return doc
+        try {
+          syncWorkToPublicIndexes(doc)
+        } catch (error) {
+          console.error('Payload work saved but public index sync failed', { workID: doc?.id, error })
+        }
+        return doc
       },
     ],
   },

@@ -55,7 +55,9 @@ export function safeReviewReturnTo(value: FormDataEntryValue | string | null | u
   const requested = String(value || '')
   const isContentQueue = requested === '/me/review/content' || requested.startsWith('/me/review/content?')
   const isFeedbackQueue = requested === '/me/review/feedback' || requested.startsWith('/me/review/feedback?')
-  return isContentQueue || isFeedbackQueue ? requested : '/me/review/content'
+  const isFeedbackDetail = /^\/me\/review\/feedback\/\d+(?:\?.*)?$/u.test(requested)
+  const isStudio = requested === '/me/studio' || requested.startsWith('/me/studio?')
+  return isContentQueue || isFeedbackQueue || isFeedbackDetail || isStudio ? requested : '/me/studio'
 }
 
 export function reviewActionHref(
