@@ -5,6 +5,30 @@ import { clearDetailIndexCache, type DetailIndex, type DetailItem } from '../app
 import { clearSearchIndexCache, type SearchIndex, type SearchItem } from '../app/(frontend)/_lib/search-index'
 
 type Relation = string | number | { id?: string | number; title?: string; name?: string }
+type StewardshipNoticeRelation = string | number | {
+  id?: string | number
+  slug?: string
+  title?: string
+  summary?: string
+  category?: string
+  tone?: string
+  severity?: string
+  helpUrl?: string
+  sortOrder?: number
+  isPublic?: boolean
+}
+type StewardshipNoticeView = {
+  id?: string | number
+  slug?: string
+  title?: string
+  summary?: string
+  category?: string
+  tone?: string
+  severity?: string
+  helpUrl?: string
+  sortOrder?: number
+}
+type DetailItemWithNotices = DetailItem & { stewardshipNotices?: StewardshipNoticeView[] }
 type WorkDoc = {
   id: string | number
   title?: string
@@ -20,6 +44,7 @@ type WorkDoc = {
   isFullVisible?: boolean
   aliases?: Array<string | { value?: string }>
   localizedTitles?: Array<string | { title?: string }>
+  stewardshipNotices?: StewardshipNoticeRelation[]
   mediaGroup?: string
   mediaType?: string
   format?: string
@@ -79,6 +104,37 @@ function reviewReasonValues(value: WorkDoc['reviewReasons']) {
   return []
 }
 
+function stewardshipNoticeViews(values: WorkDoc['stewardshipNotices']) {
+  if (!Array.isArray(values)) return []
+  const seen = new Set<string>()
+  return values
+    .map((value) => {
+      if (!value || typeof value !== 'object' || value.isPublic === false) return null
+      const title = text(value.title)
+      const summary = text(value.summary)
+      if (!title && !summary) return null
+      return {
+        id: value.id,
+        slug: text(value.slug),
+        title,
+        summary,
+        category: text(value.category),
+        tone: text(value.tone) || 'note',
+        severity: text(value.severity) || 'low',
+        helpUrl: text(value.helpUrl),
+        sortOrder: Number.isFinite(Number(value.sortOrder)) ? Number(value.sortOrder) : 100,
+      } satisfies StewardshipNoticeView
+    })
+    .filter((value): value is StewardshipNoticeView => Boolean(value))
+    .filter((value) => {
+      const key = text(value.id || value.slug || value.title).toLowerCase()
+      if (!key || seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .sort((left, right) => Number(left.sortOrder || 100) - Number(right.sortOrder || 100))
+}
+
 function shouldRemoveFromPublicIndexes(work: WorkDoc) {
   return work.status === 'archived' || (work.isLiteVisible === false && work.isFullVisible === false)
 }
@@ -101,6 +157,7 @@ function organizationNames(values: WorkDoc['organizations']) {
 }
 
 function searchBlob(work: WorkDoc, existing?: SearchItem) {
+  const notices = stewardshipNoticeViews(work.stewardshipNotices)
   return unique([
     work.title,
     work.originalTitle,
@@ -110,6 +167,7 @@ function searchBlob(work: WorkDoc, existing?: SearchItem) {
     organizationNames(work.organizations),
     relationNames(work.tags),
     relationNames(work.warnings),
+    notices.flatMap((notice) => [notice.title, notice.summary]),
     work.rank,
     work.mediaGroup,
     work.mediaType,
@@ -176,7 +234,9 @@ function detailPatch(work: WorkDoc, existing?: DetailItem): DetailItem {
   const recordID = String(work.id)
   const slug = text(work.slug) || existing?.slug || `work-${recordID}`
   const reasons = reviewReasonValues(work.reviewReasons)
-  return {
+  const existingWithNotices = existing as DetailItemWithNotices | undefined
+  const noticeValues = stewardshipNoticeViews(work.stewardshipNotices)
+  const next: DetailItemWithNotices = {
     ...(existing || {}),
     id: existing?.id || `works:${slug}`,
     recordId: recordID,
@@ -211,7 +271,9 @@ function detailPatch(work: WorkDoc, existing?: DetailItem): DetailItem {
     updatedAt: text(work.updatedAt) || new Date().toISOString(),
     createdAt: text(work.createdAt) || existing?.createdAt,
     sections: existing?.sections || [],
+    stewardshipNotices: Array.isArray(work.stewardshipNotices) ? noticeValues : existingWithNotices?.stewardshipNotices,
   }
+  return next
 }
 
 function updateSearch(work: WorkDoc): SyncResult['search'] {
