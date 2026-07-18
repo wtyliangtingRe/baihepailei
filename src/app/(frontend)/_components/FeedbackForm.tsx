@@ -1,7 +1,10 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
+
+import RadarRuleSelector from './RadarRuleSelector'
 
 type FeedbackFormProps = {
   initialCollection?: string
@@ -32,11 +35,11 @@ function normalizedInitialType(value?: string) {
 }
 
 export default function FeedbackForm({ initialCollection = 'works', initialTitle = '', initialWorkId = '', initialType = '' }: FeedbackFormProps) {
+  const router = useRouter()
   const [feedbackType, setFeedbackType] = useState(normalizedInitialType(initialType))
   const [targetTitle, setTargetTitle] = useState(initialTitle)
   const [targetWorkID, setTargetWorkID] = useState(initialWorkId)
   const [proposedGrade, setProposedGrade] = useState('')
-  const [ruleCodes, setRuleCodes] = useState('')
   const [claim, setClaim] = useState('')
   const [evidenceSummary, setEvidenceSummary] = useState('')
   const [evidenceLinks, setEvidenceLinks] = useState('')
@@ -51,7 +54,11 @@ export default function FeedbackForm({ initialCollection = 'works', initialTitle
     setState('submitting')
     setErrorMessage('')
 
-    const rules = cleanLines(ruleCodes).map((code) => ({ code }))
+    const formData = new FormData(event.currentTarget)
+    const decisiveRuleCode = String(formData.get('decisiveRuleCode') || '').trim()
+    const selectedRuleCodes = formData.getAll('matchedRuleCodes').map(String).map((code) => code.trim()).filter(Boolean)
+    const orderedRuleCodes = [...new Set([decisiveRuleCode, ...selectedRuleCodes].filter(Boolean))]
+    const rules = orderedRuleCodes.map((code) => ({ code }))
     const links = cleanLines(evidenceLinks).map((url, index) => ({ label: `来源 ${index + 1}`, url }))
     const workID = isNewWork ? '' : targetWorkID.trim()
     if (workID && !/^\d+$/u.test(workID)) {
@@ -105,7 +112,10 @@ export default function FeedbackForm({ initialCollection = 'works', initialTitle
         <h2>{isNewWork ? '新作品申请已经进入人工审核队列' : '材料已经进入人工审核队列'}</h2>
         <p>{isNewWork ? '编辑会先检查是否已有重复条目，再决定创建新的草稿作品；申请不会直接公开。' : '编辑会核对来源、规则和条目身份。提交内容不会自动改变作品评级。'}</p>
         {submissionID ? <small>反馈编号：{submissionID}</small> : null}
-        <button onClick={() => setState('idle')} type="button">继续提交</button>
+        <div className="feedback-actions">
+          <button onClick={() => router.back()} type="button">返回上一级</button>
+          <button onClick={() => setState('idle')} type="button">继续提交</button>
+        </div>
       </section>
     )
   }
@@ -152,10 +162,11 @@ export default function FeedbackForm({ initialCollection = 'works', initialTitle
         </label>
       </div>
 
-      <label>
-        建议命中规则（可选，每行一个代码）
-        <textarea maxLength={1600} onChange={(event) => setRuleCodes(event.target.value)} placeholder={'例如：\nE-MALE-INTIMACY\nF-YURI-BAIT'} value={ruleCodes} />
-      </label>
+      <RadarRuleSelector
+        description="第一项会作为主规则保存；展开后可同时勾选其他命中规则。它们只是提交建议，不会自动改正式评级。"
+        title="建议命中规则（可选）"
+      />
+
       <label>
         {isNewWork ? '作品说明与收录理由' : '希望网站核实的结论'}
         <textarea maxLength={4000} onChange={(event) => setClaim(event.target.value)} placeholder={isNewWork ? '请说明作品类型、语言、发行时间、百合相关性，以及为什么应当建立新条目。' : '请说明具体人物、章节、路线、结局或创作者信息，以及你认为对应哪一条排雷规则。'} required value={claim} />
