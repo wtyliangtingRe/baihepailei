@@ -1,0 +1,10 @@
+/* Keep implementation notes out of the finished content-management UI. */
+.review-editor-page:has(.review-editor-form) .review-hero-copy > .muted,
+.review-editor-page:has(.review-editor-form) .review-hero-copy > .review-safety-note,
+.review-editor-page .review-editor-form > .review-safety-note,
+.review-editor-page .review-editor-submit > span,
+.review-editor-page .review-editor-section:has(#stewardship-notices) > header > p,
+.review-editor-page .review-editor-section:has(select[name='rank']) > header > p,
+.review-editor-page .review-editor-field:has(textarea[name='summary']) > small {
+  display: none;
+}
