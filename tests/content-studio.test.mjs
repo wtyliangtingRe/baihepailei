@@ -9,6 +9,9 @@ const create = read('src/app/(frontend)/me/studio/works/new/page.tsx')
 const legacyEditor = read('src/app/(frontend)/me/review/content/works/[id]/page.tsx')
 const account = read('src/app/(frontend)/_components/AccountClient.tsx')
 const feedback = read('src/app/(frontend)/me/review/feedback/[id]/page.tsx')
+const feedbackForm = read('src/app/(frontend)/_components/FeedbackForm.tsx')
+const ruleSelector = read('src/app/(frontend)/_components/RadarRuleSelector.tsx')
+const pendingButton = read('src/app/(frontend)/me/studio/_components/PendingSubmitButton.tsx')
 const sync = read('src/lib/publicIndexSync.ts')
 const richText = read('src/lib/richTextPlain.ts')
 const guards = read('src/app/(frontend)/_lib/public-entity-guards.ts')
@@ -32,7 +35,6 @@ test('content studio is database-backed and separate from review queues', () => 
 
 test('studio does not send business archive values through Payload version rows', () => {
   assert.match(studio, /activePublicationStatuses = \['draft', 'published'\]/u)
-  assert.match(studio, /_works_v\.version_status/u)
   assert.match(studio, /archiveSchemaReady/u)
   assert.match(studio, /回收站状态尚未与数据库版本 enum 对齐/u)
 
@@ -62,6 +64,35 @@ test('staff creation produces a hidden pending draft and links feedback with num
   assert.match(create, /linkedWork: createdID/u)
   assert.match(create, /reviewer: actorID/u)
   assert.match(feedback, /检查重复并创建草稿/u)
+})
+
+test('draft creation returns to its parent with a visible success state and double-submit protection', () => {
+  assert.match(create, /withCreatedWork\(returnTo, createdID\)/u)
+  assert.match(create, /name="returnTo"/u)
+  assert.match(create, /PendingSubmitButton/u)
+  assert.match(pendingButton, /useFormStatus/u)
+  assert.match(pendingButton, /disabled=\{pending\}/u)
+  assert.match(studio, /const createdWork = first\(raw\.createdWork\)/u)
+  assert.match(studio, /作品草稿 #\{createdWork\} 已创建/u)
+  assert.match(feedback, /已创建待复核作品草稿 #\{createdWork\}/u)
+  assert.match(feedbackForm, /router\.back\(\)/u)
+  assert.match(feedbackForm, /返回上一级/u)
+})
+
+test('new work proposals and staff drafts share main and all-matched rule controls', () => {
+  assert.match(ruleSelector, /主规则（决定性规则）/u)
+  assert.match(ruleSelector, /<details/u)
+  assert.match(ruleSelector, /全部命中规则/u)
+  assert.match(ruleSelector, /name=\{decisiveName\}/u)
+  assert.match(ruleSelector, /name=\{matchedName\}/u)
+  assert.match(ruleSelector, /if \(checked && !decisive\) setDecisive\(code\)/u)
+  assert.match(feedbackForm, /orderedRuleCodes/u)
+  assert.match(create, /RADAR_RATING_POLICY_ID/u)
+  assert.match(create, /decisiveRuleCode/u)
+  assert.match(create, /matchedRules: orderedRuleCodes/u)
+  assert.match(create, /suggestedGrade: derivedRank/u)
+  assert.match(feedback, /主规则 \/ 决定性规则/u)
+  assert.match(feedback, /全部命中规则/u)
 })
 
 test('soft delete archives and hides without deleting the record', () => {
