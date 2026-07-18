@@ -77,9 +77,7 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
 
   let doc: FeedbackDoc
   try {
-    doc = await payload.findByID({
-      collection: 'feedback-submissions', id, depth: 2, overrideAccess: true,
-    }) as unknown as FeedbackDoc
+    doc = await payload.findByID({ collection: 'feedback-submissions', id, depth: 2, overrideAccess: true }) as unknown as FeedbackDoc
   } catch {
     notFound()
   }
@@ -87,6 +85,10 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
   const workID = relationID(doc.linkedWork)
   const links = (doc.evidenceLinks || []).filter((item) => item.url)
   const rules = (doc.matchedRuleCodes || []).map((item) => item.code).filter(Boolean)
+  const isAccepted = doc.workflowStatus === 'accepted'
+  const isNewWork = doc.feedbackType === 'new_work'
+  const mayUsePayload = role === 'owner' || role === 'admin'
+  const returnTo = `/me/review/feedback/${doc.id}`
 
   return (
     <main className="page review-workbench feedback-detail-page">
@@ -104,6 +106,15 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
         </div>
       </section>
 
+      {isAccepted ? (
+        <section className="review-safety-note" role="status">
+          <strong>“已采纳”只表示材料成立，不会自动改作品。</strong>
+          <p>{isNewWork && !workID ? '这是一份新作品申请。下一步由编辑在内容管理中检查重复候选并创建待复核草稿。' : '请进入关联作品的站内内容管理，把采纳结论落实到正式等级、标题、来源或可见性字段。'}</p>
+          {workID ? <Link className="review-button review-button-primary" href={`/me/studio/works/${workID}?returnTo=${encodeURIComponent(returnTo)}`}>现在编辑关联作品</Link> : null}
+          {isNewWork && !workID ? <Link className="review-button review-button-primary" href={`/me/studio/works/new?feedbackId=${encodeURIComponent(String(doc.id))}`}>检查重复并创建草稿</Link> : null}
+        </section>
+      ) : null}
+
       <section className="review-row">
         <dl className="feedback-review-facts">
           <div><dt>提交者</dt><dd>{doc.submitterName || relationLabel(doc.submitter) || '注册用户'}</dd></div>
@@ -120,18 +131,15 @@ export default async function FeedbackDetailPage({ params }: { params: Promise<{
 
         <section className="feedback-detail-sources">
           <h2>全部证据链接</h2>
-          {links.length ? (
-            <ol>
-              {links.map((item, index) => <li key={`${item.url}-${index}`}><a href={item.url} rel="noreferrer" target="_blank">{item.label || item.url}</a><small>{item.url}</small></li>)}
-            </ol>
-          ) : <p className="muted">没有提交外部证据链接。</p>}
+          {links.length ? <ol>{links.map((item, index) => <li key={`${item.url}-${index}`}><a href={item.url} rel="noreferrer" target="_blank">{item.label || item.url}</a><small>{item.url}</small></li>)}</ol> : <p className="muted">没有提交外部证据链接。</p>}
         </section>
 
         <div className="review-row-actions">
           <Link className="review-link" href="/me/review/feedback">返回反馈审核队列</Link>
           {workID ? <Link className="review-link" href={canonicalContentUrl('works', workID)}>查看关联作品</Link> : null}
-          {workID ? <Link className="review-link" href={`/me/review/content?collection=works&q=${encodeURIComponent(workID)}`}>编辑关联作品</Link> : null}
-          <Link className="review-link" href={`/admin/collections/feedback-submissions/${doc.id}`}>Payload 原始记录</Link>
+          {workID ? <Link className="review-link" href={`/me/studio/works/${workID}?returnTo=${encodeURIComponent(returnTo)}`}>编辑关联作品</Link> : null}
+          {isNewWork && !workID ? <Link className="review-link" href={`/me/studio/works/new?feedbackId=${encodeURIComponent(String(doc.id))}`}>创建作品草稿</Link> : null}
+          {mayUsePayload ? <Link className="review-link" href={`/admin/collections/feedback-submissions/${doc.id}`}>Payload 原始记录</Link> : null}
         </div>
       </section>
     </main>

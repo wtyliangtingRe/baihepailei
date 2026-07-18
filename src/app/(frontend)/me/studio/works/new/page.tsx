@@ -1,0 +1,297 @@
+import configPromise from '@payload-config'
+import { randomUUID } from 'node:crypto'
+import { headers } from 'next/headers'
+import Link from 'next/link'
+import { notFound, redirect } from 'next/navigation'
+import { getPayload, type Where } from 'payload'
+
+import { aliasesFromText, sourceLinksFromText } from '../../../review/content/review-utils'
+
+export const dynamic = 'force-dynamic'
+
+type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted' | 'member'
+type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
+type FeedbackDoc = {
+  id: string | number
+  feedbackType?: string
+  targetTitle?: string
+  proposedGrade?: string
+  claim?: string
+  evidenceSummary?: string
+  evidenceLinks?: Array<{ label?: string; url?: string }>
+  reviewNote?: string
+  workflowStatus?: string
+  linkedWork?: unknown
+}
+
+type DuplicateCandidate = {
+  id: string | number
+  title?: string
+  originalTitle?: string
+  mediaGroup?: string
+  mediaType?: string
+  status?: string
+}
+
+const staffRoles = new Set<Role>(['owner', 'admin', 'editor', 'reviewer'])
+const rankOptions = ['S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'trash', 'unknown'] as const
+const mediaGroupOptions = ['anime', 'manga', 'novel', 'game', 'other', 'unknown'] as const
+const mediaTypeOptions = ['anime', 'manga', 'novel', 'light_novel', 'visual_novel', 'game', 'audio_drama', 'live_action', 'webtoon', 'doujin', 'anthology', 'other', 'unknown'] as const
+const formatOptions = ['tv_anime', 'anime_movie', 'ova', 'ona', 'manga_series', 'manga_oneshot', 'novel_series', 'light_novel_series', 'web_serial', 'visual_novel', 'pc_game', 'console_game', 'mobile_game', 'audio_drama', 'live_action', 'webtoon_series', 'doujin', 'anthology', 'other', 'unknown'] as const
+const datePrecisionOptions = ['day', 'month', 'year', 'unknown'] as const
+
+function first(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] || '' : value || ''
+}
+
+function roleOf(user: unknown): Role | undefined {
+  if (!user || typeof user !== 'object') return undefined
+  return (user as { role?: Role }).role
+}
+
+function canEdit(user: unknown) {
+  const role = roleOf(user)
+  return Boolean(role && staffRoles.has(role))
+}
+
+function text(value: FormDataEntryValue | null, max = 12000) {
+  return String(value || '').trim().slice(0, max)
+}
+
+function enumValue<const T extends readonly string[]>(options: T, value: string): T[number] | null {
+  return (options as readonly string[]).includes(value) ? value as T[number] : null
+}
+
+function numericID(value: unknown) {
+  const number = Number(value)
+  return Number.isSafeInteger(number) && number > 0 ? number : null
+}
+
+function slugPart(value: string) {
+  const normalized = value.normalize('NFKC').toLowerCase()
+    .replace(/[^a-z0-9\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]+/gu, '-')
+    .replace(/^-+|-+$/gu, '')
+    .slice(0, 60)
+  return normalized || 'work'
+}
+
+function evidenceLinksToText(value: FeedbackDoc['evidenceLinks']) {
+  if (!Array.isArray(value)) return ''
+  return value.map((item) => item?.url ? `${item.label ? `${item.label} | ` : ''}${item.url}` : '').filter(Boolean).join('\n')
+}
+
+function candidateWhere(title: string, originalTitle: string): Where {
+  const or: Where[] = [
+    { title: { like: title } },
+    { originalTitle: { like: title } },
+    { searchText: { like: title } },
+  ]
+  if (originalTitle) {
+    or.push({ title: { like: originalTitle } }, { originalTitle: { like: originalTitle } }, { searchText: { like: originalTitle } })
+  }
+  return { or }
+}
+
+async function createWorkAction(formData: FormData) {
+  'use server'
+  const payload = await getPayload({ config: configPromise })
+  const auth = await payload.auth({ headers: await headers() })
+  if (!auth.user || !canEdit(auth.user)) throw new Error('没有直接创建作品的权限。')
+
+  const title = text(formData.get('title'), 300)
+  const originalTitle = text(formData.get('originalTitle'), 300)
+  const rank = enumValue(rankOptions, text(formData.get('rank'), 40) || 'unknown')
+  const mediaGroup = enumValue(mediaGroupOptions, text(formData.get('mediaGroup'), 40) || 'unknown')
+  const mediaType = enumValue(mediaTypeOptions, text(formData.get('mediaType'), 40) || 'unknown')
+  const format = enumValue(formatOptions, text(formData.get('format'), 60) || 'unknown')
+  const firstPublishedPrecision = enumValue(datePrecisionOptions, text(formData.get('firstPublishedPrecision'), 40) || 'unknown')
+  const duplicateConfirmed = formData.get('duplicateConfirmed') === 'on'
+  const feedbackIDText = text(formData.get('feedbackId'), 40)
+  const feedbackID = feedbackIDText ? numericID(feedbackIDText) : null
+
+  if (!title || !rank || !mediaGroup || !mediaType || !format || !firstPublishedPrecision || (feedbackIDText && !feedbackID)) {
+    redirect(`/me/studio/works/new?createError=invalid_fields${feedbackIDText ? `&feedbackId=${encodeURIComponent(feedbackIDText)}` : ''}`)
+  }
+
+  const candidates = await payload.find({
+    collection: 'works',
+    depth: 0,
+    draft: true,
+    limit: 8,
+    page: 1,
+    pagination: false,
+    overrideAccess: true,
+    where: candidateWhere(title, originalTitle),
+  })
+  if (candidates.docs.length && !duplicateConfirmed) {
+    const params = new URLSearchParams({ duplicateWarning: 'true', q: title })
+    if (feedbackID) params.set('feedbackId', String(feedbackID))
+    redirect(`/me/studio/works/new?${params.toString()}`)
+  }
+
+  const token = randomUUID()
+  const slug = `manual-${slugPart(title)}-${token.slice(0, 8)}`
+  const actorID = numericID((auth.user as { id?: string | number }).id)
+  if (!actorID) throw new Error('当前账户缺少有效的数字用户 ID，未创建作品。')
+
+  const humanNote = text(formData.get('humanReviewNote'), 4000)
+  const sourceLinks = sourceLinksFromText(formData.get('sourceLinks'))
+  const evidenceNote = text(formData.get('evidenceNote'), 12000)
+  const searchText = text(formData.get('searchText'), 30000)
+
+  const created = await payload.create({
+    collection: 'works',
+    depth: 0,
+    draft: false,
+    overrideAccess: true,
+    context: { firstPartyStudio: true, manualCreate: true, feedbackID: feedbackID || undefined },
+    data: {
+      title,
+      originalTitle,
+      aliases: aliasesFromText(formData.get('aliases')),
+      slug,
+      siteId: `manual:${token}`,
+      rank,
+      reviewStatus: 'pending',
+      ratingNotice: 'none',
+      evidenceStrength: 'unassessed',
+      mediaGroup,
+      mediaType,
+      format,
+      firstPublishedAt: text(formData.get('firstPublishedAt'), 40) || null,
+      firstPublishedPrecision,
+      firstPublishedLabel: text(formData.get('firstPublishedLabel'), 120),
+      status: 'draft',
+      isLiteVisible: false,
+      isFullVisible: false,
+      hasEvidence: sourceLinks.length > 0 || Boolean(evidenceNote),
+      sourceLinks,
+      evidenceNote,
+      searchText,
+      humanReviewNote: humanNote || `[${new Date().toISOString()}] 由站内内容管理创建草稿；actor=${actorID}`,
+      humanReviewedBy: actorID,
+    },
+  })
+  const createdID = numericID(created.id)
+  if (!createdID) throw new Error('Payload 已创建记录，但返回了无效作品 ID；未继续关联反馈。')
+
+  if (feedbackID) {
+    try {
+      const feedback = await payload.findByID({ collection: 'feedback-submissions', id: feedbackID, depth: 0, overrideAccess: true }) as unknown as FeedbackDoc
+      const previousNote = String(feedback.reviewNote || '').trim()
+      const note = `已创建待复核作品草稿 #${createdID}；尚未公开。`
+      await payload.update({
+        collection: 'feedback-submissions',
+        id: feedbackID,
+        depth: 0,
+        overrideAccess: true,
+        data: {
+          linkedWork: createdID,
+          workflowStatus: 'accepted',
+          reviewer: actorID,
+          reviewedAt: new Date().toISOString(),
+          reviewNote: previousNote ? `${previousNote}\n${note}` : note,
+        },
+      })
+    } catch (error) {
+      console.error('Created work but could not link feedback', { feedbackID, workID: createdID, error })
+    }
+  }
+
+  redirect(`/me/studio/works/${createdID}?created=true&returnTo=${encodeURIComponent('/me/studio')}`)
+}
+
+function optionLabel(value: string) {
+  if (value === 'AA') return 'S（兼容 AA）'
+  if (value === 'trash') return '垃圾'
+  if (value === 'unknown') return '未知'
+  return value
+}
+
+export default async function NewStudioWorkPage({ searchParams }: { searchParams: PageSearchParams }) {
+  const payload = await getPayload({ config: configPromise })
+  const auth = await payload.auth({ headers: await headers() })
+  if (!auth.user) redirect(`/account/login?redirect=${encodeURIComponent('/me/studio/works/new')}`)
+  if (!canEdit(auth.user)) redirect('/feedback?type=new_work')
+
+  const raw = await searchParams
+  const feedbackID = first(raw.feedbackId)
+  const query = first(raw.q)
+  let feedback: FeedbackDoc | null = null
+  if (feedbackID) {
+    const feedbackRecordID = numericID(feedbackID)
+    if (!feedbackRecordID) notFound()
+    try {
+      feedback = await payload.findByID({ collection: 'feedback-submissions', id: feedbackRecordID, depth: 0, overrideAccess: true }) as unknown as FeedbackDoc
+    } catch {
+      notFound()
+    }
+  }
+
+  const duplicateCandidates = query
+    ? (await payload.find({ collection: 'works', depth: 0, draft: true, limit: 10, page: 1, pagination: false, overrideAccess: true, where: candidateWhere(query, '') })).docs as unknown as DuplicateCandidate[]
+    : []
+  const createError = first(raw.createError)
+  const duplicateWarning = first(raw.duplicateWarning)
+  const suggestedTitle = feedback?.targetTitle || query
+  const suggestedRank = rankOptions.includes(String(feedback?.proposedGrade || '') as typeof rankOptions[number]) ? String(feedback?.proposedGrade) : 'unknown'
+  const feedbackSources = evidenceLinksToText(feedback?.evidenceLinks)
+
+  return (
+    <main className="page review-workbench review-editor-page studio-create-page">
+      <section className="review-hero">
+        <div className="review-hero-copy">
+          <p className="eyebrow">站内内容管理</p>
+          <h1>创建作品草稿</h1>
+          <p className="muted">工作人员可以直接建档，但新作品默认不可见、待复核、未发布。先检查重复作品，再补齐资料和人工结论。</p>
+          <div className="review-safety-note">这一步只通过 Payload 创建一个可追踪草稿，不执行 PostgreSQL 直写，也不会自动把用户建议当成正式评级。</div>
+        </div>
+      </section>
+
+      {feedback ? <div className="review-action-message" role="status">正在处理用户新作品申请 #{feedback.id}：{feedback.targetTitle || '未命名作品'}。创建成功后会自动关联该反馈。</div> : null}
+      {createError ? <div className="review-action-message review-action-message-error" role="alert">必填字段无效，请检查标题、作品类型和分级。</div> : null}
+      {duplicateWarning ? <div className="review-action-message review-action-message-error" role="alert">发现可能重复的现有作品。请先核对下方候选；确认不是重复项后，再勾选“仍然创建”。</div> : null}
+
+      {duplicateCandidates.length ? (
+        <section className="review-row">
+          <h2>可能重复的现有作品</h2>
+          <div className="review-list">
+            {duplicateCandidates.map((candidate) => <article className="review-row" key={candidate.id}><strong>{candidate.title || `作品 #${candidate.id}`}</strong><p className="muted">ID {candidate.id} · {candidate.originalTitle || '无原名'} · {candidate.mediaGroup || 'unknown'} / {candidate.mediaType || 'unknown'} · {candidate.status || 'draft'}</p><Link className="review-link" href={`/me/studio/works/${candidate.id}`}>打开现有条目</Link></article>)}
+          </div>
+        </section>
+      ) : null}
+
+      <form action={createWorkAction} className="review-editor-form">
+        <input name="feedbackId" type="hidden" value={feedbackID} />
+        <section className="review-editor-section">
+          <header><h2>基础身份</h2><p>公开网址使用创建后的数据库 ID；Slug 只作为兼容字段自动生成。</p></header>
+          <div className="review-editor-grid">
+            <label className="review-editor-field review-editor-field-wide"><span>显示标题</span><input defaultValue={suggestedTitle} maxLength={300} name="title" required /></label>
+            <label className="review-editor-field"><span>原始标题</span><input maxLength={300} name="originalTitle" /></label>
+            <label className="review-editor-field"><span>正式分级初值</span><select defaultValue={suggestedRank} name="rank">{rankOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></label>
+            <label className="review-editor-field"><span>作品大类</span><select defaultValue="unknown" name="mediaGroup">{mediaGroupOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></label>
+            <label className="review-editor-field"><span>作品类型</span><select defaultValue="unknown" name="mediaType">{mediaTypeOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></label>
+            <label className="review-editor-field"><span>作品形态</span><select defaultValue="unknown" name="format">{formatOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></label>
+            <label className="review-editor-field"><span>首次日期</span><input name="firstPublishedAt" type="date" /></label>
+            <label className="review-editor-field"><span>日期精度</span><select defaultValue="unknown" name="firstPublishedPrecision"><option value="day">精确到日</option><option value="month">精确到月</option><option value="year">精确到年</option><option value="unknown">未知</option></select></label>
+            <label className="review-editor-field"><span>日期显示文本</span><input maxLength={120} name="firstPublishedLabel" /></label>
+            <label className="review-editor-field review-editor-field-wide"><span>别名（每行一个）</span><textarea defaultValue={feedback?.evidenceSummary || ''} name="aliases" placeholder={'中文译名\n日本語タイトル\nEnglish title'} /></label>
+          </div>
+        </section>
+
+        <section className="review-editor-section">
+          <header><h2>来源与建档说明</h2><p>新建草稿不会公开；编辑完成核验后再决定正式发布。</p></header>
+          <div className="review-editor-grid">
+            <label className="review-editor-field review-editor-field-wide"><span>人工建档记录</span><textarea defaultValue={feedback?.claim || ''} maxLength={4000} name="humanReviewNote" placeholder="说明为什么创建新条目、检查过哪些重复候选，以及仍待补充的资料。" /></label>
+            <label className="review-editor-field review-editor-field-wide"><span>来源链接</span><textarea defaultValue={feedbackSources} name="sourceLinks" placeholder={'Bangumi | https://...\nAniList | https://...'} /></label>
+            <label className="review-editor-field review-editor-field-wide"><span>证据 / 来源备注</span><textarea defaultValue={feedback?.evidenceSummary || ''} name="evidenceNote" /></label>
+            <label className="review-editor-field review-editor-field-wide"><span>搜索补充文本</span><textarea name="searchText" placeholder="日文名、英文名、作者名、平台、关键词。" /></label>
+          </div>
+        </section>
+
+        <label className="review-editor-check"><input defaultChecked={Boolean(duplicateWarning)} name="duplicateConfirmed" type="checkbox" /><span>我已核对可能重复的现有作品，确认仍应创建一个独立草稿。</span></label>
+        <div className="review-editor-submit"><button className="review-button review-button-primary" type="submit">创建待复核草稿</button><Link className="review-link" href={feedbackID ? `/me/review/feedback/${feedbackID}` : '/me/studio'}>取消</Link></div>
+      </form>
+    </main>
+  )
+}

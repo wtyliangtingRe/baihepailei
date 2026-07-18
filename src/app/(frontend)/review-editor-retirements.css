@@ -1,0 +1,17 @@
+/*
+ * The third editor section is the legacy risk matrix. Keep the underlying
+ * fields and values for rollback compatibility, but remove the redundant
+ * daily-editing UI while rules, tags, warnings and evidence replace it.
+ */
+.review-editor-form > .review-editor-section:nth-of-type(3) {
+  display: none;
+}
+
+/*
+ * Daily reviewers stay inside the first-party studio. Owner/admin access to
+ * Payload remains available as a separate advanced-maintenance card on the
+ * account page, where the server also enforces the role restriction.
+ */
+.review-workbench a[href^='/admin'] {
+  display: none;
+}

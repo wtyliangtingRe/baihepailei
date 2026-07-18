@@ -1,8 +1,9 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import { lexicalEditor as makeEditor } from '@payloadcms/richtext-lexical'
-import { buildConfig } from 'payload'
+import { buildConfig, type CollectionConfig } from 'payload'
 
+import { isAdmin } from './src/access/roles'
 import { Comments } from './src/collections/Comments'
 import { Creators } from './src/collections/Creators'
 import { Evidence } from './src/collections/Evidence'
@@ -18,8 +19,44 @@ import { Users } from './src/collections/Users'
 import { Warnings } from './src/collections/Warnings'
 import { Works } from './src/collections/Works'
 import { withRadarAssessmentFields } from './src/collections/fields/radarAssessment'
+import { syncWorkToPublicIndexes } from './src/lib/publicIndexSync'
 
 const WorksWithRadarAssessment = withRadarAssessmentFields(Works)
+const WorksWithSafePublicationStatus: CollectionConfig = {
+  ...WorksWithRadarAssessment,
+  hooks: {
+    ...WorksWithRadarAssessment.hooks,
+    beforeValidate: [
+      ...(WorksWithRadarAssessment.hooks?.beforeValidate || []),
+      ({ data }) => {
+        if (!data || data.status !== 'review') return data
+        return {
+          ...data,
+          status: data.reviewStatus === 'reviewed' ? 'published' : 'draft',
+        }
+      },
+    ],
+    afterChange: [
+      ...(WorksWithRadarAssessment.hooks?.afterChange || []),
+      async ({ context, doc }) => {
+        if (!context?.firstPartyStudio) return doc
+        try {
+          syncWorkToPublicIndexes(doc)
+        } catch (error) {
+          console.error('Payload work saved but public index sync failed', { workID: doc?.id, error })
+        }
+        return doc
+      },
+    ],
+  },
+}
+const UsersWithRestrictedAdmin: CollectionConfig = {
+  ...Users,
+  access: {
+    ...Users.access,
+    admin: ({ req }) => isAdmin(req.user),
+  },
+}
 
 function smtpValue(value: unknown) {
   const normalized = String(value || '').trim()
@@ -54,12 +91,12 @@ const emailAdapter = smtpHost
 
 export default buildConfig({
   admin: {
-    user: Users.slug,
+    user: UsersWithRestrictedAdmin.slug,
   },
   collections: [
-    Users,
+    UsersWithRestrictedAdmin,
     Media,
-    WorksWithRadarAssessment,
+    WorksWithSafePublicationStatus,
     Creators,
     Organizations,
     Evidence,

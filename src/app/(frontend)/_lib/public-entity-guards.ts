@@ -35,7 +35,8 @@ export function isPublicCreatorTitle(value?: string) {
   return Boolean(key) && !hiddenCreatorKeys.has(key)
 }
 
-export function isPublicSearchItem(item: { collection?: string; title?: string }) {
+export function isPublicSearchItem(item: { collection?: string; title?: string; status?: string }) {
+  if (item.collection === 'works' && item.status === 'archived') return false
   if (item.collection !== 'creators') return true
   return isPublicCreatorTitle(item.title)
 }

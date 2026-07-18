@@ -147,6 +147,10 @@ const detailIndexPath = path.join(process.cwd(), 'public', 'detail-index.json')
 
 let cachedIndex: DetailIndex | null | undefined
 
+export function clearDetailIndexCache() {
+  cachedIndex = undefined
+}
+
 export function readDetailIndex() {
   if (cachedIndex !== undefined) return cachedIndex
 

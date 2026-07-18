@@ -23,6 +23,8 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
   const mediaMode = publicMediaMode()
   const targetTitle = first(params.title)
   const targetWorkID = first(params.workId)
+  const requestedType = first(params.type)
+  const isNewWork = requestedType === 'new_work'
   const emailSubject = encodeURIComponent(targetTitle ? `Baihepailei 反馈：${targetTitle}` : 'Baihepailei 条目反馈')
   const emailBody = encodeURIComponent([
     targetTitle ? `相关条目：${targetTitle}` : '',
@@ -37,13 +39,14 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
     <main className="page feedback-page">
       <section className="page-heading collection-heading">
         <div>
-          <p className="eyebrow">反馈与纠错</p>
-          <h1>把新的人工排雷材料交给网站</h1>
-          <p>用户提交只会进入待审核队列，不会直接覆盖正式评级。编辑核验来源后才能采纳。</p>
+          <p className="eyebrow">{isNewWork ? '新作品申请' : '反馈与纠错'}</p>
+          <h1>{isNewWork ? '向资料库提议一个新作品' : '把新的人工排雷材料交给网站'}</h1>
+          <p>{isNewWork ? '所有注册用户都可以申请建档。编辑会先检查重复作品和来源，再创建待复核草稿；不会自动公开。' : '用户提交只会进入待审核队列，不会直接覆盖正式评级。编辑核验来源后才能采纳。'}</p>
         </div>
         <div className="collection-actions">
           <Link className="back-link" href="/browse">返回资料库</Link>
           <Link className="back-link" href="/account">我的账户</Link>
+          {isNewWork ? <Link className="back-link" href="/feedback">改为提交排雷材料</Link> : <Link className="back-link" href="/feedback?type=new_work">提交新作品</Link>}
         </div>
       </section>
 
@@ -51,6 +54,7 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
         initialCollection={first(params.collection) || 'works'}
         initialTitle={first(params.title)}
         initialWorkId={targetWorkID}
+        initialType={requestedType}
       />
 
       <section className="detail-card feedback-guide">
@@ -98,11 +102,11 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
       </section>
 
       <section className="detail-card feedback-guide">
-        <h2>什么样的材料更容易被采纳？</h2>
+        <h2>{isNewWork ? '什么样的新作品申请更容易建档？' : '什么样的材料更容易被采纳？'}</h2>
         <ul>
-          <li>明确到人物、章节、路线、版本或结局。</li>
+          {isNewWork ? <li>至少提供一个可核验来源，并写明原文名、常见译名和作品类型。</li> : <li>明确到人物、章节、路线、版本或结局。</li>}
           <li>提供可追溯的官方页面、原作位置或可靠资料链接。</li>
-          <li>说明建议对应的 S–X 规则代码，以及是否存在相反证据。</li>
+          <li>{isNewWork ? '说明是否可能与现有条目重复；编辑会在建档前再次检查。' : '说明建议对应的 S–X 规则代码，以及是否存在相反证据。'}</li>
           <li>涉及剧透时勾选剧透提示，避免审核时误公开。</li>
         </ul>
       </section>
