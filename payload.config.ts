@@ -20,9 +20,12 @@ import { Users } from './src/collections/Users'
 import { Warnings } from './src/collections/Warnings'
 import { Works } from './src/collections/Works'
 import { withRadarAssessmentFields } from './src/collections/fields/radarAssessment'
+import { withStewardshipNotices } from './src/collections/fields/stewardshipNotices'
 import { syncWorkToPublicIndexes } from './src/lib/publicIndexSync'
 
-const WorksWithRadarAssessment = withRadarAssessmentFields(Works)
+const WorksWithRadarAssessment = withRadarAssessmentFields(withStewardshipNotices(Works))
+const CreatorsWithStewardshipNotices = withStewardshipNotices(Creators)
+const OrganizationsWithStewardshipNotices = withStewardshipNotices(Organizations)
 const WorksWithSafePublicationStatus: CollectionConfig = {
   ...WorksWithRadarAssessment,
   hooks: {
@@ -98,8 +101,8 @@ export default buildConfig({
     UsersWithRestrictedAdmin,
     Media,
     WorksWithSafePublicationStatus,
-    Creators,
-    Organizations,
+    CreatorsWithStewardshipNotices,
+    OrganizationsWithStewardshipNotices,
     Evidence,
     StewardshipNotices,
     RadarResearchRecords,
