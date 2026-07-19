@@ -31,6 +31,9 @@ assert.doesNotMatch(read('scripts/export/enrich-lite-detail-index.mjs'), /legacy
 assert.doesNotMatch(read('scripts/export/enrich-public-work-status.mjs'), /draft.*true/u)
 const users = read('src/collections/Users.ts')
 assert.match(users, /requestedRole\(original\.role\)/u)
+const legacyRoleMigration = read('scripts/users/migrate-legacy-roles.mjs')
+assert.match(legacyRoleMigration, /MIGRATE-LEGACY-ROLES-TO-MEMBER/u)
+assert.match(legacyRoleMigration, /nextRole: 'member'/u)
 
 const comments = read('src/collections/Comments.ts')
 assert.match(comments, /comment_rate_limited/u)
