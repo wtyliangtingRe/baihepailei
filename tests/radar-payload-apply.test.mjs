@@ -146,6 +146,30 @@ test('honest source status is required by apply plan validation', () => {
   assert.ok(validateApplyPlanRow(invalid).includes('multiple_secondary_requires_two_traceable_sources'))
 })
 
+
+test('AI-only apply validation accepts an unchanged recorded human track', () => {
+  const manual = work({
+    rank: 'S',
+    ratingNotice: 'manual_reviewed',
+    reviewStatus: 'reviewed',
+    reviewReasons: ['manual_review'],
+    evidenceStrength: 'strong',
+    humanAssessment: { grade: 'S', status: 'reviewed' },
+  })
+  const expectedBefore = currentStateOf(manual)
+  const aiOnly = plan({
+    humanTrackPreserved: true,
+    expectedBefore,
+    expectedBeforeHash: snapshotHash(expectedBefore),
+    changedFields: ['radarAssessment'],
+    patch: {
+      ...expectedBefore,
+      radarAssessment: plan().patch.radarAssessment,
+    },
+  })
+  assert.deepEqual(validateApplyPlanRow(aiOnly), [])
+})
+
 test('dry-run summary must contain the exact plan SHA-256', () => {
   const hash = sha256Buffer('plan')
   const summary = {
