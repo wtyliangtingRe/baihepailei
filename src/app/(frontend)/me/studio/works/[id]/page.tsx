@@ -30,7 +30,7 @@ import StewardshipNoticeSelector, { type StewardshipNoticeOption } from './Stewa
 
 export const dynamic = 'force-dynamic'
 
-type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted' | 'member'
+type Role = 'owner' | 'admin' | 'editor' | 'member'
 type PageParams = Promise<{ id: string }>
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
 type LocalizedTitle = {
@@ -111,7 +111,7 @@ type WorkDoc = {
   createdAt?: string
 }
 
-const staffRoles = new Set<Role>(['owner', 'admin', 'editor', 'reviewer'])
+const staffRoles = new Set<Role>(['owner', 'admin', 'editor'])
 const rankOptions = ['S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'trash', 'unknown']
 const mediaGroupOptions = ['anime', 'manga', 'novel', 'game', 'other', 'unknown']
 const mediaTypeOptions = ['anime', 'manga', 'novel', 'light_novel', 'visual_novel', 'game', 'audio_drama', 'live_action', 'webtoon', 'doujin', 'anthology', 'other', 'unknown']
