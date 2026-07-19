@@ -13,6 +13,7 @@ const detailExport = read('scripts/export/build-lite-detail-index.mjs')
 const searchPipeline = read('scripts/export/build-and-enrich-lite-search-index.mjs')
 const detailPipeline = read('scripts/export/build-and-enrich-lite-detail-index.mjs')
 const trustCard = read('src/app/(frontend)/_components/WorkAssessmentTrustCard.tsx')
+const fullExport = read('scripts/export/build-full-public-index.mjs')
 
 test('works page caches sort, titles and normalized search blobs', () => {
   assert.match(works, /cachedSortedWorks/u)
@@ -82,6 +83,7 @@ test('complete export is exhaustive, keeps Lite visibility explicit and avoids d
   assert.doesNotMatch(detailPipeline, /enrich-lite-source-display-fields\.mjs/u)
   assert.doesNotMatch(detailPipeline, /enrich-lite-evidence-details\.mjs/u)
   assert.doesNotMatch(detailPipeline, /enrich-lite-risk-matrix\.mjs/u)
+  assert.doesNotMatch(fullExport, /enrich-public-work-status\.mjs/u)
   assert.match(searchExport, /radar-research-records/u)
   assert.match(searchExport, /researchPreview/u)
   assert.match(trustCard, /AI 研究档案 · 非正式评级/u)
