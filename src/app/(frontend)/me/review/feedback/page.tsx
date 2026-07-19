@@ -9,7 +9,7 @@ import { canonicalContentUrl } from '../../../_lib/content-identity'
 
 export const dynamic = 'force-dynamic'
 
-type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted' | 'member'
+type Role = 'owner' | 'admin' | 'editor' | 'member'
 type WorkflowStatus = 'pending' | 'triaging' | 'needs_information' | 'accepted' | 'rejected' | 'archived'
 type FeedbackQueue = 'active' | 'processed' | 'all'
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
@@ -45,7 +45,7 @@ type Filters = {
   page: number
 }
 
-const allowedRoles = new Set<Role>(['owner', 'admin', 'editor', 'reviewer'])
+const allowedRoles = new Set<Role>(['owner', 'admin', 'editor'])
 const activeStatuses: WorkflowStatus[] = ['pending', 'triaging', 'needs_information']
 const processedStatuses: WorkflowStatus[] = ['accepted', 'rejected', 'archived']
 const workflowLabels: Record<WorkflowStatus, string> = {
