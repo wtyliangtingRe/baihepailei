@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-const baseUrl = String(process.argv[process.argv.indexOf('--url') + 1] || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/u, '')
+const urlIndex = process.argv.indexOf('--url')
+const baseUrl = String(urlIndex >= 0 ? process.argv[urlIndex + 1] : process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/u, '')
 const apply = process.argv.includes('--apply')
 const confirmIndex = process.argv.indexOf('--confirm')
 const confirmation = confirmIndex >= 0 ? process.argv[confirmIndex + 1] : ''
