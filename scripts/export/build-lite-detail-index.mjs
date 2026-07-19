@@ -106,6 +106,8 @@ async function fetchCollection(baseUrl, token, collection, { includeDrafts, prof
 
       if (drafts) {
         params.set('draft', 'true')
+        // Include imported draft/review rows even when they have no version row.
+        params.set('where[status][in]', 'draft,review,published')
       } else if (collection === 'evidence') {
         params.set('where[status][equals]', 'confirmed')
         params.set('where[isPublic][equals]', 'true')
