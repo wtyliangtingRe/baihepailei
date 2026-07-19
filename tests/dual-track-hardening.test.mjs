@@ -44,6 +44,8 @@ assert(exists('src/app/(frontend)/api/comments/[id]/report/route.ts'))
 const detail = read('src/app/(frontend)/works/[slug]/page.tsx')
 assert.match(detail, /preview.*=== '1'/u)
 assert.doesNotMatch(detail, /'reviewer'/u)
+const newWorkStudio = read('src/app/(frontend)/me/studio/works/new/page.tsx')
+assert.doesNotMatch(newWorkStudio, /'reviewer'|'trusted'/u)
 
 assert(exists('src/collections/AuditEvents.ts'))
 assert.match(read('src/collections/AuditEvents.ts'), /create: \(\) => false/u)
