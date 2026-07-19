@@ -47,6 +47,7 @@ async function fetchAll(baseUrl, token, collection) {
       depth: '2',
       limit: String(PAGE_LIMIT),
       page: String(page),
+      'where[stewardshipNotices][exists]': 'true',
     })
     const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, {
       headers: token ? { Authorization: `JWT ${token}` } : {},
