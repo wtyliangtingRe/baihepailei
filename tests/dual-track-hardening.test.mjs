@@ -17,6 +17,7 @@ for (const collection of ['Rules', 'Tags', 'Terms', 'Warnings']) {
 const config = read('payload.config.ts')
 assert.match(config, /STEWARDSHIP_NOTICES_SCHEMA_READY.*'true'/u)
 assert.match(config, /AuditEvents/u)
+assert.match(config, /humanNoteChanged/u)
 
 const works = read('src/collections/Works.ts')
 assert.match(works, /name: 'humanAssessment'/u)
