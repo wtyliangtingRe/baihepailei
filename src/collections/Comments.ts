@@ -7,7 +7,6 @@ type CommentUser = {
   id?: string | number
   email?: string
   displayName?: string
-  id?: string | number
 }
 
 type CommentRelation = string | number | { id?: string | number } | null | undefined
