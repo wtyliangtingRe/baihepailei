@@ -42,6 +42,14 @@ function sha256File(file) {
   return createHash('sha256').update(fs.readFileSync(file)).digest('hex')
 }
 
+function assertUnderDataLocal(target) {
+  const root = path.resolve('data_local')
+  const resolved = path.resolve(target)
+  if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
+    throw new Error('Discovered-work candidate artifacts must remain below ignored data_local/.')
+  }
+}
+
 function normalize(value) {
   return val(value).normalize('NFKC').toLowerCase()
     .replace(/[\s\u3000]+/gu, '')
@@ -200,6 +208,7 @@ function main() {
   const candidatesFile = val(args.candidates)
   const worksFile = val(args.works)
   const outDir = val(args['out-dir']) || 'data_local/staging/ai-radar/discovered-work-candidates-v01'
+  assertUnderDataLocal(outDir)
   if (!candidatesFile || !worksFile) throw new Error('--candidates and --works are required')
   const candidates = readJsonl(candidatesFile)
   const existingWorks = readJsonl(worksFile).map(workIdentity)
