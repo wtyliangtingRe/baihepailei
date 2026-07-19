@@ -108,7 +108,7 @@ function withContentAudit(collection: CollectionConfig, targetCollection: string
             targetCollection,
             targetID: doc?.id,
             targetTitle: doc?.title || doc?.name,
-            summary: '创作者或机构内容被工作人员写入。',
+            summary: targetCollection + ' 内容被工作人员写入。',
             metadata: {
               operation,
               beforeStatus: previousDoc?.status,
@@ -128,7 +128,7 @@ function withContentAudit(collection: CollectionConfig, targetCollection: string
             targetCollection,
             targetID: doc?.id,
             targetTitle: doc?.title || doc?.name,
-            summary: '创作者或机构记录被永久删除。',
+            summary: targetCollection + ' 记录被永久删除。',
             metadata: { status: doc?.status },
           })
         },
