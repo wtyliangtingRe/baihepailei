@@ -5,7 +5,13 @@ import path from 'node:path'
 const DEFAULT_OUT = 'public/detail-index.json'
 const COLLECTIONS = ['works', 'creators', 'organizations', 'evidence', 'terms', 'rules']
 const OPTIONAL_COLLECTIONS = new Set(['evidence'])
-const PAGE_LIMIT = '1000'
+function exportPageLimit() {
+  const requested = Number(process.env.PUBLIC_INDEX_PAGE_LIMIT || 100)
+  if (!Number.isFinite(requested)) return '100'
+  return String(Math.min(250, Math.max(25, Math.round(requested))))
+}
+
+const PAGE_LIMIT = exportPageLimit()
 
 function parseArgs(argv) {
   const args = {}
@@ -30,6 +36,7 @@ function usage() {
 
 Optional environment variables:
   PAYLOAD_EXPORT_EMAIL
+  PUBLIC_INDEX_PAGE_LIMIT (default 100, maximum 250)
   PAYLOAD_EXPORT_PASSWORD
 
 Fallback environment variables:
