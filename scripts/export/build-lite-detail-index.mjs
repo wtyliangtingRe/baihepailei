@@ -386,7 +386,6 @@ function commonFields(collection, doc, title, typeLabel) {
     title: title || '',
     slug: doc.slug || '',
     url: itemUrl(collection, doc.id, doc.slug),
-    legacyXWikiPage: doc.legacyXWikiPage || '',
     updatedAt: doc.updatedAt || '',
     createdAt: doc.createdAt || '',
     status: doc.status || '',
