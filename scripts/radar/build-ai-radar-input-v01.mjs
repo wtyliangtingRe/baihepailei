@@ -95,18 +95,19 @@ function normalizeCandidateSources(value) {
 }
 
 function workProtection(work) {
-  const reasons = []
-  const humanGrade = val(work?.humanAssessment?.grade)
-  const humanStatus = val(work?.humanAssessment?.status)
-  if (humanGrade) reasons.push('human_assessment_grade_recorded')
-  if (humanStatus && humanStatus !== 'pending') reasons.push(`human_assessment_status:${humanStatus}`)
-  if (work?.ratingNotice === 'manual_reviewed') reasons.push('manual_rating_notice')
-  if (['reviewed', 'disputed', 'deprecated'].includes(val(work?.reviewStatus))) {
-    reasons.push(`review_status:${val(work.reviewStatus)}`)
+  const locked = work?.locked === true || work?.isLocked === true
+  return {
+    // A recorded human track is not a write blocker: AI may refresh radarAssessment,
+    // but the planner will preserve human-facing fields exactly.
+    protected: locked,
+    reasons: locked ? ['locked'] : [],
+    humanTrackRecorded: Boolean(
+      val(work?.humanAssessment?.grade)
+      || (val(work?.humanAssessment?.status) && val(work?.humanAssessment?.status) !== 'pending')
+      || work?.ratingNotice === 'manual_reviewed'
+      || ['reviewed', 'disputed', 'deprecated'].includes(val(work?.reviewStatus)),
+    ),
   }
-  if (work?.humanVerified === true) reasons.push('human_verified')
-  if (work?.locked === true || work?.isLocked === true) reasons.push('locked')
-  return { protected: reasons.length > 0, reasons }
 }
 
 function buildEvidencePacket(work) {
@@ -167,7 +168,10 @@ function buildEvidencePacket(work) {
       status: val(work?.status),
       importBatch: val(work?.importBatch),
       humanVerified: work?.humanVerified === true,
-      locked: work?.locked === true,
+      locked: work?.locked === true || work?.isLocked === true,
+      humanAssessment: work?.humanAssessment && typeof work.humanAssessment === 'object'
+        ? work.humanAssessment
+        : null,
       radarAssessment: work?.radarAssessment && typeof work.radarAssessment === 'object'
         ? work.radarAssessment
         : null,
