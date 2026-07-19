@@ -86,4 +86,4 @@
     来源快照 → 标准化 → 本站 ID/外部 ID/标题+类型+日期去重
     → create / duplicate / blocker 计划 → 编辑确认 → 草稿 → AI 轨道
 
-当前版本已将“用户申请新作品 → 审核通过 → 可追踪预填草稿”接入站内；外部发现器的候选自动入库将作为下一步单独的、带来源适配器的导入器实现，不能把不受控网页搜索直接变成公开数据写入。
+当前版本已将“用户申请新作品 → 审核通过 → 可追踪预填草稿”接入站内，并提供 `pnpm radar:plan-discovered-works -- --candidates <来源快照.jsonl> --works <本次输入包.jsonl>`。该计划器固定输出 `ready_for_editor_draft`、`possible_duplicate` 与 `blocked`，按外部 ID、再按标题+类型进行去重，不会写入 Payload。外部发现器的候选自动入库仍需作为下一步单独的、带来源适配器和 checkpoint 的导入器实现，不能把不受控网页搜索直接变成公开数据写入。
