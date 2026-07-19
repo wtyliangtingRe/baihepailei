@@ -249,8 +249,7 @@ async function saveContentAction(formData: FormData) {
     collection: collection as never,
     id,
     depth: 0,
-    draft: true,
-    overrideAccess: true,
+        overrideAccess: true,
   }) as unknown as ContentDoc
 
   if (collection === 'works' && isMergedDuplicateWork(current)) {
@@ -341,8 +340,7 @@ export default async function ContentReviewPage({ searchParams }: { searchParams
   const draftCount = (collection: ContentCollection, where: Where = {}) => payload.find({
     collection: collection as never,
     depth: 0,
-    draft: true,
-    limit: 1,
+        limit: 1,
     page: 1,
     pagination: true,
     overrideAccess: true,
@@ -353,8 +351,7 @@ export default async function ContentReviewPage({ searchParams }: { searchParams
     payload.find({
       collection: filters.collection as never,
       depth: 0,
-      draft: true,
-      limit: filters.perPage,
+            limit: filters.perPage,
       page: filters.page,
       pagination: true,
       overrideAccess: true,
