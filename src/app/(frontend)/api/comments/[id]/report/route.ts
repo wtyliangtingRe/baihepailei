@@ -50,7 +50,7 @@ export async function POST(_request: Request, { params }: Params) {
     id: commentID,
     depth: 0,
     overrideAccess: true,
-    context: { automatedAbuseProtection: true },
+    context: { automatedAbuseProtection: true, auditActorID: (auth.user as { id?: string | number }).id },
     data: {
       reportCount,
       reportedBy: [...reporterIDs, actorID],
