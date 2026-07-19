@@ -67,6 +67,12 @@ const WorksWithSafePublicationStatus: CollectionConfig = {
             afterRank: doc?.rank,
             beforeReviewStatus: previousDoc?.reviewStatus,
             afterReviewStatus: doc?.reviewStatus,
+            beforeHumanAssessmentGrade: previousDoc?.humanAssessment?.grade,
+            afterHumanAssessmentGrade: doc?.humanAssessment?.grade,
+            beforeHumanAssessmentStatus: previousDoc?.humanAssessment?.status,
+            afterHumanAssessmentStatus: doc?.humanAssessment?.status,
+            beforeAISuggestedGrade: previousDoc?.radarAssessment?.suggestedGrade,
+            afterAISuggestedGrade: doc?.radarAssessment?.suggestedGrade,
             context: Object.keys(context || {}).filter((key) => key !== 'auditEvent'),
           },
         })
@@ -115,6 +121,10 @@ function withContentAudit(collection: CollectionConfig, targetCollection: string
               afterStatus: doc?.status,
               beforeReviewStatus: previousDoc?.reviewStatus,
               afterReviewStatus: doc?.reviewStatus,
+              beforeTitle: previousDoc?.title || previousDoc?.name,
+              afterTitle: doc?.title || doc?.name,
+              beforeSlug: previousDoc?.slug,
+              afterSlug: doc?.slug,
             },
           })
         },
