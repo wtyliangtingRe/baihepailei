@@ -2,6 +2,7 @@ type AuditRequest = any
 
 type AuditInput = {
   req: AuditRequest
+  actorID?: string | number
   action: string
   targetCollection: string
   targetID: string | number
@@ -11,12 +12,14 @@ type AuditInput = {
 }
 
 export async function recordAuditEvent(input: AuditInput) {
-  const actorID = input.req.user?.id
-  if (actorID === undefined || actorID === null || !input.req.payload?.create) return
-  if (input.req.context?.auditEvent) return
+  const req = input.req || {}
+  const actorID = input.actorID ?? req.user?.id ?? req.context?.auditActorID
+  const payload = req.payload
+  if (actorID === undefined || actorID === null || !payload?.create) return
+  if (req.context?.auditEvent) return
 
   try {
-    await input.req.payload.create({
+    await payload.create({
       collection: 'audit-events',
       overrideAccess: true,
       context: { auditEvent: true },
