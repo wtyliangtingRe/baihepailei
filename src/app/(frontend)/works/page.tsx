@@ -1,6 +1,5 @@
 import Link from 'next/link'
 
-import { publicContentImagesEnabled } from '@/lib/deploymentProfile'
 import {
   effectiveWorkGrade,
   effectiveWorkGradeLabel,
@@ -413,7 +412,6 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
   const pageStart = (currentPage - 1) * pageSize
   const pageItems = items.slice(pageStart, pageStart + pageSize)
   const activeFilterLabels = filterLabel(filters)
-  const showImages = publicContentImagesEnabled() && index.mediaMode !== 'text'
   const aiPendingCount = allItems.filter((item) => assessmentKey(item) === 'ai').length
   const humanGradeCount = allItems.filter((item) => displayedGrade(item).source === 'human').length
   const aiGradeCount = allItems.filter((item) => (
@@ -499,15 +497,11 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
                 const grade = displayedGrade(item)
                 return (
                   <Link
-                    className={`collection-card work-card work-title-only-card${showImages ? ' work-card-with-cover' : ''}`}
+                    className="collection-card work-card work-title-only-card"
                     data-content-visibility={item.contentVisibility || 'ordinary'}
                     href={item.url}
                     key={item.id}
                   >
-                    {showImages ? item.cover?.url
-                      ? <img alt={item.cover.alt || `${displayTitle(item)}封面`} className="work-card-cover" height={item.cover.height} loading="lazy" src={item.cover.url} width={item.cover.width} />
-                      : <span aria-hidden="true" className="work-card-cover work-card-cover-placeholder">百合</span>
-                      : null}
                     <div className="work-card-copy">
                       <div className="work-card-badges">
                         <p>{rankLabel(grade.grade)}</p>
