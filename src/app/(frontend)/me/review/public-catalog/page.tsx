@@ -8,7 +8,7 @@ import { getPayload, type Where } from 'payload'
 export const dynamic = 'force-dynamic'
 
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
-type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted'
+type Role = 'owner' | 'admin' | 'editor'
 
 type CandidateSource = {
   source?: string
@@ -58,7 +58,7 @@ type Filters = {
 
 type LabeledOption = { value: string; label: string }
 
-const allowedRoles: Role[] = ['owner', 'admin', 'editor', 'reviewer']
+const allowedRoles: Role[] = ['owner', 'admin', 'editor']
 const ranks = ['X', 'F', 'E', 'D', 'C', 'B', 'A', 'AA', 'unknown']
 const mediaOptions: LabeledOption[] = [
   { value: 'anime', label: '动画' },
