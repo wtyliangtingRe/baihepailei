@@ -15,6 +15,7 @@ type CommentDoc = {
   parentComment?: CommentRelation
   replyToName?: string
   createdAt?: string
+  moderationStatus?: string
 }
 
 type AccountUser = {
@@ -22,7 +23,7 @@ type AccountUser = {
   role?: string
 }
 
-const commentModeratorRoles = new Set(['owner', 'admin', 'editor', 'reviewer'])
+const commentModeratorRoles = new Set(['owner', 'admin', 'editor'])
 
 function commentsUrl(item: DetailItem) {
   const params = new URLSearchParams()
@@ -60,6 +61,7 @@ export default function CommentBlock({ item }: { item: DetailItem }) {
   const [replyingTo, setReplyingTo] = useState<CommentDoc | null>(null)
   const [status, setStatus] = useState<'idle' | 'loading' | 'submitting' | 'submitted' | 'login-required' | 'error'>('idle')
   const [deletingID, setDeletingID] = useState('')
+  const [reportingID, setReportingID] = useState('')
   const apiUrl = useMemo(() => commentsUrl(item), [item.collection, item.slug])
 
   useEffect(() => {
@@ -200,6 +202,37 @@ export default function CommentBlock({ item }: { item: DetailItem }) {
     setStatus('idle')
   }
 
+  async function reportComment(comment: CommentDoc) {
+    if (!user?.id) {
+      setStatus('login-required')
+      return
+    }
+    const commentID = String(comment.id)
+    setReportingID(commentID)
+    try {
+      const response = await fetch(`/api/comments/${encodeURIComponent(commentID)}/report`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      if (response.status === 401 || response.status === 403) {
+        setStatus('login-required')
+        return
+      }
+      if (!response.ok) throw new Error('comment-report-failed')
+      const payload = await response.json()
+      if (payload?.autoHidden) {
+        setComments((current) => current.filter((item) => String(item.id) !== commentID && relationID(item.parentComment) !== commentID))
+      } else {
+        setComments((current) => current.map((item) => String(item.id) === commentID ? { ...item, reportCount: payload.reportCount } : item))
+      }
+      setStatus('idle')
+    } catch {
+      setStatus('error')
+    } finally {
+      setReportingID('')
+    }
+  }
+
   const redirect = `/account/login?redirect=${encodeURIComponent(item.url)}`
   return (
     <section className="page comment-block-shell" aria-label="评论区">
@@ -217,14 +250,14 @@ export default function CommentBlock({ item }: { item: DetailItem }) {
             const replies = repliesByRoot.get(String(comment.id)) || []
             return (
               <article className="comment-item" key={comment.id}>
-                <CommentHeader comment={comment} deletingID={deletingID} mayDelete={mayDelete(comment)} onDelete={deleteComment} onReply={startReply} />
+                <CommentHeader comment={comment} deletingID={deletingID} mayDelete={mayDelete(comment)} mayReport={Boolean(user?.id) && relationID(comment.author) !== String(user?.id)} onDelete={deleteComment} onReply={startReply} onReport={reportComment} reportingID={reportingID} />
                 <p>{comment.body}</p>
 
                 {replies.length ? (
                   <div className="comment-replies" aria-label={`${comment.authorName || '注册用户'}的评论回复`}>
                     {replies.map((reply) => (
                       <article className="comment-reply" key={reply.id}>
-                        <CommentHeader comment={reply} deletingID={deletingID} mayDelete={mayDelete(reply)} onDelete={deleteComment} onReply={startReply} />
+                        <CommentHeader comment={reply} deletingID={deletingID} mayDelete={mayDelete(reply)} mayReport={Boolean(user?.id) && relationID(reply.author) !== String(user?.id)} onDelete={deleteComment} onReply={startReply} onReport={reportComment} reportingID={reportingID} />
                         <p>{reply.replyToName ? <span className="comment-reply-to">回复 {reply.replyToName}：</span> : null}{reply.body}</p>
                       </article>
                     ))}
@@ -263,18 +296,22 @@ export default function CommentBlock({ item }: { item: DetailItem }) {
   )
 }
 
-function CommentHeader({ comment, deletingID, mayDelete, onDelete, onReply }: {
+function CommentHeader({ comment, deletingID, mayDelete, mayReport, onDelete, onReply, onReport, reportingID }: {
   comment: CommentDoc
   deletingID: string
   mayDelete: boolean
+  mayReport: boolean
   onDelete: (comment: CommentDoc) => void
   onReply: (comment: CommentDoc) => void
+  onReport: (comment: CommentDoc) => void
+  reportingID: string
 }) {
   return (
     <header>
       <strong>{comment.authorName || '注册用户'}</strong>
       {comment.createdAt ? <time dateTime={comment.createdAt}>{formatDate(comment.createdAt)}</time> : null}
       <button className="comment-reply-button" onClick={() => onReply(comment)} type="button">回复</button>
+      {mayReport ? <button className="comment-report" disabled={reportingID === String(comment.id)} onClick={() => onReport(comment)} type="button">{reportingID === String(comment.id) ? '举报中……' : '举报'}</button> : null}
       {mayDelete ? <button className="comment-delete" disabled={deletingID === String(comment.id)} onClick={() => onDelete(comment)} type="button">{deletingID === String(comment.id) ? '删除中……' : '删除'}</button> : null}
     </header>
   )
