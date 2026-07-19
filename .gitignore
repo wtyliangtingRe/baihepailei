@@ -18,15 +18,10 @@ _clean_export/
 _clean_attachments/
 data_local/
 
-# XWiki / database backups
+# Database backups (never commit)
 baihepailei_data_backup/
 mysql-data*/
-xwiki-data*/
-old-home-opt-root*/
 letsencrypt*/
-nginx-config*/
-docker-containers-config*/
-docker-core-metadata-no-overlay*/
 
 # Audit outputs may contain private content
 exports/
