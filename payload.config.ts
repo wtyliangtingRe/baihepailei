@@ -24,12 +24,11 @@ import { withStewardshipNotices } from './src/collections/fields/stewardshipNoti
 import { syncWorkToPublicIndexes } from './src/lib/publicIndexSync'
 
 /**
- * Keep this false until the reviewed Payload migration has been executed.
- * To generate/review the migration, run the Payload command with
- * STEWARDSHIP_NOTICES_SCHEMA_READY=true for that process only. After the
- * migration succeeds, set the same server-side variable for build/runtime.
+ * Stewardship notices are part of the current schema. Only an explicit false
+ * disables them for a deliberately isolated migration process; the default is
+ * true so an existing database is never asked to drop the stewardship tables.
  */
-const stewardshipSchemaReady = String(process.env['STEWARDSHIP_NOTICES_SCHEMA_READY'] || '').toLowerCase() === 'true'
+const stewardshipSchemaReady = String(process.env['STEWARDSHIP_NOTICES_SCHEMA_READY'] || 'true').toLowerCase() !== 'false'
 
 const WorksWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Works) : Works
 const CreatorsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Creators) : Creators
