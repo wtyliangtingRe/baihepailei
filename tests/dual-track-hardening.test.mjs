@@ -40,6 +40,7 @@ assert.match(detail, /preview.*=== '1'/u)
 assert.doesNotMatch(detail, /'reviewer'/u)
 
 assert(exists('src/collections/AuditEvents.ts'))
+assert.match(read('src/collections/AuditEvents.ts'), /create: \(\) => false/u)
 assert(exists('src/lib/audit.ts'))
 assert(exists('src/lib/ratingTracks.ts'))
 assert(exists('src/app/(frontend)/me/studio/entities/[collection]/page.tsx'))
