@@ -1,12 +1,12 @@
 import type { CollectionConfig } from 'payload'
 
-import { publishedOrSignedIn, trustedAndUp } from '@/access/roles'
+import { publishedOrSignedIn, editorsAndUp } from '@/access/roles'
 
 export const Terms: CollectionConfig = {
   slug: 'terms',
   labels: { singular: '名词解释', plural: '名词解释' },
   admin: { defaultColumns: ['name', 'siteId', 'isLiteVisible', 'isFullVisible', 'status', 'updatedAt'], group: '内容', useAsTitle: 'name' },
-  access: { create: trustedAndUp, delete: trustedAndUp, read: publishedOrSignedIn, update: trustedAndUp },
+  access: { create: editorsAndUp, delete: editorsAndUp, read: publishedOrSignedIn, update: editorsAndUp },
   versions: { drafts: true },
   fields: [
     { name: 'name', type: 'text', label: '名称', required: true },
