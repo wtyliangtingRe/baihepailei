@@ -13,7 +13,7 @@ type AssessmentOriginItem = {
 
 export function assessmentOriginLabel(item: AssessmentOriginItem) {
   if (item.collection !== 'works') {
-    const isHumanReviewed = Boolean(item.humanAssessment?.grade) || item.reviewOrigin === 'human_reviewed' || item.reviewStatus === 'reviewed'
+    const isHumanReviewed = (Boolean(item.humanAssessment?.grade) && item.humanAssessment?.status !== 'pending') || item.reviewOrigin === 'human_reviewed' || item.reviewStatus === 'reviewed'
     const isAIAssessed = item.reviewOrigin === 'ai_assessed'
     if (isAIAssessed && isHumanReviewed) return 'AI + 人工参考'
     if (isHumanReviewed) return '人工参考已记录'
@@ -21,7 +21,7 @@ export function assessmentOriginLabel(item: AssessmentOriginItem) {
     return ''
   }
 
-  const isHumanReviewed = Boolean(item.humanAssessment?.grade) || item.ratingNotice === 'manual_reviewed' || item.reviewStatus === 'reviewed'
+  const isHumanReviewed = (Boolean(item.humanAssessment?.grade) && item.humanAssessment?.status !== 'pending') || item.ratingNotice === 'manual_reviewed' || item.reviewStatus === 'reviewed'
   const isAIAssessed = item.ratingNotice === 'ai_synthesized_pending_review'
     || Boolean(item.radarAssessment?.assessedAt || item.radarAssessment?.suggestedGrade || item.researchPreview)
 
