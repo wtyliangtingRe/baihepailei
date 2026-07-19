@@ -26,7 +26,7 @@ Tags
 Rules
 ```
 
-`Works.humanAssessment` 与 `Works.radarAssessment` 是两条独立评级轨道。目录展示优先采用人工轨道等级，没有人工等级时采用 AI 建议；`Works.rank` 只作为兼容旧记录的后备值。`RadarResearchRecords` 是独立内部研究档案，不能直接覆盖任一轨道。用户评论即时公开，但有重复发送限制、时间频率限制、用户举报与达到阈值后的自动保护隐藏；作者和工作人员仍可删除。用户反馈进入独立审核队列，不会自动修改条目。
+`Works.humanAssessment` 与 `Works.radarAssessment` 是两条独立评级轨道。AI 可刷新自身轨道而不改动人工轨道；正式批量更新使用 `pnpm radar:local-update` 生成可校验的输入、计划和 dry-run，详见 [本地 AI Radar 更新管道](docs/local-ai-radar-update-pipeline-v01.md)。目录展示优先采用人工轨道等级，没有人工等级时采用 AI 建议；`Works.rank` 只作为兼容旧记录的后备值。`RadarResearchRecords` 是独立内部研究档案，不能直接覆盖任一轨道。用户评论即时公开，但有重复发送限制、时间频率限制、用户举报与达到阈值后的自动保护隐藏；作者和工作人员仍可删除。用户反馈进入独立审核队列，不会自动修改条目。
 
 ## 主要路由
 
