@@ -263,7 +263,7 @@ export const Users: CollectionConfig = {
                   role: 'admin',
                 }, original)
           }
-          const role = desired && adminAssignableRoles.has(desired) ? desired : original.role || 'member'
+          const role = desired && adminAssignableRoles.has(desired) ? desired : requestedRole(original.role) || 'member'
           const mayManageStatus = String(actorID) !== String(original.id)
           const next = { ...data, email, role }
           return mayManageStatus ? applyManagedAccountState(next, original, actor) : preserveAccountState(next, original)
