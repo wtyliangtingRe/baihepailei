@@ -196,7 +196,7 @@ async function reviewFeedbackAction(formData: FormData) {
       id,
       depth: 0,
       overrideAccess: true,
-      context: { reviewWorkbench: true },
+      context: { reviewWorkbench: true, auditActorID: (auth.user as { id?: string | number }).id },
       data: {
         workflowStatus: intent,
         reviewNote: effectiveNote,
