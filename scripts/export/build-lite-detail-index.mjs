@@ -120,8 +120,8 @@ async function fetchCollection(baseUrl, token, collection, { includeDrafts, prof
       params.set('depth', '2')
 
       if (drafts) {
-        params.set('draft', 'true')
-        // Include imported draft/review rows even when they have no version row.
+            // Query current rows directly; imported legacy records may not have a
+        // compatible Payload version row.
         const statuses = draftExportStatuses[collection]
         if (statuses) params.set('where[status][in]', statuses)
       } else if (collection === 'evidence') {
