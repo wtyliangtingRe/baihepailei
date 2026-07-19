@@ -393,6 +393,19 @@ function commonFields(collection, doc, title, typeLabel) {
   }
 }
 
+function humanAssessmentView(value) {
+  if (!value || typeof value !== 'object') return undefined
+  return {
+    grade: String(value.grade || ''),
+    status: String(value.status || ''),
+    note: String(value.note || ''),
+    sourceSummary: String(value.sourceSummary || ''),
+    evidenceStatus: String(value.evidenceStatus || ''),
+    sourceLinks: Array.isArray(value.sourceLinks) ? value.sourceLinks.filter((link) => link && link.url).map((link) => ({ label: String(link.label || ''), url: String(link.url || '') })) : [],
+    assessedAt: String(value.assessedAt || ''),
+  }
+}
+
 function mapWork(doc) {
   const explicitHumanGrade = String(doc.humanAssessment?.grade || '').trim().toUpperCase()
   const legacyHumanGrade = (doc.reviewStatus === 'reviewed' || doc.ratingNotice === 'manual_reviewed') ? String(doc.rank || '').trim().toUpperCase() : ''
@@ -411,7 +424,7 @@ function mapWork(doc) {
     reviewReasons: Array.isArray(doc.reviewReasons) ? doc.reviewReasons.map(normalizeText).filter(Boolean) : [],
     radarAssessment: normalizeRadarAssessment(doc.radarAssessment),
     humanGrade: humanGrade || '',
-    humanAssessment: doc.humanAssessment || undefined,
+    humanAssessment: humanAssessmentView(doc.humanAssessment),
     originalTitle: doc.originalTitle || '',
     aliases,
     localizedTitles,
