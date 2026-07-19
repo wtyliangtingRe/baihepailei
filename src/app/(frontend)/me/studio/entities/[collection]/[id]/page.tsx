@@ -37,7 +37,7 @@ async function saveEntity(formData: FormData) {
   if (collection === 'creators') { const rank = text(formData, 'rank', 20); data.rank = ['S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'unknown'].includes(rank) ? rank : 'unknown' }
   else { const type = text(formData, 'type', 40); data.type = type || 'other'; data.sourceLinks = lines(text(formData, 'sourceLinks', 6000)).map((value) => { const [label, ...url] = value.split('|').map((part) => part.trim()); return { label: label || url.join('|'), url: url.join('|') || label } }) }
   if (reviewStatus !== 'pending') { data.humanReviewedAt = new Date().toISOString(); data.humanReviewedBy = (auth.user as { id?: string | number }).id }
-  await payload.update({ collection, id, depth: 0, draft: false, overrideAccess: true, context: { reviewWorkbench: true }, data: data as never })
+  await payload.update({ collection, id, depth: 0, draft: false, overrideAccess: true, context: { reviewWorkbench: true, auditActorID: (auth.user as { id?: string | number }).id }, data: data as never })
   revalidatePath('/me/studio/entities/' + collection + '/' + id); revalidatePath('/me/studio/entities/' + collection); revalidatePath(canonicalContentUrl(collection, id)); redirect('/me/studio/entities/' + collection + '/' + id + '?saved=1')
 }
 
