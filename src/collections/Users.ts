@@ -243,7 +243,7 @@ export const Users: CollectionConfig = {
         }
 
         if (actorRole === 'owner') {
-          const role = desired === 'owner' && !isConfiguredOwnerEmail(email) ? 'admin' : desired || original.role || 'member'
+          const role = desired === 'owner' && !isConfiguredOwnerEmail(email) ? 'admin' : desired || requestedRole(original.role) || 'member'
           return applyManagedAccountState({ ...data, email, role }, original, actor)
         }
 
