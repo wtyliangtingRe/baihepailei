@@ -16,6 +16,7 @@ import { findSearchItem, readSearchIndex } from '../../_lib/search-index'
 
 type Args = {
   params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 type LiveWork = {
@@ -37,9 +38,12 @@ type LiveWork = {
   updatedAt?: string
   createdAt?: string
   radarAssessment?: { assessedAt?: string; suggestedGrade?: string }
+  humanAssessment?: { grade?: string; status?: string; note?: string; sourceSummary?: string; evidenceStatus?: string; assessedAt?: string }
 }
 
-const staffRoles = new Set(['owner', 'admin', 'editor', 'reviewer'])
+const staffRoles = new Set(['owner', 'admin', 'editor'])
+
+function first(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] || '' : value || '' }
 
 function roleOf(user: unknown) {
   return user && typeof user === 'object' ? String((user as { role?: string }).role || '') : ''
@@ -87,6 +91,7 @@ function liveDetailItem(indexed: DetailItem, live: LiveWork): DetailItem {
     updatedAt: live.updatedAt || indexed.updatedAt,
     createdAt: live.createdAt || indexed.createdAt,
     radarAssessment: live.radarAssessment || indexed.radarAssessment,
+    humanAssessment: live.humanAssessment || indexed.humanAssessment,
   }
 }
 
@@ -110,14 +115,16 @@ async function unindexedStaffWork(routeKey: string) {
   )
 }
 
-export default async function WorkDetailPage({ params }: Args) {
+export default async function WorkDetailPage({ params, searchParams }: Args) {
   const { slug } = await params
+  const rawSearchParams = await searchParams
+  const preview = first(rawSearchParams.preview) === '1'
   const decodedSlug = decodeURIComponent(slug)
 
   const detailItem = findDetailItem('works', decodedSlug)
   if (detailItem) {
     if (detailItem.recordId && !isCanonicalContentRoute('works', decodedSlug, detailItem.recordId)) redirect(detailItem.url)
-    const live = detailItem.recordId ? await staffLiveWork(String(detailItem.recordId)) : null
+    const live = preview && detailItem.recordId ? await staffLiveWork(String(detailItem.recordId)) : null
     if (detailItem.status === 'archived' && !live) notFound()
     const visibleItem = live ? liveDetailItem(detailItem, live) : detailItem
     return (
