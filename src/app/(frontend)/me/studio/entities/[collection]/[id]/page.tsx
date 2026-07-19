@@ -20,7 +20,7 @@ type LocalizedName = {
   source?: string
   note?: string
 }
-type Relation = string | number | { id?: string | number } | null
+type Relation = string | number | { id?: string | number } | null | undefined
 type Entity = {
   id: string | number
   name?: string
