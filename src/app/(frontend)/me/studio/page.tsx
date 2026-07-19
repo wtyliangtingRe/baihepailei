@@ -9,7 +9,7 @@ import { canonicalContentUrl } from '../../_lib/content-identity'
 
 export const dynamic = 'force-dynamic'
 
-type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted' | 'member'
+type Role = 'owner' | 'admin' | 'editor' | 'member'
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
 type StudioWork = {
   id: string | number
@@ -34,7 +34,7 @@ type StudioFilters = {
   perPage: number
 }
 
-const staffRoles = new Set<Role>(['owner', 'admin', 'editor', 'reviewer'])
+const staffRoles = new Set<Role>(['owner', 'admin', 'editor'])
 const rankOptions = ['all', 'S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'trash', 'unknown']
 const statusOptions = ['active', 'archived', 'all']
 const activePublicationStatuses = ['draft', 'published']
