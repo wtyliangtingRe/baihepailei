@@ -4,7 +4,7 @@ Baihepailei 是一个以作品、排雷分级、可追溯来源和人工复核�
 
 ## 当前功能
 
-前台提供作品、创作者、机构、排雷规则、搜索、推荐、最近更新、注册账户、评论、我的列表和反馈入口。作品详情会区分正式分级、来源、证据状态、页面提示与人工复核状态。
+前台提供作品、创作者、机构、排雷规则、搜索、推荐、最近更新、注册账户、评论、我的列表和反馈入口。作品详情会分开显示人工审核参考与 AI Radar 参考；目录等级按“人工参考优先、否则 AI、再否则兼容旧字段”计算。两条轨道都保留来源、证据状态和审计边界，不互相覆盖。
 
 后台主要集合包括：
 
@@ -16,6 +16,7 @@ Creators
 Organizations
 Evidence
 RadarResearchRecords
+AuditEvents
 Comments
 UserLists
 FeedbackSubmissions
@@ -25,7 +26,7 @@ Tags
 Rules
 ```
 
-`Works.rank` 是正式作品分级；`RadarResearchRecords` 是独立内部研究档案，不能覆盖正式分级。用户评论与反馈默认进入审核流程，不会自动修改条目。
+`Works.humanAssessment` 与 `Works.radarAssessment` 是两条独立评级轨道。目录展示优先采用人工轨道等级，没有人工等级时采用 AI 建议；`Works.rank` 只作为兼容旧记录的后备值。`RadarResearchRecords` 是独立内部研究档案，不能直接覆盖任一轨道。用户评论即时公开，但有重复发送限制、时间频率限制、用户举报与达到阈值后的自动保护隐藏；作者和工作人员仍可删除。用户反馈进入独立审核队列，不会自动修改条目。
 
 ## 主要路由
 
@@ -40,6 +41,9 @@ Rules
 /recommendations   推荐
 /me/lists          我的列表
 /me/review/public-catalog  内部条目审核工作台
+/me/review/content         作品、创作者、机构审核与编辑
+/me/studio                  站内内容工作台
+/me/personnel               人事任用、角色与封停
 /updates           最近更新
 /feedback          反馈
 /account           账户
@@ -120,4 +124,4 @@ pnpm test:radar-presentation
 pnpm build
 ```
 
-新增集合字段后先运行 `pnpm generate:types`，再执行 TypeScript 与构建检查。
+如果数据库已经存在 stewardship notices 表，保持 `STEWARDSHIP_NOTICES_SCHEMA_READY=true`，不要在开发启动时接受删除表的 schema 警告。新增集合字段后先运行 `pnpm generate:types`，再执行 TypeScript 与构建检查。
