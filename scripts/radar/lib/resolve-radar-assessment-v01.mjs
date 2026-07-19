@@ -122,12 +122,11 @@ function compareRuleSeverity(left, right) {
 }
 
 function workProtection(row) {
+  const locked = row?.existingState?.locked === true || row?.existingState?.isLocked === true
   const reasons = unique([
     ...list(row?.writeProtection?.reasons).map(val),
     ...(row?.writeProtection?.protected ? ['input_marked_write_protected'] : []),
-    ...(row?.existingState?.ratingNotice === 'manual_reviewed' ? ['manual_rating_notice'] : []),
-    ...(row?.existingState?.humanVerified === true ? ['human_verified'] : []),
-    ...(row?.existingState?.locked === true ? ['locked'] : []),
+    ...(locked ? ['locked'] : []),
   ])
   return { protected: reasons.length > 0, reasons }
 }
