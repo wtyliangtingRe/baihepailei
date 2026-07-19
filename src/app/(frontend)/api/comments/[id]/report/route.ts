@@ -6,28 +6,40 @@ import configPromise from '@payload-config'
 
 type Params = { params: Promise<{ id: string }> }
 
+function numericID(value: unknown) {
+  const parsed = Number(typeof value === 'object' && value !== null ? (value as { id?: unknown }).id : value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
 export async function POST(_request: Request, { params }: Params) {
   const { id } = await params
+  const commentID = numericID(id)
+  if (commentID === null) return NextResponse.json({ error: 'invalid_comment_id' }, { status: 400 })
+
   const payload = await getPayload({ config: configPromise })
   const auth = await payload.auth({ headers: await headers() })
   if (!auth.user) return NextResponse.json({ error: 'login_required' }, { status: 401 })
 
   const current = await payload.findByID({
     collection: 'comments',
-    id,
+    id: commentID,
     depth: 0,
     overrideAccess: true,
   }) as unknown as {
-    id: string | number
+    id: number
     reportCount?: number
-    reportedBy?: Array<string | number | { id?: string | number }>
+    reportedBy?: Array<number | { id?: number }>
     moderationStatus?: string
   }
 
-  const actorID = (auth.user as { id?: string | number }).id
-  if (actorID === undefined || actorID === null) return NextResponse.json({ error: 'login_required' }, { status: 401 })
-  const reporterIDs = (current.reportedBy || []).map((value) => String(typeof value === 'object' ? value.id : value))
-  if (reporterIDs.includes(String(actorID))) {
+  const actorID = numericID((auth.user as { id?: unknown }).id)
+  if (actorID === null) return NextResponse.json({ error: 'login_required' }, { status: 401 })
+
+  const reporterIDs = (current.reportedBy || [])
+    .map((value) => numericID(value))
+    .filter((value): value is number => value !== null)
+
+  if (reporterIDs.includes(actorID)) {
     return NextResponse.json({ ok: true, alreadyReported: true, reportCount: current.reportCount || reporterIDs.length })
   }
 
@@ -35,7 +47,7 @@ export async function POST(_request: Request, { params }: Params) {
   const hidden = reportCount >= 3
   const updated = await payload.update({
     collection: 'comments',
-    id,
+    id: commentID,
     depth: 0,
     overrideAccess: true,
     context: { automatedAbuseProtection: true },
