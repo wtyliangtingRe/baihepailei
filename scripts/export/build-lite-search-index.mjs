@@ -17,6 +17,7 @@ function exportPageLimit() {
 }
 
 const PAGE_LIMIT = exportPageLimit()
+const RESEARCH_PAGE_LIMIT = 1000
 
 function parseArgs(argv) {
   const args = {}
@@ -154,7 +155,9 @@ async function fetchResearchRecords(baseUrl, token) {
   let totalPages = 1
   do {
     const params = new URLSearchParams()
-    params.set('limit', PAGE_LIMIT)
+    // Research rows are shallow, internal records. A larger page is safe here
+    // and avoids adding hundreds of requests to a full public export.
+    params.set('limit', String(RESEARCH_PAGE_LIMIT))
     params.set('depth', '0')
     params.set('page', String(page))
     params.set('where[recordStatus][equals]', 'current')
