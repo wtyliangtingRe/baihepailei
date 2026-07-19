@@ -59,8 +59,7 @@ async function staffLiveWork(recordID: string) {
       collection: 'works',
       id: recordID,
       depth: 0,
-      draft: true,
-      overrideAccess: true,
+            overrideAccess: true,
     }) as unknown as LiveWork
   } catch {
     return null
