@@ -47,9 +47,9 @@ function isConfiguredOwnerEmail(value: unknown) {
 
 function requestedRole(value: unknown): Role | undefined {
   const raw = String(value || '').trim()
-  // Legacy reviewer/trusted records are normalized to editor during migration.
-  const normalized = raw === 'reviewer' || raw === 'trusted' ? 'editor' : raw
-  const role = normalized as Role
+  // Legacy roles never regain staff capability implicitly. The owner can
+  // explicitly appoint a current role after reviewing the account.
+  const role = raw as Role
   return assignableRoles.has(role) ? role : undefined
 }
 
