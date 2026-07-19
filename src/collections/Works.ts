@@ -190,7 +190,7 @@ export const Works: CollectionConfig = {
     {
       name: 'rank',
       type: 'select',
-      label: '分级',
+      label: '目录兼容等级（自动优先人工、否则 AI）',
       required: true,
       defaultValue: 'unknown',
       options: [
@@ -256,18 +256,18 @@ export const Works: CollectionConfig = {
     {
       name: 'reviewStatus',
       type: 'select',
-      label: '复核状态',
+      label: '人工轨道兼容状态',
       required: true,
       defaultValue: 'pending',
       options: reviewStatusOptions,
       admin: {
-        description: '本站的人工复核状态。只在完成逐条核验后改为“已复核”。',
+        description: '旧字段兼容状态；新的人工意见请填写 humanAssessment，AI Radar 保留在 radarAssessment。',
       },
     },
     {
       name: 'humanReviewNote',
       type: 'textarea',
-      label: '人工复核记录',
+      label: '人工轨道兼容记录',
       maxLength: 4000,
       admin: {
         description: '记录本次人工复核的结论、仍待确认的问题或退回原因。',
