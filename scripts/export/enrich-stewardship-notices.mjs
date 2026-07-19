@@ -3,7 +3,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const COLLECTIONS = ['works', 'creators', 'organizations']
-const PAGE_LIMIT = 1000
+function exportPageLimit() {
+  const requested = Number(process.env.PUBLIC_INDEX_PAGE_LIMIT || 100)
+  if (!Number.isFinite(requested)) return 100
+  return Math.min(250, Math.max(25, Math.round(requested)))
+}
+const PAGE_LIMIT = exportPageLimit()
 
 function arg(name, fallback = '') {
   const index = process.argv.indexOf(name)
@@ -40,7 +45,6 @@ async function fetchAll(baseUrl, token, collection) {
   do {
     const params = new URLSearchParams({
       depth: '2',
-      draft: 'false',
       limit: String(PAGE_LIMIT),
       page: String(page),
     })
