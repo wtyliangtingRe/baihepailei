@@ -10,6 +10,10 @@ const roles = read('src/access/roles.ts')
 assert.match(roles, /Role = 'owner' \| 'admin' \| 'editor' \| 'member'/u)
 assert.doesNotMatch(roles, /role === 'reviewer'|role === 'trusted'/u)
 
+for (const collection of ['Rules', 'Tags', 'Terms', 'Warnings']) {
+  assert.doesNotMatch(read(`src/collections/${collection}.ts`), /trustedAndUp/u)
+}
+
 const config = read('payload.config.ts')
 assert.match(config, /STEWARDSHIP_NOTICES_SCHEMA_READY.*'true'/u)
 assert.match(config, /AuditEvents/u)
