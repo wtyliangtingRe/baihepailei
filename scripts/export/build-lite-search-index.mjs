@@ -10,7 +10,13 @@ const EXPORT_EMAIL_ENV = 'PAYLOAD_EXPORT_EMAIL'
 const EXPORT_SECRET_ENV = ['PAYLOAD_EXPORT', 'PASSWORD'].join('_')
 const SEED_EMAIL_ENV = 'PAYLOAD_SEED_EMAIL'
 const SEED_SECRET_ENV = ['PAYLOAD_SEED', 'PASSWORD'].join('_')
-const PAGE_LIMIT = '1000'
+function exportPageLimit() {
+  const requested = Number(process.env.PUBLIC_INDEX_PAGE_LIMIT || 100)
+  if (!Number.isFinite(requested)) return '100'
+  return String(Math.min(250, Math.max(25, Math.round(requested))))
+}
+
+const PAGE_LIMIT = exportPageLimit()
 
 function parseArgs(argv) {
   const args = {}
