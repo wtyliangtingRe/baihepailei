@@ -94,6 +94,52 @@ const WorksWithSafePublicationStatus: CollectionConfig = {
     ],
   },
 }
+function withContentAudit(collection: CollectionConfig, targetCollection: string): CollectionConfig {
+  return {
+    ...collection,
+    hooks: {
+      ...collection.hooks,
+      afterChange: [
+        ...(collection.hooks?.afterChange || []),
+        async ({ doc, previousDoc, req, operation }) => {
+          await recordAuditEvent({
+            req,
+            action: operation === 'create' ? targetCollection + '.created' : targetCollection + '.updated',
+            targetCollection,
+            targetID: doc?.id,
+            targetTitle: doc?.title || doc?.name,
+            summary: '创作者或机构内容被工作人员写入。',
+            metadata: {
+              operation,
+              beforeStatus: previousDoc?.status,
+              afterStatus: doc?.status,
+              beforeReviewStatus: previousDoc?.reviewStatus,
+              afterReviewStatus: doc?.reviewStatus,
+            },
+          })
+        },
+      ],
+      afterDelete: [
+        ...(collection.hooks?.afterDelete || []),
+        async ({ doc, req }) => {
+          await recordAuditEvent({
+            req,
+            action: targetCollection + '.deleted',
+            targetCollection,
+            targetID: doc?.id,
+            targetTitle: doc?.title || doc?.name,
+            summary: '创作者或机构记录被永久删除。',
+            metadata: { status: doc?.status },
+          })
+        },
+      ],
+    },
+  }
+}
+
+const CreatorsWithAudit = withContentAudit(CreatorsWithOptionalStewardship, 'creators')
+const OrganizationsWithAudit = withContentAudit(OrganizationsWithOptionalStewardship, 'organizations')
+
 const UsersWithRestrictedAdmin: CollectionConfig = {
   ...Users,
   access: {
@@ -142,8 +188,8 @@ export default buildConfig({
     AuditEvents,
     Media,
     WorksWithSafePublicationStatus,
-    CreatorsWithOptionalStewardship,
-    OrganizationsWithOptionalStewardship,
+    CreatorsWithAudit,
+    OrganizationsWithAudit,
     Evidence,
     ...(stewardshipSchemaReady ? [StewardshipNotices] : []),
     RadarResearchRecords,
