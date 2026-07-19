@@ -118,6 +118,19 @@ export const FeedbackSubmissions: CollectionConfig = {
         })
       },
     ],
+    afterDelete: [
+      async ({ doc, req }) => {
+        await recordAuditEvent({
+          req,
+          action: 'feedback.deleted',
+          targetCollection: 'feedback-submissions',
+          targetID: doc?.id,
+          targetTitle: doc?.targetTitle,
+          summary: '反馈记录被最高领袖永久删除。',
+          metadata: { workflowStatus: doc?.workflowStatus, feedbackType: doc?.feedbackType },
+        })
+      },
+    ],
   },
   fields: [
     {
