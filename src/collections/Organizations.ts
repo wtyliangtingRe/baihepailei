@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { publishedOrSignedIn, trustedAndUp } from '@/access/roles'
+import { editorsAndUp, publishedOrSignedIn } from '@/access/roles'
 
 import { localizedNamesField } from './fields/localizedMetadata'
 import { contentReviewFields } from './fields/contentReview'
@@ -9,7 +9,7 @@ export const Organizations: CollectionConfig = {
   slug: 'organizations',
   labels: { singular: '机构', plural: '机构' },
   admin: { defaultColumns: ['name', 'siteId', 'type', 'reviewStatus', 'reviewOrigin', 'status', 'updatedAt'], group: '内容', useAsTitle: 'name' },
-  access: { create: trustedAndUp, delete: trustedAndUp, read: publishedOrSignedIn, update: trustedAndUp },
+  access: { create: editorsAndUp, delete: editorsAndUp, read: publishedOrSignedIn, update: editorsAndUp },
   versions: { drafts: true },
   fields: [
     { name: 'name', type: 'text', label: '名称', required: true },
@@ -32,7 +32,6 @@ export const Organizations: CollectionConfig = {
     { name: 'searchText', type: 'textarea', label: '搜索补充文本', admin: { description: '用于导出前台搜索索引的补充文本，可放别名、历史名称、官网名、品牌名和作品关键词等。' } },
     { name: 'isLiteVisible', type: 'checkbox', label: '进入 Lite 文字版', defaultValue: true },
     { name: 'isFullVisible', type: 'checkbox', label: '旧 Full 可见标记（兼容保留）', defaultValue: true, admin: { description: '完整版现默认收录全部记录；仅为旧导出器兼容保留。' } },
-    { name: 'legacyXWikiPage', type: 'text', admin: { hidden: true } },
     { name: 'status', type: 'select', label: '状态', defaultValue: 'draft', required: true, options: ['draft', 'review', 'published', 'archived'] },
   ],
 }
