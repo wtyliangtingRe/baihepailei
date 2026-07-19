@@ -72,7 +72,7 @@ test('content review defaults to a pending queue and keeps processed history sep
   assert.match(contentPage, /reviewStatus: \{ equals: 'pending' \}/u)
   assert.match(contentPage, /reviewStatus: \{ in: processedStatuses \}/u)
   assert.match(contentPage, /draftCount/u)
-  assert.match(contentPage, /draft: true/u)
+  assert.doesNotMatch(contentPage, /draft: true/u)
   assert.match(contentPage, />待处理</u)
   assert.match(contentPage, />已处理</u)
   assert.match(contentPage, /通过并移入已处理/u)
