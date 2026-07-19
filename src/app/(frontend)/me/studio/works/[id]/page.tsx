@@ -77,6 +77,7 @@ type WorkDoc = {
   stewardshipNotices?: Array<string | number | StewardshipNoticeDoc>
   summary?: unknown
   radarAssessment?: RadarAssessmentDoc | null
+  humanAssessment?: { grade?: string; status?: string; note?: string; sourceSummary?: string; evidenceStatus?: string; sourceLinks?: Array<{ label?: string; url?: string }>; assessedAt?: string; assessedBy?: unknown } | null
   mediaGroup?: string
   mediaType?: string
   format?: string
@@ -117,6 +118,8 @@ const mediaGroupOptions = ['anime', 'manga', 'novel', 'game', 'other', 'unknown'
 const mediaTypeOptions = ['anime', 'manga', 'novel', 'light_novel', 'visual_novel', 'game', 'audio_drama', 'live_action', 'webtoon', 'doujin', 'anthology', 'other', 'unknown']
 const formatOptions = ['tv_anime', 'anime_movie', 'ova', 'ona', 'manga_series', 'manga_oneshot', 'novel_series', 'light_novel_series', 'web_serial', 'visual_novel', 'pc_game', 'console_game', 'mobile_game', 'audio_drama', 'live_action', 'webtoon_series', 'doujin', 'anthology', 'other', 'unknown']
 const reviewStatusOptions = ['pending', 'reviewed', 'disputed', 'deprecated']
+const humanAssessmentStatusOptions = ['pending', 'reviewed', 'disputed']
+const humanAssessmentEvidenceOptions = ['unassessed', 'source_checked', 'primary_checked', 'insufficient']
 const publicationStatusOptions = ['draft', 'published', 'archived']
 const ratingNoticeOptions = ['ai_synthesized_pending_review', 'insufficient_information', 'manual_reviewed', 'none', 'other']
 const evidenceStrengthOptions = ['unassessed', 'weak', 'medium', 'strong']
@@ -285,7 +288,14 @@ async function saveStudioWorkAction(formData: FormData) {
   if (invalid) redirect(editorHref(id, returnTo, { editorError: 'invalid_fields' }))
 
   const humanReviewNote = text(formData.get('humanReviewNote'), 4000)
+  const humanGrade = text(formData.get('humanGrade'), 40)
+  const humanStatus = text(formData.get('humanStatus'), 40) || (reviewStatus === 'reviewed' ? 'reviewed' : reviewStatus === 'disputed' ? 'disputed' : 'pending')
+  const humanEvidenceStatus = text(formData.get('humanEvidenceStatus'), 40) || 'unassessed'
+  const humanNote = text(formData.get('humanNote'), 4000)
+  const humanSourceSummary = text(formData.get('humanSourceSummary'), 4000)
   if (reviewStatus === 'disputed' && !humanReviewNote) redirect(editorHref(id, returnTo, { editorError: 'note_required' }))
+  if (humanGrade && !rankOptions.includes(humanGrade)) redirect(editorHref(id, returnTo, { editorError: 'invalid_fields' }))
+  if (!humanAssessmentStatusOptions.includes(humanStatus) || !humanAssessmentEvidenceOptions.includes(humanEvidenceStatus)) redirect(editorHref(id, returnTo, { editorError: 'invalid_fields' }))
 
   const decisiveRuleCode = normalizedRuleCode(formData.get('decisiveRuleCode'))
   const submittedMatchedRuleCodes = submittedRuleCodes(formData)
@@ -314,6 +324,16 @@ async function saveStudioWorkAction(formData: FormData) {
     ratingNotice,
     evidenceStrength,
     humanReviewNote,
+    humanAssessment: {
+      grade: humanGrade || null,
+      status: humanStatus,
+      note: humanNote || humanReviewNote || '',
+      sourceSummary: humanSourceSummary,
+      evidenceStatus: humanEvidenceStatus,
+      sourceLinks: sourceLinksFromText(formData.get('humanSourceLinks')),
+      assessedAt: humanStatus !== 'pending' ? new Date().toISOString() : current.humanAssessment?.assessedAt,
+      assessedBy: humanStatus !== 'pending' ? actorID : current.humanAssessment?.assessedBy,
+    },
     isLiteVisible: archived ? false : checked(formData, 'isLiteVisible'),
     isFullVisible: archived ? false : checked(formData, 'isFullVisible'),
     hasEvidence: checked(formData, 'hasEvidence'),
@@ -479,7 +499,7 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
           <p className="muted">这里直接修改作品正式字段。保存后会同步标题、正式分级、作品简介、规则建议、状态、类型、日期和公开来源；草稿仍不会自动公开。</p>
           <div className="review-safety-note">写入通过 Payload 并保留版本历史。回收站只是 status=archived 与关闭可见性，不会永久删除数据。</div>
         </div>
-        <div className="review-stat-grid"><Stat label="作品 ID" value={String(work.id)} /><Stat label="人工正式分级字段" value={work.rank || 'unknown'} /><Stat label="AI 建议等级" value={work.radarAssessment?.suggestedGrade || '尚无'} /></div>
+        <div className="review-stat-grid"><Stat label="作品 ID" value={String(work.id)} /><Stat label="目录兼容等级" value={work.rank || 'unknown'} /><Stat label="人工参考等级" value={work.humanAssessment?.grade || '尚无'} /><Stat label="AI 建议等级" value={work.radarAssessment?.suggestedGrade || '尚无'} /></div>
       </section>
 
       {saved ? <div className="review-action-message review-action-message-success" role="status">作品 #{work.id} 已保存。{sync === 'ok' ? '现有前台索引也已同步。' : sync === 'draft_not_public' ? '它仍是未进入索引的新草稿，发布时再进入前台。' : sync === 'missing_index' ? '本地缺少公开索引文件，需要先生成索引。' : sync === 'failed' ? '数据库已保存，但前台索引同步失败，请查看服务器日志。' : ''}</div> : null}
@@ -525,8 +545,14 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
           <div className="review-row-actions"><Link className="review-link" href="/terms">查看站务与用语</Link><Link className="review-link" href="/support">运营收支与支持</Link></div>
         </EditorSection>
 
-        <EditorSection title="人工正式分级、发布与可见性" description="这里保存人工正式字段。AI 建议等级保留在 radarAssessment 中，前台会与人工评级分开显示。">
-          <Field label="人工正式分级"><Select name="rank" options={rankOptions} value={work.rank || 'unknown'} /></Field>
+        <EditorSection title="人工审核参考、发布与可见性" description="人工轨道和 AI Radar 轨道独立保存。目录会优先采用人工参考等级，但页面仍分别展示两边的来源与证据。">
+          <Field label="目录兼容等级"><Select name="rank" options={rankOptions} value={work.rank || 'unknown'} /></Field>
+          <Field label="人工参考等级"><Select name="humanGrade" options={rankOptions} value={work.humanAssessment?.grade || 'unknown'} /></Field>
+          <Field label="人工轨道状态"><Select name="humanStatus" options={humanAssessmentStatusOptions} value={work.humanAssessment?.status || 'pending'} /></Field>
+          <Field label="人工证据状态"><Select name="humanEvidenceStatus" options={humanAssessmentEvidenceOptions} value={work.humanAssessment?.evidenceStatus || 'unassessed'} /></Field>
+          <Field wide label="人工判断说明"><textarea defaultValue={work.humanAssessment?.note || ''} maxLength={4000} name="humanNote" /></Field>
+          <Field wide label="人工来源摘要"><textarea defaultValue={work.humanAssessment?.sourceSummary || ''} maxLength={4000} name="humanSourceSummary" /></Field>
+          <Field wide label="人工来源链接"><textarea defaultValue={sourceLinksToText(work.humanAssessment?.sourceLinks)} name="humanSourceLinks" placeholder="名称 | https://..." /></Field>
           <Field label="人工复核状态"><Select name="reviewStatus" options={reviewStatusOptions} value={work.reviewStatus || 'pending'} /></Field>
           <Field label="发布状态"><Select name="status" options={publicationStatusOptions} value={normalizePublicationStatus(work.status)} /></Field>
           <Field label="页面分级提示"><Select name="ratingNotice" options={ratingNoticeOptions} value={work.ratingNotice || 'none'} /></Field>
