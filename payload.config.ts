@@ -140,6 +140,13 @@ function withContentAudit(collection: CollectionConfig, targetCollection: string
 const CreatorsWithAudit = withContentAudit(CreatorsWithOptionalStewardship, 'creators')
 const OrganizationsWithAudit = withContentAudit(OrganizationsWithOptionalStewardship, 'organizations')
 
+const EvidenceWithAudit = withContentAudit(Evidence, 'evidence')
+const RadarResearchRecordsWithAudit = withContentAudit(RadarResearchRecords, 'radar-research-records')
+const TermsWithAudit = withContentAudit(Terms, 'terms')
+const WarningsWithAudit = withContentAudit(Warnings, 'warnings')
+const TagsWithAudit = withContentAudit(Tags, 'tags')
+const RulesWithAudit = withContentAudit(Rules, 'rules')
+
 const UsersWithRestrictedAdmin: CollectionConfig = {
   ...Users,
   access: {
@@ -190,16 +197,16 @@ export default buildConfig({
     WorksWithSafePublicationStatus,
     CreatorsWithAudit,
     OrganizationsWithAudit,
-    Evidence,
+    EvidenceWithAudit,
     ...(stewardshipSchemaReady ? [StewardshipNotices] : []),
-    RadarResearchRecords,
+    RadarResearchRecordsWithAudit,
     Comments,
     UserLists,
     FeedbackSubmissions,
-    Terms,
-    Warnings,
-    Tags,
-    Rules,
+    TermsWithAudit,
+    WarningsWithAudit,
+    TagsWithAudit,
+    RulesWithAudit,
   ],
   db: postgresAdapter({
     pool: {
