@@ -257,7 +257,7 @@ async function saveStudioWorkAction(formData: FormData) {
   const returnTo = safeReviewReturnTo(formData.get('returnTo'))
   if (!id) redirect('/me/studio?studioError=invalid_action')
 
-  const current = await payload.findByID({ collection: 'works', id, depth: 0, draft: true, overrideAccess: true }) as unknown as WorkDoc
+  const current = await payload.findByID({ collection: 'works', id, depth: 0, overrideAccess: true }) as unknown as WorkDoc
   if (isMergedDuplicateWork(current)) {
     const merged = mergedWorkReference(current)
     if (merged?.id) redirect(editorHref(merged.id, returnTo, { editorError: 'merged_duplicate', sourceId: id }))
@@ -439,7 +439,7 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
 
   let work: WorkDoc
   try {
-    work = await payload.findByID({ collection: 'works', id, depth: 1, draft: true, overrideAccess: true }) as unknown as WorkDoc
+    work = await payload.findByID({ collection: 'works', id, depth: 1, overrideAccess: true }) as unknown as WorkDoc
   } catch {
     notFound()
   }
