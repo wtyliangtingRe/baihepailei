@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { anyone, trustedAndUp } from '@/access/roles'
+import { anyone, editorsAndUp } from '@/access/roles'
 
 export const Warnings: CollectionConfig = {
   slug: 'warnings',
@@ -10,10 +10,10 @@ export const Warnings: CollectionConfig = {
     useAsTitle: 'name',
   },
   access: {
-    create: trustedAndUp,
-    delete: trustedAndUp,
+    create: editorsAndUp,
+    delete: editorsAndUp,
     read: anyone,
-    update: trustedAndUp,
+    update: editorsAndUp,
   },
   fields: [
     {
