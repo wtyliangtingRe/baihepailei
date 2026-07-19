@@ -283,7 +283,7 @@ export default async function ContentStudioPage({ searchParams }: { searchParams
       {hidden ? <div className="review-action-message review-action-message-success" role="status">作品 #{hidden} 已移入回收站，没有永久删除。</div> : null}
       {restored ? <div className="review-action-message review-action-message-success" role="status">作品 #{restored} 已恢复为待复核草稿。</div> : null}
 
-      <div className="review-row-actions"><Link className="review-button review-button-primary" href={`/me/studio/works/new?returnTo=${encodeURIComponent(currentHref)}`}>工作人员新建作品草稿</Link><Link className="review-link" href="/me/review/content">AI / 内容审核台</Link><Link className="review-link" href="/me/review/feedback">用户反馈审核</Link></div>
+      <div className="review-row-actions"><Link className="review-button review-button-primary" href={`/me/studio/works/new?returnTo=${encodeURIComponent(currentHref)}`}>工作人员新建作品草稿</Link><Link className="review-link" href="/me/studio/entities/creators">编辑创作者</Link><Link className="review-link" href="/me/studio/entities/organizations">编辑机构</Link><Link className="review-link" href="/me/review/content">AI / 内容审核台</Link><Link className="review-link" href="/me/review/feedback">用户反馈审核</Link></div>
 
       <nav className="review-queue-tabs" aria-label="内容管理范围">
         <Link aria-current={filters.status === 'active' ? 'page' : undefined} href={studioHref(filters, { status: 'active', page: 1 })}><span>可编辑作品</span><strong>{activeCount.totalDocs.toLocaleString('zh-CN')}</strong></Link>
