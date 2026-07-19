@@ -422,6 +422,7 @@ function mapWork(doc) {
     title: doc.title || '',
     slug: doc.slug || '',
     url: itemUrl('works', doc.id, doc.slug),
+    status: doc.status || 'draft',
     rank: effectiveRank,
     reviewStatus: doc.reviewStatus || 'pending',
     evidenceStrength: doc.evidenceStrength || 'unassessed',
