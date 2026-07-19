@@ -194,8 +194,7 @@ export default async function EntityEditor({
     collection,
     id,
     depth: 0,
-    draft: true,
-    overrideAccess: true,
+        overrideAccess: true,
   }) as unknown as Entity
   const paramsValue = await searchParams
   const isCreator = collection === 'creators'
