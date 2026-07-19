@@ -20,7 +20,7 @@ For local development, use `ACCOUNT_EMAIL_VERIFICATION_ENABLED=false` and leave 
 | `editor` | 编辑 | Edit and approve content, review feedback, and delete inappropriate comments |
 | `member` | 注册用户 | Publish comments, delete their own comments, manage private lists and submit feedback |
 
-角色只有 `owner`、`admin`、`editor`、`member`。旧 `reviewer` / `trusted` 账户不会再获得内部能力；先用 `scripts/users/migrate-legacy-roles.mjs` 将它们转为 `editor`，确认 dry-run 后再 apply。
+角色只有 `owner`、`admin`、`editor`、`member`。旧 `reviewer` / `trusted` 账户不会再获得内部能力；先用 `scripts/users/migrate-legacy-roles.mjs` 将它们降为 `member`，确认 dry-run 后再 apply。之后如确有需要，由最高领袖在人事页面明确任命。
 
 ## Owner bootstrap
 
@@ -97,7 +97,7 @@ The application no longer grants capabilities to `reviewer` or `trusted`. Existi
 $env:USER_MAINTENANCE_EMAIL="the owner email"
 $env:USER_MAINTENANCE_PASSWORD="the owner password"
 node scripts\users\migrate-legacy-roles.mjs --url "http://localhost:3000"
-node scripts\users\migrate-legacy-roles.mjs --url "http://localhost:3000" --apply --confirm "MIGRATE-LEGACY-ROLES-TO-EDITOR"
+node scripts\users\migrate-legacy-roles.mjs --url "http://localhost:3000" --apply --confirm "MIGRATE-LEGACY-ROLES-TO-MEMBER"
 ```
 
-The command is dry-run by default and only the authenticated owner may apply it. Create a database checkpoint before applying.
+The command is dry-run by default and only the authenticated owner may apply it. It deliberately removes old internal capability rather than silently preserving it. Create a database checkpoint before applying.
