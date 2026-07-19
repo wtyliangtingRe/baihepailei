@@ -88,14 +88,6 @@ function authHeaders(token) {
   return token ? { Authorization: `JWT ${token}` } : {}
 }
 
-const draftExportStatuses = {
-  works: 'draft,published',
-  creators: 'draft,review,published',
-  organizations: 'draft,review,published',
-  terms: 'draft,review,published',
-  rules: 'draft,review,published',
-}
-
 function visibilityParams(collection, profile, depth) {
   const params = new URLSearchParams()
   params.set('limit', PAGE_LIMIT)
@@ -118,10 +110,11 @@ function visibilityParams(collection, profile, depth) {
 
 function isExportableCurrentDoc(collection, doc, includeDrafts) {
   if (collection === 'evidence') return doc?.status === 'confirmed' && doc?.isPublic === true
-  const configured = draftExportStatuses[collection]
-  if (!configured) return true
-  const allowed = includeDrafts ? configured.split(',') : ['published']
-  return allowed.includes(String(doc?.status || ''))
+  const status = String(doc?.status || '').trim()
+  // Pre-status imports are valid current records. Full exports include them
+  // alongside drafts/review/published rows; only an explicit archive is hidden.
+  if (includeDrafts) return status !== 'archived'
+  return status === 'published'
 }
 
 async function fetchCollection(baseUrl, token, collection, { includeDrafts, profile }) {
