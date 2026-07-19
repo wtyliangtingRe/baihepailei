@@ -34,11 +34,10 @@ test('public registration is forced to member and staff admin access is separate
   assert.match(users, /value: 'suspended'/u)
 })
 
-test('role hierarchy includes owner and preserves legacy roles', () => {
+test('role hierarchy grants internal capability only to owner, admin and editor', () => {
   assert.match(roles, /'owner' \| 'admin' \| 'editor'/u)
   assert.match(roles, /role === 'owner'/u)
-  assert.match(roles, /role === 'reviewer'/u)
-  assert.match(roles, /role === 'trusted'/u)
+  assert.doesNotMatch(roles, /role === 'reviewer'|role === 'trusted'/u)
 })
 
 test('auth flow supports verification, login, logout and email password reset', () => {
