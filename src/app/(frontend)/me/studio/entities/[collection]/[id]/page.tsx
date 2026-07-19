@@ -13,6 +13,7 @@ type Entity = { id: string | number; name?: string; slug?: string; siteId?: stri
 function collectionOf(value: string): EntityCollection | null { return value === 'organizations' ? 'organizations' : value === 'creators' ? 'creators' : null }
 function roleOf(user: unknown) { return user && typeof user === 'object' ? String((user as { role?: string }).role || '') : '' }
 function canEdit(user: unknown) { return new Set(['owner', 'admin', 'editor']).has(roleOf(user)) }
+function first(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] || '' : value || '' }
 function text(formData: FormData, key: string, max = 4000) { return String(formData.get(key) || '').trim().slice(0, max) }
 function lines(value: string) { return [...new Set(value.split(/\r?\n/u).map((item) => item.trim()).filter(Boolean))] }
 function aliasesText(value: Entity['aliases']) { return (value || []).map((item) => typeof item === 'string' ? item : item?.value || '').filter(Boolean).join('\n') }
