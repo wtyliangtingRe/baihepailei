@@ -26,7 +26,7 @@ type UserLike = {
 
 type AccountStatus = 'active' | 'suspended'
 
-const assignableRoles = new Set<Role>(['owner', 'admin', 'editor', 'reviewer', 'trusted', 'member'])
+const assignableRoles = new Set<Role>(['owner', 'admin', 'editor', 'member'])
 const adminAssignableRoles = new Set<Role>(['editor', 'member'])
 const accountStatuses = new Set<AccountStatus>(['active', 'suspended'])
 
@@ -44,7 +44,10 @@ function isConfiguredOwnerEmail(value: unknown) {
 }
 
 function requestedRole(value: unknown): Role | undefined {
-  const role = String(value || '') as Role
+  const raw = String(value || '').trim()
+  // Legacy reviewer/trusted records are normalized to editor during migration.
+  const normalized = raw === 'reviewer' || raw === 'trusted' ? 'editor' : raw
+  const role = normalized as Role
   return assignableRoles.has(role) ? role : undefined
 }
 
@@ -267,7 +270,7 @@ export const Users: CollectionConfig = {
         return preserveAccountState({
           ...data,
           email: normalizeEmail(original.email),
-          role: original.role || 'member',
+          role: requestedRole(original.role) || 'member',
         }, original)
       },
     ],
@@ -286,8 +289,6 @@ export const Users: CollectionConfig = {
         { label: '管理员', value: 'admin' },
         { label: '编辑', value: 'editor' },
         { label: '注册用户', value: 'member' },
-        { label: '审核（旧角色兼容）', value: 'reviewer' },
-        { label: '可信投稿者（旧角色兼容）', value: 'trusted' },
       ],
     },
     {
