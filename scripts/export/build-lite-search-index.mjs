@@ -65,7 +65,7 @@ async function requestJson(url, options = {}) {
 
   if (!response.ok) {
     const detail = payload ? JSON.stringify(payload, null, 2) : text
-    throw new Error(`HTTP ${response.status} ${response.statusText} [${url}]\\n${detail}`)
+    throw new Error(`HTTP ${response.status} ${response.statusText} [${url}]\n${detail}`)
   }
 
   return payload
