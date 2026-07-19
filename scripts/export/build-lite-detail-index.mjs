@@ -419,7 +419,8 @@ function humanAssessmentView(value) {
 }
 
 function mapWork(doc) {
-  const explicitHumanGrade = String(doc.humanAssessment?.grade || '').trim().toUpperCase()
+  const humanStatus = String(doc.humanAssessment?.status || '').trim()
+  const explicitHumanGrade = humanStatus === 'pending' ? '' : String(doc.humanAssessment?.grade || '').trim().toUpperCase()
   const legacyHumanGrade = (doc.reviewStatus === 'reviewed' || doc.ratingNotice === 'manual_reviewed') ? String(doc.rank || '').trim().toUpperCase() : ''
   const humanGrade = explicitHumanGrade || legacyHumanGrade
   const aiGrade = String(doc.radarAssessment?.suggestedGrade || '').trim().toUpperCase()
