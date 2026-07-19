@@ -30,7 +30,8 @@ export function normalizeWorkGrade(value: unknown) {
 }
 
 export function isHumanReviewedWork(item: WorkGradeInput) {
-  return Boolean(String(item.humanAssessment?.grade || '').trim())
+  const humanStatus = String(item.humanAssessment?.status || '').trim()
+  return (Boolean(String(item.humanAssessment?.grade || '').trim()) && humanStatus !== 'pending')
     || item.reviewStatus === 'reviewed'
     || item.ratingNotice === 'manual_reviewed'
 }
@@ -39,10 +40,11 @@ export function effectiveWorkGrade(item: WorkGradeInput): EffectiveWorkGrade {
   const humanReviewed = isHumanReviewedWork(item)
   const storedGrade = normalizeWorkGrade(item.rank)
   const explicitHumanGrade = String(item.humanAssessment?.grade || '').trim()
+  const humanStatus = String(item.humanAssessment?.status || '').trim()
 
-  // Any explicit human track grade is the catalog preference, even while the
-  // AI track continues to be shown independently on the detail page.
-  if (explicitHumanGrade) {
+  // A pending human form is not an opinion yet. Only a recorded or disputed
+  // human track can become the catalog preference.
+  if (explicitHumanGrade && humanStatus !== 'pending') {
     return { grade: normalizeWorkGrade(explicitHumanGrade), source: 'human', humanReviewed: true }
   }
 
