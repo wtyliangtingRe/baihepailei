@@ -186,10 +186,6 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
               {presentation.policyVersion ? <div><dt>规则版本</dt><dd>{presentation.policyVersion}</dd></div> : null}
             </dl>
 
-            {presentation.sourceSummary ? (
-              <div className="work-assessment-source-summary"><span>评级来源摘要（不是作品简介）</span><p>{presentation.sourceSummary}</p></div>
-            ) : <p className="work-assessment-empty-note">AI / 规则评级的来源摘要尚未补齐。作品简介会在页面下方独立显示，不会拿来代替评级依据。</p>}
-
             {research ? <ResearchPreview research={research} /> : null}
 
             {presentation.decisiveRuleCode ? (
@@ -232,6 +228,13 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
                 <Metric description={presentation.confidenceExplanation} label="AI 判断置信度" value={presentation.confidence} />
                 <Metric description={presentation.coverageExplanation} label="AI 资料覆盖度" value={presentation.coverage} />
               </div>
+            ) : null}
+
+            {presentation.sourceSummary ? (
+              <details className="work-assessment-source-summary">
+                <summary>AI 资料来源摘要</summary>
+                <p>{presentation.sourceSummary}</p>
+              </details>
             ) : null}
 
             {!hasAIAnalysis ? <p className="work-assessment-empty-note">当前没有 AI 建议或规则分析记录。</p> : null}
