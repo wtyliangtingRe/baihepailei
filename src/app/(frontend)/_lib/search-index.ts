@@ -52,6 +52,15 @@ export type SearchItem = {
   reviewOrigin?: string
   reviewReasons?: string[]
   radarAssessment?: RadarAssessmentMetrics
+  humanAssessment?: {
+    grade?: string
+    status?: string
+    note?: string
+    sourceSummary?: string
+    evidenceStatus?: string
+    sourceLinks?: DetailSourceLink[]
+    assessedAt?: string
+  }
   researchPreview?: RadarResearchPreview
   mergedIntoWorkId?: string
   originalTitle?: string
