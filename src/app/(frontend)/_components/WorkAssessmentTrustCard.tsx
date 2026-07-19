@@ -73,9 +73,9 @@ function ResearchPreview({ research }: { research: RadarResearchPreview }) {
   return (
     <section className="work-assessment-research-preview" aria-label="AI 研究档案预览">
       <div>
-        <span>AI 研究档案 · 非正式评级</span>
+        <span>AI 研究档案 · 非目录评级</span>
         <h3>{research.likelyGrade && research.likelyGrade !== 'UNKNOWN' ? `最可能 ${research.likelyGrade} 级` : '等级仍待确认'}</h3>
-        <p>这部分来自研究归档中的关联记录，用于辅助人工复核；它不会覆盖 Works 的人工正式分级。</p>
+        <p>这部分来自研究归档中的关联记录，用于辅助人工复核；它不会覆盖 Works 的人工参考轨道。</p>
       </div>
       <dl>
         <div><dt>研究状态</dt><dd>{researchStatusLabels[research.researchStatus || ''] || research.researchStatus || '未知'}</dd></div>
