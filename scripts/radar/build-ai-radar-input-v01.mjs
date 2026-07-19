@@ -96,9 +96,16 @@ function normalizeCandidateSources(value) {
 
 function workProtection(work) {
   const reasons = []
+  const humanGrade = val(work?.humanAssessment?.grade)
+  const humanStatus = val(work?.humanAssessment?.status)
+  if (humanGrade) reasons.push('human_assessment_grade_recorded')
+  if (humanStatus && humanStatus !== 'pending') reasons.push(`human_assessment_status:${humanStatus}`)
   if (work?.ratingNotice === 'manual_reviewed') reasons.push('manual_rating_notice')
+  if (['reviewed', 'disputed', 'deprecated'].includes(val(work?.reviewStatus))) {
+    reasons.push(`review_status:${val(work.reviewStatus)}`)
+  }
   if (work?.humanVerified === true) reasons.push('human_verified')
-  if (work?.locked === true) reasons.push('locked')
+  if (work?.locked === true || work?.isLocked === true) reasons.push('locked')
   return { protected: reasons.length > 0, reasons }
 }
 
