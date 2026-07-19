@@ -20,7 +20,7 @@ For local development, use `ACCOUNT_EMAIL_VERIFICATION_ENABLED=false` and leave 
 | `editor` | 编辑 | Edit and approve content, review feedback, and delete inappropriate comments |
 | `member` | 注册用户 | Publish comments, delete their own comments, manage private lists and submit feedback |
 
-`reviewer` and `trusted` remain as compatibility roles for existing records. New appointments should use the four roles above.
+角色只有 `owner`、`admin`、`editor`、`member`。旧 `reviewer` / `trusted` 账户不会再获得内部能力；先用 `scripts/users/migrate-legacy-roles.mjs` 将它们转为 `editor`，确认 dry-run 后再 apply。
 
 ## Owner bootstrap
 
@@ -51,7 +51,7 @@ If the configured email already exists as an older admin or member record, its n
 `/me/personnel` is the first-party personnel console for `owner` and `admin` accounts.
 
 - The owner may appoint or remove administrators and editors, and may suspend any non-owner account.
-- Administrators may appoint editors or return them to members. They may suspend editors, members and compatibility-role accounts, but cannot modify the owner or another administrator.
+- Administrators may appoint editors or return them to members. They may suspend editors and members, but cannot modify the owner or another administrator.
 - No staff member can suspend their own currently authenticated account from this console.
 - Suspension uses the independent `accountStatus` field rather than Payload's temporary failed-login lock. Entering the suspended state clears all existing sessions immediately.
 - A suspended account is redirected to `/account/locked` after a successful password check and cannot use authenticated community features.
@@ -88,3 +88,16 @@ node scripts\users\prune-users-except-email.mjs `
   --apply `
   --confirm "DELETE-USERS-EXCEPT-KEEP-EMAIL"
 ```
+
+## Legacy role migration
+
+The application no longer grants capabilities to `reviewer` or `trusted`. Existing rows are handled explicitly rather than silently:
+
+```powershell
+$env:USER_MAINTENANCE_EMAIL="the owner email"
+$env:USER_MAINTENANCE_PASSWORD="the owner password"
+node scripts\users\migrate-legacy-roles.mjs --url "http://localhost:3000"
+node scripts\users\migrate-legacy-roles.mjs --url "http://localhost:3000" --apply --confirm "MIGRATE-LEGACY-ROLES-TO-EDITOR"
+```
+
+The command is dry-run by default and only the authenticated owner may apply it. Create a database checkpoint before applying.
