@@ -151,7 +151,7 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
         </dl>
 
         {pendingRecordedGrade ? (
-          <p className="work-assessment-pending-grade-note">数据库当前 rank 字段为 <strong>{pendingRecordedGrade} 级</strong>，且人工轨道尚未记录等级，因此这里不会把它显示成人工正式评级。</p>
+          <p className="work-assessment-pending-grade-note">数据库当前 rank 字段为 <strong>{pendingRecordedGrade} 级</strong>，且人工轨道尚未记录等级，因此这里不会把它显示成人工参考等级。</p>
         ) : null}
 
         {assessmentItem.humanAssessment?.note || assessmentItem.humanAssessment?.sourceSummary ? (
