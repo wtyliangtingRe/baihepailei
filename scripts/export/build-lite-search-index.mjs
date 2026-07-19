@@ -88,6 +88,14 @@ function authHeaders(token) {
   return token ? { Authorization: `JWT ${token}` } : {}
 }
 
+const draftExportStatuses = {
+  works: 'draft,published',
+  creators: 'draft,review,published',
+  organizations: 'draft,review,published',
+  terms: 'draft,review,published',
+  rules: 'draft,review,published',
+}
+
 function visibilityParams(collection, includeDrafts, profile) {
   const params = new URLSearchParams()
   params.set('limit', PAGE_LIMIT)
@@ -97,7 +105,8 @@ function visibilityParams(collection, includeDrafts, profile) {
     params.set('draft', 'true')
     // Explicitly include draft/review rows; relying on Payload's draft flag alone
     // can omit imported records that have no version row yet.
-    params.set('where[status][in]', 'draft,review,published')
+    const statuses = draftExportStatuses[collection]
+    if (statuses) params.set('where[status][in]', statuses)
   } else if (collection === 'evidence') {
     params.set('where[status][equals]', 'confirmed')
     params.set('where[isPublic][equals]', 'true')
