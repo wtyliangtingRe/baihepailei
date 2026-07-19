@@ -22,7 +22,8 @@ test('works page caches sort, titles and normalized search blobs', () => {
   assert.match(works, /workFormatLabels/u)
   assert.match(works, /work-type-chip/u)
   assert.match(works, /name="assessment"/u)
-  assert.match(works, /work-card-cover/u)
+  assert.match(works, /work-title-only-card/u)
+  assert.doesNotMatch(works, /work-card-cover|work-card-with-cover|publicContentImagesEnabled/u)
 })
 
 test('client search defers typing and reuses the exported index', () => {
@@ -88,4 +89,6 @@ test('complete export is exhaustive, keeps Lite visibility explicit and avoids d
   assert.match(searchExport, /researchPreview/u)
   assert.match(trustCard, /AI 研究档案 · 非目录评级/u)
   assert.match(trustCard, /不会覆盖 Works 的人工参考轨道/u)
+  assert.match(trustCard, /<details className="work-assessment-source-summary">/u)
+  assert.match(trustCard, /AI 资料来源摘要/u)
 })
