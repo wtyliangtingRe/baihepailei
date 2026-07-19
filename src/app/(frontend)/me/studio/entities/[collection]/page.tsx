@@ -25,7 +25,7 @@ export default async function EntityStudioList({ params, searchParams }: { param
   const q = first(raw.q).trim().slice(0, 160)
   const page = Math.max(1, Number(first(raw.page) || 1) || 1)
   const where: Where = q ? { or: [{ name: { like: q } }, { slug: { like: q } }, { siteId: { like: q } }, { searchText: { like: q } }] } : {}
-  const result = await payload.find({ collection, depth: 0, draft: true, limit: 50, page, pagination: true, sort: '-updatedAt', overrideAccess: true, where })
+  const result = await payload.find({ collection, depth: 0, limit: 50, page, pagination: true, sort: '-updatedAt', overrideAccess: true, where })
   const totalPages = Math.max(1, result.totalPages || 1)
   return (
     <main className="page review-workbench">
