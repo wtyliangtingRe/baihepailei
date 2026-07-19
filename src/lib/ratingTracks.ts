@@ -27,7 +27,9 @@ export function normalizeRatingGrade(value: unknown) {
 
 export function humanTrackGrade(input: WorkRatingInput) {
   const explicit = normalizeRatingGrade(input.humanAssessment?.grade)
-  if (explicit) return explicit
+  // A grade saved while the human track is still pending is a draft input, not
+  // a catalog preference. This preserves the independence of AI and human work.
+  if (explicit && input.humanAssessment?.status !== 'pending') return explicit
   if (
     input.reviewStatus === 'reviewed'
     || input.ratingNotice === 'manual_reviewed'
