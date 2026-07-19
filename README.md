@@ -1,6 +1,6 @@
 # Baihepailei
 
-Baihepailei 是一个以作品、排雷分级、可追溯来源和人工复核为核心的百合资料库。项目采用 Next.js、Payload CMS 与 PostgreSQL；当前代码和数据模型均以本站自身规则为准。
+Baihepailei 是一个以作品、排雷分级、可追溯来源和人工复核为核心的百合资料库。项目采用 Next.js、Payload CMS 与 PostgreSQL；当前代码和数据模型均以本站自身规则为准。若旧本地数据库的 `_works_v.version_status` 仍残留 `archived`，先使用 `scripts/db/normalize-legacy-work-version-status.ps1` 的 dry-run/确认流程修复版本历史兼容值，再进行 Payload schema push。
 
 ## 当前功能
 
