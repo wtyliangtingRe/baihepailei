@@ -96,26 +96,19 @@ const draftExportStatuses = {
   rules: 'draft,review,published',
 }
 
-function visibilityParams(collection, includeDrafts, profile) {
+function visibilityParams(collection, profile, depth) {
   const params = new URLSearchParams()
   params.set('limit', PAGE_LIMIT)
-  params.set('depth', '1')
+  params.set('depth', depth)
 
-  if (includeDrafts) {
-    // Query current collection rows directly. Version history is not part of the
-    // public index and can be incomplete for imported legacy records.
-    const statuses = draftExportStatuses[collection]
-    if (statuses) params.set('where[status][in]', statuses)
-  } else if (collection === 'evidence') {
+  // Public indexes represent the current collection rows, never Payload version
+  // history. Filtering status client-side avoids legacy PostgreSQL enum/version
+  // incompatibilities while retaining every current draft or published row.
+  if (collection === 'evidence') {
     params.set('where[status][equals]', 'confirmed')
     params.set('where[isPublic][equals]', 'true')
-  } else if (draftExportStatuses[collection]) {
-    params.set('where[status][equals]', 'published')
   }
 
-  // The complete profile is intentionally exhaustive. Old imported rows often
-  // have null visibility flags, and SQL `not_equals false` excludes those rows.
-  // Only the explicitly reduced Lite profile applies a visibility boundary.
   if (collection !== 'evidence' && profile === 'lite') {
     params.set('where[isLiteVisible][not_equals]', 'false')
   }
@@ -123,16 +116,23 @@ function visibilityParams(collection, includeDrafts, profile) {
   return params
 }
 
+function isExportableCurrentDoc(collection, doc, includeDrafts) {
+  if (collection === 'evidence') return doc?.status === 'confirmed' && doc?.isPublic === true
+  const configured = draftExportStatuses[collection]
+  if (!configured) return true
+  const allowed = includeDrafts ? configured.split(',') : ['published']
+  return allowed.includes(String(doc?.status || ''))
+}
+
 async function fetchCollection(baseUrl, token, collection, { includeDrafts, profile }) {
-  const fetchPages = async (drafts) => {
+  const fetchPages = async (depth) => {
     const docs = []
     let page = 1
     let totalPages = 1
 
     do {
-      const params = visibilityParams(collection, drafts, profile)
+      const params = visibilityParams(collection, profile, depth)
       params.set('page', String(page))
-
       const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, {
         headers: authHeaders(token),
       })
@@ -145,17 +145,13 @@ async function fetchCollection(baseUrl, token, collection, { includeDrafts, prof
     return docs
   }
 
-  if (collection === 'evidence' && includeDrafts) {
-    console.warn('[warn] private evidence drafts are excluded from public indexes; exporting current confirmed public evidence only')
-    return fetchPages(false)
-  }
-
   try {
-    return await fetchPages(includeDrafts)
+    return (await fetchPages('1')).filter((doc) => isExportableCurrentDoc(collection, doc, includeDrafts))
   } catch (error) {
-    if (collection !== 'evidence' || !includeDrafts) throw error
-    console.warn('[warn] evidence draft history is incompatible with the current database enum; retrying current public evidence only')
-    return fetchPages(false)
+    // A legacy relation can prevent Payload from hydrating depth=1. The
+    // collection row itself is still exportable at depth=0.
+    console.warn(`[warn] retrying ${collection} at depth=0 after relation hydration failure: ${String(error?.message || error).split('\\n')[0]}`)
+    return (await fetchPages('0')).filter((doc) => isExportableCurrentDoc(collection, doc, includeDrafts))
   }
 }
 
