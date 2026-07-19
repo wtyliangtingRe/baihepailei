@@ -79,5 +79,5 @@ test('complete export is exhaustive, keeps Lite visibility explicit and avoids d
   assert.match(searchExport, /radar-research-records/u)
   assert.match(searchExport, /researchPreview/u)
   assert.match(trustCard, /AI 研究档案 · 非正式评级/u)
-  assert.match(trustCard, /不会覆盖人工评级/u)
+  assert.match(trustCard, /不会覆盖 Works 的人工参考轨道/u)
 })
