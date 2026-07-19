@@ -223,7 +223,8 @@ async function readWorksFromPayload(baseUrl, token, limit) {
       limit: '100',
       page: String(page),
       depth: '1',
-      draft: 'true',
+      // Query current rows only. draft=true reads Payload version history and can
+      // break on legacy enum rows that are unrelated to the current catalog.
       sort: 'id',
     })
     const response = await fetch(`${baseUrl}/api/works?${query}`, {
