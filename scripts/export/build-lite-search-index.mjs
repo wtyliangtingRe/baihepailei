@@ -102,9 +102,8 @@ function visibilityParams(collection, includeDrafts, profile) {
   params.set('depth', '1')
 
   if (includeDrafts) {
-    params.set('draft', 'true')
-    // Explicitly include draft/review rows; relying on Payload's draft flag alone
-    // can omit imported records that have no version row yet.
+    // Query current collection rows directly. Version history is not part of the
+    // public index and can be incomplete for imported legacy records.
     const statuses = draftExportStatuses[collection]
     if (statuses) params.set('where[status][in]', statuses)
   } else if (collection === 'evidence') {
