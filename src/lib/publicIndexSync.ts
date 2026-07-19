@@ -88,6 +88,19 @@ type SyncResult = {
 const searchPath = path.join(process.cwd(), 'public', 'search-index.json')
 const detailPath = path.join(process.cwd(), 'public', 'detail-index.json')
 
+function humanAssessmentView(value: WorkDoc['humanAssessment']) {
+  if (!value) return undefined
+  return {
+    grade: text(value.grade),
+    status: text(value.status),
+    note: text(value.note),
+    sourceSummary: text(value.sourceSummary),
+    evidenceStatus: text(value.evidenceStatus),
+    sourceLinks: Array.isArray(value.sourceLinks) ? value.sourceLinks.filter((link) => link?.url).map((link) => ({ label: text(link.label), url: text(link.url) })) : [],
+    assessedAt: text(value.assessedAt),
+  }
+}
+
 function text(value: unknown) {
   return String(value ?? '').trim()
 }
@@ -240,7 +253,7 @@ function searchPatch(work: WorkDoc, existing?: SearchItem): SearchItem {
     ratingNotice: text(work.ratingNotice) || existing?.ratingNotice,
     reviewReasons: reasons.length ? reasons : existing?.reviewReasons,
     radarAssessment: work.radarAssessment || existing?.radarAssessment,
-    humanAssessment: work.humanAssessment || existing?.humanAssessment,
+    humanAssessment: humanAssessmentView(work.humanAssessment) || existing?.humanAssessment,
     humanGrade: humanGrade || undefined,
     mergedIntoWorkId: mergeTarget?.id,
     originalTitle: text(work.originalTitle) || existing?.originalTitle,
