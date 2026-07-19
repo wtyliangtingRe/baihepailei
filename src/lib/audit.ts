@@ -1,8 +1,4 @@
-type AuditRequest = {
-  user?: { id?: string | number } | null
-  payload?: { create: (args: Record<string, unknown>) => Promise<unknown> }
-  context?: Record<string, unknown>
-}
+type AuditRequest = any
 
 type AuditInput = {
   req: AuditRequest
