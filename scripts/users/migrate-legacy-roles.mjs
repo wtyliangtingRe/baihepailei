@@ -31,15 +31,23 @@ async function main() {
   const login = await requestJson('/api/users/login', { method: 'POST', body: JSON.stringify({ email, password }) })
   if (!login?.token) throw new Error('Login did not return a token')
   const headers = { Authorization: `JWT ${login.token}` }
-  const result = await requestJson('/api/users?limit=200&depth=0', { headers })
-  const users = (result?.docs || []).filter((user) => user.role === 'reviewer' || user.role === 'trusted')
+  const users = []
+  let page = 1
+  let totalPages = 1
+  do {
+    const result = await requestJson(\`/api/users?limit=200&depth=0&page=\${page}\`, { headers })
+    users.push(...(result?.docs || []))
+    totalPages = Number(result?.totalPages || page)
+    page += 1
+  } while (page <= totalPages)
+  const legacyUsers = users.filter((user) => user.role === 'reviewer' || user.role === 'trusted')
   const summary = {
     generatedAt: new Date().toISOString(),
     mode: apply ? 'apply' : 'dry_run',
     expectedConfirmation: expected,
     authenticatedAs: { id: login.user?.id, email: login.user?.email, role: login.user?.role },
-    legacyUsersRead: users.length,
-    candidates: users.map((user) => ({ id: user.id, email: user.email, previousRole: user.role, nextRole: 'editor' })),
+    usersRead: users.length,
+    candidates: legacyUsers.map((user) => ({ id: user.id, email: user.email, previousRole: user.role, nextRole: 'editor' })),
     updatedCount: 0,
     blockers: [],
   }
@@ -49,7 +57,7 @@ async function main() {
   }
   if (confirmation !== expected) throw new Error(`Apply requires --confirm "${expected}"`)
   if (login.user?.role !== 'owner') throw new Error('Only the owner can migrate legacy roles')
-  for (const user of users) {
+  for (const user of legacyUsers) {
     await requestJson(`/api/users/${encodeURIComponent(String(user.id))}`, {
       method: 'PATCH',
       headers,
