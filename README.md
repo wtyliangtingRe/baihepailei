@@ -127,3 +127,7 @@ pnpm build
 ```
 
 如果数据库已经存在 stewardship notices 表，保持 `STEWARDSHIP_NOTICES_SCHEMA_READY=true`，不要在开发启动时接受删除表的 schema 警告。新增集合字段后先运行 `pnpm generate:types`，再执行 TypeScript 与构建检查。
+
+### 旧 XWiki 列清理
+
+代码已不再读取或写入 XWiki 兼容字段。已有数据库第一次启动时如只提示删除 `legacy_x_wiki_page` / `version_legacy_x_wiki_page` 及其关系列，先建立数据库 checkpoint，再确认该提示以完成历史列清理；如果提示还包含当前集合或 stewardship notices 的表/列，不要确认，先核对环境变量和迁移状态。
