@@ -1,11 +1,13 @@
-import type { Access, CollectionConfig } from 'payload'
+import { APIError, type Access, type CollectionConfig } from 'payload'
 
 import { isEditor, signedIn } from '@/access/roles'
+import { recordAuditEvent } from '@/lib/audit'
 
 type CommentUser = {
   id?: string | number
   email?: string
   displayName?: string
+  id?: string | number
 }
 
 type CommentRelation = string | number | { id?: string | number } | null | undefined
@@ -81,12 +83,37 @@ export const Comments: CollectionConfig = {
               author: originalDoc?.author,
               authorName: originalDoc?.authorName,
               moderationStatus: originalDoc?.moderationStatus,
+              reportCount: originalDoc?.reportCount,
+              reportedBy: originalDoc?.reportedBy,
+              hiddenReason: originalDoc?.hiddenReason,
             }
           }
           return data
         }
 
         const user = req.user as CommentUser | undefined
+        if (!user?.id) throw new APIError('请先登录后再发表评论。', 401)
+        const recentSince = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+        const recent = await req.payload.find({
+          collection: 'comments',
+          depth: 0,
+          limit: 6,
+          pagination: false,
+          overrideAccess: true,
+          where: {
+            and: [
+              { author: { equals: user.id } },
+              { createdAt: { greater_than: recentSince } },
+            ],
+          },
+        })
+        if (recent.totalDocs >= 5) {
+          throw new APIError('评论发送过于频繁，请十分钟后再试。', 429, { code: 'comment_rate_limited' }, true)
+        }
+        const normalizedBody = String(data?.body || '').trim().toLowerCase()
+        if (normalizedBody && recent.docs.some((comment) => String(comment.body || '').trim().toLowerCase() === normalizedBody)) {
+          throw new APIError('请不要重复发送相同评论。', 409, { code: 'duplicate_comment' }, true)
+        }
         const requestedParentID = relationID(data?.parentComment as CommentRelation)
         let replyFields: Record<string, unknown> = {
           parentComment: undefined,
@@ -122,8 +149,36 @@ export const Comments: CollectionConfig = {
         }
       },
     ],
+    afterChange: [
+      async ({ doc, previousDoc, req, operation }) => {
+        await recordAuditEvent({
+          req,
+          action: operation === 'create' ? 'comment.created' : 'comment.updated',
+          targetCollection: 'comments',
+          targetID: doc?.id,
+          targetTitle: doc?.targetTitle,
+          summary: '评论即时发布或被工作人员更新。',
+          metadata: {
+            operation,
+            moderationStatus: doc?.moderationStatus,
+            reportCount: doc?.reportCount || 0,
+            previousBodyLength: String(previousDoc?.body || '').length,
+            bodyLength: String(doc?.body || '').length,
+          },
+        })
+      },
+    ],
     afterDelete: [
       async ({ doc, req }) => {
+        await recordAuditEvent({
+          req,
+          action: 'comment.deleted',
+          targetCollection: 'comments',
+          targetID: doc?.id,
+          targetTitle: doc?.targetTitle,
+          summary: '评论被作者或工作人员删除。',
+          metadata: { cascade: Boolean((req.context as { cascadeCommentDelete?: boolean } | undefined)?.cascadeCommentDelete) },
+        })
         if ((req.context as { cascadeCommentDelete?: boolean } | undefined)?.cascadeCommentDelete) return
         await req.payload.delete({
           collection: 'comments',
@@ -185,6 +240,28 @@ export const Comments: CollectionConfig = {
       admin: {
         hidden: true,
       },
+    },
+    {
+      name: 'reportCount',
+      type: 'number',
+      label: '举报次数',
+      defaultValue: 0,
+      min: 0,
+      admin: { readOnly: true, description: '达到自动保护阈值后评论会暂时隐藏，工作人员可恢复或删除。' },
+    },
+    {
+      name: 'reportedBy',
+      type: 'relationship',
+      label: '举报账户',
+      relationTo: 'users',
+      hasMany: true,
+      admin: { readOnly: true, hidden: true },
+    },
+    {
+      name: 'hiddenReason',
+      type: 'text',
+      label: '自动隐藏原因',
+      admin: { readOnly: true },
     },
   ],
 }
