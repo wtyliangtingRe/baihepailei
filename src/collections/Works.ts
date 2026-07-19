@@ -4,6 +4,11 @@ import { adminsOnly, editorsAndUp, publishedOrSignedIn } from '@/access/roles'
 
 import { localizedTitlesField, mediaGroupOptions } from './fields/localizedMetadata'
 
+const assessmentGradeOptions = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'unknown'].map((value) => ({
+  label: value === 'unknown' ? '未知' : value,
+  value,
+}))
+
 const reviewStatusOptions = [
   { label: '待复核', value: 'pending' },
   { label: '已复核', value: 'reviewed' },
@@ -200,6 +205,52 @@ export const Works: CollectionConfig = {
         { label: 'X', value: 'X' },
         { label: '垃圾', value: 'trash' },
         { label: '未知', value: 'unknown' },
+      ],
+    },
+    {
+      name: 'humanAssessment',
+      type: 'group',
+      label: '人工审核轨道（参考）',
+      admin: {
+        description: '与 AI Radar 独立保存。人工审核是可追溯的参考意见，不会覆盖 AI 轨道；目录展示优先采用人工等级，但两条证据始终分别呈现。',
+      },
+      fields: [
+        { name: 'grade', type: 'select', label: '人工参考等级', options: assessmentGradeOptions },
+        {
+          name: 'status',
+          type: 'select',
+          label: '人工轨道状态',
+          defaultValue: 'pending',
+          options: [
+            { label: '未提交', value: 'pending' },
+            { label: '已记录', value: 'reviewed' },
+            { label: '有争议', value: 'disputed' },
+          ],
+        },
+        { name: 'note', type: 'textarea', label: '人工判断说明', maxLength: 4000 },
+        { name: 'sourceSummary', type: 'textarea', label: '人工来源摘要', maxLength: 4000 },
+        {
+          name: 'evidenceStatus',
+          type: 'select',
+          label: '人工证据状态',
+          options: [
+            { label: '尚未评估', value: 'unassessed' },
+            { label: '来源已核对', value: 'source_checked' },
+            { label: '原作已核对', value: 'primary_checked' },
+            { label: '证据不足', value: 'insufficient' },
+          ],
+        },
+        {
+          name: 'sourceLinks',
+          type: 'array',
+          label: '人工来源链接',
+          fields: [
+            { name: 'label', type: 'text', label: '名称' },
+            { name: 'url', type: 'text', label: 'URL' },
+          ],
+        },
+        { name: 'assessedAt', type: 'date', label: '人工记录时间', admin: { readOnly: true } },
+        { name: 'assessedBy', type: 'relationship', label: '人工记录人', relationTo: 'users', admin: { readOnly: true } },
       ],
     },
     {
