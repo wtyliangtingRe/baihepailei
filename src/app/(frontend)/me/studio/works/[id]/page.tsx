@@ -114,6 +114,7 @@ type WorkDoc = {
 
 const staffRoles = new Set<Role>(['owner', 'admin', 'editor'])
 const rankOptions = ['S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'trash', 'unknown']
+const humanAssessmentGradeOptions = ['S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'unknown']
 const mediaGroupOptions = ['anime', 'manga', 'novel', 'game', 'other', 'unknown']
 const mediaTypeOptions = ['anime', 'manga', 'novel', 'light_novel', 'visual_novel', 'game', 'audio_drama', 'live_action', 'webtoon', 'doujin', 'anthology', 'other', 'unknown']
 const formatOptions = ['tv_anime', 'anime_movie', 'ova', 'ona', 'manga_series', 'manga_oneshot', 'novel_series', 'light_novel_series', 'web_serial', 'visual_novel', 'pc_game', 'console_game', 'mobile_game', 'audio_drama', 'live_action', 'webtoon_series', 'doujin', 'anthology', 'other', 'unknown']
@@ -294,7 +295,7 @@ async function saveStudioWorkAction(formData: FormData) {
   const humanNote = text(formData.get('humanNote'), 4000)
   const humanSourceSummary = text(formData.get('humanSourceSummary'), 4000)
   if (reviewStatus === 'disputed' && !humanReviewNote) redirect(editorHref(id, returnTo, { editorError: 'note_required' }))
-  if (humanGrade && !rankOptions.includes(humanGrade)) redirect(editorHref(id, returnTo, { editorError: 'invalid_fields' }))
+  if (humanGrade && !humanAssessmentGradeOptions.includes(humanGrade)) redirect(editorHref(id, returnTo, { editorError: 'invalid_fields' }))
   if (!humanAssessmentStatusOptions.includes(humanStatus) || !humanAssessmentEvidenceOptions.includes(humanEvidenceStatus)) redirect(editorHref(id, returnTo, { editorError: 'invalid_fields' }))
 
   const decisiveRuleCode = normalizedRuleCode(formData.get('decisiveRuleCode'))
@@ -547,7 +548,7 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
 
         <EditorSection title="人工审核参考、发布与可见性" description="人工轨道和 AI Radar 轨道独立保存。目录会优先采用人工参考等级，但页面仍分别展示两边的来源与证据。">
           <Field label="目录兼容等级"><Select name="rank" options={rankOptions} value={work.rank || 'unknown'} /></Field>
-          <Field label="人工参考等级"><Select name="humanGrade" options={rankOptions} value={work.humanAssessment?.grade || 'unknown'} /></Field>
+          <Field label="人工参考等级"><Select name="humanGrade" options={humanAssessmentGradeOptions} value={work.humanAssessment?.grade || 'unknown'} /></Field>
           <Field label="人工轨道状态"><Select name="humanStatus" options={humanAssessmentStatusOptions} value={work.humanAssessment?.status || 'pending'} /></Field>
           <Field label="人工证据状态"><Select name="humanEvidenceStatus" options={humanAssessmentEvidenceOptions} value={work.humanAssessment?.evidenceStatus || 'unassessed'} /></Field>
           <Field wide label="人工判断说明"><textarea defaultValue={work.humanAssessment?.note || ''} maxLength={4000} name="humanNote" /></Field>
