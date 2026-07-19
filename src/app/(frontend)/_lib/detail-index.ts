@@ -82,6 +82,7 @@ export type DetailItem = {
   slug: string
   url: string
   rank?: string
+  humanGrade?: string
   category?: string
   organizationType?: string
   evidenceType?: string
