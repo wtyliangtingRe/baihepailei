@@ -107,8 +107,16 @@ const draftExportStatuses = {
   rules: 'draft,review,published',
 }
 
+function isExportableCurrentDoc(collection, doc, includeDrafts) {
+  if (collection === 'evidence') return doc?.status === 'confirmed' && doc?.isPublic === true
+  const configured = draftExportStatuses[collection]
+  if (!configured) return true
+  const allowed = includeDrafts ? configured.split(',') : ['published']
+  return allowed.includes(String(doc?.status || ''))
+}
+
 async function fetchCollection(baseUrl, token, collection, { includeDrafts, profile }) {
-  const fetchPages = async (drafts) => {
+  const fetchPages = async (depth) => {
     const docs = []
     let page = 1
     let totalPages = 1
@@ -117,18 +125,13 @@ async function fetchCollection(baseUrl, token, collection, { includeDrafts, prof
       const params = new URLSearchParams()
       params.set('limit', PAGE_LIMIT)
       params.set('page', String(page))
-      params.set('depth', '2')
+      params.set('depth', depth)
 
-      if (drafts) {
-            // Query current rows directly; imported legacy records may not have a
-        // compatible Payload version row.
-        const statuses = draftExportStatuses[collection]
-        if (statuses) params.set('where[status][in]', statuses)
-      } else if (collection === 'evidence') {
+      // Index only current records. Evidence remains restricted to confirmed,
+      // public rows even in the complete profile.
+      if (collection === 'evidence') {
         params.set('where[status][equals]', 'confirmed')
         params.set('where[isPublic][equals]', 'true')
-      } else if (draftExportStatuses[collection]) {
-        params.set('where[status][equals]', 'published')
       }
 
       if (collection !== 'evidence' && profile === 'lite') {
@@ -147,17 +150,11 @@ async function fetchCollection(baseUrl, token, collection, { includeDrafts, prof
     return docs
   }
 
-  if (collection === 'evidence' && includeDrafts) {
-    console.warn('[warn] private evidence drafts are excluded from public indexes; exporting current confirmed public evidence only')
-    return fetchPages(false)
-  }
-
   try {
-    return await fetchPages(includeDrafts)
+    return (await fetchPages('1')).filter((doc) => isExportableCurrentDoc(collection, doc, includeDrafts))
   } catch (error) {
-    if (collection !== 'evidence' || !includeDrafts) throw error
-    console.warn('[warn] evidence draft history is incompatible with the current database enum; retrying current public evidence only')
-    return fetchPages(false)
+    console.warn(`[warn] retrying ${collection} at depth=0 after relation hydration failure: ${String(error?.message || error).split('\\n')[0]}`)
+    return (await fetchPages('0')).filter((doc) => isExportableCurrentDoc(collection, doc, includeDrafts))
   }
 }
 
