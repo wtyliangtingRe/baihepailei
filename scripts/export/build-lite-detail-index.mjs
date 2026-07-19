@@ -394,7 +394,7 @@ function commonFields(collection, doc, title, typeLabel) {
     url: itemUrl(collection, doc.id, doc.slug),
     updatedAt: doc.updatedAt || '',
     createdAt: doc.createdAt || '',
-    status: doc.status || '',
+    status: doc.status || 'draft',
   }
 }
 
