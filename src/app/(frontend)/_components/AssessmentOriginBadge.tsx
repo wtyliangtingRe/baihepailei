@@ -7,12 +7,13 @@ type AssessmentOriginItem = {
   reviewStatus?: string
   reviewOrigin?: string
   radarAssessment?: RadarAssessmentMetrics
+  humanAssessment?: { grade?: string; status?: string }
   researchPreview?: RadarResearchPreview
 }
 
 export function assessmentOriginLabel(item: AssessmentOriginItem) {
   if (item.collection !== 'works') {
-    const isHumanReviewed = item.reviewOrigin === 'human_reviewed' || item.reviewStatus === 'reviewed'
+    const isHumanReviewed = Boolean(item.humanAssessment?.grade) || item.reviewOrigin === 'human_reviewed' || item.reviewStatus === 'reviewed'
     const isAIAssessed = item.reviewOrigin === 'ai_assessed'
     if (isAIAssessed && isHumanReviewed) return 'AI 辅助 · 人工已复核'
     if (isHumanReviewed) return '人工已复核'
@@ -20,7 +21,7 @@ export function assessmentOriginLabel(item: AssessmentOriginItem) {
     return ''
   }
 
-  const isHumanReviewed = item.ratingNotice === 'manual_reviewed' || item.reviewStatus === 'reviewed'
+  const isHumanReviewed = Boolean(item.humanAssessment?.grade) || item.ratingNotice === 'manual_reviewed' || item.reviewStatus === 'reviewed'
   const isAIAssessed = item.ratingNotice === 'ai_synthesized_pending_review'
     || Boolean(item.radarAssessment?.assessedAt || item.radarAssessment?.suggestedGrade || item.researchPreview)
 
