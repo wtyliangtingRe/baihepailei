@@ -139,6 +139,7 @@
     "test:bangumi-media-subject-preview": "node --test tests/bangumi-media-subject-preview.test.mjs",
     "test:search": "node --test tests/search-utils.test.mjs",
     "test:frontend-polish": "node --test tests/catalog-performance-and-types.test.mjs tests/deployment-profile.test.mjs tests/personalized-recommendations.test.mjs tests/review-workbench.test.mjs tests/search-utils.test.mjs",
+    "test:dual-track-hardening": "node tests/dual-track-hardening.test.mjs",
     "radar:orchestrate-v06-remaining": "node scripts/radar/run-ai-radar-v06-remaining-batches-v01.mjs",
     "test:radar-v06-orchestrator": "node --test tests/radar-v06-remaining-orchestrator.test.mjs",
     "test:community": "node --test tests/member-account-system.test.mjs tests/comments-system.test.mjs tests/user-work-lists.test.mjs tests/feedback-submissions.test.mjs tests/feedback-entry.test.mjs tests/profile-page-smoke.test.mjs"
