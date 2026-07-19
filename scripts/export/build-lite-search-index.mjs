@@ -150,7 +150,7 @@ async function fetchCollection(baseUrl, token, collection, { includeDrafts, prof
   } catch (error) {
     // A legacy relation can prevent Payload from hydrating depth=1. The
     // collection row itself is still exportable at depth=0.
-    console.warn(`[warn] retrying ${collection} at depth=0 after relation hydration failure: ${String(error?.message || error).split('\\n')[0]}`)
+    console.warn(`[warn] retrying ${collection} at depth=0 after relation hydration failure: ${String(error?.message || error).split('\n')[0]}`)
     return (await fetchPages('0')).filter((doc) => isExportableCurrentDoc(collection, doc, includeDrafts))
   }
 }
