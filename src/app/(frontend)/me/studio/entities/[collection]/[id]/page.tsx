@@ -199,6 +199,7 @@ export default async function EntityEditor({
   }) as unknown as Entity
   const paramsValue = await searchParams
   const isCreator = collection === 'creators'
+  const canOpenPayloadAdmin = ['owner', 'admin'].includes(roleOf(auth.user))
 
   return (
     <main className="page review-workbench">
@@ -211,7 +212,7 @@ export default async function EntityEditor({
         <div className="review-row-actions">
           <Link className="review-link" href={'/me/studio/entities/' + collection}>返回列表</Link>
           <Link className="review-link" href={canonicalContentUrl(collection, entity.id)}>查看前台</Link>
-          <Link className="review-link" href={'/admin/collections/' + collection + '/' + entity.id}>完整 Payload 编辑</Link>
+          {canOpenPayloadAdmin ? <Link className="review-link" href={'/admin/collections/' + collection + '/' + entity.id}>完整 Payload 编辑</Link> : null}
         </div>
       </section>
 
