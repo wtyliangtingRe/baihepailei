@@ -91,7 +91,14 @@ function liveDetailItem(indexed: DetailItem, live: LiveWork): DetailItem {
     updatedAt: live.updatedAt || indexed.updatedAt,
     createdAt: live.createdAt || indexed.createdAt,
     radarAssessment: live.radarAssessment || indexed.radarAssessment,
-    humanAssessment: live.humanAssessment || indexed.humanAssessment,
+    humanAssessment: live.humanAssessment ? {
+      grade: live.humanAssessment.grade,
+      status: live.humanAssessment.status,
+      note: live.humanAssessment.note,
+      sourceSummary: live.humanAssessment.sourceSummary,
+      evidenceStatus: live.humanAssessment.evidenceStatus,
+      assessedAt: live.humanAssessment.assessedAt,
+    } : indexed.humanAssessment,
   }
 }
 
