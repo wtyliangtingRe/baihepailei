@@ -16,6 +16,7 @@ type CommentDoc = {
   replyToName?: string
   createdAt?: string
   moderationStatus?: string
+  reportCount?: number
 }
 
 type AccountUser = {
