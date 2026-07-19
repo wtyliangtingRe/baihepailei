@@ -43,6 +43,7 @@ export type SearchItem = {
   url: string
   status?: string
   rank?: string
+  humanGrade?: string
   category?: string
   organizationType?: string
   evidenceType?: string
