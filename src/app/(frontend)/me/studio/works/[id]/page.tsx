@@ -398,7 +398,7 @@ async function saveStudioWorkAction(formData: FormData) {
       depth: 1,
       draft: false,
       overrideAccess: true,
-      context: { firstPartyStudio: true },
+      context: { firstPartyStudio: true, auditActorID: (auth.user as { id?: string | number }).id },
       data: data as never,
     }) as unknown as WorkDoc
   } catch (error) {
