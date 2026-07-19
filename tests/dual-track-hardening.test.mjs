@@ -26,6 +26,8 @@ assert.match(read('src/lib/audit.ts'), /auditActorID/u)
 assert.match(read('src/app/(frontend)/_components/AssessmentOriginBadge.tsx'), /status !== 'pending'/u)
 const detailExport = read('scripts/export/build-lite-detail-index.mjs')
 assert.doesNotMatch(detailExport, /legacyXWikiPage/u)
+assert.doesNotMatch(read('scripts/export/enrich-lite-detail-index.mjs'), /legacyXWikiPage/u)
+assert.doesNotMatch(read('scripts/export/enrich-public-work-status.mjs'), /draft.*true/u)
 const users = read('src/collections/Users.ts')
 assert.match(users, /requestedRole\(original\.role\)/u)
 
