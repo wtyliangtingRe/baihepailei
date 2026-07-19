@@ -377,6 +377,11 @@ function contentVisibilityFromAdvisories(advisories) {
 }
 
 function mapWork(doc) {
+  const explicitHumanGrade = String(doc.humanAssessment?.grade || '').trim().toUpperCase()
+  const legacyHumanGrade = (doc.reviewStatus === 'reviewed' || doc.ratingNotice === 'manual_reviewed') ? String(doc.rank || '').trim().toUpperCase() : ''
+  const humanGrade = explicitHumanGrade || legacyHumanGrade
+  const aiGrade = String(doc.radarAssessment?.suggestedGrade || '').trim().toUpperCase()
+  const effectiveRank = humanGrade || aiGrade || doc.rank || 'unknown'
   const aliases = aliasesToValues(doc.aliases)
   const localizedTitles = localizedTitleValues(doc.localizedTitles)
   const creators = relationshipNames(doc.creators)
@@ -397,12 +402,14 @@ function mapWork(doc) {
     title: doc.title || '',
     slug: doc.slug || '',
     url: itemUrl('works', doc.id, doc.slug),
-    rank: doc.rank || 'unknown',
+    rank: effectiveRank,
     reviewStatus: doc.reviewStatus || 'pending',
     evidenceStrength: doc.evidenceStrength || 'unassessed',
     ratingNotice: doc.ratingNotice || '',
     reviewReasons: Array.isArray(doc.reviewReasons) ? doc.reviewReasons.map(normalizeText).filter(Boolean) : [],
     radarAssessment: normalizeRadarAssessment(doc.radarAssessment),
+    humanGrade: humanGrade || '',
+    humanAssessment: doc.humanAssessment || undefined,
     originalTitle: doc.originalTitle || '',
     aliases,
     localizedTitles,
@@ -426,7 +433,9 @@ function mapWork(doc) {
       organizations,
       tags,
       warnings,
-      doc.rank,
+      effectiveRank,
+      humanGrade,
+      aiGrade,
       doc.mediaGroup,
       doc.mediaType,
       doc.format,
