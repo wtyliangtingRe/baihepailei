@@ -305,7 +305,7 @@ function detailPatch(work: WorkDoc, existing?: DetailItem): DetailItem {
     ratingNotice: text(work.ratingNotice) || existing?.ratingNotice,
     reviewReasons: reasons.length ? reasons : existing?.reviewReasons,
     radarAssessment: work.radarAssessment || existing?.radarAssessment,
-    humanAssessment: work.humanAssessment || existing?.humanAssessment,
+    humanAssessment: humanAssessmentView(work.humanAssessment) || existing?.humanAssessment,
     humanGrade: humanGrade || undefined,
     originalTitle: text(work.originalTitle) || existing?.originalTitle,
     aliases: aliases(work.aliases).length ? aliases(work.aliases) : existing?.aliases,
