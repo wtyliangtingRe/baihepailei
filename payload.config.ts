@@ -79,6 +79,19 @@ const WorksWithSafePublicationStatus: CollectionConfig = {
         return doc
       },
     ],
+    afterDelete: [
+      async ({ doc, req }) => {
+        await recordAuditEvent({
+          req,
+          action: 'work.deleted',
+          targetCollection: 'works',
+          targetID: doc?.id,
+          targetTitle: doc?.title,
+          summary: '作品记录被永久删除；软隐藏优先使用回收站。',
+          metadata: { status: doc?.status, reviewStatus: doc?.reviewStatus },
+        })
+      },
+    ],
   },
 }
 const UsersWithRestrictedAdmin: CollectionConfig = {
