@@ -153,7 +153,7 @@ async function fetchCollection(baseUrl, token, collection, { includeDrafts, prof
   try {
     return (await fetchPages('1')).filter((doc) => isExportableCurrentDoc(collection, doc, includeDrafts))
   } catch (error) {
-    console.warn(`[warn] retrying ${collection} at depth=0 after relation hydration failure: ${String(error?.message || error).split('\\n')[0]}`)
+    console.warn(`[warn] retrying ${collection} at depth=0 after relation hydration failure: ${String(error?.message || error).split('\n')[0]}`)
     return (await fetchPages('0')).filter((doc) => isExportableCurrentDoc(collection, doc, includeDrafts))
   }
 }
