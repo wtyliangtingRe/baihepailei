@@ -116,7 +116,7 @@ test('user submissions have a first-party queue with explicit accept and reject 
   assert.match(feedbackPage, /accept_create_draft/u)
   assert.match(feedbackPage, /采纳并生成预填草稿/u)
   assert.match(feedbackPage, /feedback-intake:/u)
-  assert.match(feedbackPage, /humanAssessment|radarAssessment/u)
+  assert.doesNotMatch(feedbackPage, /humanAssessment:\s*\{|radarAssessment:\s*\{/u)
   assert.match(feedbackPage, /reviewWorkbench: true/u)
   assert.match(feedbackPage, /reviewError/u)
   assert.match(feedbackPage, /站内完整详情/u)
