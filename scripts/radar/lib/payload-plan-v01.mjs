@@ -142,6 +142,10 @@ export function resolveTargetWork(assessment, indexes) {
 
 export function humanProtectionReasons(work) {
   const reasons = []
+  const humanGrade = val(work?.humanAssessment?.grade)
+  const humanStatus = val(work?.humanAssessment?.status)
+  if (humanGrade) reasons.push('existing_human_assessment_grade')
+  if (humanStatus && humanStatus !== 'pending') reasons.push(`existing_human_assessment_status:${humanStatus}`)
   if (val(work?.ratingNotice) === 'manual_reviewed') reasons.push('existing_manual_review_notice')
   if (['reviewed', 'disputed', 'deprecated'].includes(val(work?.reviewStatus))) reasons.push(`existing_review_status:${val(work.reviewStatus)}`)
   if (work?.humanVerified === true) reasons.push('existing_human_verified')
