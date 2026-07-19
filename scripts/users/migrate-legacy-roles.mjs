@@ -4,7 +4,7 @@ const baseUrl = String(urlIndex >= 0 ? process.argv[urlIndex + 1] : process.env.
 const apply = process.argv.includes('--apply')
 const confirmIndex = process.argv.indexOf('--confirm')
 const confirmation = confirmIndex >= 0 ? process.argv[confirmIndex + 1] : ''
-const expected = 'MIGRATE-LEGACY-ROLES-TO-EDITOR'
+const expected = 'MIGRATE-LEGACY-ROLES-TO-MEMBER'
 
 function required(name) {
   const value = String(process.env[name] || '').trim()
@@ -48,7 +48,7 @@ async function main() {
     expectedConfirmation: expected,
     authenticatedAs: { id: login.user?.id, email: login.user?.email, role: login.user?.role },
     usersRead: users.length,
-    candidates: legacyUsers.map((user) => ({ id: user.id, email: user.email, previousRole: user.role, nextRole: 'editor' })),
+    candidates: legacyUsers.map((user) => ({ id: user.id, email: user.email, previousRole: user.role, nextRole: 'member' })),
     updatedCount: 0,
     blockers: [],
   }
@@ -62,7 +62,7 @@ async function main() {
     await requestJson(`/api/users/${encodeURIComponent(String(user.id))}`, {
       method: 'PATCH',
       headers,
-      body: JSON.stringify({ role: 'editor' }),
+      body: JSON.stringify({ role: 'member' }),
     })
     summary.updatedCount += 1
   }
