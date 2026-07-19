@@ -246,6 +246,7 @@ export const Comments: CollectionConfig = {
       label: '举报次数',
       defaultValue: 0,
       min: 0,
+      access: { read: ({ req }) => isEditor(req.user) },
       admin: { readOnly: true, description: '达到自动保护阈值后评论会暂时隐藏，工作人员可恢复或删除。' },
     },
     {
@@ -254,12 +255,14 @@ export const Comments: CollectionConfig = {
       label: '举报账户',
       relationTo: 'users',
       hasMany: true,
+      access: { read: ({ req }) => isEditor(req.user) },
       admin: { readOnly: true, hidden: true },
     },
     {
       name: 'hiddenReason',
       type: 'text',
       label: '自动隐藏原因',
+      access: { read: ({ req }) => isEditor(req.user) },
       admin: { readOnly: true },
     },
   ],
