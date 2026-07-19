@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 
-import { canonicalContentUrl } from '../../../../_lib/content-identity'
+import { canonicalContentUrl } from '../../../../../_lib/content-identity'
 
 export const dynamic = 'force-dynamic'
 type EntityCollection = 'creators' | 'organizations'
