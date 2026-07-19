@@ -244,7 +244,7 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
           <Link href="/feedback">补充资料 / 提交纠错</Link>
         </nav>
 
-        <p className="work-assessment-disclaimer">人工审核参考与 AI 建议分开显示。AI 置信度表示建议与当前材料的一致程度，不等同于作品安全概率，也不会自动覆盖人工结论。</p>
+        <p className="work-assessment-disclaimer">人工审核参考与 AI 建议分开显示。AI 置信度表示建议与当前材料的一致程度，不等同于作品安全概率；两条轨道都可被新证据更新。</p>
       </section>
     </>
   )
