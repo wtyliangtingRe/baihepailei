@@ -99,14 +99,6 @@ function authHeaders(token) {
   return token ? { Authorization: `JWT ${token}` } : {}
 }
 
-const draftExportStatuses = {
-  works: 'draft,published',
-  creators: 'draft,review,published',
-  organizations: 'draft,review,published',
-  terms: 'draft,review,published',
-  rules: 'draft,review,published',
-}
-
 function isExportableCurrentDoc(collection, doc, includeDrafts) {
   if (collection === 'evidence') return doc?.status === 'confirmed' && doc?.isPublic === true
   const status = String(doc?.status || '').trim()
