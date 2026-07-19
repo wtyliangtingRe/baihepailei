@@ -1,6 +1,6 @@
 import type { CollectionConfig, CollectionSlug } from 'payload'
 
-import { adminsOnly, publishedOrSignedIn, trustedAndUp } from '@/access/roles'
+import { adminsOnly, editorsAndUp, publishedOrSignedIn } from '@/access/roles'
 
 import { localizedTitlesField, mediaGroupOptions } from './fields/localizedMetadata'
 
@@ -148,10 +148,10 @@ export const Works: CollectionConfig = {
     useAsTitle: 'title',
   },
   access: {
-    create: trustedAndUp,
+    create: editorsAndUp,
     delete: adminsOnly,
     read: publishedOrSignedIn,
-    update: trustedAndUp,
+    update: editorsAndUp,
   },
   versions: {
     drafts: true,
