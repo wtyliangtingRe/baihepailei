@@ -52,17 +52,17 @@ const WorksWithSafePublicationStatus: CollectionConfig = {
     ],
     afterChange: [
       ...(WorksWithRadarAssessment.hooks?.afterChange || []),
-      async ({ context, doc, previousDoc, req }) => {
+      async ({ context, doc, previousDoc, req, operation }) => {
         if (context?.auditEvent) return doc
         await recordAuditEvent({
           req,
-          action: 'work.updated',
+          action: operation === 'create' ? 'work.created' : 'work.updated',
           targetCollection: 'works',
           targetID: doc?.id,
           targetTitle: doc?.title,
           summary: '作品内容被工作人员写入。',
           metadata: {
-            operation: 'update',
+            operation,
             beforeRank: previousDoc?.rank,
             afterRank: doc?.rank,
             beforeReviewStatus: previousDoc?.reviewStatus,
