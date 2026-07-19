@@ -154,6 +154,14 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
           <p className="work-assessment-pending-grade-note">数据库当前 rank 字段为 <strong>{pendingRecordedGrade} 级</strong>，且人工轨道尚未记录等级，因此这里不会把它显示成人工正式评级。</p>
         ) : null}
 
+        {assessmentItem.humanAssessment?.note || assessmentItem.humanAssessment?.sourceSummary ? (
+          <section className="work-assessment-human-note" aria-label="人工审核参考说明">
+            <span>人工轨道说明</span>
+            {assessmentItem.humanAssessment.note ? <p>{assessmentItem.humanAssessment.note}</p> : null}
+            {assessmentItem.humanAssessment.sourceSummary ? <p><strong>来源摘要：</strong>{assessmentItem.humanAssessment.sourceSummary}</p> : null}
+          </section>
+        ) : null}
+
         <details className="work-assessment-ai-panel" open={!humanGrade}>
           <summary>
             <span>AI 建议与规则分析</span>
