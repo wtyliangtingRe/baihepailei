@@ -110,7 +110,7 @@ function visibilityParams(collection, includeDrafts, profile) {
   } else if (collection === 'evidence') {
     params.set('where[status][equals]', 'confirmed')
     params.set('where[isPublic][equals]', 'true')
-  } else {
+  } else if (draftExportStatuses[collection]) {
     params.set('where[status][equals]', 'published')
   }
 
