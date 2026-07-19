@@ -6,6 +6,7 @@ import { clearSearchIndexCache, type SearchIndex, type SearchItem } from '../app
 import { isMergedDuplicateWork, mergedWorkReference } from './mergedWork'
 import type { RadarAssessmentMetrics } from './radar/assessmentPresentation'
 import { richTextToPlainText } from './richTextPlain'
+import { effectiveWorkGrade, humanTrackGrade } from './ratingTracks'
 
 type Relation = string | number | { id?: string | number; title?: string; name?: string }
 type StewardshipNoticeRelation = string | number | {
@@ -50,6 +51,15 @@ type WorkDoc = {
   stewardshipNotices?: StewardshipNoticeRelation[]
   summary?: unknown
   radarAssessment?: RadarAssessmentMetrics | null
+  humanAssessment?: {
+    grade?: string
+    status?: string
+    note?: string
+    sourceSummary?: string
+    evidenceStatus?: string
+    sourceLinks?: Array<{ label?: string; url?: string }>
+    assessedAt?: string
+  } | null
   mediaGroup?: string
   mediaType?: string
   format?: string
@@ -211,6 +221,8 @@ function searchPatch(work: WorkDoc, existing?: SearchItem): SearchItem {
   const recordID = String(work.id)
   const slug = text(work.slug) || existing?.slug || `work-${recordID}`
   const reasons = reviewReasonValues(work.reviewReasons)
+  const effectiveRank = effectiveWorkGrade(work)
+  const humanGrade = humanTrackGrade(work)
   const mergeTarget = mergedWorkReference(work)
   return {
     ...(existing || {}),
@@ -222,12 +234,14 @@ function searchPatch(work: WorkDoc, existing?: SearchItem): SearchItem {
     slug,
     url: `/works/w-${encodeURIComponent(recordID)}`,
     status: text(work.status) || existing?.status || 'draft',
-    rank: text(work.rank) || existing?.rank || 'unknown',
+    rank: effectiveRank || existing?.rank || 'unknown',
     reviewStatus: text(work.reviewStatus) || existing?.reviewStatus || 'pending',
     evidenceStrength: text(work.evidenceStrength) || existing?.evidenceStrength || 'unassessed',
     ratingNotice: text(work.ratingNotice) || existing?.ratingNotice,
     reviewReasons: reasons.length ? reasons : existing?.reviewReasons,
     radarAssessment: work.radarAssessment || existing?.radarAssessment,
+    humanAssessment: work.humanAssessment || existing?.humanAssessment,
+    humanGrade: humanGrade || undefined,
     mergedIntoWorkId: mergeTarget?.id,
     originalTitle: text(work.originalTitle) || existing?.originalTitle,
     aliases: aliases(work.aliases).length ? aliases(work.aliases) : existing?.aliases,
@@ -258,6 +272,8 @@ function detailPatch(work: WorkDoc, existing?: DetailItem): DetailItem {
   const recordID = String(work.id)
   const slug = text(work.slug) || existing?.slug || `work-${recordID}`
   const reasons = reviewReasonValues(work.reviewReasons)
+  const effectiveRank = effectiveWorkGrade(work)
+  const humanGrade = humanTrackGrade(work)
   const existingWithNotices = existing as DetailItemWithNotices | undefined
   const noticeValues = stewardshipNoticeViews(work.stewardshipNotices)
   return {
@@ -270,12 +286,14 @@ function detailPatch(work: WorkDoc, existing?: DetailItem): DetailItem {
     slug,
     url: `/works/w-${encodeURIComponent(recordID)}`,
     status: text(work.status) || existing?.status || 'draft',
-    rank: text(work.rank) || existing?.rank || 'unknown',
+    rank: effectiveRank || existing?.rank || 'unknown',
     reviewStatus: text(work.reviewStatus) || existing?.reviewStatus || 'pending',
     evidenceStrength: text(work.evidenceStrength) || existing?.evidenceStrength || 'unassessed',
     ratingNotice: text(work.ratingNotice) || existing?.ratingNotice,
     reviewReasons: reasons.length ? reasons : existing?.reviewReasons,
     radarAssessment: work.radarAssessment || existing?.radarAssessment,
+    humanAssessment: work.humanAssessment || existing?.humanAssessment,
+    humanGrade: humanGrade || undefined,
     originalTitle: text(work.originalTitle) || existing?.originalTitle,
     aliases: aliases(work.aliases).length ? aliases(work.aliases) : existing?.aliases,
     localizedTitles: localizedTitles(work.localizedTitles).length ? localizedTitles(work.localizedTitles) : existing?.localizedTitles,
