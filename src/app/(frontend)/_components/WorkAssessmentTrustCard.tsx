@@ -109,10 +109,10 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
   })
   const recordedGrade = normalizeGrade(item.rank)
   const suggestedGrade = normalizeGrade(presentation.suggestedGrade)
-  const explicitHumanGrade = normalizeGrade(assessmentItem.humanAssessment?.grade)
+  const humanStatus = assessmentItem.humanAssessment?.status || (assessmentItem.ratingNotice === 'manual_reviewed' || assessmentItem.reviewStatus === 'reviewed' ? 'reviewed' : 'pending')
+  const explicitHumanGrade = humanStatus === 'pending' ? '' : normalizeGrade(assessmentItem.humanAssessment?.grade)
   const isLegacyHumanReviewed = assessmentItem.ratingNotice === 'manual_reviewed' || assessmentItem.reviewStatus === 'reviewed'
   const humanGrade = explicitHumanGrade || (isLegacyHumanReviewed ? recordedGrade : '')
-  const humanStatus = assessmentItem.humanAssessment?.status || (isLegacyHumanReviewed ? 'reviewed' : 'pending')
   const aiGrade = suggestedGrade
   const catalogGrade = humanGrade || aiGrade || recordedGrade
   const pendingRecordedGrade = !humanGrade && recordedGrade ? recordedGrade : ''
