@@ -1,5 +1,7 @@
 import { APIError, type Access, type CollectionConfig, type FieldAccess, type TextFieldSingleValidation } from 'payload'
 
+import { recordAuditEvent } from '@/lib/audit'
+
 import {
   adminsOnly,
   anyone,
@@ -272,6 +274,25 @@ export const Users: CollectionConfig = {
           email: normalizeEmail(original.email),
           role: requestedRole(original.role) || 'member',
         }, original)
+      },
+    ],
+    afterChange: [
+      async ({ doc, previousDoc, req, operation }) => {
+        await recordAuditEvent({
+          req,
+          action: operation === 'create' ? 'user.created' : 'user.updated',
+          targetCollection: 'users',
+          targetID: doc?.id,
+          targetTitle: doc?.email,
+          summary: '账户或角色状态被工作人员写入。',
+          metadata: {
+            operation,
+            beforeRole: previousDoc?.role,
+            afterRole: doc?.role,
+            beforeAccountStatus: previousDoc?.accountStatus,
+            afterAccountStatus: doc?.accountStatus,
+          },
+        })
       },
     ],
   },
