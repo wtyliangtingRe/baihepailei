@@ -142,7 +142,9 @@
     "test:dual-track-hardening": "node tests/dual-track-hardening.test.mjs",
     "radar:orchestrate-v06-remaining": "node scripts/radar/run-ai-radar-v06-remaining-batches-v01.mjs",
     "test:radar-v06-orchestrator": "node --test tests/radar-v06-remaining-orchestrator.test.mjs",
-    "test:community": "node --test tests/member-account-system.test.mjs tests/comments-system.test.mjs tests/user-work-lists.test.mjs tests/feedback-submissions.test.mjs tests/feedback-entry.test.mjs tests/profile-page-smoke.test.mjs"
+    "test:community": "node --test tests/member-account-system.test.mjs tests/comments-system.test.mjs tests/user-work-lists.test.mjs tests/feedback-submissions.test.mjs tests/feedback-entry.test.mjs tests/profile-page-smoke.test.mjs",
+    "radar:local-update": "node scripts/radar/run-local-ai-update-v01.mjs",
+    "test:radar-local-update": "node --test tests/local-ai-update-pipeline.test.mjs"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "latest",
