@@ -17,7 +17,7 @@ import {
 export const dynamic = 'force-dynamic'
 
 type ContentCollection = 'works' | 'creators' | 'organizations'
-type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted'
+type Role = 'owner' | 'admin' | 'editor'
 type ReviewQueue = 'pending' | 'processed' | 'all'
 type ReviewStatus = 'all' | 'pending' | 'reviewed' | 'disputed' | 'deprecated'
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
@@ -58,7 +58,7 @@ type Filters = {
   perPage: 20 | 50 | 100
 }
 
-const allowedRoles: Role[] = ['owner', 'admin', 'editor', 'reviewer']
+const allowedRoles: Role[] = ['owner', 'admin', 'editor']
 const collectionMeta: Record<ContentCollection, { label: string; titleField: 'title' | 'name' }> = {
   works: { label: '作品', titleField: 'title' },
   creators: { label: '创作者', titleField: 'name' },
