@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { adminsOnly, editorsAndUp, ownerOnly } from '@/access/roles'
+import { adminsOnly, ownerOnly } from '@/access/roles'
 
 export const AuditEvents: CollectionConfig = {
   slug: 'audit-events',
@@ -9,10 +9,10 @@ export const AuditEvents: CollectionConfig = {
     defaultColumns: ['createdAt', 'action', 'targetCollection', 'targetID', 'actor'],
     group: '系统',
     useAsTitle: 'action',
-    description: '记录内容、账户和互动写入的操作者、对象与变更摘要。仅管理人员可见。',
+    description: '记录内容、账户和互动写入的操作者、对象与变更摘要。仅管理人员可见，不能从后台手工伪造。',
   },
   access: {
-    create: editorsAndUp,
+    // Only server-side audit hooks use overrideAccess to append events.\n    create: () => false,
     read: adminsOnly,
     update: ownerOnly,
     delete: ownerOnly,
