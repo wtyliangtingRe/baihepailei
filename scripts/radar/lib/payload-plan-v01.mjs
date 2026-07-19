@@ -140,17 +140,21 @@ export function resolveTargetWork(assessment, indexes) {
   return { work, blockers, warnings, matchedBy }
 }
 
+export function humanTrackRecorded(work) {
+  return Boolean(
+    val(work?.humanAssessment?.grade)
+    || (val(work?.humanAssessment?.status) && val(work?.humanAssessment?.status) !== 'pending')
+    || val(work?.ratingNotice) === 'manual_reviewed'
+    || ['reviewed', 'disputed', 'deprecated'].includes(val(work?.reviewStatus)),
+  )
+}
+
 export function humanProtectionReasons(work) {
-  const reasons = []
-  const humanGrade = val(work?.humanAssessment?.grade)
-  const humanStatus = val(work?.humanAssessment?.status)
-  if (humanGrade) reasons.push('existing_human_assessment_grade')
-  if (humanStatus && humanStatus !== 'pending') reasons.push(`existing_human_assessment_status:${humanStatus}`)
-  if (val(work?.ratingNotice) === 'manual_reviewed') reasons.push('existing_manual_review_notice')
-  if (['reviewed', 'disputed', 'deprecated'].includes(val(work?.reviewStatus))) reasons.push(`existing_review_status:${val(work.reviewStatus)}`)
-  if (work?.humanVerified === true) reasons.push('existing_human_verified')
-  if (work?.locked === true || work?.isLocked === true) reasons.push('existing_locked_record')
-  return unique(reasons)
+  // Human conclusions are a separate track. They do not stop an AI refresh;
+  // only an explicitly locked record blocks every automated write.
+  return unique([
+    ...(work?.locked === true || work?.isLocked === true ? ['existing_locked_record'] : []),
+  ])
 }
 
 export function evidenceStrengthFor(assessment) {
@@ -185,34 +189,45 @@ function arrayValues(values) {
 
 export function desiredPayloadFor(assessment, work, assessedAt) {
   const contradictions = unique(assessment?.contradictions)
+  const decisive = assessment?.decisiveRule || {}
+  const radarAssessment = {
+    confidencePercent: Math.min(100, Math.max(0, Math.round(Number(assessment?.confidencePercent || 0)))),
+    evidenceCoveragePercent: Math.min(100, Math.max(0, Math.round(Number(assessment?.evidenceCoveragePercent || 0)))),
+    evidenceStatus: val(assessment?.evidenceStatus) || 'unknown',
+    sourceSummary: val(assessment?.sourceSummary),
+    policyVersion: val(assessment?.policyVersion),
+    assessedAt: val(assessment?.assessedAt || assessedAt) || undefined,
+    assessmentBatch: val(assessment?.assessmentBatch),
+    suggestedGrade: val(assessment?.currentGradeSuggestion),
+    decisiveRuleCode: val(decisive?.code),
+    decisiveRuleReason: val(decisive?.reason),
+    matchedRules: matchedRulesFor(assessment),
+    sourceCount: Number.isFinite(Number(assessment?.sourceCount)) ? Number(assessment.sourceCount) : 0,
+    contradictions: arrayValues(contradictions),
+    requiresHumanReview: assessment?.requiresHumanReview !== false,
+  }
+
+  if (humanTrackRecorded(work)) {
+    // Keep legacy/manual presentation fields byte-for-byte equivalent while
+    // refreshing only the independent AI track.
+    return {
+      ...currentStateOf(work),
+      radarAssessment,
+    }
+  }
+
   const reviewReasons = unique([
     ...list(work?.reviewReasons),
     'radar_seed_attached',
     ...(val(assessment?.evidenceStatus) === 'conflicting_evidence' || contradictions.length ? ['source_conflict'] : []),
   ])
-  const decisive = assessment?.decisiveRule || {}
   return {
     rank: val(assessment?.currentGradeSuggestion),
     ratingNotice: 'ai_synthesized_pending_review',
     reviewStatus: 'pending',
     reviewReasons,
     evidenceStrength: evidenceStrengthFor(assessment),
-    radarAssessment: {
-      confidencePercent: Math.min(100, Math.max(0, Math.round(Number(assessment?.confidencePercent || 0)))),
-      evidenceCoveragePercent: Math.min(100, Math.max(0, Math.round(Number(assessment?.evidenceCoveragePercent || 0)))),
-      evidenceStatus: val(assessment?.evidenceStatus) || 'unknown',
-      sourceSummary: val(assessment?.sourceSummary),
-      policyVersion: val(assessment?.policyVersion),
-      assessedAt: val(assessment?.assessedAt || assessedAt) || undefined,
-      assessmentBatch: val(assessment?.assessmentBatch),
-      suggestedGrade: val(assessment?.currentGradeSuggestion),
-      decisiveRuleCode: val(decisive?.code),
-      decisiveRuleReason: val(decisive?.reason),
-      matchedRules: matchedRulesFor(assessment),
-      sourceCount: Number.isFinite(Number(assessment?.sourceCount)) ? Number(assessment.sourceCount) : 0,
-      contradictions: arrayValues(contradictions),
-      requiresHumanReview: assessment?.requiresHumanReview !== false,
-    },
+    radarAssessment,
   }
 }
 
@@ -333,6 +348,7 @@ export function buildPlanRow(assessment, indexes, { assessedAt = '' } = {}) {
     decisiveRuleCode: val(assessment?.decisiveRule?.code),
     matchedBy: target.matchedBy,
     target: work ? { id: val(work.id), siteId: val(work.siteId), title: val(work.title) } : undefined,
+    humanTrackPreserved: work ? humanTrackRecorded(work) : false,
     expectedBefore: before,
     expectedBeforeHash: before ? snapshotHash(before) : undefined,
     patch,
@@ -358,10 +374,22 @@ export function validatePlanForDryRun(plan) {
   if (!val(plan?.expectedBeforeHash)) blockers.push('missing_expected_before_hash')
   const patchKeys = Object.keys(plan?.patch || {})
   for (const key of patchKeys) if (!ALLOWED_PATCH_FIELDS.has(key)) blockers.push(`unexpected_patch_field:${key}`)
-  if (val(plan?.patch?.ratingNotice) !== 'ai_synthesized_pending_review') blockers.push('missing_ai_pending_review_notice')
-  if (val(plan?.patch?.reviewStatus) !== 'pending') blockers.push('unexpected_review_status')
-  if (val(plan?.patch?.rank) === 'X') blockers.push('x_grade_requires_human_adjudication')
-  if (!ALLOWED_GRADES.has(val(plan?.patch?.rank))) blockers.push('invalid_patch_rank')
+  if (!plan?.patch?.radarAssessment || typeof plan.patch.radarAssessment !== 'object') {
+    blockers.push('missing_radar_assessment_patch')
+  }
+  if (plan?.humanTrackPreserved === true) {
+    const before = plan?.expectedBefore || {}
+    for (const field of ['rank', 'ratingNotice', 'reviewStatus', 'reviewReasons', 'evidenceStrength']) {
+      if (!equal(payloadComparable(plan?.patch?.[field], field), payloadComparable(before?.[field], field))) {
+        blockers.push(`human_track_changed_by_ai:${field}`)
+      }
+    }
+  } else {
+    if (val(plan?.patch?.ratingNotice) !== 'ai_synthesized_pending_review') blockers.push('missing_ai_pending_review_notice')
+    if (val(plan?.patch?.reviewStatus) !== 'pending') blockers.push('unexpected_review_status')
+    if (val(plan?.patch?.rank) === 'X') blockers.push('x_grade_requires_human_adjudication')
+    if (!ALLOWED_GRADES.has(val(plan?.patch?.rank))) blockers.push('invalid_patch_rank')
+  }
   return unique(blockers)
 }
 
