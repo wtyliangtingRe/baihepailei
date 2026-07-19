@@ -80,7 +80,7 @@ node scripts/export/build-full-public-index.mjs --url "http://localhost:3000"
 
 请在另一个终端保持 `pnpm dev` 或生产服务器运行后再执行导出；默认每页读取 100 条，避免三万多条作品组成的超大请求超时。可用 `PUBLIC_INDEX_PAGE_LIMIT=200`（最大 250）调高批量大小。
 
-该命令默认生成包含全部作品、创作者、机构和草稿的完整增强版，并保留封面。旧导入记录即使可见性字段为空也会进入完整版；只有低流量镜像才显式传入 `--profile lite --media-mode text` 并应用 Lite 可见性开关。生成的 `public/search-index.json` 和 `public/detail-index.json` 默认不提交。详见 `docs/deployment-profiles-and-feedback.md`。
+该命令默认生成包含全部当前作品、创作者、机构、草稿和审核中记录的完整增强版，并保留封面；只有明确归档的记录会被排除。旧导入记录即使 status 或可见性字段为空也会进入完整版；只有低流量镜像才显式传入 `--profile lite --media-mode text` 并应用 Lite 可见性开关。生成的 `public/search-index.json` 和 `public/detail-index.json` 默认不提交。详见 `docs/deployment-profiles-and-feedback.md`。
 
 ## 账户与邮件
 
