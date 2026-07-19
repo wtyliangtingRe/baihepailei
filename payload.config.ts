@@ -4,6 +4,7 @@ import { lexicalEditor as makeEditor } from '@payloadcms/richtext-lexical'
 import { buildConfig, type CollectionConfig } from 'payload'
 
 import { isAdmin } from './src/access/roles'
+import { AuditEvents } from './src/collections/AuditEvents'
 import { Comments } from './src/collections/Comments'
 import { Creators } from './src/collections/Creators'
 import { Evidence } from './src/collections/Evidence'
@@ -21,6 +22,7 @@ import { Warnings } from './src/collections/Warnings'
 import { Works } from './src/collections/Works'
 import { withRadarAssessmentFields } from './src/collections/fields/radarAssessment'
 import { withStewardshipNotices } from './src/collections/fields/stewardshipNotices'
+import { recordAuditEvent } from './src/lib/audit'
 import { syncWorkToPublicIndexes } from './src/lib/publicIndexSync'
 
 /**
@@ -50,7 +52,24 @@ const WorksWithSafePublicationStatus: CollectionConfig = {
     ],
     afterChange: [
       ...(WorksWithRadarAssessment.hooks?.afterChange || []),
-      async ({ context, doc }) => {
+      async ({ context, doc, previousDoc, req }) => {
+        if (context?.auditEvent) return doc
+        await recordAuditEvent({
+          req,
+          action: 'work.updated',
+          targetCollection: 'works',
+          targetID: doc?.id,
+          targetTitle: doc?.title,
+          summary: '作品内容被工作人员写入。',
+          metadata: {
+            operation: 'update',
+            beforeRank: previousDoc?.rank,
+            afterRank: doc?.rank,
+            beforeReviewStatus: previousDoc?.reviewStatus,
+            afterReviewStatus: doc?.reviewStatus,
+            context: Object.keys(context || {}).filter((key) => key !== 'auditEvent'),
+          },
+        })
         if (!context?.firstPartyStudio) return doc
         try {
           syncWorkToPublicIndexes(doc)
@@ -107,6 +126,7 @@ export default buildConfig({
   },
   collections: [
     UsersWithRestrictedAdmin,
+    AuditEvents,
     Media,
     WorksWithSafePublicationStatus,
     CreatorsWithOptionalStewardship,
