@@ -144,7 +144,9 @@
     "test:radar-v06-orchestrator": "node --test tests/radar-v06-remaining-orchestrator.test.mjs",
     "test:community": "node --test tests/member-account-system.test.mjs tests/comments-system.test.mjs tests/user-work-lists.test.mjs tests/feedback-submissions.test.mjs tests/feedback-entry.test.mjs tests/profile-page-smoke.test.mjs",
     "radar:local-update": "node scripts/radar/run-local-ai-update-v01.mjs",
-    "test:radar-local-update": "node --test tests/local-ai-update-pipeline.test.mjs"
+    "test:radar-local-update": "node --test tests/local-ai-update-pipeline.test.mjs",
+    "radar:plan-discovered-works": "node scripts/radar/prepare-discovered-work-candidates-v01.mjs",
+    "test:radar-discovered-works": "node --test tests/discovered-work-candidate-plan.test.mjs"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "latest",
