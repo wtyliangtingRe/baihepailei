@@ -35,7 +35,7 @@ async function main() {
   let page = 1
   let totalPages = 1
   do {
-    const result = await requestJson(\`/api/users?limit=200&depth=0&page=\${page}\`, { headers })
+    const result = await requestJson(`/api/users?limit=200&depth=0&page=${page}`, { headers })
     users.push(...(result?.docs || []))
     totalPages = Number(result?.totalPages || page)
     page += 1
