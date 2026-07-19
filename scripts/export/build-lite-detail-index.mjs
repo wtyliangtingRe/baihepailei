@@ -99,6 +99,14 @@ function authHeaders(token) {
   return token ? { Authorization: `JWT ${token}` } : {}
 }
 
+const draftExportStatuses = {
+  works: 'draft,published',
+  creators: 'draft,review,published',
+  organizations: 'draft,review,published',
+  terms: 'draft,review,published',
+  rules: 'draft,review,published',
+}
+
 async function fetchCollection(baseUrl, token, collection, { includeDrafts, profile }) {
   const fetchPages = async (drafts) => {
     const docs = []
@@ -114,11 +122,12 @@ async function fetchCollection(baseUrl, token, collection, { includeDrafts, prof
       if (drafts) {
         params.set('draft', 'true')
         // Include imported draft/review rows even when they have no version row.
-        params.set('where[status][in]', 'draft,review,published')
+        const statuses = draftExportStatuses[collection]
+        if (statuses) params.set('where[status][in]', statuses)
       } else if (collection === 'evidence') {
         params.set('where[status][equals]', 'confirmed')
         params.set('where[isPublic][equals]', 'true')
-      } else {
+      } else if (draftExportStatuses[collection]) {
         params.set('where[status][equals]', 'published')
       }
 
