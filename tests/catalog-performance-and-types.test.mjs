@@ -62,8 +62,8 @@ test('AI assessment origin is visible without pretending it is human review', ()
 })
 
 test('complete export is exhaustive, keeps Lite visibility explicit and avoids duplicate full scans', () => {
-  assert.match(searchExport, /PAGE_LIMIT = '1000'/u)
-  assert.match(detailExport, /PAGE_LIMIT = '1000'/u)
+  assert.match(searchExport, /PUBLIC_INDEX_PAGE_LIMIT \|\| 100/u)
+  assert.match(detailExport, /PUBLIC_INDEX_PAGE_LIMIT \|\| 100/u)
   assert.match(searchExport, /profile === 'lite'/u)
   assert.match(detailExport, /profile === 'lite'/u)
   assert.doesNotMatch(searchExport, /where\[isFullVisible\]/u)
@@ -79,5 +79,5 @@ test('complete export is exhaustive, keeps Lite visibility explicit and avoids d
   assert.match(searchExport, /radar-research-records/u)
   assert.match(searchExport, /researchPreview/u)
   assert.match(trustCard, /AI 研究档案 · 非正式评级/u)
-  assert.match(trustCard, /不会覆盖 Works 的正式分级/u)
+  assert.match(trustCard, /不会覆盖人工评级/u)
 })
