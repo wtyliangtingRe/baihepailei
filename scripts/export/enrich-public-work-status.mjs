@@ -4,7 +4,12 @@ import path from 'node:path'
 
 const SEARCH_FILE = 'public/search-index.json'
 const DETAIL_FILE = 'public/detail-index.json'
-const PAGE_LIMIT = 1000
+function exportPageLimit() {
+  const requested = Number(process.env.PUBLIC_INDEX_PAGE_LIMIT || 100)
+  if (!Number.isFinite(requested)) return 100
+  return Math.min(250, Math.max(25, Math.round(requested)))
+}
+const PAGE_LIMIT = exportPageLimit()
 
 function parseArgs(argv) {
   const args = {}
@@ -52,12 +57,17 @@ async function workStatuses(baseUrl, token, includeDrafts) {
   let totalPages = 1
   do {
     const params = new URLSearchParams({ limit: String(PAGE_LIMIT), page: String(page), depth: '0' })
-    if (includeDrafts) params.set('draft', 'true')
-    else params.set('where[status][equals]', 'published')
+    // Read current rows only. Do not query version history: legacy version
+    // tables can legitimately be absent during schema cleanup.
     const result = await requestJson(`${baseUrl}/api/works?${params.toString()}`, {
       headers: { Authorization: `JWT ${token}` },
     })
-    for (const doc of result?.docs || []) output.set(String(doc.id), String(doc.status || 'draft'))
+    for (const doc of result?.docs || []) {
+      const status = String(doc.status || '').trim()
+      if (includeDrafts ? status !== 'archived' : status === 'published') {
+        output.set(String(doc.id), status || 'draft')
+      }
+    }
     totalPages = Number(result?.totalPages || 1)
     page += 1
   } while (page <= totalPages)
