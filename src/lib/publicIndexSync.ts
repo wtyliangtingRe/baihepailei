@@ -43,7 +43,8 @@ type WorkDoc = {
   evidenceStrength?: string
   ratingNotice?: string
   reviewReasons?: string[] | string
-  status?: string
+  _status?: string
+  catalogStatus?: string
   isLiteVisible?: boolean
   isFullVisible?: boolean
   aliases?: Array<string | { value?: string }>
@@ -166,7 +167,7 @@ function stewardshipNoticeViews(values: WorkDoc['stewardshipNotices']): Stewards
 
 function shouldRemoveFromPublicIndexes(work: WorkDoc) {
   return isMergedDuplicateWork(work)
-    || work.status === 'archived'
+    || work.catalogStatus === 'archived'
     || (work.isLiteVisible === false && work.isFullVisible === false)
 }
 
@@ -246,7 +247,8 @@ function searchPatch(work: WorkDoc, existing?: SearchItem): SearchItem {
     title: text(work.title) || existing?.title || `作品 ${recordID}`,
     slug,
     url: `/works/w-${encodeURIComponent(recordID)}`,
-    status: text(work.status) || existing?.status || 'draft',
+    status: text(work._status) || (existing?.status === 'published' ? 'published' : 'draft'),
+    catalogStatus: text(work.catalogStatus) || existing?.catalogStatus || (existing?.status === 'archived' ? 'archived' : 'active'),
     rank: effectiveRank || existing?.rank || 'unknown',
     reviewStatus: text(work.reviewStatus) || existing?.reviewStatus || 'pending',
     evidenceStrength: text(work.evidenceStrength) || existing?.evidenceStrength || 'unassessed',
@@ -298,7 +300,8 @@ function detailPatch(work: WorkDoc, existing?: DetailItem): DetailItem {
     title: text(work.title) || existing?.title || `作品 ${recordID}`,
     slug,
     url: `/works/w-${encodeURIComponent(recordID)}`,
-    status: text(work.status) || existing?.status || 'draft',
+    status: text(work._status) || (existing?.status === 'published' ? 'published' : 'draft'),
+    catalogStatus: text(work.catalogStatus) || existing?.catalogStatus || (existing?.status === 'archived' ? 'archived' : 'active'),
     rank: effectiveRank || existing?.rank || 'unknown',
     reviewStatus: text(work.reviewStatus) || existing?.reviewStatus || 'pending',
     evidenceStrength: text(work.evidenceStrength) || existing?.evidenceStrength || 'unassessed',
@@ -341,7 +344,7 @@ function updateSearch(work: WorkDoc): SyncResult['search'] {
     if (position < 0) return 'skipped'
     index.items.splice(position, 1)
   } else if (position >= 0) index.items[position] = searchPatch(work, index.items[position])
-  else if (work.status === 'published') index.items.push(searchPatch(work))
+  else if (work._status === 'published') index.items.push(searchPatch(work))
   else return 'skipped'
   index.generatedAt = new Date().toISOString()
   index.counts = countByCollection(index.items)
@@ -359,7 +362,7 @@ function updateDetail(work: WorkDoc): SyncResult['detail'] {
     if (position < 0) return 'skipped'
     index.items.splice(position, 1)
   } else if (position >= 0) index.items[position] = detailPatch(work, index.items[position])
-  else if (work.status === 'published') index.items.push(detailPatch(work))
+  else if (work._status === 'published') index.items.push(detailPatch(work))
   else return 'skipped'
   index.generatedAt = new Date().toISOString()
   index.counts = countByCollection(index.items)

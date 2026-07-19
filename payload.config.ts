@@ -30,24 +30,43 @@ import { syncWorkToPublicIndexes } from './src/lib/publicIndexSync'
  * disables them for a deliberately isolated migration process; the default is
  * true so an existing database is never asked to drop the stewardship tables.
  */
+const payloadSchemaPush = String(process.env['PAYLOAD_DB_PUSH'] || 'false').toLowerCase() === 'true'
 const stewardshipSchemaReady = String(process.env['STEWARDSHIP_NOTICES_SCHEMA_READY'] || 'true').toLowerCase() !== 'false'
 
 const WorksWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Works) : Works
 const CreatorsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Creators) : Creators
 const OrganizationsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Organizations) : Organizations
 const WorksWithRadarAssessment = withRadarAssessmentFields(WorksWithOptionalStewardship)
-const WorksWithSafePublicationStatus: CollectionConfig = {
+const WorksWithSafeLifecycleStatus: CollectionConfig = {
   ...WorksWithRadarAssessment,
   hooks: {
     ...WorksWithRadarAssessment.hooks,
     beforeValidate: [
       ...(WorksWithRadarAssessment.hooks?.beforeValidate || []),
       ({ data }) => {
-        if (!data || data.status !== 'review') return data
-        return {
-          ...data,
-          status: data.reviewStatus === 'reviewed' ? 'published' : 'draft',
+        if (!data) return data
+
+        // Compatibility bridge for old importers and forms that still submit
+        // the former root field named "status". Root "status" is forbidden by
+        // Payload Postgres when drafts are enabled, so never persist it again.
+        const next = { ...data } as Record<string, unknown>
+        const legacyStatus = String(next.status || '').trim()
+        delete next.status
+
+        if (legacyStatus === 'archived') {
+          next.catalogStatus = 'archived'
+          next._status = 'draft'
+        } else {
+          if (legacyStatus === 'published' || legacyStatus === 'draft') {
+            next._status = legacyStatus
+          } else if (legacyStatus === 'review') {
+            next._status = next.reviewStatus === 'reviewed' ? 'published' : 'draft'
+          }
+
+          if (next.catalogStatus !== 'archived') next.catalogStatus = 'active'
         }
+
+        return next
       },
     ],
     afterChange: [
@@ -67,6 +86,10 @@ const WorksWithSafePublicationStatus: CollectionConfig = {
             afterRank: doc?.rank,
             beforeReviewStatus: previousDoc?.reviewStatus,
             afterReviewStatus: doc?.reviewStatus,
+            beforeCatalogStatus: previousDoc?.catalogStatus,
+            afterCatalogStatus: doc?.catalogStatus,
+            beforePublicationStatus: previousDoc?._status,
+            afterPublicationStatus: doc?._status,
             beforeHumanAssessmentGrade: previousDoc?.humanAssessment?.grade,
             afterHumanAssessmentGrade: doc?.humanAssessment?.grade,
             beforeHumanAssessmentStatus: previousDoc?.humanAssessment?.status,
@@ -98,7 +121,11 @@ const WorksWithSafePublicationStatus: CollectionConfig = {
           targetID: doc?.id,
           targetTitle: doc?.title,
           summary: '作品记录被永久删除；软隐藏优先使用回收站。',
-          metadata: { status: doc?.status, reviewStatus: doc?.reviewStatus },
+          metadata: {
+            catalogStatus: doc?.catalogStatus,
+            publicationStatus: doc?._status,
+            reviewStatus: doc?.reviewStatus,
+          },
         })
       },
     ],
@@ -210,7 +237,7 @@ export default buildConfig({
     UsersWithRestrictedAdmin,
     AuditEvents,
     Media,
-    WorksWithSafePublicationStatus,
+    WorksWithSafeLifecycleStatus,
     CreatorsWithAudit,
     OrganizationsWithAudit,
     EvidenceWithAudit,
@@ -225,6 +252,7 @@ export default buildConfig({
     RulesWithAudit,
   ],
   db: postgresAdapter({
+    push: payloadSchemaPush,
     pool: {
       connectionString: String(process.env['DATABASE_URL'] || ''),
     },

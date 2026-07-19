@@ -21,6 +21,7 @@ import {
   aliasesToText,
   isMergedDuplicateWork,
   mergedWorkReference,
+  normalizeCatalogStatus,
   normalizePublicationStatus,
   safeReviewReturnTo,
   sourceLinksFromText,
@@ -92,7 +93,8 @@ type WorkDoc = {
   humanReviewedAt?: string
   humanReviewedBy?: unknown
   reviewReasons?: string[] | string
-  status?: string
+  _status?: string
+  catalogStatus?: string
   isLiteVisible?: boolean
   isFullVisible?: boolean
   hasEvidence?: boolean
@@ -121,7 +123,8 @@ const formatOptions = ['tv_anime', 'anime_movie', 'ova', 'ona', 'manga_series', 
 const reviewStatusOptions = ['pending', 'reviewed', 'disputed', 'deprecated']
 const humanAssessmentStatusOptions = ['pending', 'reviewed', 'disputed']
 const humanAssessmentEvidenceOptions = ['unassessed', 'source_checked', 'primary_checked', 'insufficient']
-const publicationStatusOptions = ['draft', 'published', 'archived']
+const publicationStatusOptions = ['draft', 'published']
+const catalogStatusOptions = ['active', 'archived']
 const ratingNoticeOptions = ['ai_synthesized_pending_review', 'insufficient_information', 'manual_reviewed', 'none', 'other']
 const evidenceStrengthOptions = ['unassessed', 'weak', 'medium', 'strong']
 const languageOptions = new Set(['ja', 'zh-Hans', 'zh-Hant', 'en', 'ko', 'fr', 'de', 'es', 'und', 'other', 'unknown'])
@@ -134,7 +137,7 @@ const labels: Record<string, string> = {
   light_novel: '轻小说', visual_novel: '视觉小说', audio_drama: '广播剧 / 音声', webtoon: 'Webtoon', doujin: '同人作品', anthology: '合集 / 选集',
   tv_anime: 'TV 动画', anime_movie: '动画电影', ova: 'OVA', ona: 'ONA / 网络动画', manga_series: '漫画连载', manga_oneshot: '漫画短篇', novel_series: '小说系列', light_novel_series: '轻小说系列', web_serial: 'Web 连载', pc_game: 'PC 游戏', console_game: '主机游戏', mobile_game: '手机游戏', webtoon_series: 'Webtoon 连载',
   pending: '待复核', reviewed: '已复核', disputed: '有争议', deprecated: '已合并 / 已废弃',
-  draft: '草稿', published: '已发布', archived: '回收站 / 归档',
+  draft: '草稿', published: '已发布', active: '正常', archived: '回收站 / 归档',
   ai_synthesized_pending_review: 'AI 综合，待复核', insufficient_information: '信息不足', manual_reviewed: '人工已确认', none: '无',
   unassessed: '未评估', weak: '弱', medium: '中', strong: '强',
   day: '精确到日', month: '精确到月', year: '精确到年',
@@ -267,7 +270,8 @@ async function saveStudioWorkAction(formData: FormData) {
   const title = text(formData.get('title'), 300)
   const rank = text(formData.get('rank'), 40)
   const reviewStatus = text(formData.get('reviewStatus'), 40)
-  const status = normalizePublicationStatus(formData.get('status'))
+  const publicationStatus = normalizePublicationStatus(formData.get('_status'))
+  const catalogStatus = normalizeCatalogStatus(formData.get('catalogStatus'))
   const ratingNotice = text(formData.get('ratingNotice'), 80)
   const evidenceStrength = text(formData.get('evidenceStrength'), 40)
   const mediaGroup = text(formData.get('mediaGroup'), 80)
@@ -279,7 +283,8 @@ async function saveStudioWorkAction(formData: FormData) {
   const invalid = !title
     || !rankOptions.includes(rank)
     || !reviewStatusOptions.includes(reviewStatus)
-    || !publicationStatusOptions.includes(status)
+    || !publicationStatusOptions.includes(publicationStatus)
+    || !catalogStatusOptions.includes(catalogStatus)
     || !ratingNoticeOptions.includes(ratingNotice)
     || !evidenceStrengthOptions.includes(evidenceStrength)
     || !mediaGroupOptions.includes(mediaGroup)
@@ -307,7 +312,7 @@ async function saveStudioWorkAction(formData: FormData) {
   const rulesChanged = currentDecisiveRuleCode !== resolvedDecisiveRuleCode || !sameValues(currentRuleCodes, orderedRuleCodes)
 
   const actorID = (auth.user as { id?: string | number }).id
-  const archived = status === 'archived'
+  const archived = catalogStatus === 'archived'
   const data: Record<string, unknown> = {
     title,
     originalTitle: text(formData.get('originalTitle'), 300),
@@ -321,7 +326,8 @@ async function saveStudioWorkAction(formData: FormData) {
     firstPublishedLabel: text(formData.get('firstPublishedLabel'), 120),
     rank,
     reviewStatus: archived ? 'deprecated' : reviewStatus,
-    status,
+    _status: archived ? 'draft' : publicationStatus,
+    catalogStatus,
     ratingNotice,
     evidenceStrength,
     humanReviewNote,
@@ -498,7 +504,7 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
           <p className="eyebrow">站内内容管理 · 作品编辑</p>
           <h1>{work.title || `作品 #${work.id}`}</h1>
           <p className="muted">这里直接修改作品正式字段。保存后会同步标题、正式分级、作品简介、规则建议、状态、类型、日期和公开来源；草稿仍不会自动公开。</p>
-          <div className="review-safety-note">写入通过 Payload 并保留版本历史。回收站只是 status=archived 与关闭可见性，不会永久删除数据。</div>
+          <div className="review-safety-note">写入通过 Payload 并保留版本历史。回收站使用 catalogStatus=archived，并强制 Payload _status=draft 与关闭可见性，不会永久删除数据。</div>
         </div>
         <div className="review-stat-grid"><Stat label="作品 ID" value={String(work.id)} /><Stat label="目录兼容等级" value={work.rank || 'unknown'} /><Stat label="人工参考等级" value={work.humanAssessment?.grade || '尚无'} /><Stat label="AI 建议等级" value={work.radarAssessment?.suggestedGrade || '尚无'} /></div>
       </section>
@@ -555,7 +561,8 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
           <Field wide label="人工来源摘要"><textarea defaultValue={work.humanAssessment?.sourceSummary || ''} maxLength={4000} name="humanSourceSummary" /></Field>
           <Field wide label="人工来源链接"><textarea defaultValue={sourceLinksToText(work.humanAssessment?.sourceLinks)} name="humanSourceLinks" placeholder="名称 | https://..." /></Field>
           <Field label="人工复核状态"><Select name="reviewStatus" options={reviewStatusOptions} value={work.reviewStatus || 'pending'} /></Field>
-          <Field label="发布状态"><Select name="status" options={publicationStatusOptions} value={normalizePublicationStatus(work.status)} /></Field>
+          <Field label="Payload 发布状态"><Select name="_status" options={publicationStatusOptions} value={normalizePublicationStatus(work._status)} /></Field>
+          <Field label="目录状态"><Select name="catalogStatus" options={catalogStatusOptions} value={normalizeCatalogStatus(work.catalogStatus)} /></Field>
           <Field label="页面分级提示"><Select name="ratingNotice" options={ratingNoticeOptions} value={work.ratingNotice || 'none'} /></Field>
           <Field label="证据强度"><Select name="evidenceStrength" options={evidenceStrengthOptions} value={work.evidenceStrength || 'unassessed'} /></Field>
           <Field wide label="人工复核 / 编辑记录"><textarea defaultValue={work.humanReviewNote || ''} maxLength={4000} name="humanReviewNote" /></Field>

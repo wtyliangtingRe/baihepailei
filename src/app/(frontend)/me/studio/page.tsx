@@ -18,7 +18,8 @@ type StudioWork = {
   slug?: string
   rank?: string
   reviewStatus?: string
-  status?: string
+  _status?: string
+  catalogStatus?: string
   mediaGroup?: string
   mediaType?: string
   format?: string
@@ -37,7 +38,6 @@ type StudioFilters = {
 const staffRoles = new Set<Role>(['owner', 'admin', 'editor'])
 const rankOptions = ['all', 'S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'trash', 'unknown']
 const statusOptions = ['active', 'archived', 'all']
-const activePublicationStatuses = ['draft', 'published']
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] || '' : value || ''
@@ -102,8 +102,8 @@ function whereFor(filters: StudioFilters): Where {
     and.push({ or })
   }
   if (filters.rank !== 'all') and.push({ rank: { equals: filters.rank } })
-  if (filters.status === 'active') and.push({ status: { in: activePublicationStatuses } })
-  if (filters.status === 'archived') and.push({ status: { equals: 'archived' } })
+  if (filters.status === 'active') and.push({ catalogStatus: { equals: 'active' } })
+  if (filters.status === 'archived') and.push({ catalogStatus: { equals: 'archived' } })
   return and.length ? { and } : {}
 }
 
@@ -139,7 +139,7 @@ async function hideWorkAction(formData: FormData) {
       collection: 'works', id, depth: 0, draft: false, overrideAccess: true,
       context: { firstPartyStudio: true, softHide: true },
       data: {
-        status: 'archived', reviewStatus: 'deprecated', isLiteVisible: false, isFullVisible: false,
+        catalogStatus: 'archived', _status: 'draft', reviewStatus: 'deprecated', isLiteVisible: false, isFullVisible: false,
         humanReviewNote: appendAuditNote(current.humanReviewNote, 'soft-hidden', reason, (auth.user as { id?: string | number }).id),
       },
     })
@@ -170,7 +170,7 @@ async function restoreWorkAction(formData: FormData) {
       collection: 'works', id, depth: 0, draft: false, overrideAccess: true,
       context: { firstPartyStudio: true, restoreSoftHidden: true },
       data: {
-        status: 'draft', reviewStatus: 'pending', isLiteVisible: false, isFullVisible: false,
+        catalogStatus: 'active', _status: 'draft', reviewStatus: 'pending', isLiteVisible: false, isFullVisible: false,
         humanReviewNote: appendAuditNote(current.humanReviewNote, 'restored-to-draft', '从回收站恢复，需重新复核后发布', (auth.user as { id?: string | number }).id),
       },
     })
@@ -209,8 +209,8 @@ async function findStudioPage(payload: Awaited<ReturnType<typeof getPayload>>, f
 
 async function countByStatus(payload: Awaited<ReturnType<typeof getPayload>>, status: 'active' | 'archived') {
   const where: Where = status === 'active'
-    ? { status: { in: activePublicationStatuses } }
-    : { status: { equals: 'archived' } }
+    ? { catalogStatus: { equals: 'active' } }
+    : { catalogStatus: { equals: 'archived' } }
   return payload.find({ collection: 'works', depth: 0, draft: false, limit: 1, page: 1, pagination: true, overrideAccess: true, where })
 }
 
@@ -263,7 +263,7 @@ export default async function ContentStudioPage({ searchParams }: { searchParams
   const errorMessage = studioError === 'hide_confirmation'
     ? '隐藏作品需要填写至少 4 个字的理由，并在确认框输入“隐藏”。'
     : studioError === 'archive_schema'
-      ? '当前数据库的作品状态 enum 尚未完整支持回收站写入；作品没有被隐藏。请先完成只读诊断和 Payload migration。'
+      ? '当前数据库的目录状态字段 尚未完整支持回收站写入；作品没有被隐藏。请先完成只读诊断和 Payload migration。'
       : studioError === 'restore_failed'
         ? '恢复作品失败，原记录没有被改写。请查看开发服务器日志。'
         : studioError
@@ -277,7 +277,7 @@ export default async function ContentStudioPage({ searchParams }: { searchParams
         <div className="review-stat-grid"><div className="review-stat"><span>可编辑作品</span><strong>{activeCount.totalDocs.toLocaleString('zh-CN')}</strong></div><div className="review-stat"><span>回收站</span><strong>{archiveSchemaReady ? archivedCount.totalDocs.toLocaleString('zh-CN') : '待迁移'}</strong></div></div>
       </section>
 
-      {!archiveSchemaReady ? <div className="review-action-message review-action-message-error" role="alert">回收站状态尚未与数据库版本 enum 对齐。编辑和新建功能仍可使用，但在诊断完成前不要测试隐藏或恢复。</div> : null}
+      {!archiveSchemaReady ? <div className="review-action-message review-action-message-error" role="alert">回收站目录状态尚未完成数据库迁移。编辑和新建功能仍可使用，但在诊断完成前不要测试隐藏或恢复。</div> : null}
       {errorMessage ? <div className="review-action-message review-action-message-error" role="alert">{errorMessage}</div> : null}
       {createdWork ? <div className="review-action-message review-action-message-success" role="status">作品草稿 #{createdWork} 已创建，当前仍未公开。<Link href={`/me/studio/works/${createdWork}?returnTo=${encodeURIComponent(currentHref)}`}>打开草稿继续编辑</Link></div> : null}
       {hidden ? <div className="review-action-message review-action-message-success" role="status">作品 #{hidden} 已移入回收站，没有永久删除。</div> : null}
@@ -302,10 +302,10 @@ export default async function ContentStudioPage({ searchParams }: { searchParams
       <Pagination currentPage={currentPage} filters={filters} totalPages={totalPages} />
       <section className="review-list">
         {docs.map((work) => {
-          const archived = work.status === 'archived'
+          const archived = work.catalogStatus === 'archived'
           return (
             <article className={`review-row review-content-row${archived ? ' review-merged-row' : ''}`} key={work.id}>
-              <header className="review-row-header"><div className="review-row-title"><h2>{work.title || `作品 #${work.id}`}</h2><small>作品 ID：{work.id} · 最近更新：{formatDate(work.updatedAt)}</small></div><div className="review-chip-list"><span>{label(work.rank)}级</span><span>{work.reviewStatus || 'pending'}</span><span>{work.status || 'draft'}</span></div></header>
+              <header className="review-row-header"><div className="review-row-title"><h2>{work.title || `作品 #${work.id}`}</h2><small>作品 ID：{work.id} · 最近更新：{formatDate(work.updatedAt)}</small></div><div className="review-chip-list"><span>{label(work.rank)}级</span><span>{work.reviewStatus || 'pending'}</span><span>{work._status || 'draft'}</span><span>{work.catalogStatus || 'active'}</span></div></header>
               {work.originalTitle ? <p className="muted">原名：{work.originalTitle}</p> : null}
               <p className="muted">{work.mediaGroup || 'unknown'} / {work.mediaType || 'unknown'} / {work.format || 'unknown'}</p>
               <div className="review-content-actions">{!archived ? <Link className="review-button review-button-primary" href={`/me/studio/works/${work.id}?returnTo=${encodeURIComponent(currentHref)}`}>编辑完整条目</Link> : null}<Link className="review-link" href={canonicalContentUrl('works', work.id)}>查看前台</Link></div>

@@ -1,6 +1,6 @@
 import type { CollectionConfig, CollectionSlug } from 'payload'
 
-import { adminsOnly, editorsAndUp, publishedOrSignedIn } from '@/access/roles'
+import { adminsOnly, editorsAndUp, publishedActiveWorkOrSignedIn } from '@/access/roles'
 
 import { localizedTitlesField, mediaGroupOptions } from './fields/localizedMetadata'
 
@@ -148,14 +148,14 @@ export const Works: CollectionConfig = {
     plural: '作品',
   },
   admin: {
-    defaultColumns: ['title', 'siteId', 'mediaGroup', 'mediaType', 'rank', 'reviewStatus', 'reviewReasons', 'ratingNotice', 'evidenceStrength', 'isLiteVisible', 'status', 'updatedAt'],
+    defaultColumns: ['title', 'siteId', 'mediaGroup', 'mediaType', 'rank', 'reviewStatus', 'reviewReasons', 'ratingNotice', 'evidenceStrength', 'isLiteVisible', 'catalogStatus', '_status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'title',
   },
   access: {
     create: editorsAndUp,
     delete: adminsOnly,
-    read: publishedOrSignedIn,
+    read: publishedActiveWorkOrSignedIn,
     update: editorsAndUp,
   },
   versions: {
@@ -743,16 +743,18 @@ export const Works: CollectionConfig = {
       },
     },
     {
-      name: 'status',
+      name: 'catalogStatus',
       type: 'select',
-      label: '状态',
-      defaultValue: 'draft',
+      label: '目录状态',
+      defaultValue: 'active',
       required: true,
       options: [
-        { label: '草稿', value: 'draft' },
-        { label: '已发布', value: 'published' },
-        { label: '归档', value: 'archived' },
+        { label: '正常', value: 'active' },
+        { label: '归档 / 回收站', value: 'archived' },
       ],
+      admin: {
+        description: '只表示作品是否仍在本站目录中。草稿与发布由 Payload 内置 _status 管理。',
+      },
     },
   ],
 }

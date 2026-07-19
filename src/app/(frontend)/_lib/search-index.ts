@@ -42,6 +42,7 @@ export type SearchItem = {
   slug: string
   url: string
   status?: string
+  catalogStatus?: string
   rank?: string
   humanGrade?: string
   category?: string
@@ -113,13 +114,14 @@ export function clearSearchIndexCache() {
 
 function isRetiredWork(item: SearchItem) {
   if (item.collection !== 'works') return false
-  if (item.status === 'archived' || item.reviewStatus === 'deprecated') return true
+  if (item.catalogStatus === 'archived' || item.status === 'archived' || item.reviewStatus === 'deprecated') return true
   const currentID = String(item.recordId || item.id)
   if (item.mergedIntoWorkId && item.mergedIntoWorkId !== currentID) return true
   return isMergedDuplicateWork({
     id: currentID,
     reviewStatus: item.reviewStatus,
     status: item.status,
+    catalogStatus: item.catalogStatus,
     searchText: item.searchText,
   })
 }

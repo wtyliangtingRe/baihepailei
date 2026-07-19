@@ -139,6 +139,7 @@ export type DetailItem = {
   updatedAt?: string
   createdAt?: string
   status?: string
+  catalogStatus?: string
 }
 
 export type DetailIndex = {

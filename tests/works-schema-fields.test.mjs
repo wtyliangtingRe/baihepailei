@@ -37,3 +37,12 @@ test('works schema supports production committee and broadcaster organization ro
   assert.match(source, /value: 'music_label'/u)
   assert.match(source, /value: 'investor'/u)
 })
+
+test('works schema separates Payload publication status from catalog lifecycle', () => {
+  const source = readFileSync('src/collections/Works.ts', 'utf8')
+
+  assert.match(source, /name: 'catalogStatus'/u)
+  assert.match(source, /value: 'active'/u)
+  assert.match(source, /value: 'archived'/u)
+  assert.doesNotMatch(source, /name: 'status'[\s\S]{0,240}label: '状态'/u)
+})

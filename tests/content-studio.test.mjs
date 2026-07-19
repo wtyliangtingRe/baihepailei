@@ -34,9 +34,9 @@ test('content studio is database-backed and separate from review queues', () => 
 })
 
 test('studio does not send business archive values through Payload version rows', () => {
-  assert.match(studio, /activePublicationStatuses = \['draft', 'published'\]/u)
+  assert.match(studio, /catalogStatus/u)
   assert.match(studio, /archiveSchemaReady/u)
-  assert.match(studio, /回收站状态尚未与数据库版本 enum 对齐/u)
+  assert.match(studio, /回收站目录状态尚未完成数据库迁移/u)
 
   const pageQuery = functionBody(studio, 'findStudioPage', 'countByStatus')
   const statusCount = functionBody(studio, 'countByStatus', 'ContentStudioPage')
@@ -55,7 +55,8 @@ test('members can only submit new-work proposals while staff can edit', () => {
 })
 
 test('staff creation produces a hidden pending draft and links feedback with numeric IDs', () => {
-  assert.match(create, /status: 'draft'/u)
+  assert.match(create, /_status: 'draft'/u)
+  assert.match(create, /catalogStatus: 'active'/u)
   assert.match(create, /reviewStatus: 'pending'/u)
   assert.match(create, /isLiteVisible: false/u)
   assert.match(create, /isFullVisible: false/u)
@@ -97,7 +98,8 @@ test('new work proposals and staff drafts share main and all-matched rule contro
 })
 
 test('soft delete archives and hides without deleting the record', () => {
-  assert.match(studio, /status: 'archived'/u)
+  assert.match(studio, /catalogStatus: 'archived'/u)
+  assert.match(studio, /_status: 'draft'/u)
   assert.match(studio, /isLiteVisible: false/u)
   assert.match(studio, /isFullVisible: false/u)
   assert.match(studio, /恢复为待复核草稿/u)
@@ -133,7 +135,8 @@ test('studio edits synchronize public indexes and remove hidden records', () => 
   assert.match(config, /context\?\.firstPartyStudio/u)
   assert.match(sync, /search-index\.json/u)
   assert.match(sync, /detail-index\.json/u)
-  assert.match(sync, /status: text\(work\.status\)/u)
+  assert.match(sync, /status: text\(work\._status\)/u)
+  assert.match(sync, /catalogStatus: text\(work\.catalogStatus\)/u)
   assert.match(sync, /reviewReasonValues/u)
   assert.match(sync, /detailSections/u)
   assert.match(sync, /radarAssessment: work\.radarAssessment/u)
@@ -142,8 +145,9 @@ test('studio edits synchronize public indexes and remove hidden records', () => 
   assert.match(sync, /shouldRemoveFromPublicIndexes/u)
   assert.match(sync, /work\.isLiteVisible === false && work\.isFullVisible === false/u)
   assert.match(sync, /index\.items\.splice\(position, 1\)/u)
-  assert.match(guards, /item\.status === 'archived'/u)
-  assert.match(fullExport, /enrich-public-work-status\.mjs/u)
+  assert.match(guards, /item\.catalogStatus === 'archived'/u)
+  assert.match(fullExport, /build-and-enrich-lite-search-index\.mjs/u)
+  assert.match(fullExport, /build-and-enrich-lite-detail-index\.mjs/u)
 })
 
 test('studio remains Payload-only and never writes PostgreSQL directly', () => {

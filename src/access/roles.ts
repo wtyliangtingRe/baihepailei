@@ -40,3 +40,12 @@ export const publishedOrSignedIn: Access = ({ req }) => {
     },
   }
 }
+
+export const publishedActiveWorkOrSignedIn: Access = ({ req }) => {
+  if (req.user) return true
+
+  return {
+    _status: { equals: 'published' },
+    catalogStatus: { equals: 'active' },
+  }
+}

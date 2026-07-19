@@ -111,9 +111,13 @@ function visibilityParams(collection, profile, depth) {
 
 function isExportableCurrentDoc(collection, doc, includeDrafts) {
   if (collection === 'evidence') return doc?.status === 'confirmed' && doc?.isPublic === true
+  if (collection === 'works') {
+    if (String(doc?.catalogStatus || 'active').trim() === 'archived') return false
+    const publicationStatus = String(doc?._status || 'draft').trim()
+    return includeDrafts || publicationStatus === 'published'
+  }
+
   const status = String(doc?.status || '').trim()
-  // Pre-status imports are valid current records. Full exports include them
-  // alongside drafts/review/published rows; only an explicit archive is hidden.
   if (includeDrafts) return status !== 'archived'
   return status === 'published'
 }
@@ -425,7 +429,8 @@ function mapWork(doc) {
     title: doc.title || '',
     slug: doc.slug || '',
     url: itemUrl('works', doc.id, doc.slug),
-    status: doc.status || 'draft',
+    status: doc._status || 'draft',
+    catalogStatus: doc.catalogStatus || 'active',
     rank: effectiveRank,
     reviewStatus: doc.reviewStatus || 'pending',
     evidenceStrength: doc.evidenceStrength || 'unassessed',

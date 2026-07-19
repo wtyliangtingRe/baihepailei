@@ -1,6 +1,8 @@
 export type MergeMarkedWork = {
   id?: string | number | null
   reviewStatus?: string | null
+  _status?: string | null
+  catalogStatus?: string | null
   status?: string | null
   searchText?: string | null
   evidenceNote?: string | null
@@ -43,7 +45,9 @@ export function mergedWorkReference(doc: MergeMarkedWork): MergedWorkReference |
   // The old free-text marker is trusted only after the row was actually retired.
   // This prevents a canonical active row from being blocked merely because its notes
   // quote or inherit the phrase "duplicate of work #...".
-  const retired = doc.reviewStatus === 'deprecated' || doc.status === 'archived'
+  const retired = doc.reviewStatus === 'deprecated'
+    || doc.catalogStatus === 'archived'
+    || doc.status === 'archived'
   if (!retired) return null
 
   const legacy = haystack.match(/(?:^|\n)\s*duplicate of work\s+#(\d+)\s*(?:\(([^)]+)\))?\s*(?=\n|$)/iu)

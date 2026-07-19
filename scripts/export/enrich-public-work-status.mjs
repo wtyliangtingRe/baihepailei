@@ -63,9 +63,14 @@ async function workStatuses(baseUrl, token, includeDrafts) {
       headers: { Authorization: `JWT ${token}` },
     })
     for (const doc of result?.docs || []) {
-      const status = String(doc.status || '').trim()
-      if (includeDrafts ? status !== 'archived' : status === 'published') {
-        output.set(String(doc.id), status || 'draft')
+      const publicationStatus = String(doc._status || 'draft').trim()
+      const catalogStatus = String(doc.catalogStatus || 'active').trim()
+      if (catalogStatus === 'archived') continue
+      if (includeDrafts || publicationStatus === 'published') {
+        output.set(String(doc.id), {
+          status: publicationStatus || 'draft',
+          catalogStatus: catalogStatus || 'active',
+        })
       }
     }
     totalPages = Number(result?.totalPages || 1)
@@ -89,10 +94,11 @@ function enrich(file, statuses) {
   let updated = 0
   for (const item of index.items || []) {
     if (item.collection !== 'works') continue
-    const status = statuses.get(String(item.recordId || ''))
-    if (!status) continue
-    if (item.status !== status) updated += 1
-    item.status = status
+    const lifecycle = statuses.get(String(item.recordId || ''))
+    if (!lifecycle) continue
+    if (item.status !== lifecycle.status || item.catalogStatus !== lifecycle.catalogStatus) updated += 1
+    item.status = lifecycle.status
+    item.catalogStatus = lifecycle.catalogStatus
   }
   index.generatedAt = new Date().toISOString()
   atomicWrite(resolved, index)
