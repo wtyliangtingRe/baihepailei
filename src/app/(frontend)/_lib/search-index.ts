@@ -58,7 +58,7 @@ export type SearchItem = {
     note?: string
     sourceSummary?: string
     evidenceStatus?: string
-    sourceLinks?: DetailSourceLink[]
+    sourceLinks?: Array<{ label?: string; url?: string }>
     assessedAt?: string
   }
   researchPreview?: RadarResearchPreview
