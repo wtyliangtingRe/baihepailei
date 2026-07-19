@@ -25,9 +25,10 @@ async function requestJson(path, options = {}) {
 }
 
 async function main() {
-  const email = process.env.USER_MAINTENANCE_EMAIL || process.env.SITE_OWNER_EMAIL
-  if (!email) throw new Error('Missing USER_MAINTENANCE_EMAIL or SITE_OWNER_EMAIL')
-  const password = required('USER_MAINTENANCE_PASSWORD')
+  const email = process.env.USER_MAINTENANCE_EMAIL || process.env.SITE_OWNER_EMAIL || process.env.PAYLOAD_EXPORT_EMAIL || process.env.PAYLOAD_SEED_EMAIL
+  if (!email) throw new Error('Missing USER_MAINTENANCE_EMAIL, SITE_OWNER_EMAIL, or PAYLOAD_EXPORT_EMAIL')
+  const password = process.env.USER_MAINTENANCE_PASSWORD || process.env.PAYLOAD_EXPORT_PASSWORD || process.env.PAYLOAD_SEED_PASSWORD
+  if (!password) throw new Error('Missing USER_MAINTENANCE_PASSWORD, PAYLOAD_EXPORT_PASSWORD, or PAYLOAD_SEED_PASSWORD')
   const login = await requestJson('/api/users/login', { method: 'POST', body: JSON.stringify({ email, password }) })
   if (!login?.token) throw new Error('Login did not return a token')
   const headers = { Authorization: `JWT ${login.token}` }
