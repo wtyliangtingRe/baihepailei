@@ -198,7 +198,8 @@ async function reviewFeedbackAction(formData: FormData) {
   const note = String(formData.get('reviewNote') || '').trim().slice(0, 4000)
   const returnTo = safeReturnTo(formData.get('returnTo'))
   const actorID = Number((auth.user as { id?: string | number }).id)
-  if (!id || (!(intent in workflowLabels) && intent !== 'accept_create_draft')) {
+  const feedbackID = Number(id)
+  if (!id || !Number.isSafeInteger(feedbackID) || feedbackID <= 0 || (!(intent in workflowLabels) && intent !== 'accept_create_draft')) {
     redirect(actionResultHref(returnTo, 'reviewError', 'invalid_action', id))
   }
   if (!Number.isSafeInteger(actorID) || actorID <= 0) {
@@ -211,7 +212,7 @@ async function reviewFeedbackAction(formData: FormData) {
   if (intent === 'accept_create_draft') {
     const feedback = await payload.findByID({
       collection: 'feedback-submissions',
-      id,
+      id: feedbackID,
       depth: 0,
       overrideAccess: true,
     }) as unknown as FeedbackDoc
@@ -237,7 +238,7 @@ async function reviewFeedbackAction(formData: FormData) {
       const duplicateNote = '发现可能重复的现有作品；未自动创建，已转入预填草稿页进行人工确认。'
       await payload.update({
         collection: 'feedback-submissions',
-        id,
+        id: feedbackID,
         depth: 0,
         overrideAccess: true,
         context: { reviewWorkbench: true, auditActorID: actorID },
@@ -297,7 +298,7 @@ async function reviewFeedbackAction(formData: FormData) {
     const acceptedNote = note || `已采纳并创建预填作品草稿 #${createdID}；未公开、未人工评级、未写入 AI 结论。`
     await payload.update({
       collection: 'feedback-submissions',
-      id,
+      id: feedbackID,
       depth: 0,
       overrideAccess: true,
       context: { reviewWorkbench: true, auditActorID: actorID },
@@ -325,7 +326,7 @@ async function reviewFeedbackAction(formData: FormData) {
   try {
     await payload.update({
       collection: 'feedback-submissions',
-      id,
+      id: feedbackID,
       depth: 0,
       overrideAccess: true,
       context: { reviewWorkbench: true, auditActorID: (auth.user as { id?: string | number }).id },
