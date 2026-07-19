@@ -1,0 +1,66 @@
+#!/usr/bin/env node
+const baseUrl = String(process.argv[process.argv.indexOf('--url') + 1] || process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000').replace(/\/$/u, '')
+const apply = process.argv.includes('--apply')
+const confirmIndex = process.argv.indexOf('--confirm')
+const confirmation = confirmIndex >= 0 ? process.argv[confirmIndex + 1] : ''
+const expected = 'MIGRATE-LEGACY-ROLES-TO-EDITOR'
+
+function required(name) {
+  const value = String(process.env[name] || '').trim()
+  if (!value) throw new Error(`Missing ${name}`)
+  return value
+}
+
+async function requestJson(path, options = {}) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+  })
+  const text = await response.text()
+  let body = null
+  try { body = text ? JSON.parse(text) : null } catch { body = { raw: text } }
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${text.slice(0, 1000)}`)
+  return body
+}
+
+async function main() {
+  const email = process.env.USER_MAINTENANCE_EMAIL || process.env.SITE_OWNER_EMAIL
+  if (!email) throw new Error('Missing USER_MAINTENANCE_EMAIL or SITE_OWNER_EMAIL')
+  const password = required('USER_MAINTENANCE_PASSWORD')
+  const login = await requestJson('/api/users/login', { method: 'POST', body: JSON.stringify({ email, password }) })
+  if (!login?.token) throw new Error('Login did not return a token')
+  const headers = { Authorization: `JWT ${login.token}` }
+  const result = await requestJson('/api/users?limit=200&depth=0', { headers })
+  const users = (result?.docs || []).filter((user) => user.role === 'reviewer' || user.role === 'trusted')
+  const summary = {
+    generatedAt: new Date().toISOString(),
+    mode: apply ? 'apply' : 'dry_run',
+    expectedConfirmation: expected,
+    authenticatedAs: { id: login.user?.id, email: login.user?.email, role: login.user?.role },
+    legacyUsersRead: users.length,
+    candidates: users.map((user) => ({ id: user.id, email: user.email, previousRole: user.role, nextRole: 'editor' })),
+    updatedCount: 0,
+    blockers: [],
+  }
+  if (!apply) {
+    console.log(JSON.stringify(summary, null, 2))
+    return
+  }
+  if (confirmation !== expected) throw new Error(`Apply requires --confirm "${expected}"`)
+  if (login.user?.role !== 'owner') throw new Error('Only the owner can migrate legacy roles')
+  for (const user of users) {
+    await requestJson(`/api/users/${encodeURIComponent(String(user.id))}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ role: 'editor' }),
+    })
+    summary.updatedCount += 1
+  }
+  summary.complete = true
+  console.log(JSON.stringify(summary, null, 2))
+}
+
+main().catch((error) => {
+  console.error(error)
+  process.exitCode = 1
+})
