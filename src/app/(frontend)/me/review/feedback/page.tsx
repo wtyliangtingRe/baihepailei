@@ -227,8 +227,7 @@ async function reviewFeedbackAction(formData: FormData) {
     const duplicates = await payload.find({
       collection: 'works',
       depth: 0,
-      draft: true,
-      limit: 8,
+            limit: 8,
       page: 1,
       pagination: false,
       overrideAccess: true,
