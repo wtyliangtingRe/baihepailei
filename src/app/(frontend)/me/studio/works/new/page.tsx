@@ -149,8 +149,7 @@ async function createWorkAction(formData: FormData) {
   const candidates = await payload.find({
     collection: 'works',
     depth: 0,
-    draft: true,
-    limit: 8,
+        limit: 8,
     page: 1,
     pagination: false,
     overrideAccess: true,
@@ -282,7 +281,7 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
   }
 
   const duplicateCandidates = query
-    ? (await payload.find({ collection: 'works', depth: 0, draft: true, limit: 10, page: 1, pagination: false, overrideAccess: true, where: candidateWhere(query, '') })).docs as unknown as DuplicateCandidate[]
+    ? (await payload.find({ collection: 'works', depth: 0, limit: 10, page: 1, pagination: false, overrideAccess: true, where: candidateWhere(query, '') })).docs as unknown as DuplicateCandidate[]
     : []
   const createError = first(raw.createError)
   const duplicateWarning = first(raw.duplicateWarning)
