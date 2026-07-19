@@ -146,7 +146,8 @@
     "radar:local-update": "node scripts/radar/run-local-ai-update-v01.mjs",
     "test:radar-local-update": "node --test tests/local-ai-update-pipeline.test.mjs",
     "radar:plan-discovered-works": "node scripts/radar/prepare-discovered-work-candidates-v01.mjs",
-    "test:radar-discovered-works": "node --test tests/discovered-work-candidate-plan.test.mjs"
+    "test:radar-discovered-works": "node --test tests/discovered-work-candidate-plan.test.mjs",
+    "test:db-schema-repair": "node --test tests/database-schema-repair.test.mjs"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "latest",
