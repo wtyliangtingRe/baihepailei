@@ -58,10 +58,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
   const payload = await getPayload({ config })
   const auth = await payload.auth({ headers: request.headers })
-  const actor = auth.user as ManagedUser | null
+  const authUser = auth.user
+  const actor = authUser as ManagedUser | null
   const actorRole = getRole(actor)
 
-  if (!actor) return responseError('请先登录。', 401)
+  if (!authUser || !actor) return responseError('请先登录。', 401)
   if (actorRole !== 'owner' && actorRole !== 'admin') return responseError('你没有人员管理权限。', 403)
 
   const { id } = await params
@@ -118,9 +119,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       collection: 'users',
       id,
       depth: 0,
-      data,
+      data: data as any,
       overrideAccess: false,
-      user: actor,
+      user: authUser,
     })
     return NextResponse.json({ doc: updated })
   } catch (caught) {
