@@ -82,21 +82,36 @@ test('draft creation returns to its parent with a visible success state and doub
   assert.match(feedbackForm, /返回上一级/u)
 })
 
-test('new work proposals and staff drafts share main and all-matched rule controls', () => {
+test('member new-work metadata is reviewed and prefilled into the staff draft', () => {
+  assert.match(feedbackForm, /newWorkOriginalTitle/u)
+  assert.match(feedbackForm, /newWorkAliases/u)
+  assert.match(feedbackForm, /newWorkMediaGroup/u)
+  assert.match(feedbackForm, /newWorkFirstPublishedAt/u)
+  assert.match(feedbackForm, /newWorkSummary/u)
+  assert.match(feedbackForm, /newWorkSearchText/u)
+  assert.match(feedback, /用户提交的新作品建档资料/u)
+  assert.match(create, /sanitizeNewWorkProposalMetadata\(feedback\?\.newWorkMetadata\)/u)
+  assert.match(create, /defaultValue=\{proposal\.originalTitle \|\| ''\}/u)
+  assert.match(create, /defaultValue=\{\(proposal\.aliases \|\| \[\]\)\.join\('\\n'\)\}/u)
+  assert.match(create, /defaultValue=\{proposal\.summary \|\| ''\}/u)
+  assert.match(create, /defaultValue=\{proposal\.searchText \|\| ''\}/u)
+  assert.match(create, /feedback\?\.feedbackType === 'new_work' \? \[\]/u)
+  assert.match(feedbackForm, /proposedGrade: isNewWork \? undefined/u)
+  assert.match(feedbackForm, /matchedRuleCodes: isNewWork \? \[\]/u)
+})
+
+test('staff draft creation retains controlled main and all-matched rule controls', () => {
   assert.match(ruleSelector, /主规则（决定性规则）/u)
   assert.match(ruleSelector, /<details/u)
   assert.match(ruleSelector, /全部命中规则/u)
   assert.match(ruleSelector, /name=\{decisiveName\}/u)
   assert.match(ruleSelector, /name=\{matchedName\}/u)
   assert.match(ruleSelector, /if \(checked && !decisive\) setDecisive\(code\)/u)
-  assert.match(feedbackForm, /orderedRuleCodes/u)
   assert.match(create, /RADAR_RATING_POLICY_ID/u)
   assert.match(create, /decisiveRuleCode/u)
   assert.match(create, /matchedRules: orderedRuleCodes/u)
   assert.match(create, /suggestedGrade: suggestedRuleGrade/u)
   assert.match(create, /主规则（单选）与全部命中规则（多选）/u)
-  assert.match(feedback, /主规则 \/ 决定性规则/u)
-  assert.match(feedback, /全部命中规则/u)
 })
 
 test('soft delete archives and hides without deleting the record', () => {
