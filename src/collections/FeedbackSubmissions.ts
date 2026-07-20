@@ -176,7 +176,7 @@ export const FeedbackSubmissions: CollectionConfig = {
     },
     { name: 'targetCollection', type: 'text', label: '对象类型', defaultValue: 'works' },
     { name: 'targetSlug', type: 'text', label: '旧作品 / 页面 Slug', admin: { hidden: true } },
-    { name: 'targetTitle', type: 'text', label: '作品 / 页面名称', required: true, maxLength: 200 },
+    { name: 'targetTitle', type: 'text', label: '作品 / 页面名称', required: true, maxLength: 300 },
     {
       name: 'newWorkMetadata',
       type: 'json',
