@@ -7,6 +7,7 @@ import { getPayload, type Where } from 'payload'
 
 import RadarRuleSelector from '../../../../_components/RadarRuleSelector'
 import PendingSubmitButton from '../../_components/PendingSubmitButton'
+import { sanitizeNewWorkProposalMetadata, type NewWorkProposalMetadata } from '@/lib/newWorkProposal'
 import {
   RADAR_RATING_POLICY_ID,
   radarClassDefinitions,
@@ -25,6 +26,7 @@ type FeedbackDoc = {
   id: string | number
   feedbackType?: string
   targetTitle?: string
+  newWorkMetadata?: NewWorkProposalMetadata
   proposedGrade?: string
   matchedRuleCodes?: Array<{ code?: string }>
   claim?: string
@@ -149,7 +151,7 @@ async function createWorkAction(formData: FormData) {
   const candidates = await payload.find({
     collection: 'works',
     depth: 0,
-        limit: 8,
+    limit: 8,
     page: 1,
     pagination: false,
     overrideAccess: true,
@@ -286,10 +288,15 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
     : []
   const createError = first(raw.createError)
   const duplicateWarning = first(raw.duplicateWarning)
+  const proposal = sanitizeNewWorkProposalMetadata(feedback?.newWorkMetadata)
   const suggestedTitle = feedback?.targetTitle || query
-  const suggestedRank = rankOptions.includes(String(feedback?.proposedGrade || '') as typeof rankOptions[number]) ? String(feedback?.proposedGrade) : 'unknown'
+  const suggestedRank = feedback?.feedbackType === 'new_work'
+    ? 'unknown'
+    : rankOptions.includes(String(feedback?.proposedGrade || '') as typeof rankOptions[number])
+      ? String(feedback?.proposedGrade)
+      : 'unknown'
   const feedbackSources = evidenceLinksToText(feedback?.evidenceLinks)
-  const initialRuleCodes = feedbackRuleCodes(feedback?.matchedRuleCodes)
+  const initialRuleCodes = feedback?.feedbackType === 'new_work' ? [] : feedbackRuleCodes(feedback?.matchedRuleCodes)
   const initialDecisiveRuleCode = initialRuleCodes[0] || ''
 
   return (
@@ -302,7 +309,7 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
         </div>
       </section>
 
-      {feedback ? <div className="review-action-message" role="status">正在处理用户新作品申请 #{feedback.id}：{feedback.targetTitle || '未命名作品'}。</div> : null}
+      {feedback ? <div className="review-action-message" role="status">正在处理用户新作品申请 #{feedback.id}：{feedback.targetTitle || '未命名作品'}。用户提交的结构化资料已预填；评级与规则仍由工作人员或 AI 管线处理。</div> : null}
       {createError ? <div className="review-action-message review-action-message-error" role="alert">必填字段无效，请检查标题、作品类型、规则和分级。</div> : null}
       {duplicateWarning ? <div className="review-action-message review-action-message-error" role="alert">发现可能重复的现有作品。请先核对下方候选；确认不是重复项后，再勾选“仍然创建”。</div> : null}
 
@@ -322,27 +329,27 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
           <header><h2>基础身份</h2><p>创建后会生成作品 ID。</p></header>
           <div className="review-editor-grid">
             <label className="review-editor-field review-editor-field-wide"><span>显示标题</span><input defaultValue={suggestedTitle} maxLength={300} name="title" required /></label>
-            <label className="review-editor-field"><span>原始标题</span><input maxLength={300} name="originalTitle" /></label>
+            <label className="review-editor-field"><span>原始标题</span><input defaultValue={proposal.originalTitle || ''} maxLength={300} name="originalTitle" /></label>
             <label className="review-editor-field"><span>建议分级初值</span><select defaultValue={suggestedRank} name="rank">{rankOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select><small>尚未人工复核时只是建议；指定主规则后以主规则等级为准。</small></label>
-            <label className="review-editor-field"><span>作品大类</span><select defaultValue="unknown" name="mediaGroup">{mediaGroupOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></label>
-            <label className="review-editor-field"><span>作品类型</span><select defaultValue="unknown" name="mediaType">{mediaTypeOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></label>
-            <label className="review-editor-field"><span>作品形态</span><select defaultValue="unknown" name="format">{formatOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></label>
-            <label className="review-editor-field"><span>首次日期</span><input name="firstPublishedAt" type="date" /></label>
-            <label className="review-editor-field"><span>日期精度</span><select defaultValue="unknown" name="firstPublishedPrecision"><option value="day">精确到日</option><option value="month">精确到月</option><option value="year">精确到年</option><option value="unknown">未知</option></select></label>
-            <label className="review-editor-field"><span>日期显示文本</span><input maxLength={120} name="firstPublishedLabel" /></label>
-            <label className="review-editor-field review-editor-field-wide"><span>别名（每行一个）</span><textarea defaultValue={feedback?.evidenceSummary || ''} name="aliases" placeholder={'中文译名\n日本語タイトル\nEnglish title'} /></label>
+            <label className="review-editor-field"><span>作品大类</span><select defaultValue={proposal.mediaGroup || 'unknown'} name="mediaGroup">{mediaGroupOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></label>
+            <label className="review-editor-field"><span>作品类型</span><select defaultValue={proposal.mediaType || 'unknown'} name="mediaType">{mediaTypeOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></label>
+            <label className="review-editor-field"><span>作品形态</span><select defaultValue={proposal.format || 'unknown'} name="format">{formatOptions.map((value) => <option key={value} value={value}>{optionLabel(value)}</option>)}</select></label>
+            <label className="review-editor-field"><span>首次日期</span><input defaultValue={proposal.firstPublishedAt || ''} name="firstPublishedAt" type="date" /></label>
+            <label className="review-editor-field"><span>日期精度</span><select defaultValue={proposal.firstPublishedPrecision || 'unknown'} name="firstPublishedPrecision"><option value="day">精确到日</option><option value="month">精确到月</option><option value="year">精确到年</option><option value="unknown">未知</option></select></label>
+            <label className="review-editor-field"><span>日期显示文本</span><input defaultValue={proposal.firstPublishedLabel || ''} maxLength={120} name="firstPublishedLabel" /></label>
+            <label className="review-editor-field review-editor-field-wide"><span>别名（每行一个）</span><textarea defaultValue={(proposal.aliases || []).join('\n')} name="aliases" placeholder={'中文译名\n日本語タイトル\nEnglish title'} /></label>
           </div>
         </section>
 
         <section className="review-editor-section">
           <header><h2>作品简介</h2><p>面向读者介绍题材、设定和故事前提；不要在这里写评级结论或证据判断。</p></header>
           <div className="review-editor-grid">
-            <label className="review-editor-field review-editor-field-wide"><span>作品简介（面向读者）</span><textarea maxLength={12000} name="summary" placeholder="简要介绍作品的故事、主要角色和基本设定。" /></label>
+            <label className="review-editor-field review-editor-field-wide"><span>作品简介（面向读者）</span><textarea defaultValue={proposal.summary || ''} maxLength={12000} name="summary" placeholder="简要介绍作品的故事、主要角色和基本设定。" /></label>
           </div>
         </section>
 
         <section className="review-editor-section">
-          <header><h2>主规则（单选）与全部命中规则（多选）</h2><p>主规则决定建议等级；全部命中规则可同时保留多个成立的注意点。</p></header>
+          <header><h2>主规则（单选）与全部命中规则（多选）</h2><p>主规则决定建议等级；全部命中规则可同时保留多个成立的注意点。用户新作品申请不会预填这一部分。</p></header>
           <RadarRuleSelector initialDecisiveRuleCode={initialDecisiveRuleCode} initialMatchedRuleCodes={initialRuleCodes} />
         </section>
 
@@ -352,7 +359,7 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
             <label className="review-editor-field review-editor-field-wide"><span>人工建档记录</span><textarea defaultValue={feedback?.claim || ''} maxLength={4000} name="humanReviewNote" placeholder="说明为什么创建新条目、检查过哪些重复候选，以及仍待补充的资料。" /></label>
             <label className="review-editor-field review-editor-field-wide"><span>来源链接</span><textarea defaultValue={feedbackSources} name="sourceLinks" placeholder={'Bangumi | https://...\nAniList | https://...'} /></label>
             <label className="review-editor-field review-editor-field-wide"><span>证据 / 来源备注</span><textarea defaultValue={feedback?.evidenceSummary || ''} name="evidenceNote" /></label>
-            <label className="review-editor-field review-editor-field-wide"><span>搜索补充文本</span><textarea name="searchText" placeholder="日文名、英文名、作者名、平台、关键词。" /></label>
+            <label className="review-editor-field review-editor-field-wide"><span>搜索补充文本</span><textarea defaultValue={proposal.searchText || ''} name="searchText" placeholder="日文名、英文名、作者名、平台、关键词。" /></label>
           </div>
         </section>
 
