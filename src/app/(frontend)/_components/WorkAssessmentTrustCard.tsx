@@ -226,7 +226,7 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
                       <article className="work-assessment-rule" data-decisive={rule.code === presentation.decisiveRuleCode ? 'true' : 'false'} data-grade={ruleGrade || 'unknown'} key={`${rule.code}-${index}`}>
                         <div className="work-assessment-rule-head"><span>{ruleGrade ? `${ruleGrade}级` : '待定'}</span>{rule.confidencePercent !== null ? <small>置信度 {rule.confidencePercent}%</small> : null}</div>
                         <strong>{rule.code || '未编号规则'}{definition ? ` · ${definition.label}` : ''}</strong>
-                        <p>{rule.reason || definition?.summary || '当前没有公开规则说明。'}</p>
+                        <p>{rule.reason || '当前没有公开规则说明。'}</p>
                       </article>
                     )
                   })}
