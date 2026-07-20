@@ -47,7 +47,9 @@ test('studio does not send business archive values through Payload version rows'
 })
 
 test('members can only submit new-work proposals while staff can edit', () => {
-  assert.match(studio, /staffRoles/u)
+  assert.match(studio, /import \{ isEditor \} from '@\/access\/roles'/u)
+  assert.match(studio, /if \(!canEdit\(auth\.user\)\)/u)
+  assert.doesNotMatch(studio, /roleOf|staffRoles/u)
   assert.match(studio, /普通用户不会直接修改正式资料库/u)
   assert.match(studio, /\/feedback\?type=new_work/u)
   assert.match(account, /href="\/me\/studio"/u)
