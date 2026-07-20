@@ -5,6 +5,8 @@ import fs from 'node:fs'
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 const collection = read('src/collections/Comments.ts')
 const block = read('src/app/(frontend)/_components/CommentBlock.tsx')
+const messages = read('src/app/(frontend)/me/messages/page.tsx')
+const migration = read('scripts/migrations/20260720-add-comment-reply-recipient.sql')
 const css = read('src/app/(frontend)/comments.css')
 
 test('comments publish immediately and preserve server-stamped authorship', () => {
@@ -18,6 +20,18 @@ test('comments publish immediately and preserve server-stamped authorship', () =
   assert.match(collection, /name: 'parentComment'/u)
   assert.match(collection, /relationTo: 'comments'/u)
   assert.match(collection, /replyToName/u)
+})
+
+test('reply recipients are server-stamped and available only to internal message queries', () => {
+  assert.match(collection, /name: 'replyToUser'/u)
+  assert.match(collection, /replyToUser: relationID\(parent\.author/u)
+  assert.match(collection, /仅用于账户消息提醒/u)
+  assert.match(collection, /access: \{ read: \(\{ req \}\) => isEditor\(req\.user\) \}/u)
+  assert.match(messages, /replyToUser: \{ equals: userID \}/u)
+  assert.match(messages, /uniqueComments/u)
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS "reply_to_user_id" integer/u)
+  assert.match(migration, /CREATE INDEX IF NOT EXISTS "comments_reply_to_user_idx"/u)
+  assert.doesNotMatch(migration, /DROP TABLE|DROP COLUMN|DELETE FROM|UPDATE /iu)
 })
 
 test('frontend shows immediate comments with owner and staff deletion controls', () => {
