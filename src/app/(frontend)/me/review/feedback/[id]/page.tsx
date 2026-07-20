@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 
+import { isAdmin, isEditor } from '@/access/roles'
+import ReviewDecisionButtons from '../../_components/ReviewDecisionButtons'
 import { canonicalContentUrl } from '../../../../_lib/content-identity'
 import {
   hasNewWorkProposalMetadata,
@@ -12,9 +14,10 @@ import {
   type NewWorkProposalMetadata,
 } from '@/lib/newWorkProposal'
 
+import { reviewFeedbackDetailAction } from '../review-actions'
+
 export const dynamic = 'force-dynamic'
 
-type Role = 'owner' | 'admin' | 'editor' | 'member'
 type Relation = { id?: string | number; title?: string; displayName?: string }
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
 type FeedbackDoc = {
@@ -38,8 +41,17 @@ type FeedbackDoc = {
   createdAt?: string
   updatedAt?: string
 }
+type WorkPreview = {
+  id: string | number
+  title?: string
+  rank?: string
+  reviewStatus?: string
+  _status?: string
+  catalogStatus?: string
+  isLiteVisible?: boolean
+  isFullVisible?: boolean
+}
 
-const allowedRoles = new Set<Role>(['owner', 'admin', 'editor'])
 const workflowLabels: Record<string, string> = {
   pending: '待审核', triaging: '核查中', needs_information: '需要补充材料',
   accepted: '已采纳', rejected: '未采纳', archived: '已归档',
@@ -54,8 +66,10 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] || '' : value || ''
 }
 
-function roleOf(user: unknown) {
-  return user && typeof user === 'object' ? (user as { role?: Role }).role : undefined
+function safeReturnTo(value: string) {
+  return value === '/me/review/feedback' || value.startsWith('/me/review/feedback?')
+    ? value
+    : '/me/review/feedback'
 }
 
 function relationID(value: FeedbackDoc['linkedWork']) {
@@ -85,12 +99,15 @@ export default async function FeedbackDetailPage({ params, searchParams }: { par
   const { id } = await params
   const rawSearch = await searchParams
   const createdWork = first(rawSearch.createdWork)
+  const started = first(rawSearch.started)
+  const reviewed = first(rawSearch.reviewed)
+  const reviewError = first(rawSearch.reviewError)
+  const returnTo = safeReturnTo(first(rawSearch.returnTo))
   const payload = await getPayload({ config: configPromise })
   const auth = await payload.auth({ headers: await headers() })
   if (!auth.user) redirect(`/account/login?redirect=${encodeURIComponent(`/me/review/feedback/${id}`)}`)
-  const role = roleOf(auth.user)
-  if (!role || !allowedRoles.has(role)) {
-    return <main className="page review-workbench"><section className="review-empty"><h1>权限不足</h1><p>该页面只开放给最高领袖、管理员、编辑和审核人员。</p></section></main>
+  if (!isEditor(auth.user)) {
+    return <main className="page review-workbench"><section className="review-empty"><h1>权限不足</h1><p>该页面只开放给最高领袖、管理员和编辑。</p></section></main>
   }
 
   let doc: FeedbackDoc
@@ -101,21 +118,42 @@ export default async function FeedbackDetailPage({ params, searchParams }: { par
   }
 
   const workID = relationID(doc.linkedWork)
+  let work: WorkPreview | null = null
+  if (workID) {
+    try {
+      work = await payload.findByID({ collection: 'works', id: workID, depth: 0, draft: false, overrideAccess: true }) as unknown as WorkPreview
+    } catch {
+      work = null
+    }
+  }
+
   const links = (doc.evidenceLinks || []).filter((item) => item.url)
   const rules = [...new Set((doc.matchedRuleCodes || []).map((item) => String(item.code || '').trim()).filter(Boolean))]
   const decisiveRule = rules[0] || ''
-  const isAccepted = doc.workflowStatus === 'accepted'
   const isNewWork = doc.feedbackType === 'new_work'
   const proposal = sanitizeNewWorkProposalMetadata(doc.newWorkMetadata)
   const hasProposal = isNewWork && hasNewWorkProposalMetadata(proposal)
-  const mayUsePayload = role === 'owner' || role === 'admin'
-  const returnTo = `/me/review/feedback/${doc.id}`
+  const mayUsePayload = isAdmin(auth.user)
+  const duplicateHref = `/me/studio/works/new?feedbackId=${encodeURIComponent(String(doc.id))}&q=${encodeURIComponent(doc.targetTitle || '')}&duplicateWarning=true&returnTo=${encodeURIComponent(`/me/review/feedback/${doc.id}`)}`
+
+  const actions = [
+    { value: 'save', label: '只保存审核说明' },
+    { value: 'needs_information', label: '要求补充材料' },
+    {
+      value: 'accepted',
+      label: isNewWork && !workID ? '采纳并生成草稿' : '采纳',
+      className: 'review-button review-button-primary',
+      confirm: isNewWork && !workID ? '确认采纳这份新作品申请并生成待复核草稿吗？' : '确认采纳这份反馈吗？',
+    },
+    { value: 'rejected', label: '驳回', className: 'review-button review-button-danger', confirm: '确认驳回这份反馈吗？请确保审核说明已经写明理由。' },
+    { value: 'archived', label: '归档', confirm: '确认归档这份反馈吗？它会离开待处理队列，但仍保留历史记录。' },
+  ]
 
   return (
     <main className="page review-workbench feedback-detail-page">
       <section className="review-hero">
         <div className="review-hero-copy">
-          <p className="eyebrow">用户反馈完整详情</p>
+          <p className="eyebrow">用户反馈 · 独立核查页</p>
           <h1>{doc.targetTitle || '未命名反馈'}</h1>
           <p className="muted">反馈 ID：{doc.id}</p>
           <div className="review-chip-list">
@@ -127,26 +165,23 @@ export default async function FeedbackDetailPage({ params, searchParams }: { par
         </div>
       </section>
 
-      {createdWork ? (
-        <div className="review-action-message review-action-message-success" role="status">
-          已创建待复核作品草稿 #{createdWork}，并返回本反馈。草稿尚未公开。
-          <Link href={`/me/studio/works/${createdWork}?returnTo=${encodeURIComponent(returnTo)}`}>打开草稿</Link>
+      {started ? <div className="review-action-message review-action-message-success" role="status">已经开始核查。请先完整阅读材料，再在页面底部保存说明或作出处理决定。</div> : null}
+      {createdWork ? <div className="review-action-message review-action-message-success" role="status">已采纳并创建待复核作品草稿 #{createdWork}。草稿尚未公开，AI Radar 保持空白并等待后续管线。<Link href={canonicalContentUrl('works', createdWork)}>查看作品预览</Link></div> : null}
+      {reviewed ? <div className="review-action-message review-action-message-success" role="status">本次处理已经保存：{reviewed === 'save' ? '只更新审核说明' : workflowLabels[reviewed] || reviewed}。</div> : null}
+      {reviewError ? (
+        <div className="review-action-message review-action-message-error" role="alert">
+          {reviewError === 'note_required'
+            ? '要求补充材料或驳回时，必须先写明具体原因。'
+            : reviewError === 'duplicate_candidates'
+              ? <>发现可能重复的现有作品，尚未创建草稿。请先<Link href={duplicateHref}>进入重复核查与草稿创建</Link>。</>
+              : '处理参数无效，请刷新页面后重试。'}
         </div>
-      ) : null}
-
-      {isAccepted ? (
-        <section className="review-safety-note" role="status">
-          <strong>“已采纳”只表示材料成立，不会自动改作品。</strong>
-          <p>{isNewWork && !workID ? '这是一份新作品申请。下一步由编辑在内容管理中检查重复候选并创建待复核草稿。' : '请进入关联作品的站内内容管理，把采纳结论落实到正式等级、标题、来源或可见性字段。'}</p>
-          {workID ? <Link className="review-button review-button-primary" href={`/me/studio/works/${workID}?returnTo=${encodeURIComponent(returnTo)}`}>现在编辑关联作品</Link> : null}
-          {isNewWork && !workID ? <Link className="review-button review-button-primary" href={`/me/studio/works/new?feedbackId=${encodeURIComponent(String(doc.id))}&returnTo=${encodeURIComponent(returnTo)}`}>检查重复并创建草稿</Link> : null}
-        </section>
       ) : null}
 
       {hasProposal ? (
         <section className="review-row">
           <h2>用户提交的新作品建档资料</h2>
-          <p className="muted">这些是事实资料提议，不包含评级、规则命中或 AI Radar 结论；创建草稿时会自动预填。</p>
+          <p className="muted">这些是事实资料提议，不包含评级、规则命中或 AI Radar 结论；采纳生成草稿时会自动转入。</p>
           <dl className="feedback-review-facts">
             <div><dt>显示标题</dt><dd>{doc.targetTitle || '未填写'}</dd></div>
             <div><dt>原始标题</dt><dd>{proposal.originalTitle || '未填写'}</dd></div>
@@ -171,7 +206,6 @@ export default async function FeedbackDetailPage({ params, searchParams }: { par
           <div className="feedback-review-wide"><dt>{isNewWork ? '来源、版本与身份备注' : '证据说明'}</dt><dd>{doc.evidenceSummary || '未填写'}</dd></div>
           {!isNewWork ? <div className="feedback-review-wide"><dt>主规则 / 决定性规则</dt><dd>{decisiveRule || '未指定'}</dd></div> : null}
           {!isNewWork ? <div className="feedback-review-wide"><dt>全部命中规则</dt><dd>{rules.length ? rules.join('、') : '未指定'}</dd></div> : null}
-          <div className="feedback-review-wide"><dt>当前审核说明</dt><dd>{doc.reviewNote || '尚未填写'}</dd></div>
           <div><dt>审核人</dt><dd>{relationLabel(doc.reviewer) || '尚未分配'}</dd></div>
           <div><dt>审核时间</dt><dd>{formatDate(doc.reviewedAt)}</dd></div>
         </dl>
@@ -180,15 +214,36 @@ export default async function FeedbackDetailPage({ params, searchParams }: { par
           <h2>{isNewWork ? '全部作品来源链接' : '全部证据链接'}</h2>
           {links.length ? <ol>{links.map((item, index) => <li key={`${item.url}-${index}`}><a href={item.url} rel="noreferrer" target="_blank">{item.label || item.url}</a><small>{item.url}</small></li>)}</ol> : <p className="muted">没有提交外部来源链接。</p>}
         </section>
+      </section>
 
-        <div className="review-row-actions">
-          <Link className="review-link" href="/me/review/feedback">返回反馈审核队列</Link>
-          {workID ? <Link className="review-link" href={canonicalContentUrl('works', workID)}>查看关联作品</Link> : null}
-          {workID ? <Link className="review-link" href={`/me/studio/works/${workID}?returnTo=${encodeURIComponent(returnTo)}`}>编辑关联作品</Link> : null}
-          {isNewWork && !workID ? <Link className="review-link" href={`/me/studio/works/new?feedbackId=${encodeURIComponent(String(doc.id))}&returnTo=${encodeURIComponent(returnTo)}`}>创建作品草稿</Link> : null}
+      {work ? (
+        <section className="review-row">
+          <h2>关联作品预览</h2>
+          <dl className="feedback-review-facts">
+            <div><dt>作品</dt><dd>{work.title || `作品 #${work.id}`}</dd></div>
+            <div><dt>目录等级</dt><dd>{work.rank || 'unknown'}</dd></div>
+            <div><dt>复核状态</dt><dd>{work.reviewStatus || 'pending'}</dd></div>
+            <div><dt>发布状态</dt><dd>{work._status || 'draft'}</dd></div>
+            <div><dt>目录状态</dt><dd>{work.catalogStatus || 'active'}</dd></div>
+            <div><dt>前台可见</dt><dd>{work.isLiteVisible || work.isFullVisible ? '至少一个版本可见' : '当前隐藏'}</dd></div>
+          </dl>
+          <div className="review-row-actions"><Link className="review-link" href={canonicalContentUrl('works', work.id)}>查看作品前台预览</Link></div>
+        </section>
+      ) : null}
+
+      <form action={reviewFeedbackDetailAction} className="review-editor-form">
+        <input name="id" type="hidden" value={String(doc.id)} />
+        <input name="returnTo" type="hidden" value={returnTo} />
+        <section className="review-editor-section">
+          <header><h2>审核说明</h2><p>先记录核对过的来源、结论和仍需补充的内容，再使用底部按钮。要求补充材料和驳回时必须填写。</p></header>
+          <div className="review-editor-grid"><label className="review-editor-field review-editor-field-wide"><span>给用户和后续审核人员的说明</span><textarea defaultValue={doc.reviewNote || ''} maxLength={4000} name="reviewNote" placeholder="例如：需要补充第几话、哪条官方页面、哪个版本或路线；驳回时写明原因。" /></label></div>
+        </section>
+        <div className="review-editor-submit">
+          <ReviewDecisionButtons actions={actions} />
+          <Link className="review-link" href={returnTo}>返回反馈队列</Link>
           {mayUsePayload ? <Link className="review-link" href={`/admin/collections/feedback-submissions/${doc.id}`}>Payload 原始记录</Link> : null}
         </div>
-      </section>
+      </form>
     </main>
   )
 }
