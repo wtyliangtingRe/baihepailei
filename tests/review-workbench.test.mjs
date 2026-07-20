@@ -87,7 +87,7 @@ test('human decisions preserve publication, stage and AI records', () => {
   assert.match(contentActions, /current\.radarAssessment\?\.assessedAt/u)
   assert.match(contentActions, /intent === 'approve'/u)
   assert.match(contentActions, /intent === 'reject'/u)
-  assert.match(contentActions, /data\.humanAssessment/u)
+  assert.match(contentActions, /humanAssessment:\s*\{/u)
   assert.match(contentActions, /data\.ratingNotice = 'manual_reviewed'/u)
   assert.doesNotMatch(contentActions, /data\._status|data\.catalogStatus|isLiteVisible|isFullVisible/u)
   assert.doesNotMatch(contentActions, /data\.radarAssessment/u)
