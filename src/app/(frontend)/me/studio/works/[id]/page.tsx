@@ -6,6 +6,8 @@ import { notFound, redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { getPayload } from 'payload'
 
+import { isEditor } from '@/access/roles'
+
 import RadarRuleSelector from '../../../../_components/RadarRuleSelector'
 import PendingSubmitButton from '../../_components/PendingSubmitButton'
 import { syncWorkToPublicIndexes } from '@/lib/publicIndexSync'
@@ -31,7 +33,6 @@ import StewardshipNoticeSelector, { type StewardshipNoticeOption } from './Stewa
 
 export const dynamic = 'force-dynamic'
 
-type Role = 'owner' | 'admin' | 'editor' | 'member'
 type PageParams = Promise<{ id: string }>
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
 type LocalizedTitle = {
@@ -114,7 +115,6 @@ type WorkDoc = {
   createdAt?: string
 }
 
-const staffRoles = new Set<Role>(['owner', 'admin', 'editor'])
 const rankOptions = ['S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'trash', 'unknown']
 const humanAssessmentGradeOptions = ['S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'unknown']
 const mediaGroupOptions = ['anime', 'manga', 'novel', 'game', 'other', 'unknown']
@@ -147,14 +147,8 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] || '' : value || ''
 }
 
-function roleOf(user: unknown): Role | undefined {
-  if (!user || typeof user !== 'object') return undefined
-  return (user as { role?: Role }).role
-}
-
 function canEdit(user: unknown) {
-  const role = roleOf(user)
-  return Boolean(role && staffRoles.has(role))
+  return isEditor(user)
 }
 
 function text(value: FormDataEntryValue | null, max = 10000) {
