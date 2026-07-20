@@ -2,12 +2,19 @@ import type { Access, CollectionConfig, FieldAccess } from 'payload'
 
 import { isEditor, isOwner, signedIn } from '@/access/roles'
 import { recordAuditEvent } from '@/lib/audit'
-import { sanitizeNewWorkProposalMetadata } from '@/lib/newWorkProposal'
+import { newWorkProposalToWorkTransfer, sanitizeNewWorkProposalMetadata } from '@/lib/newWorkProposal'
+import { plainTextToRichText } from '@/lib/richTextPlain'
 
 type FeedbackUser = {
   id?: string | number
   displayName?: string
   email?: string
+}
+
+type FeedbackWork = {
+  id?: string | number
+  importBatch?: string
+  siteId?: string
 }
 
 const ownSubmissionOrStaff: Access = ({ req }) => {
@@ -41,6 +48,14 @@ const ownEditableSubmissionOrStaff: Access = ({ req }) => {
 const staffFieldAccess: FieldAccess = ({ req }) => isEditor(req.user)
 
 const gradeOptions = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X'].map((value) => ({ label: value, value }))
+
+function relationshipID(value: unknown) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const id = (value as { id?: string | number }).id
+    return id === undefined || id === null ? '' : String(id)
+  }
+  return value === undefined || value === null ? '' : String(value)
+}
 
 function withNewWorkProposalBoundary(
   data: Record<string, unknown> | undefined,
@@ -128,6 +143,55 @@ export const FeedbackSubmissions: CollectionConfig = {
     ],
     afterChange: [
       async ({ doc, previousDoc, req, operation }) => {
+        const linkedWorkID = relationshipID(doc?.linkedWork)
+        const previousLinkedWorkID = relationshipID(previousDoc?.linkedWork)
+
+        if (doc?.feedbackType === 'new_work' && linkedWorkID && linkedWorkID !== previousLinkedWorkID) {
+          const work = await req.payload.findByID({
+            collection: 'works',
+            id: linkedWorkID,
+            depth: 0,
+            draft: false,
+            overrideAccess: true,
+          }) as unknown as FeedbackWork
+          const directIntakeDraft = String(work.siteId || '').startsWith(`feedback:${String(doc.id)}:`)
+            || work.importBatch === `feedback-intake:${String(doc.id)}`
+
+          if (directIntakeDraft) {
+            const transfer = newWorkProposalToWorkTransfer(doc.newWorkMetadata, {
+              feedbackID: doc.id,
+              targetTitle: doc.targetTitle,
+              claim: doc.claim,
+              evidenceSummary: doc.evidenceSummary,
+            })
+            const workData: Record<string, unknown> = {
+              ...transfer.workData,
+              _status: 'draft',
+              catalogStatus: 'active',
+              rank: 'unknown',
+              reviewStatus: 'pending',
+              isLiteVisible: false,
+              isFullVisible: false,
+            }
+            if (transfer.summaryText) workData.summary = plainTextToRichText(transfer.summaryText)
+
+            await req.payload.update({
+              collection: 'works',
+              id: linkedWorkID,
+              depth: 0,
+              draft: false,
+              overrideAccess: true,
+              context: {
+                firstPartyStudio: true,
+                feedbackMetadataTransfer: true,
+                feedbackID: doc.id,
+                auditActorID: (req.user as FeedbackUser | undefined)?.id,
+              },
+              data: workData as never,
+            })
+          }
+        }
+
         await recordAuditEvent({
           req,
           action: operation === 'create' ? 'feedback.created' : 'feedback.updated',
