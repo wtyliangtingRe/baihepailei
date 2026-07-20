@@ -17,6 +17,13 @@ const feedbackTypes = [
   { title: '页面与链接问题', text: '报告失效链接、条目身份错误或页面显示异常。' },
 ]
 
+const newWorkDataTypes = [
+  { title: '标题与别名', text: '填写显示标题、原始标题，以及中文、日文、英文和其他常见译名。' },
+  { title: '作品分类', text: '选择作品大类、具体类型和形态；不确定的项目可以保留为未知。' },
+  { title: '日期与简介', text: '提供首次发行时间、日期精度、故事前提、主要角色和基本设定。' },
+  { title: '来源与外部身份', text: '记录作者、制作方、平台、外部数据库 ID、官方网站和其他可核验来源。' },
+]
+
 export default async function FeedbackPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams
   const channels = publicFeedbackChannels()
@@ -35,17 +42,20 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
     '证据来源：',
   ].filter((line, index, values) => line || (index > 0 && values[index - 1])).join('\n'))
   const emailHref = channels.email ? `mailto:${channels.email}?subject=${emailSubject}&body=${emailBody}` : ''
+  const displayedTypes = isNewWork ? newWorkDataTypes : feedbackTypes
+
   return (
     <main className="page feedback-page">
       <section className="page-heading collection-heading">
         <div>
           <p className="eyebrow">{isNewWork ? '新作品申请' : '反馈与纠错'}</p>
           <h1>{isNewWork ? '向资料库提议一个新作品' : '把新的人工排雷材料交给网站'}</h1>
-          <p>{isNewWork ? '所有注册用户都可以申请建档。编辑会先检查重复作品和来源，再创建待复核草稿；不会自动公开。' : '用户提交只会进入待审核队列，不会直接覆盖正式评级。编辑核验来源后才能采纳。'}</p>
+          <p>{isNewWork ? '你可以提交一条简短线索，也可以像编辑建档一样尽量完整地填写作品资料。申请会保存在“我的提交”中；站务开始核查前可以修改，要求补充材料时也会继续编辑原记录。' : '用户提交只会进入待审核队列，不会直接覆盖正式评级。编辑核验来源后才能采纳。'}</p>
         </div>
         <div className="collection-actions">
           <Link className="back-link" href="/browse">返回资料库</Link>
           <Link className="back-link" href="/account">我的账户</Link>
+          <Link className="back-link" href="/me/submissions">我的提交</Link>
           {isNewWork ? <Link className="back-link" href="/feedback">改为提交排雷材料</Link> : <Link className="back-link" href="/feedback?type=new_work">提交新作品</Link>}
         </div>
       </section>
@@ -92,8 +102,8 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
         </section>
       ) : null}
 
-      <section className="feedback-grid" aria-label="反馈类型">
-        {feedbackTypes.map((item) => (
+      <section className="feedback-grid" aria-label={isNewWork ? '可提交的新作品资料' : '反馈类型'}>
+        {displayedTypes.map((item) => (
           <article className="detail-card feedback-type-card" key={item.title}>
             <h2>{item.title}</h2>
             <p>{item.text}</p>
@@ -104,10 +114,10 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
       <section className="detail-card feedback-guide">
         <h2>{isNewWork ? '什么样的新作品申请更容易建档？' : '什么样的材料更容易被采纳？'}</h2>
         <ul>
-          {isNewWork ? <li>至少提供一个可核验来源，并写明原文名、常见译名和作品类型。</li> : <li>明确到人物、章节、路线、版本或结局。</li>}
+          {isNewWork ? <li>填写你确定的字段即可；掌握完整资料时，可以尽量补齐标题、类型、日期、简介、别名和外部身份。</li> : <li>明确到人物、章节、路线、版本或结局。</li>}
           <li>提供可追溯的官方页面、原作位置或可靠资料链接。</li>
           <li>{isNewWork ? '说明是否可能与现有条目重复；编辑会在建档前再次检查。' : '说明建议对应的 S–X 规则代码，以及是否存在相反证据。'}</li>
-          <li>涉及剧透时勾选剧透提示，避免审核时误公开。</li>
+          <li>{isNewWork ? '不要替 AI 填写评级或规则结论；这些字段不会出现在新作品申请里。' : '涉及剧透时勾选剧透提示，避免审核时误公开。'}</li>
         </ul>
       </section>
     </main>

@@ -81,6 +81,9 @@ export const Comments: CollectionConfig = {
               ...data,
               author: originalDoc?.author,
               authorName: originalDoc?.authorName,
+              parentComment: originalDoc?.parentComment,
+              replyToName: originalDoc?.replyToName,
+              replyToUser: originalDoc?.replyToUser,
               moderationStatus: originalDoc?.moderationStatus,
               reportCount: originalDoc?.reportCount,
               reportedBy: originalDoc?.reportedBy,
@@ -117,6 +120,7 @@ export const Comments: CollectionConfig = {
         let replyFields: Record<string, unknown> = {
           parentComment: undefined,
           replyToName: undefined,
+          replyToUser: undefined,
         }
 
         if (requestedParentID !== undefined && requestedParentID !== null && String(requestedParentID).trim()) {
@@ -133,6 +137,7 @@ export const Comments: CollectionConfig = {
           replyFields = {
             parentComment: rootParentID,
             replyToName: parent.authorName || '注册用户',
+            replyToUser: relationID(parent.author as CommentRelation),
             targetCollection: parent.targetCollection,
             targetSlug: parent.targetSlug,
             targetTitle: parent.targetTitle,
@@ -211,6 +216,18 @@ export const Comments: CollectionConfig = {
     },
     { name: 'replyToName', type: 'text', label: '回复给', admin: { readOnly: true } },
     {
+      name: 'replyToUser',
+      type: 'relationship',
+      label: '被回复账户',
+      relationTo: 'users',
+      access: { read: ({ req }) => isEditor(req.user) },
+      admin: {
+        readOnly: true,
+        hidden: true,
+        description: '仅用于账户消息提醒；由服务器根据被回复评论的作者写入，不对公共评论 API 暴露。',
+      },
+    },
+    {
       name: 'author',
       type: 'relationship',
       label: '作者账户',
@@ -258,12 +275,6 @@ export const Comments: CollectionConfig = {
       access: { read: ({ req }) => isEditor(req.user) },
       admin: { readOnly: true, hidden: true },
     },
-    {
-      name: 'hiddenReason',
-      type: 'text',
-      label: '自动隐藏原因',
-      access: { read: ({ req }) => isEditor(req.user) },
-      admin: { readOnly: true },
-    },
+    { name: 'hiddenReason', type: 'text', label: '隐藏原因', access: { read: ({ req }) => isEditor(req.user) }, admin: { readOnly: true, hidden: true } },
   ],
 }

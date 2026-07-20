@@ -94,6 +94,9 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
 
   const assessmentItem = item as AssessmentDetailItem
   const research = item.researchPreview
+  const controlledRadarAssessment = assessmentItem.radarAssessment?.assessedAt
+    ? assessmentItem.radarAssessment
+    : undefined
   const researchAssessment: RadarAssessmentMetrics | undefined = research ? {
     confidencePercent: research.confidencePercent,
     sourceSummary: research.sourceSummary,
@@ -101,9 +104,14 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
     suggestedGrade: research.likelyGrade,
     requiresHumanReview: true,
   } : undefined
+  const hasControlledAI = Boolean(controlledRadarAssessment || research)
   const presentation = buildRadarAssessmentPresentation({
-    radarAssessment: assessmentItem.radarAssessment || researchAssessment,
-    ratingNotice: assessmentItem.ratingNotice || (research ? 'ai_synthesized_pending_review' : undefined),
+    radarAssessment: controlledRadarAssessment || researchAssessment,
+    ratingNotice: assessmentItem.ratingNotice === 'manual_reviewed'
+      ? 'manual_reviewed'
+      : hasControlledAI
+        ? assessmentItem.ratingNotice || 'ai_synthesized_pending_review'
+        : 'none',
     reviewStatus: assessmentItem.reviewStatus,
     evidenceStrength: assessmentItem.evidenceStrength,
   })
@@ -114,13 +122,19 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
   const isLegacyHumanReviewed = assessmentItem.ratingNotice === 'manual_reviewed' || assessmentItem.reviewStatus === 'reviewed'
   const humanGrade = explicitHumanGrade || (isLegacyHumanReviewed ? recordedGrade : '')
   const aiGrade = suggestedGrade
-  const catalogGrade = humanGrade || aiGrade || recordedGrade
-  const pendingRecordedGrade = !humanGrade && recordedGrade ? recordedGrade : ''
+  const legacyManualAIPlaceholder = Boolean(
+    assessmentItem.radarAssessment
+    && !assessmentItem.radarAssessment.assessedAt
+    && assessmentItem.ratingNotice === 'ai_synthesized_pending_review'
+    && humanStatus === 'pending',
+  )
+  const fallbackRecordedGrade = legacyManualAIPlaceholder ? '' : recordedGrade
+  const catalogGrade = humanGrade || aiGrade || fallbackRecordedGrade
+  const pendingRecordedGrade = !humanGrade && fallbackRecordedGrade ? fallbackRecordedGrade : ''
   const sourceCount = publicSourceCount(item, presentation.sourceCount)
   const decisiveDefinition = ruleDefinition(presentation.decisiveRuleCode)
   const hasAIAnalysis = Boolean(
-    assessmentItem.radarAssessment
-    || research
+    hasControlledAI
     || aiGrade
     || presentation.sourceSummary
     || presentation.decisiveRuleCode
@@ -139,18 +153,20 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
             <p className="eyebrow">人工审核参考</p>
             <span className="work-assessment-grade-basis">{humanStatus === 'reviewed' && humanGrade ? '已记录人工意见' : '尚未记录人工意见'}</span>
             <h2>{humanGrade ? `${humanGrade} · ${radarGradeLabels[humanGrade]}` : '暂无人工参考等级'}</h2>
-            <p>{humanGrade ? '这是可追溯的人工参考意见，不等于不可改变的最终结论。AI 轨道仍独立保留。' : '人工轨道尚未记录等级；AI 建议会在下方独立展示，并且不会冒充人工意见。'}</p>
+            <p>{humanGrade ? '这是可追溯的人工参考意见，不等于不可改变的最终结论。AI 轨道仍独立保留。' : '人工轨道尚未记录等级；受控 AI 管线形成建议后，会在下方独立展示，并且不会冒充人工意见。'}</p>
           </div>
         </header>
 
         <dl className="work-assessment-statuses work-assessment-statuses-primary">
           <div><dt>人工轨道状态</dt><dd>{humanStatus === 'reviewed' ? '已记录' : humanStatus === 'disputed' ? '有争议' : '未提交'}</dd></div>
           <div><dt>目录采用等级</dt><dd>{catalogGrade ? `${catalogGrade} 级` : '尚未填写'}</dd></div>
-          <div><dt>页面提示</dt><dd data-tone={presentation.pageNoticeTone}>{humanGrade ? '人工参考 + AI 双轨' : presentation.reviewLabel}</dd></div>
+          <div><dt>页面提示</dt><dd data-tone={presentation.pageNoticeTone}>{humanGrade ? '人工参考 + AI 双轨' : hasControlledAI ? presentation.reviewLabel : '等待 AI Radar 管线'}</dd></div>
           <div><dt>证据强度</dt><dd data-tone={presentation.evidenceTone}>{presentation.evidenceLabel}</dd></div>
         </dl>
 
-        {pendingRecordedGrade ? (
+        {legacyManualAIPlaceholder ? (
+          <p className="work-assessment-pending-grade-note">旧版本曾在人工建档时生成不具备评估时间与批次的规则占位。本页不再把它展示成 AI 结论；该作品会等待下一次受控 AI Radar 管线重新分析。</p>
+        ) : pendingRecordedGrade ? (
           <p className="work-assessment-pending-grade-note">数据库当前 rank 字段为 <strong>{pendingRecordedGrade} 级</strong>，且人工轨道尚未记录等级，因此这里不会把它显示成人工参考等级。</p>
         ) : null}
 
@@ -165,7 +181,7 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
         <details className="work-assessment-ai-panel" open={!humanGrade}>
           <summary>
             <span>AI 建议与规则分析</span>
-            <strong>{aiGrade ? `${aiGrade} 级建议` : '尚无明确建议'}</strong>
+            <strong>{aiGrade ? `${aiGrade} 级建议` : '等待 AI 管线'}</strong>
             <small>独立展示，不覆盖人工评级</small>
           </summary>
           <div className="work-assessment-ai-body">
@@ -174,7 +190,7 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
               <div>
                 <span>AI / 规则建议等级</span>
                 <h3>{aiGrade ? `${aiGrade} · ${radarGradeLabels[aiGrade]}` : '尚未形成可展示的等级建议'}</h3>
-                <p>该等级来自规则解析、来源整理或 AI 研究档案，仅用于辅助人工复核。</p>
+                <p>{hasControlledAI ? '该等级来自受控规则解析、来源整理或 AI 研究档案，仅用于辅助人工复核。' : '人工建档不会填写 AI 结论；下一次未评估作品管线运行后，这里才会展示独立的 AI 建议。'}</p>
               </div>
             </header>
 
@@ -209,45 +225,37 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
                     return (
                       <article className="work-assessment-rule" data-decisive={rule.code === presentation.decisiveRuleCode ? 'true' : 'false'} data-grade={ruleGrade || 'unknown'} key={`${rule.code}-${index}`}>
                         <div className="work-assessment-rule-head"><span>{ruleGrade ? `${ruleGrade}级` : '待定'}</span>{rule.confidencePercent !== null ? <small>置信度 {rule.confidencePercent}%</small> : null}</div>
-                        <strong>{rule.code || '未记录规则代码'}</strong>
-                        <h4>{definition?.label || '规则说明待补充'}</h4>
-                        {rule.reason ? <p>{rule.reason}</p> : null}
+                        <strong>{rule.code || '未编号规则'}{definition ? ` · ${definition.label}` : ''}</strong>
+                        <p>{rule.reason || '当前没有公开规则说明。'}</p>
                       </article>
                     )
                   })}
                 </div>
-              ) : <p className="work-assessment-empty-note">尚未写入规则命中明细。未知作品仍可保留在资料库中，待材料补齐后再形成 AI 建议。</p>}
+              ) : <p className="work-assessment-empty">尚未记录结构化命中规则。</p>}
             </section>
 
             {presentation.contradictions.length ? (
-              <aside className="work-assessment-contradictions" aria-label="AI 证据冲突"><strong>当前存在证据冲突</strong><ul>{presentation.contradictions.map((value) => <li key={value}>{value}</li>)}</ul></aside>
+              <section className="work-assessment-contradictions">
+                <span>来源冲突或保留意见</span>
+                <ul>{presentation.contradictions.map((item) => <li key={item}>{item}</li>)}</ul>
+              </section>
             ) : null}
 
-            {presentation.hasCalculatedMetrics ? (
-              <div className="work-assessment-metrics">
-                <Metric description={presentation.confidenceExplanation} label="AI 判断置信度" value={presentation.confidence} />
-                <Metric description={presentation.coverageExplanation} label="AI 资料覆盖度" value={presentation.coverage} />
-              </div>
-            ) : null}
+            <div className="work-assessment-metrics">
+              <Metric description={presentation.confidenceExplanation} label="判断置信度" value={presentation.confidence} />
+              <Metric description={presentation.coverageExplanation} label="资料覆盖度" value={presentation.coverage} />
+            </div>
 
-            {presentation.sourceSummary ? (
-              <details className="work-assessment-source-summary">
-                <summary>AI 资料来源摘要</summary>
-                <p>{presentation.sourceSummary}</p>
-              </details>
-            ) : null}
-
-            {!hasAIAnalysis ? <p className="work-assessment-empty-note">当前没有 AI 建议或规则分析记录。</p> : null}
+            {presentation.sourceSummary ? <p className="work-assessment-source-summary"><strong>AI 来源摘要：</strong>{presentation.sourceSummary}</p> : null}
+            {!hasAIAnalysis ? <p className="work-assessment-empty">当前没有可展示的 AI 分析；该作品会等待下一次未评估作品管线。</p> : null}
+            {!hasPublicSources(item) ? <p className="work-assessment-source-warning">当前公开页还没有可追溯来源链接；建议先补充来源，再采用任何自动建议。</p> : null}
           </div>
         </details>
 
-        <nav className="work-assessment-actions" aria-label="评级相关操作">
+        <div className="work-assessment-links">
           <Link href="/rules">查看完整分级细则</Link>
-          {hasPublicSources(item) ? <a href="#public-sources">查看公开来源</a> : null}
-          <Link href="/feedback">补充资料 / 提交纠错</Link>
-        </nav>
-
-        <p className="work-assessment-disclaimer">人工审核参考与 AI 建议分开显示。AI 置信度表示建议与当前材料的一致程度，不等同于作品安全概率；两条轨道都可被新证据更新。</p>
+          <Link href={`/feedback?collection=works&title=${encodeURIComponent(item.title)}&workId=${encodeURIComponent(item.recordId || '')}`}>补充资料 / 提交纠错</Link>
+        </div>
       </section>
     </>
   )

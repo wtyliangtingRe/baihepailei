@@ -22,6 +22,7 @@ import { Warnings } from './src/collections/Warnings'
 import { Works } from './src/collections/Works'
 import { withRadarAssessmentFields } from './src/collections/fields/radarAssessment'
 import { withStewardshipNotices } from './src/collections/fields/stewardshipNotices'
+import { withWorkLifecycleFields } from './src/collections/fields/workLifecycle'
 import { recordAuditEvent } from './src/lib/audit'
 import { syncWorkToPublicIndexes } from './src/lib/publicIndexSync'
 
@@ -37,40 +38,57 @@ const WorksWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNot
 const CreatorsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Creators) : Creators
 const OrganizationsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Organizations) : Organizations
 const WorksWithRadarAssessment = withRadarAssessmentFields(WorksWithOptionalStewardship)
+const WorksWithLifecycle = withWorkLifecycleFields(WorksWithRadarAssessment)
 const WorksWithSafeLifecycleStatus: CollectionConfig = {
-  ...WorksWithRadarAssessment,
+  ...WorksWithLifecycle,
   hooks: {
-    ...WorksWithRadarAssessment.hooks,
+    ...WorksWithLifecycle.hooks,
     beforeValidate: [
-      ...(WorksWithRadarAssessment.hooks?.beforeValidate || []),
-      ({ data }) => {
+      ...(WorksWithLifecycle.hooks?.beforeValidate || []),
+      ({ context, data, originalDoc }) => {
         if (!data) return data
 
-        // Compatibility bridge for old importers and forms that still submit
-        // the former root field named "status". Root "status" is forbidden by
-        // Payload Postgres when drafts are enabled, so never persist it again.
+        // Payload keeps the technical _status column because version history is
+        // enabled, but live Works no longer use a user-facing draft state.
         const next = { ...data } as Record<string, unknown>
+        const previous = (originalDoc || {}) as Record<string, unknown>
+        const flags = (context || {}) as Record<string, unknown>
         const legacyStatus = String(next.status || '').trim()
         delete next.status
 
-        if (legacyStatus === 'archived') {
+        const requestedCatalog = String(next.catalogStatus || previous.catalogStatus || 'active').trim()
+        const archived = legacyStatus === 'archived' || requestedCatalog === 'archived'
+        const intakeTemporary = Boolean(flags.manualCreate || flags.feedbackIntake)
+        const preserveTemporary = !flags.lifecycleStageUpdate
+          && previous.catalogStatus === 'temporary'
+          && requestedCatalog === 'active'
+
+        if (archived) {
           next.catalogStatus = 'archived'
           next._status = 'draft'
+          next.isLiteVisible = false
+          next.isFullVisible = false
         } else {
-          if (legacyStatus === 'published' || legacyStatus === 'draft') {
-            next._status = legacyStatus
-          } else if (legacyStatus === 'review') {
-            next._status = next.reviewStatus === 'reviewed' ? 'published' : 'draft'
-          }
+          next.catalogStatus = requestedCatalog === 'temporary' || intakeTemporary || preserveTemporary
+            ? 'temporary'
+            : 'active'
+          next._status = 'published'
+          next.isLiteVisible = true
+          next.isFullVisible = true
 
-          if (next.catalogStatus !== 'archived') next.catalogStatus = 'active'
+          const radar = (next.radarAssessment || previous.radarAssessment || {}) as Record<string, unknown>
+          const human = (next.humanAssessment || previous.humanAssessment || {}) as Record<string, unknown>
+          if (radar.assessedAt && human.status !== 'reviewed') {
+            next.reviewStatus = next.reviewStatus === 'disputed' ? 'disputed' : 'pending'
+            next.ratingNotice = 'ai_synthesized_pending_review'
+          }
         }
 
         return next
       },
     ],
     afterChange: [
-      ...(WorksWithRadarAssessment.hooks?.afterChange || []),
+      ...(WorksWithLifecycle.hooks?.afterChange || []),
       async ({ context, doc, previousDoc, req, operation }) => {
         if (context?.auditEvent) return doc
         await recordAuditEvent({

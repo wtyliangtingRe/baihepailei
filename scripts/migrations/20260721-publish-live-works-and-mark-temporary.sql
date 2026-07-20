@@ -1,0 +1,106 @@
+-- New lifecycle model:
+-- - registered-user proposals remain feedback submissions until accepted;
+-- - accepted proposals and first-party manual intake become published temporary works;
+-- - AI/imported works remain published and explicitly pending human review;
+-- - archived/merged rows remain hidden.
+--
+-- This migration is additive/idempotent and does not delete content.
+
+-- Payload normally stores select values in varchar columns. If this database
+-- uses a PostgreSQL enum for catalog_status, extend it in its own transaction:
+-- PostgreSQL does not allow a newly-added enum value to be used until commit.
+DO $$
+DECLARE
+  catalog_type text;
+  catalog_is_enum boolean;
+BEGIN
+  SELECT c.udt_name, (t.typtype = 'e')
+    INTO catalog_type, catalog_is_enum
+  FROM information_schema.columns c
+  JOIN pg_type t ON t.typname = c.udt_name
+  WHERE c.table_schema = 'public'
+    AND c.table_name = 'works'
+    AND c.column_name = 'catalog_status';
+
+  IF catalog_is_enum THEN
+    EXECUTE format('ALTER TYPE %I ADD VALUE IF NOT EXISTS %L', catalog_type, 'temporary');
+  END IF;
+END $$;
+
+BEGIN;
+
+LOCK TABLE "public"."works"
+  IN SHARE ROW EXCLUSIVE MODE;
+
+-- Deprecated/merged records are retired content, not live works.
+UPDATE "public"."works"
+SET "catalog_status" = 'archived',
+    "_status" = 'draft',
+    "is_lite_visible" = false,
+    "is_full_visible" = false
+WHERE "review_status" = 'deprecated';
+
+-- Existing first-party/manual and accepted-feedback records become temporary.
+UPDATE "public"."works"
+SET "catalog_status" = 'temporary'
+WHERE COALESCE("catalog_status", 'active') <> 'archived'
+  AND COALESCE("review_status", 'pending') <> 'deprecated'
+  AND (
+    COALESCE("site_id", '') LIKE 'manual:%'
+    OR COALESCE("site_id", '') LIKE 'feedback:%'
+    OR COALESCE("import_batch", '') LIKE 'feedback-intake:%'
+  );
+
+-- Every remaining non-archived work is a live published record. Keep lifecycle
+-- enum assignments separate from the visibility update: PostgreSQL resolves a
+-- mixed CASE expression as text and will not implicitly cast it back to enum.
+UPDATE "public"."works"
+SET "_status" = 'published',
+    "is_lite_visible" = true,
+    "is_full_visible" = true
+WHERE COALESCE("catalog_status", 'active') <> 'archived'
+  AND COALESCE("review_status", 'pending') <> 'deprecated';
+
+UPDATE "public"."works"
+SET "catalog_status" = 'active'
+WHERE COALESCE("catalog_status", 'active') <> 'archived'
+  AND COALESCE("review_status", 'pending') <> 'deprecated'
+  AND "catalog_status" IS DISTINCT FROM 'temporary';
+
+-- Controlled AI results without a recorded human assessment stay public but
+-- are explicitly marked as waiting for human review. Column existence checks
+-- keep this migration compatible with older local schemas.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'works'
+      AND column_name = 'radar_assessment_assessed_at'
+  ) AND EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'works'
+      AND column_name = 'human_assessment_status'
+  ) THEN
+    UPDATE "public"."works"
+    SET "rating_notice" = 'ai_synthesized_pending_review'
+    WHERE "radar_assessment_assessed_at" IS NOT NULL
+      AND COALESCE("human_assessment_status", 'pending') <> 'reviewed'
+      AND COALESCE("catalog_status", 'active') <> 'archived'
+      AND COALESCE("review_status", 'pending') <> 'deprecated';
+
+    UPDATE "public"."works"
+    SET "review_status" = 'pending'
+    WHERE "radar_assessment_assessed_at" IS NOT NULL
+      AND COALESCE("human_assessment_status", 'pending') <> 'reviewed'
+      AND COALESCE("catalog_status", 'active') <> 'archived'
+      AND COALESCE("review_status", 'pending') NOT IN ('deprecated', 'disputed');
+  END IF;
+END $$;
+
+COMMIT;
+
+-- Read-only verification after applying:
+-- SELECT catalog_status, _status, review_status, rating_notice, count(*)
+-- FROM works
+-- GROUP BY catalog_status, _status, review_status, rating_notice
+-- ORDER BY catalog_status, _status, review_status, rating_notice;

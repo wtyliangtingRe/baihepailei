@@ -46,7 +46,6 @@ const navItems = [
   { href: '/recommendations', label: '推荐' },
   { href: '/me/lists', label: '我的列表' },
   { href: '/updates', label: '最近更新' },
-  { href: '/feedback', label: '反馈' },
   { href: '/search', label: '搜索' },
   { href: '/account', label: '账户' },
 ]

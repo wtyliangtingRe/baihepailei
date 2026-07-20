@@ -21,7 +21,7 @@ test('Payload registers optional radar assessment metrics on works', () => {
   assert.match(fields, /max: 100/u)
   assert.match(fields, /value: 'conflicting_evidence'/u)
   assert.match(fields, /value: 'insufficient_evidence'/u)
-  assert.match(config, /withRadarAssessmentFields\(Works\)/u)
+  assert.match(config, /withRadarAssessmentFields\(WorksWithOptionalStewardship\)/u)
   assert.match(config, /WorksWithRadarAssessment/u)
 })
 
@@ -44,23 +44,36 @@ test('work pages show confidence before the risk matrix with careful wording', (
   const detail = source('src/app/(frontend)/_components/DetailIndexDetail.tsx')
   const fallback = source('src/app/(frontend)/_components/SearchIndexDetail.tsx')
   const card = source('src/app/(frontend)/_components/WorkAssessmentTrustCard.tsx')
+  const presentation = source('src/lib/radar/assessmentPresentation.ts')
   const layout = source('src/app/(frontend)/layout.tsx')
 
   assert.ok(detail.indexOf('<WorkAssessmentTrustCard') < detail.indexOf('<BasicInfo'))
   assert.ok(detail.indexOf('<WorkAssessmentTrustCard') < detail.indexOf('<WorkRiskMatrixCard'))
   assert.ok(fallback.indexOf('<WorkAssessmentTrustCard') < fallback.indexOf('<BasicInfo'))
-  assert.match(card, /排雷结论/u)
+  assert.match(card, /人工审核参考/u)
   assert.match(card, /页面提示/u)
   assert.match(card, /可追溯来源/u)
   assert.match(card, /决定性规则/u)
   assert.match(card, /全部命中规则/u)
   assert.match(card, /判断置信度/u)
   assert.match(card, /资料覆盖度/u)
-  assert.match(card, /不等同于作品安全概率/u)
+  assert.match(presentation, /不等同于作品安全概率/u)
+  assert.match(card, /不等于不可改变的最终结论/u)
   assert.match(card, /查看完整分级细则/u)
   assert.match(card, /补充资料 \/ 提交纠错/u)
-  assert.doesNotMatch(card, /最终|final/iu)
+  assert.doesNotMatch(card, /final/iu)
   assert.match(layout, /work-assessment-trust\.css/u)
+})
+
+test('manual placeholders require a controlled assessedAt before appearing as AI conclusions', () => {
+  const card = source('src/app/(frontend)/_components/WorkAssessmentTrustCard.tsx')
+
+  assert.match(card, /controlledRadarAssessment/u)
+  assert.match(card, /assessmentItem\.radarAssessment\?\.assessedAt/u)
+  assert.match(card, /legacyManualAIPlaceholder/u)
+  assert.match(card, /不再把它展示成 AI 结论/u)
+  assert.match(card, /等待 AI Radar 管线/u)
+  assert.match(card, /下一次未评估作品管线/u)
 })
 
 test('presentation helper handles evidence and review states explicitly', () => {
@@ -73,4 +86,3 @@ test('presentation helper handles evidence and review states explicitly', () => 
   assert.match(presentation, /manual_reviewed: '人工已确认'/u)
   assert.match(presentation, /Math\.min\(100, Math\.max\(0/u)
 })
-

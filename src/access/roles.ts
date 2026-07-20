@@ -1,4 +1,4 @@
-import type { Access } from 'payload'
+import type { Access, Where } from 'payload'
 
 export type Role = 'owner' | 'admin' | 'editor' | 'member'
 
@@ -66,11 +66,12 @@ export const publishedOrSignedIn: Access = ({ req }) => {
   }
 }
 
+const visibleLiveWorkConditions: Where[] = [
+  { _status: { equals: 'published' } },
+  { catalogStatus: { in: ['active', 'temporary'] } },
+]
+
 export const publishedActiveWorkOrSignedIn: Access = ({ req }) => {
   if (req.user) return true
-
-  return {
-    _status: { equals: 'published' },
-    catalogStatus: { equals: 'active' },
-  }
+  return { and: visibleLiveWorkConditions }
 }

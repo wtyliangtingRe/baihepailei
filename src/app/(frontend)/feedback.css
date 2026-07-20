@@ -37,6 +37,34 @@
   gap: 14px;
 }
 
+.feedback-work-section {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #2f2a2d;
+  border-radius: 16px;
+  background: #121012;
+}
+
+.feedback-work-section header {
+  display: grid;
+  gap: 5px;
+}
+
+.feedback-work-section h3,
+.feedback-work-section p {
+  margin: 0;
+}
+
+.feedback-work-section p {
+  color: #999;
+  line-height: 1.6;
+}
+
+.feedback-field-wide {
+  grid-column: 1 / -1;
+}
+
 .feedback-type-card p,
 .feedback-guide ul,
 .feedback-success p {
@@ -119,6 +147,15 @@
 
 [data-theme='light'] .feedback-form label {
   color: #191716;
+}
+
+[data-theme='light'] .feedback-work-section {
+  border-color: #eadfd7;
+  background: #fffaf6;
+}
+
+[data-theme='light'] .feedback-work-section p {
+  color: #6d625c;
 }
 
 [data-theme='light'] .feedback-type-card p,

@@ -2,11 +2,19 @@ import type { Access, CollectionConfig, FieldAccess } from 'payload'
 
 import { isEditor, isOwner, signedIn } from '@/access/roles'
 import { recordAuditEvent } from '@/lib/audit'
+import { newWorkProposalToWorkTransfer, sanitizeNewWorkProposalMetadata } from '@/lib/newWorkProposal'
+import { plainTextToRichText } from '@/lib/richTextPlain'
 
 type FeedbackUser = {
   id?: string | number
   displayName?: string
   email?: string
+}
+
+type FeedbackWork = {
+  id?: string | number
+  importBatch?: string
+  siteId?: string
 }
 
 const ownSubmissionOrStaff: Access = ({ req }) => {
@@ -41,6 +49,34 @@ const staffFieldAccess: FieldAccess = ({ req }) => isEditor(req.user)
 
 const gradeOptions = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X'].map((value) => ({ label: value, value }))
 
+function relationshipID(value: unknown) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const id = (value as { id?: string | number }).id
+    return id === undefined || id === null ? '' : String(id)
+  }
+  return value === undefined || value === null ? '' : String(value)
+}
+
+function withNewWorkProposalBoundary(
+  data: Record<string, unknown> | undefined,
+  originalDoc: Record<string, unknown> | undefined,
+) {
+  const next = { ...(data || {}) }
+  const feedbackType = String(next.feedbackType || originalDoc?.feedbackType || '')
+  if (feedbackType !== 'new_work') {
+    next.newWorkMetadata = null
+    return next
+  }
+
+  next.newWorkMetadata = sanitizeNewWorkProposalMetadata(next.newWorkMetadata ?? originalDoc?.newWorkMetadata)
+  // New-work submitters provide factual catalog metadata and sources. Rating,
+  // rule matching and AI Radar fields are deliberately left to the controlled
+  // assessment pipeline and staff review.
+  next.proposedGrade = null
+  next.matchedRuleCodes = []
+  return next
+}
+
 export const FeedbackSubmissions: CollectionConfig = {
   slug: 'feedback-submissions',
   labels: {
@@ -65,43 +101,110 @@ export const FeedbackSubmissions: CollectionConfig = {
         const fromReviewWorkbench = Boolean(
           (req.context as { reviewWorkbench?: boolean } | undefined)?.reviewWorkbench,
         )
+        const bounded = withNewWorkProposalBoundary(
+          data as Record<string, unknown> | undefined,
+          originalDoc as Record<string, unknown> | undefined,
+        )
+
         if (operation === 'create') {
           return {
-            ...data,
+            ...bounded,
             pageUrl: '',
             submitter: user?.id,
             submitterName: user?.displayName || user?.email || '注册用户',
-            targetCollection: data?.linkedWork ? 'works' : data?.targetCollection,
+            targetCollection: bounded.linkedWork ? 'works' : bounded.targetCollection,
             targetSlug: '',
             workflowStatus: 'pending',
           }
         }
 
         if (!isEditor(req.user) && !fromReviewWorkbench) {
+          const previousStatus = String(originalDoc?.workflowStatus || 'pending')
           return {
-            ...data,
+            ...bounded,
+            // Members edit the same submission record. Immutable identity and
+            // staff workflow fields cannot be forged through a PATCH request.
+            feedbackType: originalDoc?.feedbackType,
+            targetCollection: originalDoc?.targetCollection,
+            targetSlug: originalDoc?.targetSlug,
+            pageUrl: originalDoc?.pageUrl,
+            linkedWork: originalDoc?.linkedWork,
             submitter: originalDoc?.submitter,
             submitterName: originalDoc?.submitterName,
-            workflowStatus: originalDoc?.workflowStatus,
+            // Saving requested material returns the same record to the pending
+            // queue instead of forcing the user to create a second empty form.
+            workflowStatus: previousStatus === 'needs_information' ? 'pending' : previousStatus,
             reviewer: originalDoc?.reviewer,
             reviewedAt: originalDoc?.reviewedAt,
             reviewNote: originalDoc?.reviewNote,
           }
         }
 
-        const nextStatus = String(data?.workflowStatus || originalDoc?.workflowStatus || 'pending')
+        const nextStatus = String(bounded.workflowStatus || originalDoc?.workflowStatus || 'pending')
         if (nextStatus !== 'pending' && nextStatus !== originalDoc?.workflowStatus) {
           return {
-            ...data,
-            reviewer: user?.id || data?.reviewer,
-            reviewedAt: data?.reviewedAt || new Date().toISOString(),
+            ...bounded,
+            reviewer: user?.id || bounded.reviewer,
+            reviewedAt: bounded.reviewedAt || new Date().toISOString(),
           }
         }
-        return data
+        return bounded
       },
     ],
     afterChange: [
       async ({ doc, previousDoc, req, operation }) => {
+        const linkedWorkID = relationshipID(doc?.linkedWork)
+        const previousLinkedWorkID = relationshipID(previousDoc?.linkedWork)
+        const skipMetadataTransfer = Boolean(
+          (req.context as { skipFeedbackMetadataTransfer?: boolean } | undefined)?.skipFeedbackMetadataTransfer,
+        )
+
+        if (!skipMetadataTransfer && doc?.feedbackType === 'new_work' && linkedWorkID && linkedWorkID !== previousLinkedWorkID) {
+          const work = await req.payload.findByID({
+            collection: 'works',
+            id: linkedWorkID,
+            depth: 0,
+            draft: false,
+            overrideAccess: true,
+          }) as unknown as FeedbackWork
+          const directIntakeWork = String(work.siteId || '').startsWith(`feedback:${String(doc.id)}:`)
+            || work.importBatch === `feedback-intake:${String(doc.id)}`
+
+          if (directIntakeWork) {
+            const transfer = newWorkProposalToWorkTransfer(doc.newWorkMetadata, {
+              feedbackID: doc.id,
+              targetTitle: doc.targetTitle,
+              claim: doc.claim,
+              evidenceSummary: doc.evidenceSummary,
+            })
+            const workData: Record<string, unknown> = {
+              ...transfer.workData,
+              _status: 'published',
+              catalogStatus: 'temporary',
+              rank: 'unknown',
+              reviewStatus: 'pending',
+              isLiteVisible: true,
+              isFullVisible: true,
+            }
+            if (transfer.summaryText) workData.summary = plainTextToRichText(transfer.summaryText)
+
+            await req.payload.update({
+              collection: 'works',
+              id: linkedWorkID,
+              depth: 0,
+              draft: false,
+              overrideAccess: true,
+              context: {
+                firstPartyStudio: true,
+                feedbackMetadataTransfer: true,
+                feedbackID: doc.id,
+                auditActorID: (req.user as FeedbackUser | undefined)?.id,
+              },
+              data: workData as never,
+            })
+          }
+        }
+
         await recordAuditEvent({
           req,
           action: operation === 'create' ? 'feedback.created' : 'feedback.updated',
@@ -150,7 +253,15 @@ export const FeedbackSubmissions: CollectionConfig = {
     },
     { name: 'targetCollection', type: 'text', label: '对象类型', defaultValue: 'works' },
     { name: 'targetSlug', type: 'text', label: '旧作品 / 页面 Slug', admin: { hidden: true } },
-    { name: 'targetTitle', type: 'text', label: '作品 / 页面名称', required: true, maxLength: 200 },
+    { name: 'targetTitle', type: 'text', label: '作品 / 页面名称', required: true, maxLength: 300 },
+    {
+      name: 'newWorkMetadata',
+      type: 'json',
+      label: '新作品结构化资料',
+      admin: {
+        description: '仅用于新增作品建议：原名、别名、作品类别、形态、首次日期、简介和搜索补充信息。评级与 AI 字段不由提交者填写。',
+      },
+    },
     { name: 'pageUrl', type: 'text', label: '旧相关页面 URL', maxLength: 500, admin: { hidden: true } },
     { name: 'proposedGrade', type: 'select', label: '建议分级', options: gradeOptions },
     {
