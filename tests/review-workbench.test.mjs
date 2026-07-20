@@ -15,6 +15,7 @@ const mergedWork = read('src/lib/mergedWork.ts')
 const feedbackPage = read('src/app/(frontend)/me/review/feedback/page.tsx')
 const feedbackActions = read('src/app/(frontend)/me/review/feedback/review-actions.ts')
 const feedbackDetail = read('src/app/(frontend)/me/review/feedback/[id]/page.tsx')
+const feedbackCollection = read('src/collections/FeedbackSubmissions.ts')
 const decisions = read('src/app/(frontend)/me/review/_components/ReviewDecisionButtons.tsx')
 const works = read('src/collections/Works.ts')
 const css = read('src/app/(frontend)/review-workbench.css')
@@ -80,6 +81,8 @@ test('dedicated AI work review page contains preview and guarded human decisions
   assert.doesNotMatch(aiReviewDetail, /\/me\/studio\/works\//u)
   assert.match(decisions, /useFormStatus/u)
   assert.match(decisions, /window\.confirm/u)
+  assert.match(decisions, /submittedAction/u)
+  assert.match(decisions, /pending && submittedAction === action\.value/u)
 })
 
 test('human decisions preserve publication, stage and AI records', () => {
@@ -127,7 +130,7 @@ test('feedback queue starts reviews while decisions live on the detail page', ()
   assert.match(feedbackDetail, /关联作品预览/u)
 })
 
-test('accepted new-work feedback creates a public temporary work and notifies the account timeline', () => {
+test('accepted new-work feedback creates a public temporary work without blocking on duplicate index writes', () => {
   assert.match(feedbackActions, /newWorkProposalToWorkTransfer/u)
   assert.match(feedbackActions, /feedbackIntake: true/u)
   assert.match(feedbackActions, /rank: 'unknown'/u)
@@ -137,6 +140,10 @@ test('accepted new-work feedback creates a public temporary work and notifies th
   assert.match(feedbackActions, /isLiteVisible: true/u)
   assert.match(feedbackActions, /isFullVisible: true/u)
   assert.doesNotMatch(feedbackActions, /radarAssessment:/u)
+  assert.match(feedbackActions, /skipFeedbackMetadataTransfer: true/u)
+  assert.match(feedbackCollection, /skipMetadataTransfer/u)
+  assert.match(feedbackActions, /after\(\(\) =>/u)
+  assert.match(feedbackActions, /syncWorkToPublicIndexes/u)
   assert.match(feedbackActions, /revalidatePath\('\/me\/messages'\)/u)
   assert.match(feedbackActions, /workflowStatus: 'accepted'/u)
 })
