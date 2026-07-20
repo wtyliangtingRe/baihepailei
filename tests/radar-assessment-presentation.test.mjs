@@ -57,9 +57,10 @@ test('work pages show confidence before the risk matrix with careful wording', (
   assert.match(card, /判断置信度/u)
   assert.match(card, /资料覆盖度/u)
   assert.match(card, /不等同于作品安全概率/u)
+  assert.match(card, /不等于不可改变的最终结论/u)
   assert.match(card, /查看完整分级细则/u)
   assert.match(card, /补充资料 \/ 提交纠错/u)
-  assert.doesNotMatch(card, /最终|final/iu)
+  assert.doesNotMatch(card, /final/iu)
   assert.match(layout, /work-assessment-trust\.css/u)
 })
 
