@@ -35,6 +35,7 @@ type DuplicateCandidate = {
   mediaGroup?: string
   mediaType?: string
   _status?: string
+  catalogStatus?: string
 }
 
 const mediaGroupOptions = ['anime', 'manga', 'novel', 'game', 'other', 'unknown'] as const
@@ -161,15 +162,15 @@ async function createWorkAction(formData: FormData) {
       firstPublishedAt: text(formData.get('firstPublishedAt'), 40) || null,
       firstPublishedPrecision,
       firstPublishedLabel: text(formData.get('firstPublishedLabel'), 120),
-      _status: 'draft',
-      catalogStatus: 'active',
-      isLiteVisible: false,
-      isFullVisible: false,
+      _status: 'published',
+      catalogStatus: 'temporary',
+      isLiteVisible: true,
+      isFullVisible: true,
       hasEvidence: sourceLinks.length > 0 || Boolean(evidenceNote),
       sourceLinks,
       evidenceNote,
       searchText,
-      humanReviewNote: humanNote || `[${createdAt}] 由站内内容管理创建草稿；尚未运行 AI Radar，等待下一次 unassessed 管线。actor=${actorID}`,
+      humanReviewNote: humanNote || `[${createdAt}] 由站内内容管理创建临时作品；已公开但尚未运行 AI Radar，等待下一次 unassessed 管线。actor=${actorID}`,
     },
   })
   const createdID = numericID(created.id)
@@ -179,7 +180,7 @@ async function createWorkAction(formData: FormData) {
     try {
       const feedback = await payload.findByID({ collection: 'feedback-submissions', id: feedbackID, depth: 0, overrideAccess: true }) as unknown as FeedbackDoc
       const previousNote = String(feedback.reviewNote || '').trim()
-      const note = `已创建待复核作品草稿 #${createdID}；尚未公开，等待后续 AI Radar 与人工审核。`
+      const note = `已创建公开的临时作品 #${createdID}；AI Radar 与人工评级仍待后续处理。`
       await payload.update({
         collection: 'feedback-submissions',
         id: feedbackID,
@@ -248,12 +249,12 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
       <section className="review-hero">
         <div className="review-hero-copy">
           <p className="eyebrow">站内内容管理</p>
-          <h1>创建作品草稿</h1>
-          <p className="muted">新作品默认不可见、待复核、未发布。这里只建立事实资料，不在人工创建时伪造 AI 建议。</p>
+          <h1>创建临时作品</h1>
+          <p className="muted">创建后立即进入前台并标记为“临时作品”。这里只建立事实资料，不在人工创建时伪造 AI 建议；资料补齐后可在作品编辑页转为正式作品。</p>
         </div>
       </section>
 
-      {feedback ? <div className="review-action-message" role="status">正在处理用户新作品申请 #{feedback.id}：{feedback.targetTitle || '未命名作品'}。用户提交的结构化资料已预填；AI Radar 保持空白，等待下一次未评估作品管线。</div> : null}
+      {feedback ? <div className="review-action-message" role="status">正在处理用户新作品申请 #{feedback.id}：{feedback.targetTitle || '未命名作品'}。用户提交的结构化资料已预填；采纳后会成为公开的临时作品，AI Radar 保持空白并等待下一次未评估作品管线。</div> : null}
       {createError ? <div className="review-action-message review-action-message-error" role="alert">必填字段无效，请检查标题、作品类型和日期精度。</div> : null}
       {duplicateWarning ? <div className="review-action-message review-action-message-error" role="alert">发现可能重复的现有作品。请先核对下方候选；确认不是重复项后，再勾选“仍然创建”。</div> : null}
 
@@ -261,7 +262,7 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
         <section className="review-row">
           <h2>可能重复的现有作品</h2>
           <div className="review-list">
-            {duplicateCandidates.map((candidate) => <article className="review-row" key={candidate.id}><strong>{candidate.title || `作品 #${candidate.id}`}</strong><p className="muted">ID {candidate.id} · {candidate.originalTitle || '无原名'} · {candidate.mediaGroup || 'unknown'} / {candidate.mediaType || 'unknown'} · {candidate._status || 'draft'}</p><Link className="review-link" href={`/me/studio/works/${candidate.id}`}>打开现有条目</Link></article>)}
+            {duplicateCandidates.map((candidate) => <article className="review-row" key={candidate.id}><strong>{candidate.title || `作品 #${candidate.id}`}</strong><p className="muted">ID {candidate.id} · {candidate.originalTitle || '无原名'} · {candidate.mediaGroup || 'unknown'} / {candidate.mediaType || 'unknown'} · {candidate.catalogStatus === 'temporary' ? '临时作品' : candidate.catalogStatus === 'archived' ? '已归档' : '正式作品'}</p><Link className="review-link" href={`/me/studio/works/${candidate.id}`}>打开现有条目</Link></article>)}
           </div>
         </section>
       ) : null}
@@ -270,7 +271,7 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
         <input name="feedbackId" type="hidden" value={feedbackID} />
         <input name="returnTo" type="hidden" value={returnTo} />
         <section className="review-editor-section">
-          <header><h2>基础身份</h2><p>创建后会生成作品 ID。</p></header>
+          <header><h2>基础身份</h2><p>创建后会生成作品 ID，并以临时作品形式公开。</p></header>
           <div className="review-editor-grid">
             <label className="review-editor-field review-editor-field-wide"><span>显示标题</span><input defaultValue={suggestedTitle} maxLength={300} name="title" required /></label>
             <label className="review-editor-field"><span>原始标题</span><input defaultValue={proposal.originalTitle || ''} maxLength={300} name="originalTitle" /></label>
@@ -293,11 +294,11 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
 
         <section className="review-editor-section">
           <header><h2>AI Radar 等待区</h2><p>人工创建只建立作品事实，不填写 AI 建议等级、决定性规则或命中规则。作品没有 radarAssessment 时，会被下一次 <code>pnpm radar:local-update --scope unassessed</code> 自动纳入待分析范围。</p></header>
-          <div className="review-safety-note">创建后的前台会显示“尚未形成可展示的等级建议”，直到受控 AI 管线写入独立的 AI 轨道；人工轨道不会因此被覆盖。</div>
+          <div className="review-safety-note">临时作品会先公开事实资料，并显示“等待 AI Radar 管线”；受控 AI 管线写入评级后，再进入 AI 评级人工复核通道。</div>
         </section>
 
         <section className="review-editor-section">
-          <header><h2>来源与建档说明</h2><p>新建草稿不会公开；编辑完成核验后再决定正式发布。</p></header>
+          <header><h2>来源与建档说明</h2><p>临时作品会公开展示这些事实资料；请至少保留可核验来源或明确说明仍缺什么。</p></header>
           <div className="review-editor-grid">
             <label className="review-editor-field review-editor-field-wide"><span>人工建档记录</span><textarea defaultValue={feedback?.claim || ''} maxLength={4000} name="humanReviewNote" placeholder="说明为什么创建新条目、检查过哪些重复候选，以及仍待补充的资料。" /></label>
             <label className="review-editor-field review-editor-field-wide"><span>来源链接</span><textarea defaultValue={feedbackSources} name="sourceLinks" placeholder={'Bangumi | https://...\nAniList | https://...'} /></label>
@@ -306,8 +307,8 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
           </div>
         </section>
 
-        <label className="review-editor-check"><input defaultChecked={Boolean(duplicateWarning)} name="duplicateConfirmed" type="checkbox" /><span>我已核对可能重复的现有作品，确认仍应创建一个独立草稿。</span></label>
-        <div className="review-editor-submit"><PendingSubmitButton idleLabel="创建待复核草稿" pendingLabel="正在创建……" /><Link className="review-link" href={returnTo}>取消并返回上一级</Link></div>
+        <label className="review-editor-check"><input defaultChecked={Boolean(duplicateWarning)} name="duplicateConfirmed" type="checkbox" /><span>我已核对可能重复的现有作品，确认仍应创建一个独立临时作品。</span></label>
+        <div className="review-editor-submit"><PendingSubmitButton idleLabel="创建并公开临时作品" pendingLabel="正在创建……" /><Link className="review-link" href={returnTo}>取消并返回上一级</Link></div>
       </form>
     </main>
   )
