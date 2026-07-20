@@ -5,6 +5,12 @@ import { notFound, redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 
 import { canonicalContentUrl } from '../../../../_lib/content-identity'
+import {
+  hasNewWorkProposalMetadata,
+  newWorkOptionLabel,
+  sanitizeNewWorkProposalMetadata,
+  type NewWorkProposalMetadata,
+} from '@/lib/newWorkProposal'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +21,7 @@ type FeedbackDoc = {
   id: string | number
   feedbackType?: string
   targetTitle?: string
+  newWorkMetadata?: NewWorkProposalMetadata
   proposedGrade?: string
   matchedRuleCodes?: Array<{ code?: string }>
   claim?: string
@@ -70,6 +77,10 @@ function formatDate(value?: string) {
   }
 }
 
+function proposalDate(metadata: NewWorkProposalMetadata) {
+  return metadata.firstPublishedLabel || metadata.firstPublishedAt || '未提供'
+}
+
 export default async function FeedbackDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: PageSearchParams }) {
   const { id } = await params
   const rawSearch = await searchParams
@@ -95,6 +106,8 @@ export default async function FeedbackDetailPage({ params, searchParams }: { par
   const decisiveRule = rules[0] || ''
   const isAccepted = doc.workflowStatus === 'accepted'
   const isNewWork = doc.feedbackType === 'new_work'
+  const proposal = sanitizeNewWorkProposalMetadata(doc.newWorkMetadata)
+  const hasProposal = isNewWork && hasNewWorkProposalMetadata(proposal)
   const mayUsePayload = role === 'owner' || role === 'admin'
   const returnTo = `/me/review/feedback/${doc.id}`
 
@@ -108,7 +121,7 @@ export default async function FeedbackDetailPage({ params, searchParams }: { par
           <div className="review-chip-list">
             <span>{feedbackTypeLabels[doc.feedbackType || 'other'] || doc.feedbackType}</span>
             <span>{workflowLabels[doc.workflowStatus || 'pending'] || doc.workflowStatus}</span>
-            {doc.proposedGrade ? <span>建议 {doc.proposedGrade} 级</span> : null}
+            {!isNewWork && doc.proposedGrade ? <span>建议 {doc.proposedGrade} 级</span> : null}
             {doc.containsSpoilers ? <span className="review-row-chip-warning">含剧透</span> : null}
           </div>
         </div>
@@ -130,24 +143,42 @@ export default async function FeedbackDetailPage({ params, searchParams }: { par
         </section>
       ) : null}
 
+      {hasProposal ? (
+        <section className="review-row">
+          <h2>用户提交的新作品建档资料</h2>
+          <p className="muted">这些是事实资料提议，不包含评级、规则命中或 AI Radar 结论；创建草稿时会自动预填。</p>
+          <dl className="feedback-review-facts">
+            <div><dt>显示标题</dt><dd>{doc.targetTitle || '未填写'}</dd></div>
+            <div><dt>原始标题</dt><dd>{proposal.originalTitle || '未填写'}</dd></div>
+            <div><dt>作品大类</dt><dd>{newWorkOptionLabel(proposal.mediaGroup || 'unknown')}</dd></div>
+            <div><dt>作品类型</dt><dd>{newWorkOptionLabel(proposal.mediaType || 'unknown')}</dd></div>
+            <div><dt>作品形态</dt><dd>{newWorkOptionLabel(proposal.format || 'unknown')}</dd></div>
+            <div><dt>首次发行</dt><dd>{proposalDate(proposal)} · {newWorkOptionLabel(proposal.firstPublishedPrecision || 'unknown')}</dd></div>
+            <div className="feedback-review-wide"><dt>别名与译名</dt><dd>{proposal.aliases?.length ? proposal.aliases.join('、') : '未填写'}</dd></div>
+            <div className="feedback-review-wide"><dt>作品简介</dt><dd>{proposal.summary || '未填写'}</dd></div>
+            <div className="feedback-review-wide"><dt>搜索补充文本与外部身份</dt><dd>{proposal.searchText || '未填写'}</dd></div>
+          </dl>
+        </section>
+      ) : null}
+
       <section className="review-row">
         <dl className="feedback-review-facts">
           <div><dt>提交者</dt><dd>{doc.submitterName || relationLabel(doc.submitter) || '注册用户'}</dd></div>
           <div><dt>关联作品</dt><dd>{workID ? `${relationLabel(doc.linkedWork) || doc.targetTitle || '作品'}（站内 ID ${workID}）` : '尚未关联站内作品'}</dd></div>
           <div><dt>提交时间</dt><dd>{formatDate(doc.createdAt)}</dd></div>
           <div><dt>最后更新</dt><dd>{formatDate(doc.updatedAt)}</dd></div>
-          <div className="feedback-review-wide"><dt>希望网站核实的结论</dt><dd>{doc.claim || '未填写'}</dd></div>
-          <div className="feedback-review-wide"><dt>证据说明</dt><dd>{doc.evidenceSummary || '未填写'}</dd></div>
-          <div className="feedback-review-wide"><dt>主规则 / 决定性规则</dt><dd>{decisiveRule || '未指定'}</dd></div>
-          <div className="feedback-review-wide"><dt>全部命中规则</dt><dd>{rules.length ? rules.join('、') : '未指定'}</dd></div>
+          <div className="feedback-review-wide"><dt>{isNewWork ? '收录理由与重复核查说明' : '希望网站核实的结论'}</dt><dd>{doc.claim || '未填写'}</dd></div>
+          <div className="feedback-review-wide"><dt>{isNewWork ? '来源、版本与身份备注' : '证据说明'}</dt><dd>{doc.evidenceSummary || '未填写'}</dd></div>
+          {!isNewWork ? <div className="feedback-review-wide"><dt>主规则 / 决定性规则</dt><dd>{decisiveRule || '未指定'}</dd></div> : null}
+          {!isNewWork ? <div className="feedback-review-wide"><dt>全部命中规则</dt><dd>{rules.length ? rules.join('、') : '未指定'}</dd></div> : null}
           <div className="feedback-review-wide"><dt>当前审核说明</dt><dd>{doc.reviewNote || '尚未填写'}</dd></div>
           <div><dt>审核人</dt><dd>{relationLabel(doc.reviewer) || '尚未分配'}</dd></div>
           <div><dt>审核时间</dt><dd>{formatDate(doc.reviewedAt)}</dd></div>
         </dl>
 
         <section className="feedback-detail-sources">
-          <h2>全部证据链接</h2>
-          {links.length ? <ol>{links.map((item, index) => <li key={`${item.url}-${index}`}><a href={item.url} rel="noreferrer" target="_blank">{item.label || item.url}</a><small>{item.url}</small></li>)}</ol> : <p className="muted">没有提交外部证据链接。</p>}
+          <h2>{isNewWork ? '全部作品来源链接' : '全部证据链接'}</h2>
+          {links.length ? <ol>{links.map((item, index) => <li key={`${item.url}-${index}`}><a href={item.url} rel="noreferrer" target="_blank">{item.label || item.url}</a><small>{item.url}</small></li>)}</ol> : <p className="muted">没有提交外部来源链接。</p>}
         </section>
 
         <div className="review-row-actions">
