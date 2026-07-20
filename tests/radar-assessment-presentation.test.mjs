@@ -44,6 +44,7 @@ test('work pages show confidence before the risk matrix with careful wording', (
   const detail = source('src/app/(frontend)/_components/DetailIndexDetail.tsx')
   const fallback = source('src/app/(frontend)/_components/SearchIndexDetail.tsx')
   const card = source('src/app/(frontend)/_components/WorkAssessmentTrustCard.tsx')
+  const presentation = source('src/lib/radar/assessmentPresentation.ts')
   const layout = source('src/app/(frontend)/layout.tsx')
 
   assert.ok(detail.indexOf('<WorkAssessmentTrustCard') < detail.indexOf('<BasicInfo'))
@@ -56,7 +57,7 @@ test('work pages show confidence before the risk matrix with careful wording', (
   assert.match(card, /全部命中规则/u)
   assert.match(card, /判断置信度/u)
   assert.match(card, /资料覆盖度/u)
-  assert.match(card, /不等同于作品安全概率/u)
+  assert.match(presentation, /不等同于作品安全概率/u)
   assert.match(card, /不等于不可改变的最终结论/u)
   assert.match(card, /查看完整分级细则/u)
   assert.match(card, /补充资料 \/ 提交纠错/u)
