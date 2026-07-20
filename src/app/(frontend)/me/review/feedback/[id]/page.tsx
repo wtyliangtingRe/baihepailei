@@ -95,6 +95,12 @@ function proposalDate(metadata: NewWorkProposalMetadata) {
   return metadata.firstPublishedLabel || metadata.firstPublishedAt || '未提供'
 }
 
+function stageLabel(work: WorkPreview) {
+  if (work.catalogStatus === 'temporary') return '临时作品'
+  if (work.catalogStatus === 'archived') return '回收站'
+  return '正式作品'
+}
+
 export default async function FeedbackDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: PageSearchParams }) {
   const { id } = await params
   const rawSearch = await searchParams
@@ -141,9 +147,9 @@ export default async function FeedbackDetailPage({ params, searchParams }: { par
     { value: 'needs_information', label: '要求补充材料' },
     {
       value: 'accepted',
-      label: isNewWork && !workID ? '采纳并生成草稿' : '采纳',
+      label: isNewWork && !workID ? '采纳并创建临时作品' : '采纳',
       className: 'review-button review-button-primary',
-      confirm: isNewWork && !workID ? '确认采纳这份新作品申请并生成待复核草稿吗？' : '确认采纳这份反馈吗？',
+      confirm: isNewWork && !workID ? '确认采纳这份新作品申请并创建公开的临时作品吗？' : '确认采纳这份反馈吗？',
     },
     { value: 'rejected', label: '驳回', className: 'review-button review-button-danger', confirm: '确认驳回这份反馈吗？请确保审核说明已经写明理由。' },
     { value: 'archived', label: '归档', confirm: '确认归档这份反馈吗？它会离开待处理队列，但仍保留历史记录。' },
@@ -166,14 +172,14 @@ export default async function FeedbackDetailPage({ params, searchParams }: { par
       </section>
 
       {started ? <div className="review-action-message review-action-message-success" role="status">已经开始核查。请先完整阅读材料，再在页面底部保存说明或作出处理决定。</div> : null}
-      {createdWork ? <div className="review-action-message review-action-message-success" role="status">已采纳并创建待复核作品草稿 #{createdWork}。草稿尚未公开，AI Radar 保持空白并等待后续管线。<Link href={canonicalContentUrl('works', createdWork)}>查看作品预览</Link></div> : null}
+      {createdWork ? <div className="review-action-message review-action-message-success" role="status">已采纳并创建公开的临时作品 #{createdWork}。AI Radar 保持空白并等待后续管线，人工评级尚未记录。<Link href={canonicalContentUrl('works', createdWork)}>查看作品前台</Link></div> : null}
       {reviewed ? <div className="review-action-message review-action-message-success" role="status">本次处理已经保存：{reviewed === 'save' ? '只更新审核说明' : workflowLabels[reviewed] || reviewed}。</div> : null}
       {reviewError ? (
         <div className="review-action-message review-action-message-error" role="alert">
           {reviewError === 'note_required'
             ? '要求补充材料或驳回时，必须先写明具体原因。'
             : reviewError === 'duplicate_candidates'
-              ? <>发现可能重复的现有作品，尚未创建草稿。请先<Link href={duplicateHref}>进入重复核查与草稿创建</Link>。</>
+              ? <>发现可能重复的现有作品，尚未创建临时作品。请先<Link href={duplicateHref}>进入重复核查与临时作品创建</Link>。</>
               : '处理参数无效，请刷新页面后重试。'}
         </div>
       ) : null}
@@ -181,7 +187,7 @@ export default async function FeedbackDetailPage({ params, searchParams }: { par
       {hasProposal ? (
         <section className="review-row">
           <h2>用户提交的新作品建档资料</h2>
-          <p className="muted">这些是事实资料提议，不包含评级、规则命中或 AI Radar 结论；采纳生成草稿时会自动转入。</p>
+          <p className="muted">这些是事实资料提议，不包含评级、规则命中或 AI Radar 结论；站务采纳后会转入公开的临时作品。</p>
           <dl className="feedback-review-facts">
             <div><dt>显示标题</dt><dd>{doc.targetTitle || '未填写'}</dd></div>
             <div><dt>原始标题</dt><dd>{proposal.originalTitle || '未填写'}</dd></div>
@@ -223,8 +229,8 @@ export default async function FeedbackDetailPage({ params, searchParams }: { par
             <div><dt>作品</dt><dd>{work.title || `作品 #${work.id}`}</dd></div>
             <div><dt>目录等级</dt><dd>{work.rank || 'unknown'}</dd></div>
             <div><dt>复核状态</dt><dd>{work.reviewStatus || 'pending'}</dd></div>
-            <div><dt>发布状态</dt><dd>{work._status || 'draft'}</dd></div>
-            <div><dt>目录状态</dt><dd>{work.catalogStatus || 'active'}</dd></div>
+            <div><dt>作品阶段</dt><dd>{stageLabel(work)}</dd></div>
+            <div><dt>发布状态</dt><dd>{work.catalogStatus === 'archived' ? '已隐藏' : '已发布'}</dd></div>
             <div><dt>前台可见</dt><dd>{work.isLiteVisible || work.isFullVisible ? '至少一个版本可见' : '当前隐藏'}</dd></div>
           </dl>
           <div className="review-row-actions"><Link className="review-link" href={canonicalContentUrl('works', work.id)}>查看作品前台预览</Link></div>
