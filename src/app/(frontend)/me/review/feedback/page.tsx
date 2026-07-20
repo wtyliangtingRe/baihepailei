@@ -6,11 +6,12 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getPayload, type Where } from 'payload'
 
+import { isEditor } from '@/access/roles'
+
 import { canonicalContentUrl } from '../../../_lib/content-identity'
 
 export const dynamic = 'force-dynamic'
 
-type Role = 'owner' | 'admin' | 'editor' | 'member'
 type WorkflowStatus = 'pending' | 'triaging' | 'needs_information' | 'accepted' | 'rejected' | 'archived'
 type ReviewIntent = WorkflowStatus | 'accept_create_draft'
 type FeedbackQueue = 'active' | 'processed' | 'all'
@@ -47,7 +48,6 @@ type Filters = {
   page: number
 }
 
-const allowedRoles = new Set<Role>(['owner', 'admin', 'editor'])
 const activeStatuses: WorkflowStatus[] = ['pending', 'triaging', 'needs_information']
 const processedStatuses: WorkflowStatus[] = ['accepted', 'rejected', 'archived']
 const workflowLabels: Record<WorkflowStatus, string> = {
@@ -72,14 +72,8 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] || '' : value || ''
 }
 
-function roleOf(user: unknown): Role | undefined {
-  if (!user || typeof user !== 'object') return undefined
-  return (user as { role?: Role }).role
-}
-
 function canReview(user: unknown) {
-  const role = roleOf(user)
-  return Boolean(role && allowedRoles.has(role))
+  return isEditor(user)
 }
 
 function positiveInteger(value: string, fallback = 1) {
@@ -351,7 +345,7 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
   const auth = await payload.auth({ headers: await headers() })
   if (!auth.user) redirect(`/account/login?redirect=${encodeURIComponent('/me/review/feedback')}`)
   if (!canReview(auth.user)) {
-    return <main className="page review-workbench"><section className="review-empty"><h1>权限不足</h1><p>该页面只开放给最高领袖、管理员、编辑和审核人员。</p></section></main>
+    return <main className="page review-workbench"><section className="review-empty"><h1>权限不足</h1><p>该页面只开放给最高领袖、管理员和编辑。</p></section></main>
   }
 
   const rawParams = await searchParams
