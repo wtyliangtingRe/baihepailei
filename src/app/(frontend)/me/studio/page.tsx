@@ -60,7 +60,7 @@ function filtersFrom(params: Record<string, string | string[] | undefined>): Stu
   return {
     q: first(params.q).trim().slice(0, 160),
     rank: rankOptions.includes(rank) ? rank : 'all',
-    status: statusOptions.includes(status) ? status : 'all',
+    status: statusOptions.includes(status) ? status : 'active',
     page: positiveInteger(first(params.page), 1),
     perPage: [20, 50, 100].includes(requestedPerPage) ? requestedPerPage : 50,
   }
@@ -71,7 +71,7 @@ function studioHref(filters: StudioFilters, overrides: Partial<StudioFilters> = 
   const params = new URLSearchParams()
   if (next.q) params.set('q', next.q)
   if (next.rank !== 'all') params.set('rank', next.rank)
-  if (next.status !== 'all') params.set('status', next.status)
+  if (next.status !== 'active') params.set('status', next.status)
   if (next.perPage !== 50) params.set('perPage', String(next.perPage))
   if (next.page > 1) params.set('page', String(next.page))
   const query = params.toString()
@@ -218,7 +218,7 @@ export default async function ContentStudioPage({ searchParams }: { searchParams
     return (
       <main className="page review-workbench studio-page">
         <section className="review-hero"><div className="review-hero-copy"><p className="eyebrow">资料库共建</p><h1>提交新作品申请</h1><p className="muted">普通用户填写的新作品仍是待审核申请，不会直接进入 Works。站务采纳并核验资料后，才会创建公开的临时作品。</p></div></section>
-        <section className="detail-card"><h2>发现资料库里没有的作品？</h2><p>申请会进入用户提交审核；采纳前不会公开，也不会覆盖现有条目。</p><Link className="review-button review-button-primary" href="/feedback?type=new_work">新建作品申请</Link></section>
+        <section className="detail-card"><h2>发现资料库里没有的作品？</h2><p>申请会进入用户提交审核；采纳前不会公开，也不会覆盖现有条目。</p><div className="review-row-actions"><Link className="review-button review-button-primary" href="/feedback?type=new_work">新建作品申请</Link><Link className="review-link" href="/me/submissions">查看我的提交</Link></div></section>
       </main>
     )
   }
@@ -253,7 +253,7 @@ export default async function ContentStudioPage({ searchParams }: { searchParams
   return (
     <main className="page review-workbench studio-page">
       <section className="review-hero">
-        <div className="review-hero-copy"><p className="eyebrow">站内内容管理</p><h1>编辑作品事实与阶段</h1><p className="muted">Works 不再使用面向工作人员的草稿状态。正式作品和临时作品都保持发布；只有回收站会隐藏。AI 评级字段由受控管线维护。</p><div className="review-safety-note">普通用户的新作品在反馈阶段仍是申请草稿；站务采纳后才进入 Works，并以公开的临时作品开始。隐藏作品是可恢复的软删除，不会永久删除记录。</div></div>
+        <div className="review-hero-copy"><p className="eyebrow">站内内容管理</p><h1>编辑作品事实与阶段</h1><p className="muted">Works 不再使用面向工作人员的草稿状态。正式作品和临时作品都保持发布；只有回收站会隐藏。AI 评级字段由受控管线维护。</p><div className="review-safety-note">默认只显示正式作品。需要处理新收录或隐藏记录时，再切换到临时作品、回收站或全部记录。</div></div>
         <div className="review-stat-grid"><div className="review-stat"><span>正式作品</span><strong>{formalCount.totalDocs.toLocaleString('zh-CN')}</strong></div><div className="review-stat"><span>临时作品</span><strong>{temporaryCount.totalDocs.toLocaleString('zh-CN')}</strong></div><div className="review-stat"><span>回收站</span><strong>{archivedCount.totalDocs.toLocaleString('zh-CN')}</strong></div></div>
       </section>
 
