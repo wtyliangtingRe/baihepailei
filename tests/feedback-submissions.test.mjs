@@ -6,6 +6,7 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), '
 const collection = read('src/collections/FeedbackSubmissions.ts')
 const form = read('src/app/(frontend)/_components/FeedbackForm.tsx')
 const prompt = read('src/app/(frontend)/_components/FeedbackPrompt.tsx')
+const proposal = read('src/lib/newWorkProposal.ts')
 const config = read('payload.config.ts')
 
 test('feedback collection is registered with a moderated workflow', () => {
@@ -25,6 +26,24 @@ test('human radar material keeps grade, rules, sources and spoiler state', () =>
   assert.match(form, /proposedGrade/u)
   assert.match(form, /matchedRuleCodes/u)
   assert.match(form, /提交给人工审核/u)
+})
+
+test('new work proposals keep catalog metadata but exclude member-authored AI assessment fields', () => {
+  assert.match(collection, /name: 'newWorkMetadata'/u)
+  assert.match(collection, /type: 'json'/u)
+  assert.match(collection, /sanitizeNewWorkProposalMetadata/u)
+  assert.match(collection, /next\.proposedGrade = null/u)
+  assert.match(collection, /next\.matchedRuleCodes = \[\]/u)
+  assert.match(form, /newWorkOriginalTitle/u)
+  assert.match(form, /newWorkAliases/u)
+  assert.match(form, /newWorkMediaGroup/u)
+  assert.match(form, /newWorkFirstPublishedAt/u)
+  assert.match(form, /newWorkSummary/u)
+  assert.match(form, /newWorkSearchText/u)
+  assert.match(form, /proposedGrade: isNewWork \? undefined/u)
+  assert.match(form, /matchedRuleCodes: isNewWork \? \[\]/u)
+  assert.match(proposal, /NewWorkProposalMetadata/u)
+  assert.match(proposal, /sanitizeNewWorkProposalMetadata/u)
 })
 
 test('detail feedback prompt routes into the internal form', () => {
