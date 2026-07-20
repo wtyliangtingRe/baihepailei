@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 
+import { canonicalContentUrl } from '../../_lib/content-identity'
+
 export const dynamic = 'force-dynamic'
 
 type Relation = string | number | { id?: string | number; title?: string }
@@ -161,7 +163,7 @@ export default async function AccountMessagesPage() {
       body: String(feedback.reviewNote || (needsMore ? '请根据站务说明补充可核验来源、版本或具体情节位置。' : '站务没有填写额外说明。')),
       meta: `反馈 #${feedback.id} · ${status.meta}`,
       date: String(feedback.reviewedAt || feedback.updatedAt || ''),
-      ...(workID ? { href: `/works/${encodeURIComponent(workID)}`, actionLabel: '查看关联作品' } : needsMore ? { href: feedback.feedbackType === 'new_work' ? '/feedback?type=new_work' : '/feedback', actionLabel: '补充并重新提交' } : {}),
+      ...(workID ? { href: canonicalContentUrl('works', workID), actionLabel: '查看关联作品' } : needsMore ? { href: feedback.feedbackType === 'new_work' ? '/feedback?type=new_work' : '/feedback', actionLabel: '补充并重新提交' } : {}),
     })
   }
 
