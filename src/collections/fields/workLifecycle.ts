@@ -23,5 +23,22 @@ export function withWorkLifecycleFields(collection: CollectionConfig): Collectio
   return {
     ...collection,
     fields: collection.fields.map(lifecycleField),
+    hooks: {
+      ...collection.hooks,
+      beforeValidate: [
+        ...(collection.hooks?.beforeValidate || []),
+        ({ context, data, originalDoc }) => {
+          if (!data) return data
+          const flags = (context || {}) as Record<string, unknown>
+          if (!flags.firstPartyStudio || flags.aiPipelineWrite) return data
+
+          const previous = (originalDoc || {}) as { radarAssessment?: unknown }
+          const next = { ...data } as Record<string, unknown>
+          if (previous.radarAssessment === undefined) delete next.radarAssessment
+          else next.radarAssessment = previous.radarAssessment
+          return next
+        },
+      ],
+    },
   }
 }
