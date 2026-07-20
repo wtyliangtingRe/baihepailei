@@ -178,7 +178,7 @@ export default function FeedbackForm({ initialCollection = 'works', initialTitle
         </label>
         <label>
           {isNewWork ? '显示标题' : '作品 / 页面名称'}
-          <input maxLength={200} onChange={(event) => setTargetTitle(event.target.value)} required value={targetTitle} />
+          <input maxLength={300} onChange={(event) => setTargetTitle(event.target.value)} required value={targetTitle} />
         </label>
         {!isNewWork ? (
           <label>
@@ -225,7 +225,7 @@ export default function FeedbackForm({ initialCollection = 'works', initialTitle
               <label>日期精度<select defaultValue="unknown" name="newWorkFirstPublishedPrecision">{newWorkDatePrecisionOptions.map((value) => <option key={value} value={value}>{newWorkOptionLabel(value)}</option>)}</select></label>
               <label>日期显示文本<input maxLength={120} name="newWorkFirstPublishedLabel" placeholder="例如：2019 年春、2024-06" /></label>
               <label className="feedback-field-wide">作品简介（面向读者）<textarea maxLength={12000} name="newWorkSummary" placeholder="介绍故事前提、主要角色、题材和基本设定；不要在这里下评级结论。" /></label>
-              <label className="feedback-field-wide">搜索补充文本与外部身份<input maxLength={30000} name="newWorkSearchText" placeholder="作者、制作方、平台、外部 ID、罗马字、关键词等，可用空格分隔。" /></label>
+              <label className="feedback-field-wide">搜索补充文本与外部身份<textarea maxLength={30000} name="newWorkSearchText" placeholder={'作者、制作方、平台、外部 ID、罗马字、关键词等。\n可以分行填写大量资料。'} /></label>
             </div>
           </section>
         </>
