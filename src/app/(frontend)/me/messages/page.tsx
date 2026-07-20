@@ -23,6 +23,7 @@ type CommentDoc = {
   authorName?: string
   body?: string
   parentComment?: Relation
+  replyToUser?: Relation
   targetCollection?: string
   targetSlug?: string
   targetTitle?: string
@@ -69,6 +70,12 @@ function publicCommentHref(comment: CommentDoc) {
   return `/${encodeURIComponent(collection)}/${encodeURIComponent(slug)}`
 }
 
+function uniqueComments(values: CommentDoc[]) {
+  const byID = new Map<string, CommentDoc>()
+  for (const value of values) byID.set(String(value.id), value)
+  return [...byID.values()]
+}
+
 export default async function AccountMessagesPage() {
   const payload = await getPayload({ config: configPromise })
   const auth = await payload.auth({ headers: await headers() })
@@ -77,7 +84,7 @@ export default async function AccountMessagesPage() {
   const userID = (auth.user as { id?: string | number }).id
   if (userID === undefined || userID === null) throw new Error('当前账户缺少有效用户 ID。')
 
-  const [feedbackResult, ownCommentResult] = await Promise.all([
+  const [feedbackResult, ownCommentResult, directReplyResult] = await Promise.all([
     payload.find({
       collection: 'feedback-submissions',
       depth: 1,
@@ -98,12 +105,29 @@ export default async function AccountMessagesPage() {
       sort: '-createdAt',
       where: { author: { equals: userID } },
     }),
+    payload.find({
+      collection: 'comments',
+      depth: 0,
+      limit: 200,
+      page: 1,
+      pagination: false,
+      overrideAccess: true,
+      sort: '-createdAt',
+      where: {
+        and: [
+          { replyToUser: { equals: userID } },
+          { author: { not_equals: userID } },
+          { moderationStatus: { in: ['approved', 'pending'] } },
+        ],
+      },
+    }),
   ])
 
   const feedbacks = feedbackResult.docs as unknown as FeedbackDoc[]
   const ownComments = ownCommentResult.docs as unknown as CommentDoc[]
+  const directReplies = directReplyResult.docs as unknown as CommentDoc[]
   const rootIDs = ownComments.filter((comment) => !relationID(comment.parentComment)).map((comment) => comment.id)
-  const replyResult = rootIDs.length
+  const legacyReplyResult = rootIDs.length
     ? await payload.find({
         collection: 'comments',
         depth: 0,
@@ -121,7 +145,8 @@ export default async function AccountMessagesPage() {
         },
       })
     : { docs: [] }
-  const replies = replyResult.docs as unknown as CommentDoc[]
+  const legacyReplies = legacyReplyResult.docs as unknown as CommentDoc[]
+  const replies = uniqueComments([...directReplies, ...legacyReplies])
 
   const messages: MessageItem[] = []
   for (const feedback of feedbacks) {
@@ -160,7 +185,7 @@ export default async function AccountMessagesPage() {
       <section className="account-card detail-card">
         <p className="eyebrow">账户 · 站务消息</p>
         <h1>消息与提醒</h1>
-        <p className="muted">这里汇总评论回复，以及站务对你提交的排雷材料、新作品建议和纠错作出的处理。消息直接从现有审核记录生成，不会影响正式作品数据。</p>
+        <p className="muted">这里汇总你的任意评论被回复，以及站务对排雷材料、新作品建议和纠错作出的处理。消息直接从现有审核与评论记录生成，不会影响正式作品数据。</p>
         <div className="account-actions"><Link href="/account">返回账户</Link><Link href="/feedback">提交人工排雷</Link><Link href="/feedback?type=new_work">提交新作品</Link></div>
       </section>
 
