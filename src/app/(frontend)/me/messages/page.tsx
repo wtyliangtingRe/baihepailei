@@ -163,7 +163,11 @@ export default async function AccountMessagesPage() {
       body: String(feedback.reviewNote || (needsMore ? '请根据站务说明补充可核验来源、版本或具体情节位置。' : '站务没有填写额外说明。')),
       meta: `反馈 #${feedback.id} · ${status.meta}`,
       date: String(feedback.reviewedAt || feedback.updatedAt || ''),
-      ...(workID ? { href: canonicalContentUrl('works', workID), actionLabel: '查看关联作品' } : needsMore ? { href: feedback.feedbackType === 'new_work' ? '/feedback?type=new_work' : '/feedback', actionLabel: '补充并重新提交' } : {}),
+      ...(workID
+        ? { href: canonicalContentUrl('works', workID), actionLabel: '查看关联作品' }
+        : needsMore
+          ? { href: `/me/submissions/${feedback.id}`, actionLabel: '编辑原提交并重新提交' }
+          : { href: '/me/submissions', actionLabel: '查看我的提交' }),
     })
   }
 
@@ -187,8 +191,8 @@ export default async function AccountMessagesPage() {
       <section className="account-card detail-card">
         <p className="eyebrow">账户 · 站务消息</p>
         <h1>消息与提醒</h1>
-        <p className="muted">这里汇总你的任意评论被回复，以及站务对排雷材料、新作品建议和纠错作出的处理。消息直接从现有审核与评论记录生成，不会影响正式作品数据。</p>
-        <div className="account-actions"><Link href="/account">返回账户</Link><Link href="/feedback">提交人工排雷</Link><Link href="/feedback?type=new_work">提交新作品</Link></div>
+        <p className="muted">这里汇总你的任意评论被回复，以及站务对排雷材料、新作品建议和纠错作出的处理。需要补充材料时会直接打开原提交。</p>
+        <div className="account-actions"><Link href="/account">返回账户</Link><Link href="/me/submissions">我的提交</Link><Link href="/feedback">提交人工排雷</Link><Link href="/feedback?type=new_work">提交新作品</Link></div>
       </section>
 
       <section className="review-list" aria-label="站务消息列表">
