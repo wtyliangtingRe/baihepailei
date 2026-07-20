@@ -6,11 +6,12 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), '
 const studio = read('src/app/(frontend)/me/studio/page.tsx')
 const editor = read('src/app/(frontend)/me/studio/works/[id]/page.tsx')
 const create = read('src/app/(frontend)/me/studio/works/new/page.tsx')
-const legacyEditor = read('src/app/(frontend)/me/review/content/works/[id]/page.tsx')
+const workReviewRoute = read('src/app/(frontend)/me/review/content/works/[id]/page.tsx')
+const reviewDetail = read('src/app/(frontend)/me/review/content/review-detail.tsx')
 const account = read('src/app/(frontend)/_components/AccountClient.tsx')
 const feedback = read('src/app/(frontend)/me/review/feedback/[id]/page.tsx')
+const feedbackActions = read('src/app/(frontend)/me/review/feedback/review-actions.ts')
 const feedbackForm = read('src/app/(frontend)/_components/FeedbackForm.tsx')
-const ruleSelector = read('src/app/(frontend)/_components/RadarRuleSelector.tsx')
 const pendingButton = read('src/app/(frontend)/me/studio/_components/PendingSubmitButton.tsx')
 const sync = read('src/lib/publicIndexSync.ts')
 const richText = read('src/lib/richTextPlain.ts')
@@ -66,7 +67,7 @@ test('staff creation produces a hidden pending draft and links feedback with num
   assert.match(create, /const createdID = numericID\(created\.id\)/u)
   assert.match(create, /linkedWork: createdID/u)
   assert.match(create, /reviewer: actorID/u)
-  assert.match(feedback, /检查重复并创建草稿/u)
+  assert.match(feedback, /采纳并生成草稿/u)
 })
 
 test('draft creation returns to its parent with a visible success state and double-submit protection', () => {
@@ -77,12 +78,12 @@ test('draft creation returns to its parent with a visible success state and doub
   assert.match(pendingButton, /disabled=\{pending\}/u)
   assert.match(studio, /const createdWork = first\(raw\.createdWork\)/u)
   assert.match(studio, /作品草稿 #\{createdWork\} 已创建/u)
-  assert.match(feedback, /已创建待复核作品草稿 #\{createdWork\}/u)
+  assert.match(feedback, /已采纳并创建待复核作品草稿/u)
   assert.match(feedbackForm, /router\.back\(\)/u)
   assert.match(feedbackForm, /返回上一级/u)
 })
 
-test('member new-work metadata is reviewed and prefilled into the staff draft', () => {
+test('member new-work metadata is reviewed and transferred into the accepted draft', () => {
   assert.match(feedbackForm, /newWorkOriginalTitle/u)
   assert.match(feedbackForm, /newWorkAliases/u)
   assert.match(feedbackForm, /newWorkMediaGroup/u)
@@ -90,44 +91,35 @@ test('member new-work metadata is reviewed and prefilled into the staff draft', 
   assert.match(feedbackForm, /newWorkSummary/u)
   assert.match(feedbackForm, /newWorkSearchText/u)
   assert.match(feedback, /用户提交的新作品建档资料/u)
-  assert.match(create, /sanitizeNewWorkProposalMetadata\(feedback\?\.newWorkMetadata\)/u)
-  assert.match(create, /defaultValue=\{proposal\.originalTitle \|\| ''\}/u)
-  assert.match(create, /defaultValue=\{\(proposal\.aliases \|\| \[\]\)\.join\('\\n'\)\}/u)
-  assert.match(create, /defaultValue=\{proposal\.summary \|\| ''\}/u)
-  assert.match(create, /defaultValue=\{proposal\.searchText \|\| ''\}/u)
-  assert.match(create, /feedback\?\.feedbackType === 'new_work' \? \[\]/u)
+  assert.match(feedbackActions, /newWorkProposalToWorkTransfer/u)
+  assert.match(feedbackActions, /\.\.\.transfer\.workData/u)
+  assert.match(feedbackActions, /plainTextToRichText\(transfer\.summaryText\)/u)
+  assert.match(feedbackActions, /linkedWork: createdID/u)
   assert.match(feedbackForm, /proposedGrade: isNewWork \? undefined/u)
   assert.match(feedbackForm, /matchedRuleCodes: isNewWork \? \[\]/u)
 })
 
-test('staff draft creation retains controlled main and all-matched rule controls', () => {
-  assert.match(ruleSelector, /主规则（决定性规则）/u)
-  assert.match(ruleSelector, /<details/u)
-  assert.match(ruleSelector, /全部命中规则/u)
-  assert.match(ruleSelector, /name=\{decisiveName\}/u)
-  assert.match(ruleSelector, /name=\{matchedName\}/u)
-  assert.match(ruleSelector, /if \(checked && !decisive\) setDecisive\(code\)/u)
-  assert.match(create, /RADAR_RATING_POLICY_ID/u)
-  assert.match(create, /decisiveRuleCode/u)
-  assert.match(create, /matchedRules: orderedRuleCodes/u)
-  assert.match(create, /suggestedGrade: suggestedRuleGrade/u)
-  assert.match(create, /主规则（单选）与全部命中规则（多选）/u)
+test('manual creation leaves the AI track empty for the next unassessed pipeline', () => {
+  assert.match(create, /rank: 'unknown'/u)
+  assert.match(create, /ratingNotice: 'none'/u)
+  assert.match(create, /AI Radar 等待区/u)
+  assert.match(create, /radar:local-update --scope unassessed/u)
+  assert.doesNotMatch(create, /RadarRuleSelector/u)
+  assert.doesNotMatch(create, /RADAR_RATING_POLICY_ID/u)
+  assert.doesNotMatch(create, /radarAssessment:/u)
+  assert.doesNotMatch(create, /suggestedGrade|decisiveRuleCode|matchedRules/u)
 })
 
-test('soft delete archives and hides without deleting the record', () => {
-  assert.match(studio, /catalogStatus: 'archived'/u)
-  assert.match(studio, /_status: 'draft'/u)
-  assert.match(studio, /isLiteVisible: false/u)
-  assert.match(studio, /isFullVisible: false/u)
-  assert.match(studio, /恢复为待复核草稿/u)
-  assert.match(studio, /First-party studio soft hide failed/u)
-  assert.doesNotMatch(studio, /payload\.delete/u)
-  assert.doesNotMatch(studio, /DELETE FROM/u)
-})
-
-test('legacy review editor links redirect into the studio', () => {
-  assert.match(legacyEditor, /\/me\/studio\/works\//u)
-  assert.doesNotMatch(legacyEditor, /payload\.update/u)
+test('content review routes open dedicated review pages instead of redirecting to Studio', () => {
+  assert.match(workReviewRoute, /ContentReviewDetail/u)
+  assert.match(workReviewRoute, /collection: 'works'/u)
+  assert.doesNotMatch(workReviewRoute, /\/me\/studio\/works\//u)
+  assert.match(reviewDetail, /这是独立审核页，不是正式内容编辑器/u)
+  assert.match(reviewDetail, /展开站内前台预览/u)
+  assert.match(reviewDetail, /只保存审核记录/u)
+  assert.match(reviewDetail, /通过并移入已处理/u)
+  assert.match(reviewDetail, /驳回并标记争议/u)
+  assert.doesNotMatch(reviewDetail, /站内完整编辑/u)
 })
 
 test('work introduction and rating source summary are editable but remain separate fields', () => {
@@ -145,6 +137,17 @@ test('work introduction and rating source summary are editable but remain separa
   assert.match(richText, /plainTextToRichText/u)
   assert.match(richText, /typeof value === 'string'/u)
   assert.match(richText, /plainText\?: unknown/u)
+})
+
+test('soft delete archives and hides without deleting the record', () => {
+  assert.match(studio, /catalogStatus: 'archived'/u)
+  assert.match(studio, /_status: 'draft'/u)
+  assert.match(studio, /isLiteVisible: false/u)
+  assert.match(studio, /isFullVisible: false/u)
+  assert.match(studio, /恢复为待复核草稿/u)
+  assert.match(studio, /First-party studio soft hide failed/u)
+  assert.doesNotMatch(studio, /payload\.delete/u)
+  assert.doesNotMatch(studio, /DELETE FROM/u)
 })
 
 test('studio edits synchronize public indexes and remove hidden records', () => {
@@ -168,7 +171,7 @@ test('studio edits synchronize public indexes and remove hidden records', () => 
 })
 
 test('studio remains Payload-only and never writes PostgreSQL directly', () => {
-  for (const source of [studio, editor, create, sync]) {
+  for (const source of [studio, editor, create, sync, feedbackActions]) {
     assert.doesNotMatch(source, /pg_query|psql|ALTER TABLE|UPDATE works SET|DELETE FROM works/iu)
   }
 })
