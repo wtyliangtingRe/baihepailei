@@ -49,7 +49,7 @@ test('work pages show confidence before the risk matrix with careful wording', (
   assert.ok(detail.indexOf('<WorkAssessmentTrustCard') < detail.indexOf('<BasicInfo'))
   assert.ok(detail.indexOf('<WorkAssessmentTrustCard') < detail.indexOf('<WorkRiskMatrixCard'))
   assert.ok(fallback.indexOf('<WorkAssessmentTrustCard') < fallback.indexOf('<BasicInfo'))
-  assert.match(card, /排雷结论/u)
+  assert.match(card, /人工审核参考/u)
   assert.match(card, /页面提示/u)
   assert.match(card, /可追溯来源/u)
   assert.match(card, /决定性规则/u)
@@ -63,6 +63,17 @@ test('work pages show confidence before the risk matrix with careful wording', (
   assert.match(layout, /work-assessment-trust\.css/u)
 })
 
+test('manual placeholders require a controlled assessedAt before appearing as AI conclusions', () => {
+  const card = source('src/app/(frontend)/_components/WorkAssessmentTrustCard.tsx')
+
+  assert.match(card, /controlledRadarAssessment/u)
+  assert.match(card, /assessmentItem\.radarAssessment\?\.assessedAt/u)
+  assert.match(card, /legacyManualAIPlaceholder/u)
+  assert.match(card, /不再把它展示成 AI 结论/u)
+  assert.match(card, /等待 AI Radar 管线/u)
+  assert.match(card, /下一次未评估作品管线/u)
+})
+
 test('presentation helper handles evidence and review states explicitly', () => {
   const presentation = source('src/lib/radar/assessmentPresentation.ts')
 
@@ -73,4 +84,3 @@ test('presentation helper handles evidence and review states explicitly', () => 
   assert.match(presentation, /manual_reviewed: '人工已确认'/u)
   assert.match(presentation, /Math\.min\(100, Math\.max\(0/u)
 })
-
