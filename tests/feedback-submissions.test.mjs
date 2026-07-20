@@ -6,8 +6,11 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), '
 const collection = read('src/collections/FeedbackSubmissions.ts')
 const form = read('src/app/(frontend)/_components/FeedbackForm.tsx')
 const prompt = read('src/app/(frontend)/_components/FeedbackPrompt.tsx')
+const submissions = read('src/app/(frontend)/me/submissions/page.tsx')
+const submissionEditor = read('src/app/(frontend)/me/submissions/[id]/page.tsx')
 const proposal = read('src/lib/newWorkProposal.ts')
 const migration = read('scripts/migrations/20260720-add-feedback-new-work-metadata.sql')
+const versionEnumMigration = read('scripts/migrations/20260721-add-temporary-to-work-version-enum.sql')
 const config = read('payload.config.ts')
 
 test('feedback collection is registered with a moderated workflow', () => {
@@ -47,12 +50,16 @@ test('new work proposals keep catalog metadata but exclude member-authored AI as
   assert.match(proposal, /sanitizeNewWorkProposalMetadata/u)
 })
 
-test('directly accepted new-work drafts receive every factual proposal field', () => {
+test('accepted new-work submissions keep every factual field in a public temporary work', () => {
   assert.match(collection, /linkedWorkID !== previousLinkedWorkID/u)
-  assert.match(collection, /directIntakeDraft/u)
+  assert.match(collection, /directIntakeWork/u)
   assert.match(collection, /newWorkProposalToWorkTransfer/u)
   assert.match(collection, /feedbackMetadataTransfer: true/u)
   assert.match(collection, /plainTextToRichText\(transfer\.summaryText\)/u)
+  assert.match(collection, /_status: 'published'/u)
+  assert.match(collection, /catalogStatus: 'temporary'/u)
+  assert.match(collection, /isLiteVisible: true/u)
+  assert.match(collection, /isFullVisible: true/u)
   assert.match(proposal, /originalTitle/u)
   assert.match(proposal, /aliases: \(metadata\.aliases \|\| \[\]\)\.map/u)
   assert.match(proposal, /localizedTitles/u)
@@ -70,6 +77,14 @@ test('structured proposal storage is an additive nullable JSONB migration', () =
   assert.match(migration, /BEGIN;/u)
   assert.match(migration, /COMMIT;/u)
   assert.doesNotMatch(migration, /DROP TABLE|DROP COLUMN|DELETE FROM|UPDATE /iu)
+})
+
+test('temporary lifecycle value is added to the separate Works version enum', () => {
+  assert.match(versionEnumMigration, /_works_v/u)
+  assert.match(versionEnumMigration, /version_catalog_status/u)
+  assert.match(versionEnumMigration, /ALTER TYPE %I ADD VALUE IF NOT EXISTS %L/u)
+  assert.match(versionEnumMigration, /temporary/u)
+  assert.doesNotMatch(versionEnumMigration, /DROP TABLE|DROP COLUMN|DELETE FROM|UPDATE /iu)
 })
 
 test('detail feedback prompt routes into the internal form', () => {
@@ -91,8 +106,22 @@ test('proposal transfer never writes member-authored ratings or AI conclusions',
   assert.doesNotMatch(collection, /workData\.radarAssessment|workData\.humanAssessment|workData\.suggestedGrade/u)
 })
 
-test('members can only revise their own still-open submissions', () => {
+test('members edit the same open submission with every original field prefilled', () => {
   assert.match(collection, /ownEditableSubmissionOrStaff/u)
   assert.match(collection, /in: \['pending', 'needs_information'\]/u)
+  assert.match(collection, /previousStatus === 'needs_information' \? 'pending' : previousStatus/u)
+  assert.match(collection, /feedbackType: originalDoc\?\.feedbackType/u)
+  assert.match(collection, /linkedWork: originalDoc\?\.linkedWork/u)
   assert.match(collection, /update: ownEditableSubmissionOrStaff/u)
+  assert.match(submissions, /提交记录与补充材料/u)
+  assert.match(submissions, /补充材料并重新提交/u)
+  assert.match(submissionEditor, /FeedbackForm/u)
+  assert.match(submissionEditor, /newWorkMetadata: submission\.newWorkMetadata/u)
+  assert.match(submissionEditor, /reviewNote: submission\.reviewNote/u)
+  assert.match(form, /method: isEditing \? 'PATCH' : 'POST'/u)
+  assert.match(form, /initialMetadata\.originalTitle/u)
+  assert.match(form, /initialMetadata\.aliases/u)
+  assert.match(form, /initialMetadata\.summary/u)
+  assert.match(form, /sourceLinksToLines/u)
+  assert.match(form, /保存修改并重新提交/u)
 })
