@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 
-import { getRole, isAdmin, isEditor } from '@/access/roles'
+import { isAdmin, isEditor } from '@/access/roles'
 
 import { canonicalContentUrl } from '../../../../../_lib/content-identity'
 import { plainTextToRichText, richTextToPlainText } from '@/lib/richTextPlain'
