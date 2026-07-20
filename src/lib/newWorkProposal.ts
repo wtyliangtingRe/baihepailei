@@ -101,11 +101,11 @@ export function hasNewWorkProposalMetadata(value: unknown) {
   return Boolean(
     metadata.originalTitle ||
     metadata.aliases?.length ||
-    metadata.mediaGroup !== 'unknown' ||
-    metadata.mediaType !== 'unknown' ||
-    metadata.format !== 'unknown' ||
+    (metadata.mediaGroup && metadata.mediaGroup !== 'unknown') ||
+    (metadata.mediaType && metadata.mediaType !== 'unknown') ||
+    (metadata.format && metadata.format !== 'unknown') ||
     metadata.firstPublishedAt ||
-    metadata.firstPublishedPrecision !== 'unknown' ||
+    (metadata.firstPublishedPrecision && metadata.firstPublishedPrecision !== 'unknown') ||
     metadata.firstPublishedLabel ||
     metadata.summary ||
     metadata.searchText
