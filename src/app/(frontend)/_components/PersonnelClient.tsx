@@ -174,7 +174,12 @@ export default function PersonnelClient() {
 
   async function suspendUser(target: PersonnelUser) {
     const reason = (reasons[target.id] || '').trim()
-    if (!reason || !window.confirm(`确定封停 ${target.email || target.id} 吗？其现有登录会话会立即失效。`)) return
+    if (!reason) {
+      setMessage(`请先为 ${target.email || target.id} 填写封停原因。`)
+      setMessageIsError(true)
+      return
+    }
+    if (!window.confirm(`确定封停 ${target.email || target.id} 吗？其现有登录会话会立即失效。`)) return
     await updateUser(
       target,
       { accountStatus: 'suspended', suspensionReason: reason },
@@ -242,8 +247,8 @@ export default function PersonnelClient() {
                 </div>
               ) : (
                 <div className="personnel-suspension">
-                  <label>封停原因<textarea disabled={!statusManageable || busy} maxLength={500} onChange={(event) => setReasons((current) => ({ ...current, [target.id]: event.target.value }))} placeholder="请记录可供内部追溯的原因" value={reasons[target.id] || ''} /></label>
-                  <button className="personnel-danger" disabled={!statusManageable || busy || !(reasons[target.id] || '').trim()} onClick={() => suspendUser(target)} type="button">封停账号</button>
+                  <label>封停原因<textarea disabled={!statusManageable || busy} maxLength={500} onChange={(event) => setReasons((current) => ({ ...current, [target.id]: event.target.value }))} placeholder="请记录可供内部追溯的原因" required value={reasons[target.id] || ''} /><small>必须先填写原因；封停后会立即清除该账户现有登录会话。</small></label>
+                  <button className="personnel-danger" disabled={!statusManageable || busy} onClick={() => suspendUser(target)} type="button">封停账号</button>
                 </div>
               )}
               {!roleManageable && !statusManageable ? <small className="muted">当前身份不能修改此账户；自己的账户也不能在这里封停或改职。</small> : null}
