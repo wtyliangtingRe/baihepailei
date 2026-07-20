@@ -17,6 +17,7 @@ const sync = read('src/lib/publicIndexSync.ts')
 const richText = read('src/lib/richTextPlain.ts')
 const guards = read('src/app/(frontend)/_lib/public-entity-guards.ts')
 const config = read('payload.config.ts')
+const lifecycle = read('src/collections/fields/workLifecycle.ts')
 const fullExport = read('scripts/export/build-full-public-index.mjs')
 
 function functionBody(source, name, nextName) {
@@ -131,7 +132,9 @@ test('work introduction remains editable while AI fields are pipeline-owned', ()
   assert.match(create, /plainTextToRichText\(summary\)/u)
   assert.match(richText, /richTextToPlainText/u)
   assert.match(richText, /plainTextToRichText/u)
-  assert.match(config, /flags\.firstPartyStudio/u)
+  assert.match(lifecycle, /flags\.firstPartyStudio/u)
+  assert.match(lifecycle, /flags\.aiPipelineWrite/u)
+  assert.match(lifecycle, /next\.radarAssessment = previous\.radarAssessment/u)
   assert.match(config, /radar\.assessedAt/u)
 })
 
