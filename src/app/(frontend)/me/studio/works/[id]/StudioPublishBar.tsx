@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 import styles from './StudioPublishBar.module.css'
@@ -25,12 +26,15 @@ function setCheckbox(form: HTMLFormElement, name: string, checked: boolean) {
 }
 
 export default function StudioPublishBar() {
+  const pathname = usePathname()
   const [available, setAvailable] = useState(false)
   const [busy, setBusy] = useState<PublishAction | null>(null)
 
   useEffect(() => {
-    setAvailable(Boolean(editorForm()))
-  }, [])
+    setBusy(null)
+    const frame = window.requestAnimationFrame(() => setAvailable(Boolean(editorForm())))
+    return () => window.cancelAnimationFrame(frame)
+  }, [pathname])
 
   if (!available) return null
 
