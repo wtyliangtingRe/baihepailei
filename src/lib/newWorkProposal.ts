@@ -97,11 +97,13 @@ function cleanAliases(value: unknown) {
   return [...new Set(source.map((item) => cleanText(item, 300)).filter(Boolean))].slice(0, 50)
 }
 
+function searchLines(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(searchLines)
+  return String(value || '').split(/\r?\n/u).map((line) => line.trim()).filter(Boolean)
+}
+
 function uniqueSearchLines(values: unknown[]) {
-  const lines = values.flatMap((value) => String(value || '').split(/\r?\n/u))
-    .map((line) => line.trim())
-    .filter(Boolean)
-  return [...new Set(lines)].join('\n').slice(0, 30000)
+  return [...new Set(values.flatMap(searchLines))].join('\n').slice(0, 30000)
 }
 
 export function sanitizeNewWorkProposalMetadata(value: unknown): NewWorkProposalMetadata {
