@@ -115,13 +115,19 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   if (Object.keys(data).length === 0) return responseError('没有可更新的人员字段。', 400)
 
   try {
+    // This route has already authenticated the actor, enforced the personnel
+    // hierarchy and reduced the payload to a strict field whitelist. Use an
+    // internal update so the Users hook can also clear Payload's auth sessions
+    // when suspending an account; field-level REST checks must not block those
+    // server-managed authentication fields.
     const updated = await payload.update({
       collection: 'users',
       id,
       depth: 0,
       data: data as any,
-      overrideAccess: false,
+      overrideAccess: true,
       user: authUser,
+      context: { personnelManagement: true, auditActorID: actor.id },
     })
     return NextResponse.json({ doc: updated })
   } catch (caught) {
