@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
-const page = read('src/app/(frontend)/me/review/public-catalog/page.tsx')
+const evidencePage = read('src/app/(frontend)/me/review/public-catalog/page.tsx')
 const contentPage = read('src/app/(frontend)/me/review/content/page.tsx')
 const contentActions = read('src/app/(frontend)/me/review/content/review-actions.ts')
 const contentDetail = read('src/app/(frontend)/me/review/content/review-detail.tsx')
@@ -14,7 +14,7 @@ const reviewUtils = read('src/app/(frontend)/me/review/content/review-utils.ts')
 const mergedWork = read('src/lib/mergedWork.ts')
 const feedbackPage = read('src/app/(frontend)/me/review/feedback/page.tsx')
 const feedbackActions = read('src/app/(frontend)/me/review/feedback/review-actions.ts')
-const feedbackDetailPage = read('src/app/(frontend)/me/review/feedback/[id]/page.tsx')
+const feedbackDetail = read('src/app/(frontend)/me/review/feedback/[id]/page.tsx')
 const decisions = read('src/app/(frontend)/me/review/_components/ReviewDecisionButtons.tsx')
 const works = read('src/collections/Works.ts')
 const creators = read('src/collections/Creators.ts')
@@ -23,38 +23,30 @@ const reviewFields = read('src/collections/fields/contentReview.ts')
 const css = read('src/app/(frontend)/review-workbench.css')
 const editorCss = read('src/app/(frontend)/review-editor.css')
 
-function functionBody(source, name, nextName) {
-  const start = source.indexOf(`async function ${name}`)
-  const end = source.indexOf(`async function ${nextName}`, start + 1)
-  assert.notEqual(start, -1, `missing function ${name}`)
-  return source.slice(start, end === -1 ? source.length : end)
-}
-
 test('review workbench is paginated and queries the database', () => {
-  assert.match(page, /limit: filters\.perPage/u)
-  assert.match(page, /page: filters\.page/u)
-  assert.match(page, /buildWhere\(filters\)/u)
-  assert.doesNotMatch(page, /limit: 2000/u)
+  assert.match(evidencePage, /limit: filters\.perPage/u)
+  assert.match(evidencePage, /page: filters\.page/u)
+  assert.match(evidencePage, /buildWhere\(filters\)/u)
+  assert.doesNotMatch(evidencePage, /limit: 2000/u)
   assert.match(css, /\.review-row-facts/u)
 })
 
-test('single-entry evidence review actions leave publication and grade untouched', () => {
-  assert.match(page, /updateReviewAction/u)
-  assert.match(page, /humanReviewedAt/u)
-  assert.match(page, /humanReviewedBy/u)
-  assert.match(page, /decision === 'reviewed'/u)
-  assert.doesNotMatch(page, /data\.rank\s*=/u)
-  assert.doesNotMatch(page, /data\.status\s*=/u)
+test('single-entry evidence review leaves publication and grade untouched', () => {
+  assert.match(evidencePage, /updateReviewAction/u)
+  assert.match(evidencePage, /humanReviewedAt/u)
+  assert.match(evidencePage, /humanReviewedBy/u)
+  assert.match(evidencePage, /decision === 'reviewed'/u)
+  assert.doesNotMatch(evidencePage, /data\.rank\s*=|data\.status\s*=/u)
   assert.match(works, /name: 'humanReviewNote'/u)
 })
 
-test('research queues remain clearly separate from formal ratings', () => {
-  assert.match(page, /radar-research-records/u)
-  assert.match(page, /研究建议，不等于正式评级/u)
-  assert.match(page, /不会把 25,048 条研究建议写进正式评级/u)
+test('research queues remain separate from formal ratings', () => {
+  assert.match(evidencePage, /radar-research-records/u)
+  assert.match(evidencePage, /研究建议，不等于正式评级/u)
+  assert.match(evidencePage, /不会把 25,048 条研究建议写进正式评级/u)
 })
 
-test('content queue covers works, creators and organizations but only starts dedicated reviews', () => {
+test('content queue only starts dedicated reviews', () => {
   assert.match(contentPage, /type ContentCollection/u)
   assert.match(contentPage, /beginContentReviewAction/u)
   assert.match(contentPage, /队列只负责进入审查/u)
@@ -63,7 +55,7 @@ test('content queue covers works, creators and organizations but only starts ded
   assert.match(contentPage, /limit: filters\.perPage/u)
   assert.match(contentPage, /尚无 AI 建议/u)
   assert.doesNotMatch(contentPage, /name="rank"|name="note"|value="approve"|value="reject"/u)
-  assert.doesNotMatch(contentPage, /站内完整编辑/u)
+  assert.doesNotMatch(contentPage, /\/me\/studio\/works\//u)
   assert.match(creators, /contentReviewFields/u)
   assert.match(organizations, /contentReviewFields/u)
   assert.match(reviewFields, /name: 'reviewOrigin'/u)
@@ -82,7 +74,7 @@ test('content review defaults to pending and keeps processed history separate', 
   assert.match(editorCss, /\.review-queue-tabs/u)
 })
 
-test('dedicated content review pages contain preview and guarded bottom decisions', () => {
+test('dedicated content review pages contain preview and guarded decisions', () => {
   assert.match(workReviewRoute, /ContentReviewDetail/u)
   assert.match(genericReviewRoute, /ContentReviewDetail/u)
   assert.match(contentDetail, /这是独立审核页，不是正式内容编辑器/u)
@@ -98,7 +90,7 @@ test('dedicated content review pages contain preview and guarded bottom decision
   assert.match(decisions, /window\.confirm/u)
 })
 
-test('content decisions preserve publication and keep AI separate from human review', () => {
+test('content decisions preserve publication and keep AI separate', () => {
   assert.match(contentActions, /saveContentReviewAction/u)
   assert.match(contentActions, /intent === 'approve'/u)
   assert.match(contentActions, /intent === 'reject'/u)
@@ -108,18 +100,20 @@ test('content decisions preserve publication and keep AI separate from human rev
   assert.doesNotMatch(contentActions, /data\.radarAssessment/u)
 })
 
-test('merged duplicate works require explicit markers and redirect review to the canonical record', () => {
+test('merged duplicate works redirect review to the canonical record', () => {
   assert.match(reviewUtils, /from '@\/lib\/mergedWork'/u)
   assert.match(mergedWork, /mergedIntoWorkId/u)
   assert.match(mergedWork, /mergedIntoWorkTitle/u)
-  assert.match(mergedWork, /doc\.reviewStatus === 'deprecated' \|\| doc\.status === 'archived'/u)
+  assert.match(mergedWork, /const retired = doc\.reviewStatus === 'deprecated'/u)
+  assert.match(mergedWork, /doc\.catalogStatus === 'archived'/u)
+  assert.match(mergedWork, /doc\.status === 'archived'/u)
   assert.match(mergedWork, /duplicate of work/u)
   assert.match(contentActions, /isMergedDuplicateWork\(current\)/u)
   assert.match(contentActions, /reviewError: 'merged_duplicate'/u)
   assert.match(contentDetail, /旧条目已经合并/u)
 })
 
-test('the full Studio remains available for routine content editing but is not linked from reviews', () => {
+test('Studio remains available but is not linked from review queues', () => {
   assert.match(studioWorkEditor, /站内内容管理 · 作品编辑/u)
   assert.match(studioWorkEditor, /aliasesFromText/u)
   assert.match(studioWorkEditor, /sourceLinksFromText/u)
@@ -130,28 +124,28 @@ test('the full Studio remains available for routine content editing but is not l
   assert.doesNotMatch(studioWorkEditor, /riskMatrix/u)
   assert.match(editorCss, /\.review-editor-section/u)
   assert.match(editorCss, /\.review-editor-submit/u)
-  assert.doesNotMatch(contentPage, /站内完整编辑/u)
-  assert.doesNotMatch(feedbackPage, /站内编辑关联作品/u)
+  assert.doesNotMatch(contentPage, /\/me\/studio\/works\//u)
+  assert.doesNotMatch(feedbackPage, /\/me\/studio\/works\//u)
 })
 
-test('user feedback queue starts reviews while all decisions live on the detail page', () => {
+test('feedback queue starts reviews while decisions live on the detail page', () => {
   assert.match(feedbackPage, /collection: 'feedback-submissions'/u)
   assert.match(feedbackPage, /beginFeedbackReviewAction/u)
   assert.match(feedbackPage, /开始核查/u)
   assert.match(feedbackPage, /继续核查/u)
   assert.doesNotMatch(feedbackPage, /value="accepted"|value="rejected"|value="needs_information"|accept_create_draft/u)
-  assert.match(feedbackDetailPage, /用户反馈 · 独立核查页/u)
-  assert.match(feedbackDetailPage, /ReviewDecisionButtons/u)
-  assert.match(feedbackDetailPage, /只保存审核说明/u)
-  assert.match(feedbackDetailPage, /要求补充材料/u)
-  assert.match(feedbackDetailPage, /采纳并生成草稿/u)
-  assert.match(feedbackDetailPage, /驳回/u)
-  assert.match(feedbackDetailPage, /归档/u)
-  assert.match(feedbackDetailPage, /关联作品预览/u)
-  assert.doesNotMatch(feedbackDetailPage, /编辑关联作品|现在编辑关联作品/u)
+  assert.match(feedbackDetail, /用户反馈 · 独立核查页/u)
+  assert.match(feedbackDetail, /ReviewDecisionButtons/u)
+  assert.match(feedbackDetail, /只保存审核说明/u)
+  assert.match(feedbackDetail, /要求补充材料/u)
+  assert.match(feedbackDetail, /采纳并生成草稿/u)
+  assert.match(feedbackDetail, /驳回/u)
+  assert.match(feedbackDetail, /归档/u)
+  assert.match(feedbackDetail, /关联作品预览/u)
+  assert.doesNotMatch(feedbackDetail, /编辑关联作品|现在编辑关联作品/u)
 })
 
-test('feedback decisions create factual drafts without AI conclusions and notify the account timeline', () => {
+test('feedback decisions create factual drafts and notify the account timeline', () => {
   assert.match(feedbackActions, /newWorkProposalToWorkTransfer/u)
   assert.match(feedbackActions, /feedbackIntake: true/u)
   assert.match(feedbackActions, /rank: 'unknown'/u)
@@ -162,7 +156,7 @@ test('feedback decisions create factual drafts without AI conclusions and notify
   assert.match(feedbackActions, /workflowStatus: 'triaging'/u)
 })
 
-test('feedback forms default to active work and move completed decisions into history', () => {
+test('feedback forms keep active and processed queues separate', () => {
   assert.match(feedbackPage, /type FeedbackQueue = 'active' \| 'processed' \| 'all'/u)
   assert.match(feedbackPage, /workflowStatus: \{ in: activeStatuses \}/u)
   assert.match(feedbackPage, /workflowStatus: \{ in: processedStatuses \}/u)
