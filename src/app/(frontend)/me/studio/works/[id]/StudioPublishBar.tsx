@@ -38,13 +38,17 @@ function setCheckbox(form: HTMLFormElement, name: string, checked: boolean) {
   field.dispatchEvent(new Event('change', { bubbles: true }))
 }
 
-function hideTechnicalLifecycleFields(form: HTMLFormElement, hidden: boolean) {
-  for (const name of ['_status', 'catalogStatus', 'isLiteVisible', 'isFullVisible']) {
+function hideManagedFields(form: HTMLFormElement, hidden: boolean) {
+  for (const name of ['_status', 'catalogStatus', 'isLiteVisible', 'isFullVisible', 'sourceSummary']) {
     const field = form.elements.namedItem(name)
     if (!(field instanceof HTMLElement)) continue
     const wrapper = field.closest<HTMLElement>('label')
     if (wrapper) wrapper.hidden = hidden
   }
+
+  const radarField = form.querySelector<HTMLElement>('[name="decisiveRuleCode"], [name="matchedRuleCodes"]')
+  const radarSection = radarField?.closest<HTMLElement>('.review-editor-section')
+  if (radarSection) radarSection.hidden = hidden
 }
 
 function workID(pathname: string) {
@@ -66,7 +70,7 @@ export default function StudioPublishBar() {
       const old = supersededElements(nextTarget)
       if (old.button) old.button.hidden = true
       if (old.note) old.note.hidden = true
-      if (form) hideTechnicalLifecycleFields(form, true)
+      if (form) hideManagedFields(form, true)
       setTarget(nextTarget)
     })
 
@@ -85,7 +89,7 @@ export default function StudioPublishBar() {
       if (old.button) old.button.hidden = false
       if (old.note) old.note.hidden = false
       const form = editorForm()
-      if (form) hideTechnicalLifecycleFields(form, false)
+      if (form) hideManagedFields(form, false)
       setTarget(null)
     }
   }, [id, pathname])
@@ -141,7 +145,7 @@ export default function StudioPublishBar() {
     <div className={styles.bar} aria-label="作品保存与阶段操作">
       <div className={styles.copy}>
         <strong>保存作品</strong>
-        <span>当前阶段：{stage === 'temporary' ? '临时作品' : '正式作品'}。所有非归档作品都会保持发布并进入前台。</span>
+        <span>当前阶段：{stage === 'temporary' ? '临时作品' : '正式作品'}。所有非归档作品都会保持发布；AI 评级字段只由受控管线维护。</span>
       </div>
       <div className={styles.actions}>
         <button className={styles.draft} disabled={Boolean(busy)} onClick={() => void submit('temporary')} type="button">
