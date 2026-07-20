@@ -5,10 +5,11 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getPayload, type Where } from 'payload'
 
+import { isEditor } from '@/access/roles'
+
 export const dynamic = 'force-dynamic'
 
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
-type Role = 'owner' | 'admin' | 'editor'
 
 type CandidateSource = {
   source?: string
@@ -58,7 +59,6 @@ type Filters = {
 
 type LabeledOption = { value: string; label: string }
 
-const allowedRoles: Role[] = ['owner', 'admin', 'editor']
 const ranks = ['X', 'F', 'E', 'D', 'C', 'B', 'A', 'AA', 'unknown']
 const mediaOptions: LabeledOption[] = [
   { value: 'anime', label: '动画' },
@@ -153,14 +153,8 @@ function parseFilters(params: Record<string, string | string[] | undefined>): Fi
   }
 }
 
-function roleOf(user: unknown): Role | undefined {
-  if (!user || typeof user !== 'object') return undefined
-  return (user as { role?: Role }).role
-}
-
 function canReview(user: unknown) {
-  const role = roleOf(user)
-  return Boolean(role && allowedRoles.includes(role))
+  return isEditor(user)
 }
 
 function reviewReasons(value: WorkDoc['reviewReasons']) {
@@ -340,7 +334,7 @@ export default async function ReviewWorkbenchPage({ searchParams }: { searchPara
   if (!canReview(auth.user)) {
     return (
       <main className="page review-workbench">
-        <section className="review-empty"><p className="eyebrow">条目审核</p><h1>权限不足</h1><p>该页面只开放给最高领袖、管理员、编辑和审核人员。</p></section>
+        <section className="review-empty"><p className="eyebrow">条目审核</p><h1>权限不足</h1><p>该页面只开放给最高领袖、管理员和编辑。</p></section>
       </main>
     )
   }
