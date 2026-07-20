@@ -151,7 +151,7 @@ export default function PersonnelClient() {
     setMessage('')
     setMessageIsError(false)
     try {
-      const response = await fetch(`/api/users/${encodeURIComponent(target.id)}`, {
+      const response = await fetch(`/api/personnel/users/${encodeURIComponent(target.id)}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
