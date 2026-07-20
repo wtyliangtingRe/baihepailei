@@ -82,7 +82,7 @@ test('frontend exposes an account entry instead of a public admin entry', () => 
   assert.match(locked, /此账户已被封停/u)
 })
 
-test('personnel writes use a same-origin route and preserve Payload access checks', () => {
+test('personnel writes use a same-origin route with an explicit field and hierarchy boundary', () => {
   assert.match(personnel, /\/api\/personnel\/users\//u)
   assert.doesNotMatch(personnel, /method: 'PATCH'[\s\S]{0,220}\/api\/users\//u)
   assert.match(personnelRoute, /isSameOrigin\(request\)/u)
@@ -90,11 +90,13 @@ test('personnel writes use a same-origin route and preserve Payload access check
   assert.match(personnelRoute, /actorRole !== 'owner' && actorRole !== 'admin'/u)
   assert.match(personnelRoute, /ownerAssignableRoles/u)
   assert.match(personnelRoute, /adminAssignableRoles/u)
-  assert.match(personnelRoute, /overrideAccess: false/u)
+  assert.match(personnelRoute, /Object\.keys\(data\)\.length === 0/u)
+  assert.match(personnelRoute, /overrideAccess: true/u)
+  assert.match(personnelRoute, /personnelManagement: true/u)
   assert.match(personnelRoute, /user: authUser/u)
 })
 
-test('account suspension is audited, revokes sessions and respects hierarchy', () => {
+test('account suspension is audited, revokes sessions and gives a visible reason requirement', () => {
   assert.match(users, /new APIError\('此账户已被封停。'/u)
   assert.match(users, /sessions: newlySuspended \? \[\]/u)
   assert.match(users, /suspendedAt:/u)
@@ -103,6 +105,9 @@ test('account suspension is audited, revokes sessions and respects hierarchy', (
   assert.match(users, /actorRole === 'admin'/u)
   assert.match(users, /original\.role === 'admin'/u)
   assert.match(users, /editingSelf \? \{\} : \{ displayName: original\.displayName, password: undefined \}/u)
+  assert.match(personnel, /请先为 \$\{target\.email \|\| target\.id\} 填写封停原因/u)
+  assert.match(personnel, /封停后会立即清除该账户现有登录会话/u)
+  assert.doesNotMatch(personnel, /disabled=\{!statusManageable \|\| busy \|\| !\(reasons\[target\.id\]/u)
   assert.match(personnel, /assignableByOwner/u)
   assert.match(personnel, /assignableByAdmin/u)
   assert.match(personnel, /target\.role !== 'admin'/u)
