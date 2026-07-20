@@ -7,6 +7,7 @@ const collection = read('src/collections/FeedbackSubmissions.ts')
 const form = read('src/app/(frontend)/_components/FeedbackForm.tsx')
 const prompt = read('src/app/(frontend)/_components/FeedbackPrompt.tsx')
 const proposal = read('src/lib/newWorkProposal.ts')
+const migration = read('scripts/migrations/20260720-add-feedback-new-work-metadata.sql')
 const config = read('payload.config.ts')
 
 test('feedback collection is registered with a moderated workflow', () => {
@@ -44,6 +45,13 @@ test('new work proposals keep catalog metadata but exclude member-authored AI as
   assert.match(form, /matchedRuleCodes: isNewWork \? \[\]/u)
   assert.match(proposal, /NewWorkProposalMetadata/u)
   assert.match(proposal, /sanitizeNewWorkProposalMetadata/u)
+})
+
+test('structured proposal storage is an additive nullable JSONB migration', () => {
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS "new_work_metadata" jsonb/u)
+  assert.match(migration, /BEGIN;/u)
+  assert.match(migration, /COMMIT;/u)
+  assert.doesNotMatch(migration, /DROP TABLE|DROP COLUMN|DELETE FROM|UPDATE /iu)
 })
 
 test('detail feedback prompt routes into the internal form', () => {
