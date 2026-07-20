@@ -36,6 +36,8 @@ test('public registration is forced to member and staff admin access is separate
 
 test('role hierarchy grants internal capability only to owner, admin and editor', () => {
   assert.match(roles, /'owner' \| 'admin' \| 'editor'/u)
+  assert.match(roles, /isConfiguredOwner/u)
+  assert.match(roles, /SITE_OWNER_EMAIL/u)
   assert.match(roles, /role === 'owner'/u)
   assert.doesNotMatch(roles, /role === 'reviewer'|role === 'trusted'/u)
 })
@@ -50,6 +52,7 @@ test('auth flow supports verification, login, logout and email password reset', 
   assert.match(session, /maxAge: authConfig\.tokenExpiration/u)
   assert.match(session, /path: '\/'/u)
   assert.match(session, /payload\.auth/u)
+  assert.match(session, /getRole\(user\)/u)
   assert.match(session, /account_suspended/u)
   assert.match(auth, /\/account\/locked/u)
   assert.match(auth, /\/api\/account\/session/u)
