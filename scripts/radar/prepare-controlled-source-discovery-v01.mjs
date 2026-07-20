@@ -119,12 +119,18 @@ function assertUnderDataLocal(target) {
   }
 }
 
+function isSnapshotFile(file) {
+  const name = path.basename(file)
+  return /\.jsonl?$/iu.test(name)
+    && !/\.compact\.jsonl$/iu.test(name)
+    && !/(?:^|[-_.])summary(?:[-_.]|$)/iu.test(name)
+}
+
 function collectInputFiles(input) {
   if (!fs.existsSync(input)) throw new Error(`Source input not found: ${input}`)
   const stat = fs.statSync(input)
   if (stat.isFile()) {
-    if (!/\.jsonl?$/iu.test(input)) throw new Error(`Unsupported source snapshot file: ${input}`)
-    if (/\.compact\.jsonl$/iu.test(input)) throw new Error(`Compact report files are not valid full source snapshots: ${input}`)
+    if (!isSnapshotFile(input)) throw new Error(`Unsupported source snapshot file: ${input}`)
     return [input]
   }
   if (!stat.isDirectory()) throw new Error(`Source input is not a file or directory: ${input}`)
@@ -132,7 +138,7 @@ function collectInputFiles(input) {
   for (const entry of fs.readdirSync(input, { withFileTypes: true })) {
     const full = path.join(input, entry.name)
     if (entry.isDirectory()) files.push(...collectInputFiles(full))
-    else if (/\.jsonl?$/iu.test(entry.name) && !/\.compact\.jsonl$/iu.test(entry.name)) files.push(full)
+    else if (isSnapshotFile(full)) files.push(full)
   }
   return files.sort((a, b) => a.localeCompare(b, 'en', { numeric: true }))
 }
@@ -468,7 +474,7 @@ function main() {
   const runDir = val(args['out-dir']) || path.join(DEFAULT_ROOT, runId)
   assertUnderDataLocal(runDir)
   if (fs.existsSync(runDir)) throw new Error(`Refusing to reuse existing run directory: ${runDir}`)
-  fs.mkdirSync(runDir, { recursive: false })
+  fs.mkdirSync(runDir, { recursive: true })
 
   const inputManifest = []
   const candidates = []
