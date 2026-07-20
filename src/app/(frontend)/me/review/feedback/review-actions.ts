@@ -29,6 +29,9 @@ type FeedbackDoc = {
   linkedWork?: string | number | { id?: string | number }
 }
 
+type PayloadClient = Awaited<ReturnType<typeof getPayload>>
+type SyncableWork = Parameters<typeof syncWorkToPublicIndexes>[0]
+
 function numericID(value: unknown) {
   const number = Number(value)
   return Number.isSafeInteger(number) && number > 0 ? number : null
@@ -76,6 +79,85 @@ function newWorkCandidateWhere(title: string, originalTitle: string): Where {
     )
   }
   return { or }
+}
+
+function existingIntakeWhere(feedbackID: number): Where {
+  return {
+    or: [
+      { importBatch: { equals: `feedback-intake:${feedbackID}` } },
+      { siteId: { like: `feedback:${feedbackID}:` } },
+    ],
+  }
+}
+
+function scheduleAcceptedWorkIndexSync(work: unknown, feedbackID: number, workID: number) {
+  after(() => {
+    try {
+      syncWorkToPublicIndexes(work as SyncableWork)
+    } catch (error) {
+      console.error('Accepted temporary work saved but deferred public index sync failed', {
+        feedbackID,
+        workID,
+        error,
+      })
+    }
+  })
+}
+
+async function finalizeAcceptedNewWork({
+  payload,
+  actorID,
+  feedbackID,
+  returnTo,
+  work,
+  note,
+  recovered,
+}: {
+  payload: PayloadClient
+  actorID: number
+  feedbackID: number
+  returnTo: string
+  work: unknown
+  note: string
+  recovered: boolean
+}): Promise<never> {
+  const workID = numericID((work as { id?: unknown }).id)
+  if (!workID) throw new Error('临时作品缺少有效作品 ID，未继续关联反馈。')
+
+  await payload.update({
+    collection: 'feedback-submissions',
+    id: feedbackID,
+    depth: 0,
+    overrideAccess: true,
+    context: {
+      reviewWorkbench: true,
+      skipFeedbackMetadataTransfer: true,
+      auditActorID: actorID,
+    },
+    data: {
+      workflowStatus: 'accepted',
+      linkedWork: workID,
+      reviewer: actorID,
+      reviewedAt: new Date().toISOString(),
+      reviewNote: note || (recovered
+        ? `已恢复上次中断的采纳流程，并关联已经创建的公开临时作品 #${workID}；没有创建重复作品。`
+        : `已采纳并创建公开的临时作品 #${workID}；AI 轨道等待后续管线，人工轨道尚未复核。`),
+    },
+  })
+
+  scheduleAcceptedWorkIndexSync(work, feedbackID, workID)
+  revalidatePath('/me/review/feedback')
+  revalidatePath('/me/messages')
+  revalidatePath('/me/submissions')
+  revalidatePath('/me/studio')
+  revalidatePath('/works')
+  revalidatePath(canonicalContentUrl('works', workID))
+  revalidatePath(`/me/studio/works/${workID}`)
+  redirect(detailHref(feedbackID, returnTo, {
+    createdWork: workID,
+    reviewed: 'accepted',
+    recovered: recovered ? 'true' : undefined,
+  }))
 }
 
 async function reviewerContext() {
@@ -140,6 +222,45 @@ export async function reviewFeedbackDetailAction(formData: FormData) {
   const existingWorkID = relationID(feedback.linkedWork)
 
   if (intent === 'accepted' && feedback.feedbackType === 'new_work' && !existingWorkID) {
+    const existingIntake = await payload.find({
+      collection: 'works',
+      depth: 0,
+      limit: 3,
+      page: 1,
+      pagination: false,
+      overrideAccess: true,
+      where: existingIntakeWhere(feedbackID),
+    })
+
+    if (existingIntake.docs.length === 1) {
+      await finalizeAcceptedNewWork({
+        payload,
+        actorID,
+        feedbackID,
+        returnTo,
+        work: existingIntake.docs[0],
+        note,
+        recovered: true,
+      })
+    }
+
+    if (existingIntake.docs.length > 1) {
+      await payload.update({
+        collection: 'feedback-submissions',
+        id: feedbackID,
+        depth: 0,
+        overrideAccess: true,
+        context: { reviewWorkbench: true, auditActorID: actorID },
+        data: {
+          workflowStatus: 'triaging',
+          reviewer: actorID,
+          reviewedAt: new Date().toISOString(),
+          reviewNote: note || `发现 ${existingIntake.docs.length} 个使用同一反馈批次标记的临时作品；已停止自动关联，请先人工处理重复记录。`,
+        },
+      })
+      redirect(detailHref(feedbackID, returnTo, { reviewError: 'duplicate_candidates' }))
+    }
+
     const title = String(feedback.targetTitle || '').trim()
     if (!title) redirect(detailHref(feedbackID, returnTo, { reviewError: 'invalid_action' }))
     const transfer = newWorkProposalToWorkTransfer(feedback.newWorkMetadata, {
@@ -210,47 +331,16 @@ export async function reviewFeedbackDetailAction(formData: FormData) {
         importBatch: `feedback-intake:${feedbackID}`,
       },
     })
-    const createdID = numericID(created.id)
-    if (!createdID) throw new Error('临时作品创建后未取得有效作品 ID。')
 
-    await payload.update({
-      collection: 'feedback-submissions',
-      id: feedbackID,
-      depth: 0,
-      overrideAccess: true,
-      context: {
-        reviewWorkbench: true,
-        skipFeedbackMetadataTransfer: true,
-        auditActorID: actorID,
-      },
-      data: {
-        workflowStatus: 'accepted',
-        linkedWork: createdID,
-        reviewer: actorID,
-        reviewedAt: new Date().toISOString(),
-        reviewNote: note || `已采纳并创建公开的临时作品 #${createdID}；AI 轨道等待后续管线，人工轨道尚未复核。`,
-      },
+    await finalizeAcceptedNewWork({
+      payload,
+      actorID,
+      feedbackID,
+      returnTo,
+      work: created,
+      note,
+      recovered: false,
     })
-
-    after(() => {
-      try {
-        syncWorkToPublicIndexes(created as Parameters<typeof syncWorkToPublicIndexes>[0])
-      } catch (error) {
-        console.error('Accepted temporary work saved but deferred public index sync failed', {
-          feedbackID,
-          workID: createdID,
-          error,
-        })
-      }
-    })
-
-    revalidatePath('/me/review/feedback')
-    revalidatePath('/me/messages')
-    revalidatePath('/me/studio')
-    revalidatePath('/works')
-    revalidatePath(canonicalContentUrl('works', createdID))
-    revalidatePath(`/me/studio/works/${createdID}`)
-    redirect(detailHref(feedbackID, returnTo, { createdWork: createdID, reviewed: 'accepted' }))
   }
 
   const nextStatus = intent === 'save'
