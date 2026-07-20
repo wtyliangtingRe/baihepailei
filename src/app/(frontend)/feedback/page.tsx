@@ -50,11 +50,12 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
         <div>
           <p className="eyebrow">{isNewWork ? '新作品申请' : '反馈与纠错'}</p>
           <h1>{isNewWork ? '向资料库提议一个新作品' : '把新的人工排雷材料交给网站'}</h1>
-          <p>{isNewWork ? '你可以提交一条简短线索，也可以像编辑建档一样尽量完整地填写作品资料。所有内容先进入审核队列；评级、AI Radar、审核状态和发布状态由站内流程决定。' : '用户提交只会进入待审核队列，不会直接覆盖正式评级。编辑核验来源后才能采纳。'}</p>
+          <p>{isNewWork ? '你可以提交一条简短线索，也可以像编辑建档一样尽量完整地填写作品资料。申请会保存在“我的提交”中；站务开始核查前可以修改，要求补充材料时也会继续编辑原记录。' : '用户提交只会进入待审核队列，不会直接覆盖正式评级。编辑核验来源后才能采纳。'}</p>
         </div>
         <div className="collection-actions">
           <Link className="back-link" href="/browse">返回资料库</Link>
           <Link className="back-link" href="/account">我的账户</Link>
+          <Link className="back-link" href="/me/submissions">我的提交</Link>
           {isNewWork ? <Link className="back-link" href="/feedback">改为提交排雷材料</Link> : <Link className="back-link" href="/feedback?type=new_work">提交新作品</Link>}
         </div>
       </section>
