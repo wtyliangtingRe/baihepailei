@@ -21,6 +21,31 @@ export type NewWorkProposalMetadata = {
   searchText?: string
 }
 
+export type NewWorkProposalTransfer = {
+  metadata: NewWorkProposalMetadata
+  summaryText: string
+  workData: {
+    originalTitle: string
+    aliases: Array<{ value: string }>
+    localizedTitles: Array<{
+      title: string
+      language: 'unknown'
+      kind: 'original' | 'alias'
+      region: string
+      isPrimary: boolean
+      source: string
+      note: string
+    }>
+    mediaGroup: NewWorkMediaGroup
+    mediaType: NewWorkMediaType
+    format: NewWorkFormat
+    firstPublishedAt: string | null
+    firstPublishedPrecision: NewWorkDatePrecision
+    firstPublishedLabel: string
+    searchText: string
+  }
+}
+
 const mediaGroups = new Set<string>(newWorkMediaGroupOptions)
 const mediaTypes = new Set<string>(newWorkMediaTypeOptions)
 const formats = new Set<string>(newWorkFormatOptions)
@@ -72,6 +97,13 @@ function cleanAliases(value: unknown) {
   return [...new Set(source.map((item) => cleanText(item, 300)).filter(Boolean))].slice(0, 50)
 }
 
+function uniqueSearchLines(values: unknown[]) {
+  const lines = values.flatMap((value) => String(value || '').split(/\r?\n/u))
+    .map((line) => line.trim())
+    .filter(Boolean)
+  return [...new Set(lines)].join('\n').slice(0, 30000)
+}
+
 export function sanitizeNewWorkProposalMetadata(value: unknown): NewWorkProposalMetadata {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
   const input = value as Record<string, unknown>
@@ -93,6 +125,67 @@ export function sanitizeNewWorkProposalMetadata(value: unknown): NewWorkProposal
     ...(firstPublishedLabel ? { firstPublishedLabel } : {}),
     ...(summary ? { summary } : {}),
     ...(searchText ? { searchText } : {}),
+  }
+}
+
+export function newWorkProposalToWorkTransfer(value: unknown, options: {
+  feedbackID: string | number
+  targetTitle?: unknown
+  claim?: unknown
+  evidenceSummary?: unknown
+}): NewWorkProposalTransfer {
+  const metadata = sanitizeNewWorkProposalMetadata(value)
+  const originalTitle = metadata.originalTitle || ''
+  const aliases = (metadata.aliases || []).filter((alias) => alias !== originalTitle)
+  const source = `feedback:${String(options.feedbackID)}`
+  const note = '由用户新作品申请自动预填；语言、地区与标题类型仍需工作人员核对。'
+  const localizedTitles: NewWorkProposalTransfer['workData']['localizedTitles'] = []
+
+  if (originalTitle) {
+    localizedTitles.push({
+      title: originalTitle,
+      language: 'unknown',
+      kind: 'original',
+      region: '',
+      isPrimary: true,
+      source,
+      note,
+    })
+  }
+  for (const alias of aliases) {
+    localizedTitles.push({
+      title: alias,
+      language: 'unknown',
+      kind: 'alias',
+      region: '',
+      isPrimary: false,
+      source,
+      note,
+    })
+  }
+
+  return {
+    metadata,
+    summaryText: metadata.summary || '',
+    workData: {
+      originalTitle,
+      aliases: (metadata.aliases || []).map((alias) => ({ value: alias })),
+      localizedTitles,
+      mediaGroup: metadata.mediaGroup || 'unknown',
+      mediaType: metadata.mediaType || 'unknown',
+      format: metadata.format || 'unknown',
+      firstPublishedAt: metadata.firstPublishedAt || null,
+      firstPublishedPrecision: metadata.firstPublishedPrecision || 'unknown',
+      firstPublishedLabel: metadata.firstPublishedLabel || '',
+      searchText: uniqueSearchLines([
+        options.targetTitle,
+        originalTitle,
+        metadata.aliases || [],
+        metadata.searchText,
+        options.claim,
+        options.evidenceSummary,
+      ]),
+    },
   }
 }
 
