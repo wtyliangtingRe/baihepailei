@@ -7,7 +7,7 @@ const studio = read('src/app/(frontend)/me/studio/page.tsx')
 const editor = read('src/app/(frontend)/me/studio/works/[id]/page.tsx')
 const create = read('src/app/(frontend)/me/studio/works/new/page.tsx')
 const workReviewRoute = read('src/app/(frontend)/me/review/content/works/[id]/page.tsx')
-const reviewDetail = read('src/app/(frontend)/me/review/content/review-detail.tsx')
+const aiReviewDetail = read('src/app/(frontend)/me/review/content/ai-work-review-detail.tsx')
 const account = read('src/app/(frontend)/_components/AccountClient.tsx')
 const feedback = read('src/app/(frontend)/me/review/feedback/[id]/page.tsx')
 const feedbackActions = read('src/app/(frontend)/me/review/feedback/review-actions.ts')
@@ -30,60 +30,62 @@ test('content studio is database-backed and separate from review queues', () => 
   assert.match(studio, /collection: 'works'/u)
   assert.match(studio, /draft: false/u)
   assert.match(studio, /搜索数据库/u)
-  assert.match(studio, /AI \/ 内容审核台/u)
-  assert.match(studio, /用户反馈审核/u)
+  assert.match(studio, /AI 评级人工复核/u)
+  assert.match(studio, /用户提交审核/u)
 })
 
-test('studio does not send business archive values through Payload version rows', () => {
-  assert.match(studio, /catalogStatus/u)
-  assert.match(studio, /archiveSchemaReady/u)
-  assert.match(studio, /回收站目录状态尚未完成数据库迁移/u)
+test('Studio distinguishes formal, temporary and archived works', () => {
+  assert.match(studio, /type StudioStatus = 'active' \| 'temporary' \| 'archived' \| 'all'/u)
+  assert.match(studio, /正式作品/u)
+  assert.match(studio, /临时作品/u)
+  assert.match(studio, /回收站/u)
+  assert.match(studio, /catalogStatus: 'temporary'/u)
+  assert.match(studio, /恢复为临时作品/u)
+  assert.doesNotMatch(studio, /恢复为待复核草稿/u)
 
   const pageQuery = functionBody(studio, 'findStudioPage', 'countByStatus')
-  const statusCount = functionBody(studio, 'countByStatus', 'ContentStudioPage')
   assert.match(pageQuery, /draft: false/u)
-  assert.match(statusCount, /draft: false/u)
   assert.doesNotMatch(pageQuery, /draft: true/u)
-  assert.doesNotMatch(statusCount, /draft: true/u)
 })
 
-test('members can only submit new-work proposals while staff can edit', () => {
+test('members submit proposals while staff can edit live works', () => {
   assert.match(studio, /import \{ isEditor \} from '@\/access\/roles'/u)
   assert.match(studio, /if \(!canEdit\(auth\.user\)\)/u)
   assert.doesNotMatch(studio, /roleOf|staffRoles/u)
-  assert.match(studio, /普通用户不会直接修改正式资料库/u)
+  assert.match(studio, /普通用户填写的新作品仍是待审核申请/u)
   assert.match(studio, /\/feedback\?type=new_work/u)
   assert.match(account, /href="\/me\/studio"/u)
   assert.match(editor, /没有作品编辑权限/u)
 })
 
-test('staff creation produces a hidden pending draft and links feedback with numeric IDs', () => {
-  assert.match(create, /_status: 'draft'/u)
-  assert.match(create, /catalogStatus: 'active'/u)
+test('staff creation produces a published temporary work and links feedback with numeric IDs', () => {
+  assert.match(create, /_status: 'published'/u)
+  assert.match(create, /catalogStatus: 'temporary'/u)
   assert.match(create, /reviewStatus: 'pending'/u)
-  assert.match(create, /isLiteVisible: false/u)
-  assert.match(create, /isFullVisible: false/u)
+  assert.match(create, /isLiteVisible: true/u)
+  assert.match(create, /isFullVisible: true/u)
   assert.match(create, /const actorID = numericID/u)
   assert.match(create, /const createdID = numericID\(created\.id\)/u)
   assert.match(create, /linkedWork: createdID/u)
   assert.match(create, /reviewer: actorID/u)
-  assert.match(feedback, /采纳并生成草稿/u)
+  assert.match(feedbackActions, /catalogStatus: 'temporary'/u)
+  assert.match(feedbackActions, /_status: 'published'/u)
 })
 
-test('draft creation returns to its parent with a visible success state and double-submit protection', () => {
+test('temporary work creation returns to its parent with visible success and double-submit protection', () => {
   assert.match(create, /withCreatedWork\(returnTo, createdID\)/u)
   assert.match(create, /name="returnTo"/u)
   assert.match(create, /PendingSubmitButton/u)
   assert.match(pendingButton, /useFormStatus/u)
   assert.match(pendingButton, /disabled=\{pending\}/u)
   assert.match(studio, /const createdWork = first\(raw\.createdWork\)/u)
-  assert.match(studio, /作品草稿 #\{createdWork\} 已创建/u)
-  assert.match(feedback, /已采纳并创建待复核作品草稿/u)
+  assert.match(studio, /临时作品 #\{createdWork\} 已创建并公开/u)
+  assert.match(create, /创建并公开临时作品/u)
   assert.match(feedbackForm, /router\.back\(\)/u)
   assert.match(feedbackForm, /返回上一级/u)
 })
 
-test('member new-work metadata is reviewed and transferred into the accepted draft', () => {
+test('member new-work metadata is transferred into the accepted temporary work', () => {
   assert.match(feedbackForm, /newWorkOriginalTitle/u)
   assert.match(feedbackForm, /newWorkAliases/u)
   assert.match(feedbackForm, /newWorkMediaGroup/u)
@@ -99,7 +101,7 @@ test('member new-work metadata is reviewed and transferred into the accepted dra
   assert.match(feedbackForm, /matchedRuleCodes: isNewWork \? \[\]/u)
 })
 
-test('manual creation leaves the AI track empty for the next unassessed pipeline', () => {
+test('manual creation leaves AI empty for the next unassessed pipeline', () => {
   assert.match(create, /rank: 'unknown'/u)
   assert.match(create, /ratingNotice: 'none'/u)
   assert.match(create, /AI Radar 等待区/u)
@@ -110,47 +112,44 @@ test('manual creation leaves the AI track empty for the next unassessed pipeline
   assert.doesNotMatch(create, /suggestedGrade|decisiveRuleCode|matchedRules/u)
 })
 
-test('content review routes open dedicated review pages instead of redirecting to Studio', () => {
-  assert.match(workReviewRoute, /ContentReviewDetail/u)
-  assert.match(workReviewRoute, /collection: 'works'/u)
+test('work review route opens the AI-rated human review page', () => {
+  assert.match(workReviewRoute, /AIWorkReviewDetail/u)
   assert.doesNotMatch(workReviewRoute, /\/me\/studio\/works\//u)
-  assert.match(reviewDetail, /这是独立审核页，不是正式内容编辑器/u)
-  assert.match(reviewDetail, /展开站内前台预览/u)
-  assert.match(reviewDetail, /只保存审核记录/u)
-  assert.match(reviewDetail, /通过并移入已处理/u)
-  assert.match(reviewDetail, /驳回并标记争议/u)
-  assert.doesNotMatch(reviewDetail, /站内完整编辑/u)
+  assert.match(aiReviewDetail, /AI 评级人工复核/u)
+  assert.match(aiReviewDetail, /已有受控 AI 评级、尚无人工评级/u)
+  assert.match(aiReviewDetail, /展开作品前台实时预览/u)
+  assert.match(aiReviewDetail, /只保存人工复核记录/u)
+  assert.match(aiReviewDetail, /确认人工评级并通过/u)
+  assert.match(aiReviewDetail, /驳回 AI 建议并标记争议/u)
 })
 
-test('work introduction and rating source summary are editable but remain separate fields', () => {
+test('work introduction remains editable while AI fields are pipeline-owned', () => {
   assert.match(editor, /name="summary"/u)
-  assert.match(editor, /name="sourceSummary"/u)
   assert.match(editor, /作品简介（面向读者）/u)
-  assert.match(editor, /来源摘要（AI \/ 规则评级依据）/u)
   assert.match(editor, /data\.summary = plainTextToRichText/u)
-  assert.match(editor, /data\.radarAssessment/u)
-  assert.match(editor, /sourceSummary,/u)
   assert.match(create, /name="summary"/u)
   assert.match(create, /plainTextToRichText\(summary\)/u)
-  assert.match(create, /作品简介（面向读者）/u)
   assert.match(richText, /richTextToPlainText/u)
   assert.match(richText, /plainTextToRichText/u)
-  assert.match(richText, /typeof value === 'string'/u)
-  assert.match(richText, /plainText\?: unknown/u)
+  assert.match(config, /flags\.firstPartyStudio/u)
+  assert.match(config, /radar\.assessedAt/u)
 })
 
-test('soft delete archives and hides without deleting the record', () => {
+test('soft hide archives a work and restore returns it as a published temporary work', () => {
   assert.match(studio, /catalogStatus: 'archived'/u)
   assert.match(studio, /_status: 'draft'/u)
   assert.match(studio, /isLiteVisible: false/u)
   assert.match(studio, /isFullVisible: false/u)
-  assert.match(studio, /恢复为待复核草稿/u)
+  assert.match(studio, /catalogStatus: 'temporary'/u)
+  assert.match(studio, /_status: 'published'/u)
+  assert.match(studio, /isLiteVisible: true/u)
+  assert.match(studio, /isFullVisible: true/u)
   assert.match(studio, /First-party studio soft hide failed/u)
   assert.doesNotMatch(studio, /payload\.delete/u)
   assert.doesNotMatch(studio, /DELETE FROM/u)
 })
 
-test('studio edits synchronize public indexes and remove hidden records', () => {
+test('studio edits synchronize public indexes and remove only hidden records', () => {
   assert.match(editor, /syncWorkToPublicIndexes/u)
   assert.match(config, /context\?\.firstPartyStudio/u)
   assert.match(sync, /search-index\.json/u)
@@ -161,9 +160,8 @@ test('studio edits synchronize public indexes and remove hidden records', () => 
   assert.match(sync, /detailSections/u)
   assert.match(sync, /radarAssessment: work\.radarAssessment/u)
   assert.match(sync, /richTextToPlainText\(work\.summary\)/u)
-  assert.match(sync, /work\.radarAssessment\?\.sourceSummary/u)
   assert.match(sync, /shouldRemoveFromPublicIndexes/u)
-  assert.match(sync, /work\.isLiteVisible === false && work\.isFullVisible === false/u)
+  assert.match(sync, /work\.catalogStatus === 'archived'/u)
   assert.match(sync, /index\.items\.splice\(position, 1\)/u)
   assert.match(guards, /item\.catalogStatus === 'archived'/u)
   assert.match(fullExport, /build-and-enrich-lite-search-index\.mjs/u)
