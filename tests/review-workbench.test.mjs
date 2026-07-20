@@ -130,7 +130,7 @@ test('feedback queue starts reviews while decisions live on the detail page', ()
   assert.match(feedbackDetail, /关联作品预览/u)
 })
 
-test('accepted new-work feedback creates a public temporary work without blocking on duplicate index writes', () => {
+test('accepted new-work feedback creates or recovers one public temporary work without blocking', () => {
   assert.match(feedbackActions, /newWorkProposalToWorkTransfer/u)
   assert.match(feedbackActions, /feedbackIntake: true/u)
   assert.match(feedbackActions, /rank: 'unknown'/u)
@@ -140,6 +140,11 @@ test('accepted new-work feedback creates a public temporary work without blockin
   assert.match(feedbackActions, /isLiteVisible: true/u)
   assert.match(feedbackActions, /isFullVisible: true/u)
   assert.doesNotMatch(feedbackActions, /radarAssessment:/u)
+  assert.match(feedbackActions, /existingIntakeWhere\(feedbackID\)/u)
+  assert.match(feedbackActions, /importBatch: \{ equals: `feedback-intake:\$\{feedbackID\}` \}/u)
+  assert.match(feedbackActions, /existingIntake\.docs\.length === 1/u)
+  assert.match(feedbackActions, /recovered: true/u)
+  assert.match(feedbackActions, /没有创建重复作品/u)
   assert.match(feedbackActions, /skipFeedbackMetadataTransfer: true/u)
   assert.match(feedbackCollection, /skipMetadataTransfer/u)
   assert.match(feedbackActions, /after\(\(\) =>/u)
