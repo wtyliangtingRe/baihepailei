@@ -2,9 +2,34 @@ import type { Access } from 'payload'
 
 export type Role = 'owner' | 'admin' | 'editor' | 'member'
 
+type RoleUser = {
+  email?: unknown
+  role?: unknown
+}
+
+function normalizedEmail(value: unknown) {
+  return String(value || '').trim().toLowerCase()
+}
+
+/**
+ * The configured deployment owner is always treated as owner at every
+ * authorization boundary. beforeLogin in Users.ts persists the same value,
+ * but access checks must not depend on a stale JWT or a one-time migration.
+ */
+function isConfiguredOwner(user: RoleUser) {
+  const configured = normalizedEmail(process.env['SITE_OWNER_EMAIL'])
+  return Boolean(configured && normalizedEmail(user.email) === configured)
+}
+
 export const getRole = (user: unknown): Role | undefined => {
   if (!user || typeof user !== 'object') return undefined
-  return (user as { role?: Role }).role
+  const candidate = user as RoleUser
+  if (isConfiguredOwner(candidate)) return 'owner'
+
+  const role = String(candidate.role || '').trim()
+  return role === 'owner' || role === 'admin' || role === 'editor' || role === 'member'
+    ? role
+    : undefined
 }
 
 export const isOwner = (user: unknown) => getRole(user) === 'owner'
