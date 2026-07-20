@@ -47,6 +47,24 @@ test('new work proposals keep catalog metadata but exclude member-authored AI as
   assert.match(proposal, /sanitizeNewWorkProposalMetadata/u)
 })
 
+test('directly accepted new-work drafts receive every factual proposal field', () => {
+  assert.match(collection, /linkedWorkID !== previousLinkedWorkID/u)
+  assert.match(collection, /directIntakeDraft/u)
+  assert.match(collection, /newWorkProposalToWorkTransfer/u)
+  assert.match(collection, /feedbackMetadataTransfer: true/u)
+  assert.match(collection, /plainTextToRichText\(transfer\.summaryText\)/u)
+  assert.match(proposal, /originalTitle/u)
+  assert.match(proposal, /aliases: \(metadata\.aliases \|\| \[\]\)\.map/u)
+  assert.match(proposal, /localizedTitles/u)
+  assert.match(proposal, /mediaGroup: metadata\.mediaGroup \|\| 'unknown'/u)
+  assert.match(proposal, /mediaType: metadata\.mediaType \|\| 'unknown'/u)
+  assert.match(proposal, /format: metadata\.format \|\| 'unknown'/u)
+  assert.match(proposal, /firstPublishedAt: metadata\.firstPublishedAt \|\| null/u)
+  assert.match(proposal, /firstPublishedPrecision: metadata\.firstPublishedPrecision \|\| 'unknown'/u)
+  assert.match(proposal, /firstPublishedLabel: metadata\.firstPublishedLabel \|\| ''/u)
+  assert.doesNotMatch(proposal, /radarAssessment|humanAssessment/u)
+})
+
 test('structured proposal storage is an additive nullable JSONB migration', () => {
   assert.match(migration, /ADD COLUMN IF NOT EXISTS "new_work_metadata" jsonb/u)
   assert.match(migration, /BEGIN;/u)
@@ -67,9 +85,10 @@ test('detail feedback prompt routes into the internal form', () => {
   assert.doesNotMatch(prompt, /github\.com\/wtyliangtingRe\/baihepailei\/issues\/new/u)
 })
 
-test('accepted submissions never auto-write work ratings', () => {
-  assert.doesNotMatch(collection, /collection: 'works'/u)
-  assert.doesNotMatch(collection, /req\.payload\.update/u)
+test('proposal transfer never writes member-authored ratings or AI conclusions', () => {
+  assert.match(collection, /collection: 'works'/u)
+  assert.match(collection, /req\.payload\.update/u)
+  assert.doesNotMatch(collection, /workData\.radarAssessment|workData\.humanAssessment|workData\.suggestedGrade/u)
 })
 
 test('members can only revise their own still-open submissions', () => {
