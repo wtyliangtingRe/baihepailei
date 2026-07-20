@@ -35,13 +35,16 @@ test('content studio is database-backed and separate from review queues', () => 
   assert.match(studio, /用户提交审核/u)
 })
 
-test('Studio distinguishes formal, temporary and archived works', () => {
+test('Studio distinguishes formal, temporary and archived works and defaults to formal', () => {
   assert.match(studio, /type StudioStatus = 'active' \| 'temporary' \| 'archived' \| 'all'/u)
   assert.match(studio, /正式作品/u)
   assert.match(studio, /临时作品/u)
   assert.match(studio, /回收站/u)
   assert.match(studio, /catalogStatus: 'temporary'/u)
   assert.match(studio, /恢复为临时作品/u)
+  assert.match(studio, /status: statusOptions\.includes\(status\) \? status : 'active'/u)
+  assert.match(studio, /if \(next\.status !== 'active'\) params\.set\('status', next\.status\)/u)
+  assert.match(studio, /默认只显示正式作品/u)
   assert.doesNotMatch(studio, /恢复为待复核草稿/u)
 
   const pageQuery = functionBody(studio, 'findStudioPage', 'countByStatus')
@@ -55,7 +58,8 @@ test('members submit proposals while staff can edit live works', () => {
   assert.doesNotMatch(studio, /roleOf|staffRoles/u)
   assert.match(studio, /普通用户填写的新作品仍是待审核申请/u)
   assert.match(studio, /\/feedback\?type=new_work/u)
-  assert.match(account, /href="\/me\/studio"/u)
+  assert.match(studio, /\/me\/submissions/u)
+  assert.match(account, /isStaff \? '\/me\/studio' : '\/feedback\?type=new_work'/u)
   assert.match(editor, /没有作品编辑权限/u)
 })
 
@@ -82,8 +86,7 @@ test('temporary work creation returns to its parent with visible success and dou
   assert.match(studio, /const createdWork = first\(raw\.createdWork\)/u)
   assert.match(studio, /临时作品 #\{createdWork\} 已创建并公开/u)
   assert.match(create, /创建并公开临时作品/u)
-  assert.match(feedbackForm, /router\.back\(\)/u)
-  assert.match(feedbackForm, /返回上一级/u)
+  assert.match(feedbackForm, /href="\/me\/submissions"/u)
 })
 
 test('member new-work metadata is transferred into the accepted temporary work', () => {
