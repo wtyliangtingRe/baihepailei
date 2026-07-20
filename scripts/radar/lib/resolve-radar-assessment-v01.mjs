@@ -122,12 +122,11 @@ function compareRuleSeverity(left, right) {
 }
 
 function workProtection(row) {
+  const locked = row?.existingState?.locked === true || row?.existingState?.isLocked === true
   const reasons = unique([
     ...list(row?.writeProtection?.reasons).map(val),
     ...(row?.writeProtection?.protected ? ['input_marked_write_protected'] : []),
-    ...(row?.existingState?.ratingNotice === 'manual_reviewed' ? ['manual_rating_notice'] : []),
-    ...(row?.existingState?.humanVerified === true ? ['human_verified'] : []),
-    ...(row?.existingState?.locked === true ? ['locked'] : []),
+    ...(locked ? ['locked'] : []),
   ])
   return { protected: reasons.length > 0, reasons }
 }
@@ -234,6 +233,14 @@ export function resolveRadarAssessment(row, options = {}) {
     evidenceCoverage,
     evidenceCoveragePercent: Math.round(evidenceCoverage * 100),
     evidenceStatus: overallEvidenceStatus,
+    // Preserve the model's concise provenance separately from work summary text.
+    // It is displayed only in the AI trust card, after confidence and coverage.
+    sourceSummary: val(row?.sourceSummary),
+    sourceCount: Number.isFinite(Number(row?.sourceCount))
+      ? Math.max(0, Math.round(Number(row.sourceCount)))
+      : unique(matchedRules.flatMap((item) => item.sources.map((source) => source.url || source.label))).length,
+    assessmentBatch: val(row?.assessmentBatch),
+    assessedAt: val(row?.assessedAt || row?.generatedAt),
     pageNotice: AI_REVIEW_NOTICE,
     reviewStatus: 'ai_unreviewed',
     requiresHumanReview,

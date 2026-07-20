@@ -127,15 +127,18 @@ export function validateApplyPlanRow(plan) {
   if ((plan?.blockers || []).length) blockers.push('plan_blockers_present')
   if (!val(plan?.target?.id) || !val(plan?.target?.siteId)) blockers.push('apply_requires_id_and_site_id')
   if (!val(plan?.expectedBeforeHash)) blockers.push('missing_expected_before_hash')
-  if (!ALLOWED_GRADES.has(val(plan?.patch?.rank))) blockers.push('invalid_apply_rank')
+  const preservesHumanTrack = plan?.humanTrackPreserved === true
+  if (!preservesHumanTrack && !ALLOWED_GRADES.has(val(plan?.patch?.rank))) blockers.push('invalid_apply_rank')
 
-  const reviewReasons = Array.isArray(plan?.patch?.reviewReasons)
-    ? plan.patch.reviewReasons
-    : []
-  for (const reason of reviewReasons) {
-    const value = val(reason)
-    if (!ALLOWED_REVIEW_REASONS.has(value)) {
-      blockers.push(`invalid_apply_review_reason:${value || 'missing'}`)
+  if (!preservesHumanTrack) {
+    const reviewReasons = Array.isArray(plan?.patch?.reviewReasons)
+      ? plan.patch.reviewReasons
+      : []
+    for (const reason of reviewReasons) {
+      const value = val(reason)
+      if (!ALLOWED_REVIEW_REASONS.has(value)) {
+        blockers.push(`invalid_apply_review_reason:${value || 'missing'}`)
+      }
     }
   }
 

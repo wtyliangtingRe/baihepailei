@@ -1,16 +1,19 @@
 import configPromise from '@payload-config'
+import { randomUUID } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getPayload, type Where } from 'payload'
 
+import { isEditor } from '@/access/roles'
+
 import { canonicalContentUrl } from '../../../_lib/content-identity'
 
 export const dynamic = 'force-dynamic'
 
-type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted' | 'member'
 type WorkflowStatus = 'pending' | 'triaging' | 'needs_information' | 'accepted' | 'rejected' | 'archived'
+type ReviewIntent = WorkflowStatus | 'accept_create_draft'
 type FeedbackQueue = 'active' | 'processed' | 'all'
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
 
@@ -45,7 +48,6 @@ type Filters = {
   page: number
 }
 
-const allowedRoles = new Set<Role>(['owner', 'admin', 'editor', 'reviewer'])
 const activeStatuses: WorkflowStatus[] = ['pending', 'triaging', 'needs_information']
 const processedStatuses: WorkflowStatus[] = ['accepted', 'rejected', 'archived']
 const workflowLabels: Record<WorkflowStatus, string> = {
@@ -70,14 +72,8 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] || '' : value || ''
 }
 
-function roleOf(user: unknown): Role | undefined {
-  if (!user || typeof user !== 'object') return undefined
-  return (user as { role?: Role }).role
-}
-
 function canReview(user: unknown) {
-  const role = roleOf(user)
-  return Boolean(role && allowedRoles.has(role))
+  return isEditor(user)
 }
 
 function positiveInteger(value: string, fallback = 1) {
@@ -166,6 +162,24 @@ function formatDate(value?: string) {
   }
 }
 
+function draftSlug(title: string, id: string) {
+  const normalized = title.normalize('NFKC').toLowerCase()
+    .replace(/[^a-z0-9\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]+/gu, '-')
+    .replace(/^-+|-+$/gu, '')
+    .slice(0, 56) || 'work'
+  return `feedback-${normalized}-${id}-${randomUUID().slice(0, 8)}`
+}
+
+function newWorkCandidateWhere(title: string): Where {
+  return {
+    or: [
+      { title: { like: title } },
+      { originalTitle: { like: title } },
+      { searchText: { like: title } },
+    ],
+  }
+}
+
 async function reviewFeedbackAction(formData: FormData) {
   'use server'
 
@@ -174,33 +188,145 @@ async function reviewFeedbackAction(formData: FormData) {
   if (!auth.user || !canReview(auth.user)) throw new Error('没有用户反馈审核权限。')
 
   const id = String(formData.get('id') || '').trim()
-  const intent = String(formData.get('intent') || '').trim() as WorkflowStatus
+  const intent = String(formData.get('intent') || '').trim() as ReviewIntent
   const note = String(formData.get('reviewNote') || '').trim().slice(0, 4000)
   const returnTo = safeReturnTo(formData.get('returnTo'))
-  if (!id || !(intent in workflowLabels)) {
+  const actorID = Number((auth.user as { id?: string | number }).id)
+  const feedbackID = Number(id)
+  if (!id || !Number.isSafeInteger(feedbackID) || feedbackID <= 0 || (!(intent in workflowLabels) && intent !== 'accept_create_draft')) {
     redirect(actionResultHref(returnTo, 'reviewError', 'invalid_action', id))
+  }
+  if (!Number.isSafeInteger(actorID) || actorID <= 0) {
+    throw new Error('当前账户缺少可用于审计的数字 ID。')
   }
   if (intent === 'needs_information' && !note) {
     redirect(actionResultHref(returnTo, 'reviewError', 'note_required', id))
   }
 
+  if (intent === 'accept_create_draft') {
+    const feedback = await payload.findByID({
+      collection: 'feedback-submissions',
+      id: feedbackID,
+      depth: 0,
+      overrideAccess: true,
+    }) as unknown as FeedbackDoc
+    const existingWorkID = relationID(feedback.linkedWork)
+    if (feedback.feedbackType !== 'new_work' || existingWorkID) {
+      redirect(actionResultHref(returnTo, 'reviewError', 'draft_not_available', id))
+    }
+
+    const title = String(feedback.targetTitle || '').trim()
+    if (!title) redirect(actionResultHref(returnTo, 'reviewError', 'invalid_action', id))
+
+    const duplicates = await payload.find({
+      collection: 'works',
+      depth: 0,
+            limit: 8,
+      page: 1,
+      pagination: false,
+      overrideAccess: true,
+      where: newWorkCandidateWhere(title),
+    })
+    if (duplicates.docs.length) {
+      const duplicateNote = '发现可能重复的现有作品；未自动创建，已转入预填草稿页进行人工确认。'
+      await payload.update({
+        collection: 'feedback-submissions',
+        id: feedbackID,
+        depth: 0,
+        overrideAccess: true,
+        context: { reviewWorkbench: true, auditActorID: actorID },
+        data: {
+          workflowStatus: 'triaging',
+          reviewer: actorID,
+          reviewedAt: new Date().toISOString(),
+          reviewNote: note || duplicateNote,
+        },
+      })
+      const target = new URLSearchParams({
+        feedbackId: id,
+        q: title,
+        duplicateWarning: 'true',
+        returnTo: `/me/review/feedback/${id}`,
+      })
+      redirect(`/me/studio/works/new?${target.toString()}`)
+    }
+
+    const sourceLinks = (feedback.evidenceLinks || [])
+      .filter((item) => item?.url)
+      .map((item, index) => ({ label: String(item.label || `用户来源 ${index + 1}`).slice(0, 120), url: String(item.url).slice(0, 1000) }))
+    const claim = String(feedback.claim || '').trim()
+    const evidenceSummary = String(feedback.evidenceSummary || '').trim()
+    const created = await payload.create({
+      collection: 'works',
+      depth: 0,
+      draft: false,
+      overrideAccess: true,
+      context: { firstPartyStudio: true, feedbackIntake: true, feedbackID: id, auditActorID: actorID },
+      data: {
+        title,
+        slug: draftSlug(title, id),
+        siteId: `feedback:${id}:${randomUUID().slice(0, 12)}`,
+        rank: 'unknown',
+        reviewStatus: 'pending',
+        ratingNotice: 'none',
+        evidenceStrength: 'unassessed',
+        mediaGroup: 'unknown',
+        mediaType: 'unknown',
+        format: 'unknown',
+        firstPublishedPrecision: 'unknown',
+        status: 'draft',
+        isLiteVisible: false,
+        isFullVisible: false,
+        hasEvidence: sourceLinks.length > 0 || Boolean(evidenceSummary),
+        sourceLinks,
+        evidenceNote: evidenceSummary,
+        searchText: [title, claim, evidenceSummary].filter(Boolean).join('\n'),
+        humanReviewNote: `[${new Date().toISOString()}] 由用户新作品申请 #${id} 采纳生成草稿；提交者材料需继续核验。\n${claim}`.slice(0, 4000),
+        importBatch: `feedback-intake:${id}`,
+      } as never,
+    })
+    const createdID = Number(created.id)
+    if (!Number.isSafeInteger(createdID) || createdID <= 0) throw new Error('草稿创建后未取得有效作品 ID。')
+
+    const acceptedNote = note || `已采纳并创建预填作品草稿 #${createdID}；未公开、未人工评级、未写入 AI 结论。`
+    await payload.update({
+      collection: 'feedback-submissions',
+      id: feedbackID,
+      depth: 0,
+      overrideAccess: true,
+      context: { reviewWorkbench: true, auditActorID: actorID },
+      data: {
+        workflowStatus: 'accepted',
+        linkedWork: createdID,
+        reviewer: actorID,
+        reviewedAt: new Date().toISOString(),
+        reviewNote: acceptedNote,
+      },
+    })
+    revalidatePath('/me/review/feedback')
+    revalidatePath('/me/studio')
+    revalidatePath(`/me/studio/works/${createdID}`)
+    redirect(`/me/review/feedback/${id}?createdWork=${createdID}`)
+  }
+
+  const workflowIntent = intent as WorkflowStatus
   const defaultNotes: Partial<Record<WorkflowStatus, string>> = {
     accepted: '已采纳，待在关联内容条目中落实。',
     rejected: '未采纳；审核人员未填写补充说明。',
   }
-  const effectiveNote = note || defaultNotes[intent] || ''
+  const effectiveNote = note || defaultNotes[workflowIntent] || ''
 
   try {
     await payload.update({
       collection: 'feedback-submissions',
-      id,
+      id: feedbackID,
       depth: 0,
       overrideAccess: true,
-      context: { reviewWorkbench: true },
+      context: { reviewWorkbench: true, auditActorID: (auth.user as { id?: string | number }).id },
       data: {
-        workflowStatus: intent,
+        workflowStatus: workflowIntent,
         reviewNote: effectiveNote,
-        reviewer: Number((auth.user as { id?: string | number }).id),
+        reviewer: actorID,
         reviewedAt: new Date().toISOString(),
       },
     })
@@ -219,7 +345,7 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
   const auth = await payload.auth({ headers: await headers() })
   if (!auth.user) redirect(`/account/login?redirect=${encodeURIComponent('/me/review/feedback')}`)
   if (!canReview(auth.user)) {
-    return <main className="page review-workbench"><section className="review-empty"><h1>权限不足</h1><p>该页面只开放给最高领袖、管理员、编辑和审核人员。</p></section></main>
+    return <main className="page review-workbench"><section className="review-empty"><h1>权限不足</h1><p>该页面只开放给最高领袖、管理员和编辑。</p></section></main>
   }
 
   const rawParams = await searchParams
@@ -327,7 +453,11 @@ export default async function FeedbackReviewPage({ searchParams }: { searchParam
                 <div className="review-content-actions">
                   <button className="review-button" name="intent" type="submit" value="triaging">开始核查</button>
                   <button className="review-button" name="intent" type="submit" value="needs_information">要求补充材料</button>
-                  <button className="review-button review-button-primary" name="intent" type="submit" value="accepted">采纳反馈并移入已处理</button>
+                  {doc.feedbackType === 'new_work' && !workID ? (
+                    <button className="review-button review-button-primary" name="intent" type="submit" value="accept_create_draft">采纳并生成预填草稿</button>
+                  ) : (
+                    <button className="review-button review-button-primary" name="intent" type="submit" value="accepted">采纳反馈并移入已处理</button>
+                  )}
                   <button className="review-button review-button-danger" name="intent" type="submit" value="rejected">驳回并移入已处理</button>
                   <button className="review-button" name="intent" type="submit" value="archived">归档并移入已处理</button>
                 </div>

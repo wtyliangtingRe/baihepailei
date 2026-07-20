@@ -33,14 +33,8 @@ function writeJson(filePath, value) {
   fs.writeFileSync(resolved, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
 }
 
-function compactFields(item) {
-  const copy = { ...item }
-  delete copy.legacyXWikiPage
-  return copy
-}
-
 function detailsFromSearchItem(item) {
-  return compactFields({
+  return ({
     id: item.id,
     recordId: item.recordId,
     collection: item.collection,
@@ -78,9 +72,9 @@ function detailsFromSearchItem(item) {
 }
 
 function mergeDetailItem(detailItem, searchItem) {
-  if (!searchItem) return compactFields(detailItem)
+  if (!searchItem) return detailItem
 
-  return compactFields({
+  return ({
     ...detailItem,
     recordId: searchItem.recordId || detailItem.recordId,
     url: searchItem.url || detailItem.url,

@@ -5,7 +5,13 @@ import path from 'node:path'
 const DEFAULT_OUT = 'public/detail-index.json'
 const COLLECTIONS = ['works', 'creators', 'organizations', 'evidence', 'terms', 'rules']
 const OPTIONAL_COLLECTIONS = new Set(['evidence'])
-const PAGE_LIMIT = '1000'
+function exportPageLimit() {
+  const requested = Number(process.env.PUBLIC_INDEX_PAGE_LIMIT || 100)
+  if (!Number.isFinite(requested)) return '100'
+  return String(Math.min(250, Math.max(25, Math.round(requested))))
+}
+
+const PAGE_LIMIT = exportPageLimit()
 
 function parseArgs(argv) {
   const args = {}
@@ -30,6 +36,7 @@ function usage() {
 
 Optional environment variables:
   PAYLOAD_EXPORT_EMAIL
+  PUBLIC_INDEX_PAGE_LIMIT (default 100, maximum 250)
   PAYLOAD_EXPORT_PASSWORD
 
 Fallback environment variables:
@@ -69,7 +76,7 @@ async function requestJson(url, options = {}) {
 
   if (!response.ok) {
     const detail = payload ? JSON.stringify(payload, null, 2) : text
-    throw new Error(`HTTP ${response.status} ${response.statusText}\n${detail}`)
+    throw new Error(`HTTP ${response.status} ${response.statusText} [${url}]\n${detail}`)
   }
 
   return payload
@@ -92,8 +99,21 @@ function authHeaders(token) {
   return token ? { Authorization: `JWT ${token}` } : {}
 }
 
+function isExportableCurrentDoc(collection, doc, includeDrafts) {
+  if (collection === 'evidence') return doc?.status === 'confirmed' && doc?.isPublic === true
+  if (collection === 'works') {
+    if (String(doc?.catalogStatus || 'active').trim() === 'archived') return false
+    const publicationStatus = String(doc?._status || 'draft').trim()
+    return includeDrafts || publicationStatus === 'published'
+  }
+
+  const status = String(doc?.status || '').trim()
+  if (includeDrafts) return status !== 'archived'
+  return status === 'published'
+}
+
 async function fetchCollection(baseUrl, token, collection, { includeDrafts, profile }) {
-  const fetchPages = async (drafts) => {
+  const fetchPages = async (depth) => {
     const docs = []
     let page = 1
     let totalPages = 1
@@ -102,15 +122,13 @@ async function fetchCollection(baseUrl, token, collection, { includeDrafts, prof
       const params = new URLSearchParams()
       params.set('limit', PAGE_LIMIT)
       params.set('page', String(page))
-      params.set('depth', '2')
+      params.set('depth', depth)
 
-      if (drafts) {
-        params.set('draft', 'true')
-      } else if (collection === 'evidence') {
+      // Index only current records. Evidence remains restricted to confirmed,
+      // public rows even in the complete profile.
+      if (collection === 'evidence') {
         params.set('where[status][equals]', 'confirmed')
         params.set('where[isPublic][equals]', 'true')
-      } else {
-        params.set('where[status][equals]', 'published')
       }
 
       if (collection !== 'evidence' && profile === 'lite') {
@@ -129,17 +147,11 @@ async function fetchCollection(baseUrl, token, collection, { includeDrafts, prof
     return docs
   }
 
-  if (collection === 'evidence' && includeDrafts) {
-    console.warn('[warn] private evidence drafts are excluded from public indexes; exporting current confirmed public evidence only')
-    return fetchPages(false)
-  }
-
   try {
-    return await fetchPages(includeDrafts)
+    return (await fetchPages('1')).filter((doc) => isExportableCurrentDoc(collection, doc, includeDrafts))
   } catch (error) {
-    if (collection !== 'evidence' || !includeDrafts) throw error
-    console.warn('[warn] evidence draft history is incompatible with the current database enum; retrying current public evidence only')
-    return fetchPages(false)
+    console.warn(`[warn] retrying ${collection} at depth=0 after relation hydration failure: ${String(error?.message || error).split('\n')[0]}`)
+    return (await fetchPages('0')).filter((doc) => isExportableCurrentDoc(collection, doc, includeDrafts))
   }
 }
 
@@ -384,25 +396,47 @@ function commonFields(collection, doc, title, typeLabel) {
     title: title || '',
     slug: doc.slug || '',
     url: itemUrl(collection, doc.id, doc.slug),
-    legacyXWikiPage: doc.legacyXWikiPage || '',
     updatedAt: doc.updatedAt || '',
     createdAt: doc.createdAt || '',
-    status: doc.status || '',
+    status: doc.status || 'draft',
+  }
+}
+
+function humanAssessmentView(value) {
+  if (!value || typeof value !== 'object') return undefined
+  return {
+    grade: String(value.grade || ''),
+    status: String(value.status || ''),
+    note: String(value.note || ''),
+    sourceSummary: String(value.sourceSummary || ''),
+    evidenceStatus: String(value.evidenceStatus || ''),
+    sourceLinks: Array.isArray(value.sourceLinks) ? value.sourceLinks.filter((link) => link && link.url).map((link) => ({ label: String(link.label || ''), url: String(link.url || '') })) : [],
+    assessedAt: String(value.assessedAt || ''),
   }
 }
 
 function mapWork(doc) {
+  const humanStatus = String(doc.humanAssessment?.status || '').trim()
+  const explicitHumanGrade = humanStatus === 'pending' ? '' : String(doc.humanAssessment?.grade || '').trim().toUpperCase()
+  const legacyHumanGrade = (doc.reviewStatus === 'reviewed' || doc.ratingNotice === 'manual_reviewed') ? String(doc.rank || '').trim().toUpperCase() : ''
+  const humanGrade = explicitHumanGrade || legacyHumanGrade
+  const aiGrade = String(doc.radarAssessment?.suggestedGrade || '').trim().toUpperCase()
+  const effectiveRank = humanGrade || aiGrade || doc.rank || 'unknown'
   const aliases = aliasesToValues(doc.aliases)
   const localizedTitles = localizedTitleValues(doc.localizedTitles)
   const candidates = candidateSources(doc.candidateSources)
   return {
     ...commonFields('works', doc, doc.title, '作品'),
-    rank: doc.rank || 'unknown',
+    status: doc._status || 'draft',
+    catalogStatus: doc.catalogStatus || 'active',
+    rank: effectiveRank,
     reviewStatus: doc.reviewStatus || 'pending',
     evidenceStrength: doc.evidenceStrength || 'unassessed',
     ratingNotice: doc.ratingNotice || '',
     reviewReasons: Array.isArray(doc.reviewReasons) ? doc.reviewReasons.map(normalizeText).filter(Boolean) : [],
     radarAssessment: normalizeRadarAssessment(doc.radarAssessment),
+    humanGrade: humanGrade || '',
+    humanAssessment: humanAssessmentView(doc.humanAssessment),
     originalTitle: doc.originalTitle || '',
     aliases,
     localizedTitles,

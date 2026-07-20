@@ -8,7 +8,7 @@ import { canonicalContentUrl } from '../../../../_lib/content-identity'
 
 export const dynamic = 'force-dynamic'
 
-type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted' | 'member'
+type Role = 'owner' | 'admin' | 'editor' | 'member'
 type Relation = { id?: string | number; title?: string; displayName?: string }
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
 type FeedbackDoc = {
@@ -32,7 +32,7 @@ type FeedbackDoc = {
   updatedAt?: string
 }
 
-const allowedRoles = new Set<Role>(['owner', 'admin', 'editor', 'reviewer'])
+const allowedRoles = new Set<Role>(['owner', 'admin', 'editor'])
 const workflowLabels: Record<string, string> = {
   pending: '待审核', triaging: '核查中', needs_information: '需要补充材料',
   accepted: '已采纳', rejected: '未采纳', archived: '已归档',

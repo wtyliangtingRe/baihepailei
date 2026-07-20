@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 
-type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted' | 'member'
+type Role = 'owner' | 'admin' | 'editor' | 'member'
 type AccountStatus = 'active' | 'suspended'
 
 type PersonnelUser = {
@@ -25,8 +25,6 @@ const roleLabels: Record<Role, string> = {
   owner: '最高领袖',
   admin: '管理员',
   editor: '编辑',
-  reviewer: '审核（兼容）',
-  trusted: '可信投稿者（兼容）',
   member: '注册用户',
 }
 

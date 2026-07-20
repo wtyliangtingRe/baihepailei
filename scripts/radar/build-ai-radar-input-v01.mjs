@@ -95,11 +95,19 @@ function normalizeCandidateSources(value) {
 }
 
 function workProtection(work) {
-  const reasons = []
-  if (work?.ratingNotice === 'manual_reviewed') reasons.push('manual_rating_notice')
-  if (work?.humanVerified === true) reasons.push('human_verified')
-  if (work?.locked === true) reasons.push('locked')
-  return { protected: reasons.length > 0, reasons }
+  const locked = work?.locked === true || work?.isLocked === true
+  return {
+    // A recorded human track is not a write blocker: AI may refresh radarAssessment,
+    // but the planner will preserve human-facing fields exactly.
+    protected: locked,
+    reasons: locked ? ['locked'] : [],
+    humanTrackRecorded: Boolean(
+      val(work?.humanAssessment?.grade)
+      || (val(work?.humanAssessment?.status) && val(work?.humanAssessment?.status) !== 'pending')
+      || work?.ratingNotice === 'manual_reviewed'
+      || ['reviewed', 'disputed', 'deprecated'].includes(val(work?.reviewStatus)),
+    ),
+  }
 }
 
 function buildEvidencePacket(work) {
@@ -160,7 +168,10 @@ function buildEvidencePacket(work) {
       status: val(work?.status),
       importBatch: val(work?.importBatch),
       humanVerified: work?.humanVerified === true,
-      locked: work?.locked === true,
+      locked: work?.locked === true || work?.isLocked === true,
+      humanAssessment: work?.humanAssessment && typeof work.humanAssessment === 'object'
+        ? work.humanAssessment
+        : null,
       radarAssessment: work?.radarAssessment && typeof work.radarAssessment === 'object'
         ? work.radarAssessment
         : null,
@@ -212,7 +223,8 @@ async function readWorksFromPayload(baseUrl, token, limit) {
       limit: '100',
       page: String(page),
       depth: '1',
-      draft: 'true',
+      // Query current rows only. draft=true reads Payload version history and can
+      // break on legacy enum rows that are unrelated to the current catalog.
       sort: 'id',
     })
     const response = await fetch(`${baseUrl}/api/works?${query}`, {

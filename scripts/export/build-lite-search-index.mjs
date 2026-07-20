@@ -10,7 +10,14 @@ const EXPORT_EMAIL_ENV = 'PAYLOAD_EXPORT_EMAIL'
 const EXPORT_SECRET_ENV = ['PAYLOAD_EXPORT', 'PASSWORD'].join('_')
 const SEED_EMAIL_ENV = 'PAYLOAD_SEED_EMAIL'
 const SEED_SECRET_ENV = ['PAYLOAD_SEED', 'PASSWORD'].join('_')
-const PAGE_LIMIT = '1000'
+function exportPageLimit() {
+  const requested = Number(process.env.PUBLIC_INDEX_PAGE_LIMIT || 100)
+  if (!Number.isFinite(requested)) return '100'
+  return String(Math.min(250, Math.max(25, Math.round(requested))))
+}
+
+const PAGE_LIMIT = exportPageLimit()
+const RESEARCH_PAGE_LIMIT = 1000
 
 function parseArgs(argv) {
   const args = {}
@@ -59,7 +66,7 @@ async function requestJson(url, options = {}) {
 
   if (!response.ok) {
     const detail = payload ? JSON.stringify(payload, null, 2) : text
-    throw new Error(`HTTP ${response.status} ${response.statusText}\n${detail}`)
+    throw new Error(`HTTP ${response.status} ${response.statusText} [${url}]\n${detail}`)
   }
 
   return payload
@@ -82,23 +89,19 @@ function authHeaders(token) {
   return token ? { Authorization: `JWT ${token}` } : {}
 }
 
-function visibilityParams(collection, includeDrafts, profile) {
+function visibilityParams(collection, profile, depth) {
   const params = new URLSearchParams()
   params.set('limit', PAGE_LIMIT)
-  params.set('depth', '1')
+  params.set('depth', depth)
 
-  if (includeDrafts) {
-    params.set('draft', 'true')
-  } else if (collection === 'evidence') {
+  // Public indexes represent the current collection rows, never Payload version
+  // history. Filtering status client-side avoids legacy PostgreSQL enum/version
+  // incompatibilities while retaining every current draft or published row.
+  if (collection === 'evidence') {
     params.set('where[status][equals]', 'confirmed')
     params.set('where[isPublic][equals]', 'true')
-  } else {
-    params.set('where[status][equals]', 'published')
   }
 
-  // The complete profile is intentionally exhaustive. Old imported rows often
-  // have null visibility flags, and SQL `not_equals false` excludes those rows.
-  // Only the explicitly reduced Lite profile applies a visibility boundary.
   if (collection !== 'evidence' && profile === 'lite') {
     params.set('where[isLiteVisible][not_equals]', 'false')
   }
@@ -106,16 +109,28 @@ function visibilityParams(collection, includeDrafts, profile) {
   return params
 }
 
+function isExportableCurrentDoc(collection, doc, includeDrafts) {
+  if (collection === 'evidence') return doc?.status === 'confirmed' && doc?.isPublic === true
+  if (collection === 'works') {
+    if (String(doc?.catalogStatus || 'active').trim() === 'archived') return false
+    const publicationStatus = String(doc?._status || 'draft').trim()
+    return includeDrafts || publicationStatus === 'published'
+  }
+
+  const status = String(doc?.status || '').trim()
+  if (includeDrafts) return status !== 'archived'
+  return status === 'published'
+}
+
 async function fetchCollection(baseUrl, token, collection, { includeDrafts, profile }) {
-  const fetchPages = async (drafts) => {
+  const fetchPages = async (depth) => {
     const docs = []
     let page = 1
     let totalPages = 1
 
     do {
-      const params = visibilityParams(collection, drafts, profile)
+      const params = visibilityParams(collection, profile, depth)
       params.set('page', String(page))
-
       const result = await requestJson(`${baseUrl}/api/${collection}?${params.toString()}`, {
         headers: authHeaders(token),
       })
@@ -128,17 +143,13 @@ async function fetchCollection(baseUrl, token, collection, { includeDrafts, prof
     return docs
   }
 
-  if (collection === 'evidence' && includeDrafts) {
-    console.warn('[warn] private evidence drafts are excluded from public indexes; exporting current confirmed public evidence only')
-    return fetchPages(false)
-  }
-
   try {
-    return await fetchPages(includeDrafts)
+    return (await fetchPages('1')).filter((doc) => isExportableCurrentDoc(collection, doc, includeDrafts))
   } catch (error) {
-    if (collection !== 'evidence' || !includeDrafts) throw error
-    console.warn('[warn] evidence draft history is incompatible with the current database enum; retrying current public evidence only')
-    return fetchPages(false)
+    // A legacy relation can prevent Payload from hydrating depth=1. The
+    // collection row itself is still exportable at depth=0.
+    console.warn(`[warn] retrying ${collection} at depth=0 after relation hydration failure: ${String(error?.message || error).split('\n')[0]}`)
+    return (await fetchPages('0')).filter((doc) => isExportableCurrentDoc(collection, doc, includeDrafts))
   }
 }
 
@@ -148,7 +159,9 @@ async function fetchResearchRecords(baseUrl, token) {
   let totalPages = 1
   do {
     const params = new URLSearchParams()
-    params.set('limit', PAGE_LIMIT)
+    // Research rows are shallow, internal records. A larger page is safe here
+    // and avoids adding hundreds of requests to a full public export.
+    params.set('limit', String(RESEARCH_PAGE_LIMIT))
     params.set('depth', '0')
     params.set('page', String(page))
     params.set('where[recordStatus][equals]', 'current')
@@ -376,7 +389,26 @@ function contentVisibilityFromAdvisories(advisories) {
   return 'ordinary'
 }
 
+function humanAssessmentView(value) {
+  if (!value || typeof value !== 'object') return undefined
+  return {
+    grade: String(value.grade || ''),
+    status: String(value.status || ''),
+    note: String(value.note || ''),
+    sourceSummary: String(value.sourceSummary || ''),
+    evidenceStatus: String(value.evidenceStatus || ''),
+    sourceLinks: Array.isArray(value.sourceLinks) ? value.sourceLinks.filter((link) => link && link.url).map((link) => ({ label: String(link.label || ''), url: String(link.url || '') })) : [],
+    assessedAt: String(value.assessedAt || ''),
+  }
+}
+
 function mapWork(doc) {
+  const humanStatus = String(doc.humanAssessment?.status || '').trim()
+  const explicitHumanGrade = humanStatus === 'pending' ? '' : String(doc.humanAssessment?.grade || '').trim().toUpperCase()
+  const legacyHumanGrade = (doc.reviewStatus === 'reviewed' || doc.ratingNotice === 'manual_reviewed') ? String(doc.rank || '').trim().toUpperCase() : ''
+  const humanGrade = explicitHumanGrade || legacyHumanGrade
+  const aiGrade = String(doc.radarAssessment?.suggestedGrade || '').trim().toUpperCase()
+  const effectiveRank = humanGrade || aiGrade || doc.rank || 'unknown'
   const aliases = aliasesToValues(doc.aliases)
   const localizedTitles = localizedTitleValues(doc.localizedTitles)
   const creators = relationshipNames(doc.creators)
@@ -397,12 +429,16 @@ function mapWork(doc) {
     title: doc.title || '',
     slug: doc.slug || '',
     url: itemUrl('works', doc.id, doc.slug),
-    rank: doc.rank || 'unknown',
+    status: doc._status || 'draft',
+    catalogStatus: doc.catalogStatus || 'active',
+    rank: effectiveRank,
     reviewStatus: doc.reviewStatus || 'pending',
     evidenceStrength: doc.evidenceStrength || 'unassessed',
     ratingNotice: doc.ratingNotice || '',
     reviewReasons: Array.isArray(doc.reviewReasons) ? doc.reviewReasons.map(normalizeText).filter(Boolean) : [],
     radarAssessment: normalizeRadarAssessment(doc.radarAssessment),
+    humanGrade: humanGrade || '',
+    humanAssessment: humanAssessmentView(doc.humanAssessment),
     originalTitle: doc.originalTitle || '',
     aliases,
     localizedTitles,
@@ -426,7 +462,9 @@ function mapWork(doc) {
       organizations,
       tags,
       warnings,
-      doc.rank,
+      effectiveRank,
+      humanGrade,
+      aiGrade,
       doc.mediaGroup,
       doc.mediaType,
       doc.format,

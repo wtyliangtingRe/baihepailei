@@ -412,8 +412,9 @@ function WorkCover({ cover, title }: { cover?: DetailCoverImage; title: string }
   }
 
   return (
-    <figure className="detail-cover detail-cover-placeholder" aria-label="暂无封面">
-      <span>暂无封面</span>
+    <figure className="detail-cover detail-cover-placeholder" aria-label="未提供封面缩略图">
+      <span aria-hidden="true" className="detail-cover-placeholder-mark">◇</span>
+      <figcaption>未提供封面</figcaption>
     </figure>
   )
 }
@@ -557,7 +558,7 @@ export default function DetailIndexDetail({ item, relatedWorks = [], relatedEvid
           </Link>
         </div>
         <div className="detail-hero-layout">
-          {showImages && item.collection === 'works' ? <WorkCover cover={item.cover} title={title} /> : null}
+          {item.collection === 'works' && (showImages || !item.cover?.url) ? <WorkCover cover={item.cover} title={title} /> : null}
           {showImages && item.collection === 'evidence' ? <EvidenceImage image={extendedItem.image} title={title} /> : null}
           <div>
             <p className="eyebrow">{collectionLabel(item.collection)}</p>

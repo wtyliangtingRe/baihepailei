@@ -16,12 +16,10 @@ const roleLabels: Record<string, string> = {
   owner: '最高领袖',
   admin: '管理员',
   editor: '编辑',
-  reviewer: '审核（兼容角色）',
-  trusted: '可信投稿者（兼容角色）',
   member: '注册用户',
 }
 
-const staffRoles = new Set(['owner', 'admin', 'editor', 'reviewer'])
+const staffRoles = new Set(['owner', 'admin', 'editor'])
 
 export default function AccountClient() {
   const [user, setUser] = useState<AccountUser | null>(null)

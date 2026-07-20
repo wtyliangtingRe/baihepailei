@@ -6,6 +6,7 @@ import { clearSearchIndexCache, type SearchIndex, type SearchItem } from '../app
 import { isMergedDuplicateWork, mergedWorkReference } from './mergedWork'
 import type { RadarAssessmentMetrics } from './radar/assessmentPresentation'
 import { richTextToPlainText } from './richTextPlain'
+import { effectiveWorkGrade, humanTrackGrade } from './ratingTracks'
 
 type Relation = string | number | { id?: string | number; title?: string; name?: string }
 type StewardshipNoticeRelation = string | number | {
@@ -42,7 +43,8 @@ type WorkDoc = {
   evidenceStrength?: string
   ratingNotice?: string
   reviewReasons?: string[] | string
-  status?: string
+  _status?: string
+  catalogStatus?: string
   isLiteVisible?: boolean
   isFullVisible?: boolean
   aliases?: Array<string | { value?: string }>
@@ -50,6 +52,15 @@ type WorkDoc = {
   stewardshipNotices?: StewardshipNoticeRelation[]
   summary?: unknown
   radarAssessment?: RadarAssessmentMetrics | null
+  humanAssessment?: {
+    grade?: string
+    status?: string
+    note?: string
+    sourceSummary?: string
+    evidenceStatus?: string
+    sourceLinks?: Array<{ label?: string; url?: string }>
+    assessedAt?: string
+  } | null
   mediaGroup?: string
   mediaType?: string
   format?: string
@@ -77,6 +88,19 @@ type SyncResult = {
 
 const searchPath = path.join(process.cwd(), 'public', 'search-index.json')
 const detailPath = path.join(process.cwd(), 'public', 'detail-index.json')
+
+function humanAssessmentView(value: WorkDoc['humanAssessment']) {
+  if (!value) return undefined
+  return {
+    grade: text(value.grade),
+    status: text(value.status),
+    note: text(value.note),
+    sourceSummary: text(value.sourceSummary),
+    evidenceStatus: text(value.evidenceStatus),
+    sourceLinks: Array.isArray(value.sourceLinks) ? value.sourceLinks.filter((link) => link?.url).map((link) => ({ label: text(link.label), url: text(link.url) })) : [],
+    assessedAt: text(value.assessedAt),
+  }
+}
 
 function text(value: unknown) {
   return String(value ?? '').trim()
@@ -143,7 +167,7 @@ function stewardshipNoticeViews(values: WorkDoc['stewardshipNotices']): Stewards
 
 function shouldRemoveFromPublicIndexes(work: WorkDoc) {
   return isMergedDuplicateWork(work)
-    || work.status === 'archived'
+    || work.catalogStatus === 'archived'
     || (work.isLiteVisible === false && work.isFullVisible === false)
 }
 
@@ -211,6 +235,8 @@ function searchPatch(work: WorkDoc, existing?: SearchItem): SearchItem {
   const recordID = String(work.id)
   const slug = text(work.slug) || existing?.slug || `work-${recordID}`
   const reasons = reviewReasonValues(work.reviewReasons)
+  const effectiveRank = effectiveWorkGrade(work)
+  const humanGrade = humanTrackGrade(work)
   const mergeTarget = mergedWorkReference(work)
   return {
     ...(existing || {}),
@@ -221,13 +247,16 @@ function searchPatch(work: WorkDoc, existing?: SearchItem): SearchItem {
     title: text(work.title) || existing?.title || `作品 ${recordID}`,
     slug,
     url: `/works/w-${encodeURIComponent(recordID)}`,
-    status: text(work.status) || existing?.status || 'draft',
-    rank: text(work.rank) || existing?.rank || 'unknown',
+    status: text(work._status) || (existing?.status === 'published' ? 'published' : 'draft'),
+    catalogStatus: text(work.catalogStatus) || existing?.catalogStatus || (existing?.status === 'archived' ? 'archived' : 'active'),
+    rank: effectiveRank || existing?.rank || 'unknown',
     reviewStatus: text(work.reviewStatus) || existing?.reviewStatus || 'pending',
     evidenceStrength: text(work.evidenceStrength) || existing?.evidenceStrength || 'unassessed',
     ratingNotice: text(work.ratingNotice) || existing?.ratingNotice,
     reviewReasons: reasons.length ? reasons : existing?.reviewReasons,
     radarAssessment: work.radarAssessment || existing?.radarAssessment,
+    humanAssessment: humanAssessmentView(work.humanAssessment) || existing?.humanAssessment,
+    humanGrade: humanGrade || undefined,
     mergedIntoWorkId: mergeTarget?.id,
     originalTitle: text(work.originalTitle) || existing?.originalTitle,
     aliases: aliases(work.aliases).length ? aliases(work.aliases) : existing?.aliases,
@@ -258,6 +287,8 @@ function detailPatch(work: WorkDoc, existing?: DetailItem): DetailItem {
   const recordID = String(work.id)
   const slug = text(work.slug) || existing?.slug || `work-${recordID}`
   const reasons = reviewReasonValues(work.reviewReasons)
+  const effectiveRank = effectiveWorkGrade(work)
+  const humanGrade = humanTrackGrade(work)
   const existingWithNotices = existing as DetailItemWithNotices | undefined
   const noticeValues = stewardshipNoticeViews(work.stewardshipNotices)
   return {
@@ -269,13 +300,16 @@ function detailPatch(work: WorkDoc, existing?: DetailItem): DetailItem {
     title: text(work.title) || existing?.title || `作品 ${recordID}`,
     slug,
     url: `/works/w-${encodeURIComponent(recordID)}`,
-    status: text(work.status) || existing?.status || 'draft',
-    rank: text(work.rank) || existing?.rank || 'unknown',
+    status: text(work._status) || (existing?.status === 'published' ? 'published' : 'draft'),
+    catalogStatus: text(work.catalogStatus) || existing?.catalogStatus || (existing?.status === 'archived' ? 'archived' : 'active'),
+    rank: effectiveRank || existing?.rank || 'unknown',
     reviewStatus: text(work.reviewStatus) || existing?.reviewStatus || 'pending',
     evidenceStrength: text(work.evidenceStrength) || existing?.evidenceStrength || 'unassessed',
     ratingNotice: text(work.ratingNotice) || existing?.ratingNotice,
     reviewReasons: reasons.length ? reasons : existing?.reviewReasons,
     radarAssessment: work.radarAssessment || existing?.radarAssessment,
+    humanAssessment: humanAssessmentView(work.humanAssessment) || existing?.humanAssessment,
+    humanGrade: humanGrade || undefined,
     originalTitle: text(work.originalTitle) || existing?.originalTitle,
     aliases: aliases(work.aliases).length ? aliases(work.aliases) : existing?.aliases,
     localizedTitles: localizedTitles(work.localizedTitles).length ? localizedTitles(work.localizedTitles) : existing?.localizedTitles,
@@ -310,7 +344,7 @@ function updateSearch(work: WorkDoc): SyncResult['search'] {
     if (position < 0) return 'skipped'
     index.items.splice(position, 1)
   } else if (position >= 0) index.items[position] = searchPatch(work, index.items[position])
-  else if (work.status === 'published') index.items.push(searchPatch(work))
+  else if (work._status === 'published') index.items.push(searchPatch(work))
   else return 'skipped'
   index.generatedAt = new Date().toISOString()
   index.counts = countByCollection(index.items)
@@ -328,7 +362,7 @@ function updateDetail(work: WorkDoc): SyncResult['detail'] {
     if (position < 0) return 'skipped'
     index.items.splice(position, 1)
   } else if (position >= 0) index.items[position] = detailPatch(work, index.items[position])
-  else if (work.status === 'published') index.items.push(detailPatch(work))
+  else if (work._status === 'published') index.items.push(detailPatch(work))
   else return 'skipped'
   index.generatedAt = new Date().toISOString()
   index.counts = countByCollection(index.items)

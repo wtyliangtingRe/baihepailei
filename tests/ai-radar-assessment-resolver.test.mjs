@@ -58,6 +58,31 @@ test('lower safety grade overrides positive matches while preserving every match
   assert.equal(result.pageNotice.id, 'ai-synthesized-pending-review')
 })
 
+test('AI source summary and batch provenance survive rule resolution', () => {
+  const result = resolveRadarAssessment({
+    workId: 'work-provenance',
+    siteId: 'work:provenance',
+    title: '来源保留测试',
+    assessmentBatch: 'local:batch-1',
+    assessedAt: '2026-07-20T00:00:00.000Z',
+    evidenceCoverage: 0.7,
+    evidenceStatus: 'single_secondary_supported',
+    sourceSummary: '一个可追溯来源支持当前判断。',
+    sourceCount: 1,
+    ruleAssessments: [{
+      code: 'B-LIGHT',
+      matched: true,
+      confidence: 0.8,
+      reason: '恋爱未明确。',
+      sources: [{ label: '资料页', url: 'https://example.test/work' }],
+    }],
+  })
+  assert.equal(result.sourceSummary, '一个可追溯来源支持当前判断。')
+  assert.equal(result.sourceCount, 1)
+  assert.equal(result.assessmentBatch, 'local:batch-1')
+  assert.equal(result.assessedAt, '2026-07-20T00:00:00.000Z')
+})
+
 test('missing effective matches falls back to D-UNCLEAR', () => {
   const result = resolveRadarAssessment({
     workId: 'work-2',

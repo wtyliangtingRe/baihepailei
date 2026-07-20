@@ -68,11 +68,24 @@ test('title-only matching is never allowed', () => {
   assert.ok(target.blockers.includes('stable_identifier_not_found'))
 })
 
-test('human-reviewed works remain blocked', () => {
-  const plan = buildPlanRow(assessment(), buildWorkIndexes([work({ ratingNotice: 'manual_reviewed', reviewStatus: 'reviewed' })]))
-  assert.equal(plan.planStatus, 'blocked')
-  assert.ok(plan.blockers.includes('existing_manual_review_notice'))
-  assert.ok(plan.blockers.includes('existing_review_status:reviewed'))
+test('recorded human track is preserved while the independent AI track can refresh', () => {
+  const manual = work({
+    rank: 'S',
+    ratingNotice: 'manual_reviewed',
+    reviewStatus: 'reviewed',
+    reviewReasons: ['manual_review'],
+    evidenceStrength: 'strong',
+    humanAssessment: { grade: 'S', status: 'reviewed', note: '人工记录' },
+  })
+  const plan = buildPlanRow(assessment(), buildWorkIndexes([manual]))
+  assert.equal(plan.planStatus, 'ready_for_payload_dry_run')
+  assert.equal(plan.humanTrackPreserved, true)
+  assert.deepEqual(plan.changedFields, ['radarAssessment'])
+  assert.equal(plan.patch.rank, 'S')
+  assert.equal(plan.patch.ratingNotice, 'manual_reviewed')
+  assert.equal(plan.patch.reviewStatus, 'reviewed')
+  assert.deepEqual(plan.patch.reviewReasons, ['manual_review'])
+  assert.equal(plan.patch.radarAssessment.suggestedGrade, 'B')
 })
 
 test('ready plans contain grade, notice, metrics and all matched rules', () => {

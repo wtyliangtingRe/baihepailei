@@ -42,7 +42,9 @@ export type SearchItem = {
   slug: string
   url: string
   status?: string
+  catalogStatus?: string
   rank?: string
+  humanGrade?: string
   category?: string
   organizationType?: string
   evidenceType?: string
@@ -52,6 +54,15 @@ export type SearchItem = {
   reviewOrigin?: string
   reviewReasons?: string[]
   radarAssessment?: RadarAssessmentMetrics
+  humanAssessment?: {
+    grade?: string
+    status?: string
+    note?: string
+    sourceSummary?: string
+    evidenceStatus?: string
+    sourceLinks?: Array<{ label?: string; url?: string }>
+    assessedAt?: string
+  }
   researchPreview?: RadarResearchPreview
   mergedIntoWorkId?: string
   originalTitle?: string
@@ -94,20 +105,23 @@ export type SearchIndex = {
 const searchIndexPath = path.join(process.cwd(), 'public', 'search-index.json')
 
 let cachedIndex: SearchIndex | null | undefined
+let cachedLookup: Map<string, SearchItem> | undefined
 
 export function clearSearchIndexCache() {
   cachedIndex = undefined
+  cachedLookup = undefined
 }
 
 function isRetiredWork(item: SearchItem) {
   if (item.collection !== 'works') return false
-  if (item.status === 'archived' || item.reviewStatus === 'deprecated') return true
+  if (item.catalogStatus === 'archived' || item.status === 'archived' || item.reviewStatus === 'deprecated') return true
   const currentID = String(item.recordId || item.id)
   if (item.mergedIntoWorkId && item.mergedIntoWorkId !== currentID) return true
   return isMergedDuplicateWork({
     id: currentID,
     reviewStatus: item.reviewStatus,
     status: item.status,
+    catalogStatus: item.catalogStatus,
     searchText: item.searchText,
   })
 }
@@ -140,6 +154,11 @@ export function readSearchIndex() {
     }, {}),
     total: visibleItems.length,
   }
+  cachedLookup = new Map()
+  for (const item of visibleItems) {
+    cachedLookup.set(item.collection + ':slug:' + item.slug, item)
+    if (item.recordId) cachedLookup.set(item.collection + ':id:' + String(item.recordId), item)
+  }
   return cachedIndex
 }
 
@@ -154,12 +173,10 @@ export function findSearchItem(collection: SearchCollection, slug: string) {
   if (canonicalCollection) {
     const recordId = recordIdFromContentRoute(canonicalCollection, slug)
     if (recordId) {
-      const byRecordId = index.items.find(
-        (item) => item.collection === collection && String(item.recordId || '') === recordId,
-      )
+      const byRecordId = cachedLookup?.get(collection + ':id:' + recordId)
       if (byRecordId) return byRecordId
     }
   }
 
-  return index.items.find((item) => item.collection === collection && item.slug === slug) || null
+  return cachedLookup?.get(collection + ':slug:' + slug) || null
 }

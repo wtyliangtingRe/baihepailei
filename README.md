@@ -1,10 +1,10 @@
 # Baihepailei
 
-Baihepailei 是一个以作品、排雷分级、可追溯来源和人工复核为核心的百合资料库。项目采用 Next.js、Payload CMS 与 PostgreSQL；当前代码和数据模型均以本站自身规则为准。
+Baihepailei 是一个以作品、排雷分级、可追溯来源和人工复核为核心的百合资料库。项目采用 Next.js、Payload CMS 与 PostgreSQL；当前代码和数据模型均以本站自身规则为准。若旧本地数据库的 `_works_v.version_status` 仍残留 `archived`，先使用 `scripts/db/normalize-legacy-work-version-status.ps1` 的 dry-run/确认流程修复版本历史兼容值，再进行 Payload schema push。
 
 ## 当前功能
 
-前台提供作品、创作者、机构、排雷规则、搜索、推荐、最近更新、注册账户、评论、我的列表和反馈入口。作品详情会区分正式分级、来源、证据状态、页面提示与人工复核状态。
+前台提供作品、创作者、机构、排雷规则、搜索、推荐、最近更新、注册账户、评论、我的列表和反馈入口。作品详情会分开显示人工审核参考与 AI Radar 参考；目录等级按“人工参考优先、否则 AI、再否则兼容旧字段”计算。两条轨道都保留来源、证据状态和审计边界，不互相覆盖。
 
 后台主要集合包括：
 
@@ -16,6 +16,7 @@ Creators
 Organizations
 Evidence
 RadarResearchRecords
+AuditEvents
 Comments
 UserLists
 FeedbackSubmissions
@@ -25,7 +26,7 @@ Tags
 Rules
 ```
 
-`Works.rank` 是正式作品分级；`RadarResearchRecords` 是独立内部研究档案，不能覆盖正式分级。用户评论与反馈默认进入审核流程，不会自动修改条目。
+`Works.humanAssessment` 与 `Works.radarAssessment` 是两条独立评级轨道。AI 可刷新自身轨道而不改动人工轨道；正式批量更新使用 `pnpm radar:local-update` 生成可校验的输入、计划和 dry-run，详见 [本地 AI Radar 更新管道](docs/local-ai-radar-update-pipeline-v01.md)。目录展示优先采用人工轨道等级，没有人工等级时采用 AI 建议；`Works.rank` 只作为兼容旧记录的后备值。`RadarResearchRecords` 是独立内部研究档案，不能直接覆盖任一轨道。用户评论即时公开，但有重复发送限制、时间频率限制、用户举报与达到阈值后的自动保护隐藏；作者和工作人员仍可删除。用户反馈进入独立审核队列，不会自动修改条目。
 
 ## 主要路由
 
@@ -40,6 +41,9 @@ Rules
 /recommendations   推荐
 /me/lists          我的列表
 /me/review/public-catalog  内部条目审核工作台
+/me/review/content         作品、创作者、机构审核与编辑
+/me/studio                  站内内容工作台
+/me/personnel               人事任用、角色与封停
 /updates           最近更新
 /feedback          反馈
 /account           账户
@@ -74,7 +78,9 @@ $env:PAYLOAD_EXPORT_PASSWORD="你的后台密码"
 node scripts/export/build-full-public-index.mjs --url "http://localhost:3000"
 ```
 
-该命令默认生成包含全部作品、创作者、机构和草稿的完整增强版，并保留封面。旧导入记录即使可见性字段为空也会进入完整版；只有低流量镜像才显式传入 `--profile lite --media-mode text` 并应用 Lite 可见性开关。生成的 `public/search-index.json` 和 `public/detail-index.json` 默认不提交。详见 `docs/deployment-profiles-and-feedback.md`。
+请在另一个终端保持 `pnpm dev` 或生产服务器运行后再执行导出；默认每页读取 100 条，避免三万多条作品组成的超大请求超时。可用 `PUBLIC_INDEX_PAGE_LIMIT=200`（最大 250）调高批量大小。三万余条作品的完整导出会持续数分钟；保持开发服务器运行并等待它完成，不要同时重复启动第二次导出。
+
+该命令默认生成包含全部当前作品、创作者、机构、草稿和审核中记录的完整增强版，并保留封面；只有明确归档的记录会被排除。旧导入记录即使 status 或可见性字段为空也会进入完整版；只有低流量镜像才显式传入 `--profile lite --media-mode text` 并应用 Lite 可见性开关。生成的 `public/search-index.json` 和 `public/detail-index.json` 默认不提交。详见 `docs/deployment-profiles-and-feedback.md`。
 
 ## 账户与邮件
 
@@ -120,4 +126,8 @@ pnpm test:radar-presentation
 pnpm build
 ```
 
-新增集合字段后先运行 `pnpm generate:types`，再执行 TypeScript 与构建检查。
+如果数据库已经存在 stewardship notices 表，保持 `STEWARDSHIP_NOTICES_SCHEMA_READY=true`，不要在开发启动时接受删除表的 schema 警告。新增集合字段后先运行 `pnpm generate:types`，再执行 TypeScript 与构建检查。
+
+### 旧 XWiki 列清理
+
+代码已不再读取或写入 XWiki 兼容字段。已有数据库第一次启动时如只提示删除 `legacy_x_wiki_page` / `version_legacy_x_wiki_page` 及其关系列，先建立数据库 checkpoint，再确认该提示以完成历史列清理；如果提示还包含当前集合或 stewardship notices 的表/列，不要确认，先核对环境变量和迁移状态。

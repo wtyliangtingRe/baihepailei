@@ -163,6 +163,17 @@
   gap: 8px;
 }
 
+.work-assessment-source-summary > summary {
+  cursor: pointer;
+  color: #b9c9cc;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.work-assessment-source-summary[open] > summary {
+  color: #8bd9e8;
+}
+
 .work-assessment-source-summary > span,
 .work-assessment-decisive > span,
 .work-assessment-section-heading span {

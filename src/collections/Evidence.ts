@@ -1,6 +1,6 @@
 import type { Access, CollectionConfig, CollectionSlug } from 'payload'
 
-import { trustedAndUp } from '@/access/roles'
+import { editorsAndUp } from '@/access/roles'
 
 const reviewStatusOptions = [
   { label: '待复核', value: 'pending' }, { label: '已复核', value: 'reviewed' },
@@ -19,7 +19,7 @@ export const Evidence: CollectionConfig = {
   slug: 'evidence',
   labels: { singular: '证据材料', plural: '证据材料' },
   admin: { defaultColumns: ['title', 'siteId', 'evidenceType', 'reviewStatus', 'evidenceStrength', 'isPublic', 'status', 'updatedAt'], group: '内容', useAsTitle: 'title' },
-  access: { create: trustedAndUp, delete: trustedAndUp, read: publicEvidenceOrSignedIn, update: trustedAndUp },
+  access: { create: editorsAndUp, delete: editorsAndUp, read: publicEvidenceOrSignedIn, update: editorsAndUp },
   versions: { drafts: true },
   fields: [
     { name: 'title', type: 'text', label: '标题', required: true },
@@ -44,7 +44,6 @@ export const Evidence: CollectionConfig = {
     { name: 'capturedAt', type: 'date', label: '截图时间', admin: { description: '记录截图或取证的大致时间。' } },
     { name: 'isPublic', type: 'checkbox', label: '允许增强版前台展示', defaultValue: false, admin: { description: '关闭时只作为后台整理材料。低流量正式版无论此项如何都不渲染图片。' } },
     { name: 'searchText', type: 'textarea', label: '搜索补充文本', admin: { description: '用于导出搜索索引的补充文本。' } },
-    { name: 'legacyXWikiPage', type: 'text', admin: { hidden: true } },
     { name: 'status', type: 'select', label: '状态', defaultValue: 'draft', required: true, options: evidenceStatusOptions },
   ],
 }

@@ -4,6 +4,7 @@ import { lexicalEditor as makeEditor } from '@payloadcms/richtext-lexical'
 import { buildConfig, type CollectionConfig } from 'payload'
 
 import { isAdmin } from './src/access/roles'
+import { AuditEvents } from './src/collections/AuditEvents'
 import { Comments } from './src/collections/Comments'
 import { Creators } from './src/collections/Creators'
 import { Evidence } from './src/collections/Evidence'
@@ -21,37 +22,87 @@ import { Warnings } from './src/collections/Warnings'
 import { Works } from './src/collections/Works'
 import { withRadarAssessmentFields } from './src/collections/fields/radarAssessment'
 import { withStewardshipNotices } from './src/collections/fields/stewardshipNotices'
+import { recordAuditEvent } from './src/lib/audit'
 import { syncWorkToPublicIndexes } from './src/lib/publicIndexSync'
 
 /**
- * Keep this false until the reviewed Payload migration has been executed.
- * To generate/review the migration, run the Payload command with
- * STEWARDSHIP_NOTICES_SCHEMA_READY=true for that process only. After the
- * migration succeeds, set the same server-side variable for build/runtime.
+ * Stewardship notices are part of the current schema. Only an explicit false
+ * disables them for a deliberately isolated migration process; the default is
+ * true so an existing database is never asked to drop the stewardship tables.
  */
-const stewardshipSchemaReady = String(process.env['STEWARDSHIP_NOTICES_SCHEMA_READY'] || '').toLowerCase() === 'true'
+const payloadSchemaPush = String(process.env['PAYLOAD_DB_PUSH'] || 'false').toLowerCase() === 'true'
+const stewardshipSchemaReady = String(process.env['STEWARDSHIP_NOTICES_SCHEMA_READY'] || 'true').toLowerCase() !== 'false'
 
 const WorksWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Works) : Works
 const CreatorsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Creators) : Creators
 const OrganizationsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Organizations) : Organizations
 const WorksWithRadarAssessment = withRadarAssessmentFields(WorksWithOptionalStewardship)
-const WorksWithSafePublicationStatus: CollectionConfig = {
+const WorksWithSafeLifecycleStatus: CollectionConfig = {
   ...WorksWithRadarAssessment,
   hooks: {
     ...WorksWithRadarAssessment.hooks,
     beforeValidate: [
       ...(WorksWithRadarAssessment.hooks?.beforeValidate || []),
       ({ data }) => {
-        if (!data || data.status !== 'review') return data
-        return {
-          ...data,
-          status: data.reviewStatus === 'reviewed' ? 'published' : 'draft',
+        if (!data) return data
+
+        // Compatibility bridge for old importers and forms that still submit
+        // the former root field named "status". Root "status" is forbidden by
+        // Payload Postgres when drafts are enabled, so never persist it again.
+        const next = { ...data } as Record<string, unknown>
+        const legacyStatus = String(next.status || '').trim()
+        delete next.status
+
+        if (legacyStatus === 'archived') {
+          next.catalogStatus = 'archived'
+          next._status = 'draft'
+        } else {
+          if (legacyStatus === 'published' || legacyStatus === 'draft') {
+            next._status = legacyStatus
+          } else if (legacyStatus === 'review') {
+            next._status = next.reviewStatus === 'reviewed' ? 'published' : 'draft'
+          }
+
+          if (next.catalogStatus !== 'archived') next.catalogStatus = 'active'
         }
+
+        return next
       },
     ],
     afterChange: [
       ...(WorksWithRadarAssessment.hooks?.afterChange || []),
-      async ({ context, doc }) => {
+      async ({ context, doc, previousDoc, req, operation }) => {
+        if (context?.auditEvent) return doc
+        await recordAuditEvent({
+          req,
+          action: operation === 'create' ? 'work.created' : 'work.updated',
+          targetCollection: 'works',
+          targetID: doc?.id,
+          targetTitle: doc?.title,
+          summary: '作品内容被工作人员写入。',
+          metadata: {
+            operation,
+            beforeRank: previousDoc?.rank,
+            afterRank: doc?.rank,
+            beforeReviewStatus: previousDoc?.reviewStatus,
+            afterReviewStatus: doc?.reviewStatus,
+            beforeCatalogStatus: previousDoc?.catalogStatus,
+            afterCatalogStatus: doc?.catalogStatus,
+            beforePublicationStatus: previousDoc?._status,
+            afterPublicationStatus: doc?._status,
+            beforeHumanAssessmentGrade: previousDoc?.humanAssessment?.grade,
+            afterHumanAssessmentGrade: doc?.humanAssessment?.grade,
+            beforeHumanAssessmentStatus: previousDoc?.humanAssessment?.status,
+            afterHumanAssessmentStatus: doc?.humanAssessment?.status,
+            beforeAISuggestedGrade: previousDoc?.radarAssessment?.suggestedGrade,
+            afterAISuggestedGrade: doc?.radarAssessment?.suggestedGrade,
+            humanNoteChanged: previousDoc?.humanAssessment?.note !== doc?.humanAssessment?.note,
+            humanSourceSummaryChanged: previousDoc?.humanAssessment?.sourceSummary !== doc?.humanAssessment?.sourceSummary,
+            aiSourceSummaryChanged: previousDoc?.radarAssessment?.sourceSummary !== doc?.radarAssessment?.sourceSummary,
+            aiRuleSetChanged: JSON.stringify(previousDoc?.radarAssessment?.matchedRules || []) !== JSON.stringify(doc?.radarAssessment?.matchedRules || []),
+            context: Object.keys(context || {}).filter((key) => key !== 'auditEvent'),
+          },
+        })
         if (!context?.firstPartyStudio) return doc
         try {
           syncWorkToPublicIndexes(doc)
@@ -61,8 +112,84 @@ const WorksWithSafePublicationStatus: CollectionConfig = {
         return doc
       },
     ],
+    afterDelete: [
+      async ({ doc, req }) => {
+        await recordAuditEvent({
+          req,
+          action: 'work.deleted',
+          targetCollection: 'works',
+          targetID: doc?.id,
+          targetTitle: doc?.title,
+          summary: '作品记录被永久删除；软隐藏优先使用回收站。',
+          metadata: {
+            catalogStatus: doc?.catalogStatus,
+            publicationStatus: doc?._status,
+            reviewStatus: doc?.reviewStatus,
+          },
+        })
+      },
+    ],
   },
 }
+function withContentAudit(collection: CollectionConfig, targetCollection: string): CollectionConfig {
+  return {
+    ...collection,
+    hooks: {
+      ...collection.hooks,
+      afterChange: [
+        ...(collection.hooks?.afterChange || []),
+        async ({ doc, previousDoc, req, operation }) => {
+          await recordAuditEvent({
+            req,
+            action: operation === 'create' ? targetCollection + '.created' : targetCollection + '.updated',
+            targetCollection,
+            targetID: doc?.id,
+            targetTitle: doc?.title || doc?.name,
+            summary: targetCollection + ' 内容被工作人员写入。',
+            metadata: {
+              operation,
+              beforeStatus: previousDoc?.status,
+              afterStatus: doc?.status,
+              beforeReviewStatus: previousDoc?.reviewStatus,
+              afterReviewStatus: doc?.reviewStatus,
+              beforeReviewOrigin: previousDoc?.reviewOrigin,
+              afterReviewOrigin: doc?.reviewOrigin,
+              beforeTitle: previousDoc?.title || previousDoc?.name,
+              afterTitle: doc?.title || doc?.name,
+              beforeSlug: previousDoc?.slug,
+              afterSlug: doc?.slug,
+            },
+          })
+        },
+      ],
+      afterDelete: [
+        ...(collection.hooks?.afterDelete || []),
+        async ({ doc, req }) => {
+          await recordAuditEvent({
+            req,
+            action: targetCollection + '.deleted',
+            targetCollection,
+            targetID: doc?.id,
+            targetTitle: doc?.title || doc?.name,
+            summary: targetCollection + ' 记录被永久删除。',
+            metadata: { status: doc?.status },
+          })
+        },
+      ],
+    },
+  }
+}
+
+const CreatorsWithAudit = withContentAudit(CreatorsWithOptionalStewardship, 'creators')
+const OrganizationsWithAudit = withContentAudit(OrganizationsWithOptionalStewardship, 'organizations')
+
+const EvidenceWithAudit = withContentAudit(Evidence, 'evidence')
+const RadarResearchRecordsWithAudit = withContentAudit(RadarResearchRecords, 'radar-research-records')
+const TermsWithAudit = withContentAudit(Terms, 'terms')
+const WarningsWithAudit = withContentAudit(Warnings, 'warnings')
+const TagsWithAudit = withContentAudit(Tags, 'tags')
+const RulesWithAudit = withContentAudit(Rules, 'rules')
+
 const UsersWithRestrictedAdmin: CollectionConfig = {
   ...Users,
   access: {
@@ -108,22 +235,24 @@ export default buildConfig({
   },
   collections: [
     UsersWithRestrictedAdmin,
+    AuditEvents,
     Media,
-    WorksWithSafePublicationStatus,
-    CreatorsWithOptionalStewardship,
-    OrganizationsWithOptionalStewardship,
-    Evidence,
+    WorksWithSafeLifecycleStatus,
+    CreatorsWithAudit,
+    OrganizationsWithAudit,
+    EvidenceWithAudit,
     ...(stewardshipSchemaReady ? [StewardshipNotices] : []),
-    RadarResearchRecords,
+    RadarResearchRecordsWithAudit,
     Comments,
     UserLists,
     FeedbackSubmissions,
-    Terms,
-    Warnings,
-    Tags,
-    Rules,
+    TermsWithAudit,
+    WarningsWithAudit,
+    TagsWithAudit,
+    RulesWithAudit,
   ],
   db: postgresAdapter({
+    push: payloadSchemaPush,
     pool: {
       connectionString: String(process.env['DATABASE_URL'] || ''),
     },

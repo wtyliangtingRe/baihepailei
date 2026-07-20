@@ -47,12 +47,43 @@
 }
 
 .work-cover-placeholder span,
-.detail-cover-placeholder span,
 .evidence-image-placeholder span {
   padding: 8px 12px;
   border: 1px solid rgb(255 181 215 / 0.35);
   border-radius: 999px;
   background: rgb(17 17 17 / 0.72);
+}
+
+.detail-cover-placeholder {
+  grid-template-rows: auto auto;
+  align-content: center;
+  gap: 7px;
+  aspect-ratio: 3 / 4;
+  max-width: 132px;
+  min-height: 176px;
+  background:
+    linear-gradient(145deg, rgb(255 181 215 / 0.12), transparent 55%),
+    repeating-linear-gradient(135deg, #1a151b 0 10px, #151515 10px 20px);
+}
+
+.detail-cover-placeholder-mark {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 1px solid rgb(255 181 215 / 0.38);
+  border-radius: 16px;
+  color: #ffb5d7;
+  background: rgb(17 17 17 / 0.74);
+  font-size: 29px;
+  line-height: 1;
+}
+
+.detail-cover-placeholder figcaption {
+  color: #c5b9c2;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 
 .detail-hero-layout {

@@ -1,5 +1,7 @@
 import { APIError, type Access, type CollectionConfig, type FieldAccess, type TextFieldSingleValidation } from 'payload'
 
+import { recordAuditEvent } from '@/lib/audit'
+
 import {
   adminsOnly,
   anyone,
@@ -26,7 +28,7 @@ type UserLike = {
 
 type AccountStatus = 'active' | 'suspended'
 
-const assignableRoles = new Set<Role>(['owner', 'admin', 'editor', 'reviewer', 'trusted', 'member'])
+const assignableRoles = new Set<Role>(['owner', 'admin', 'editor', 'member'])
 const adminAssignableRoles = new Set<Role>(['editor', 'member'])
 const accountStatuses = new Set<AccountStatus>(['active', 'suspended'])
 
@@ -44,7 +46,10 @@ function isConfiguredOwnerEmail(value: unknown) {
 }
 
 function requestedRole(value: unknown): Role | undefined {
-  const role = String(value || '') as Role
+  const raw = String(value || '').trim()
+  // Legacy roles never regain staff capability implicitly. The owner can
+  // explicitly appoint a current role after reviewing the account.
+  const role = raw as Role
   return assignableRoles.has(role) ? role : undefined
 }
 
@@ -240,7 +245,7 @@ export const Users: CollectionConfig = {
         }
 
         if (actorRole === 'owner') {
-          const role = desired === 'owner' && !isConfiguredOwnerEmail(email) ? 'admin' : desired || original.role || 'member'
+          const role = desired === 'owner' && !isConfiguredOwnerEmail(email) ? 'admin' : desired || requestedRole(original.role) || 'member'
           return applyManagedAccountState({ ...data, email, role }, original, actor)
         }
 
@@ -258,7 +263,7 @@ export const Users: CollectionConfig = {
                   role: 'admin',
                 }, original)
           }
-          const role = desired && adminAssignableRoles.has(desired) ? desired : original.role || 'member'
+          const role = desired && adminAssignableRoles.has(desired) ? desired : requestedRole(original.role) || 'member'
           const mayManageStatus = String(actorID) !== String(original.id)
           const next = { ...data, email, role }
           return mayManageStatus ? applyManagedAccountState(next, original, actor) : preserveAccountState(next, original)
@@ -267,8 +272,27 @@ export const Users: CollectionConfig = {
         return preserveAccountState({
           ...data,
           email: normalizeEmail(original.email),
-          role: original.role || 'member',
+          role: requestedRole(original.role) || 'member',
         }, original)
+      },
+    ],
+    afterChange: [
+      async ({ doc, previousDoc, req, operation }) => {
+        await recordAuditEvent({
+          req,
+          action: operation === 'create' ? 'user.created' : 'user.updated',
+          targetCollection: 'users',
+          targetID: doc?.id,
+          targetTitle: doc?.email,
+          summary: '账户或角色状态被工作人员写入。',
+          metadata: {
+            operation,
+            beforeRole: previousDoc?.role,
+            afterRole: doc?.role,
+            beforeAccountStatus: previousDoc?.accountStatus,
+            afterAccountStatus: doc?.accountStatus,
+          },
+        })
       },
     ],
   },
@@ -286,8 +310,6 @@ export const Users: CollectionConfig = {
         { label: '管理员', value: 'admin' },
         { label: '编辑', value: 'editor' },
         { label: '注册用户', value: 'member' },
-        { label: '审核（旧角色兼容）', value: 'reviewer' },
-        { label: '可信投稿者（旧角色兼容）', value: 'trusted' },
       ],
     },
     {

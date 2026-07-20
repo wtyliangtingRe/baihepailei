@@ -2,6 +2,8 @@ import config from '@payload-config'
 import { type NextRequest, NextResponse } from 'next/server'
 import { generatePayloadCookie, getPayload } from 'payload'
 
+import { getRole } from '@/access/roles'
+
 type AccountUser = {
   id: number | string
   accountStatus?: string
@@ -18,7 +20,7 @@ function publicUser(value: unknown) {
     accountStatus: user.accountStatus || 'active',
     displayName: user.displayName || '',
     email: user.email || '',
-    role: user.role || 'member',
+    role: getRole(user) || 'member',
   }
 }
 

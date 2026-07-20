@@ -5,9 +5,10 @@ import {
   type MergedWorkReference,
 } from '@/lib/mergedWork'
 
-export type ReviewableContentDoc = Omit<MergeMarkedWork, 'reviewStatus' | 'status'> & {
+export type ReviewableContentDoc = Omit<MergeMarkedWork, 'reviewStatus'> & {
   reviewStatus?: string
-  status?: string
+  _status?: string
+  catalogStatus?: string
 }
 export type { MergedWorkReference }
 export { isMergedDuplicateWork, mergedWorkReference }
@@ -28,9 +29,11 @@ function text(value: unknown) {
 }
 
 export function normalizePublicationStatus(value: unknown) {
-  const status = text(value)
-  if (status === 'published' || status === 'archived') return status
-  return 'draft'
+  return text(value) === 'published' ? 'published' : 'draft'
+}
+
+export function normalizeCatalogStatus(value: unknown) {
+  return text(value) === 'archived' ? 'archived' : 'active'
 }
 
 export function safeReviewReturnTo(value: FormDataEntryValue | string | null | undefined) {

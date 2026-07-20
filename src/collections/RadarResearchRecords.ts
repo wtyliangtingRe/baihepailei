@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { trustedAndUp } from '@/access/roles'
+import { editorsAndUp } from '@/access/roles'
 
 const gradeOptions = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'unknown'].map((value) => ({
   label: value === 'unknown' ? '未知' : value,
@@ -47,10 +47,10 @@ export const RadarResearchRecords: CollectionConfig = {
     description: '保存 AI Radar 的内部研究分诊结果。默认不公开，也不等同于正式评级。',
   },
   access: {
-    create: trustedAndUp,
-    delete: trustedAndUp,
-    read: trustedAndUp,
-    update: trustedAndUp,
+    create: editorsAndUp,
+    delete: editorsAndUp,
+    read: editorsAndUp,
+    update: editorsAndUp,
   },
   fields: [
     {

@@ -6,6 +6,8 @@ import { notFound, redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { getPayload } from 'payload'
 
+import { isEditor } from '@/access/roles'
+
 import RadarRuleSelector from '../../../../_components/RadarRuleSelector'
 import PendingSubmitButton from '../../_components/PendingSubmitButton'
 import { syncWorkToPublicIndexes } from '@/lib/publicIndexSync'
@@ -21,6 +23,7 @@ import {
   aliasesToText,
   isMergedDuplicateWork,
   mergedWorkReference,
+  normalizeCatalogStatus,
   normalizePublicationStatus,
   safeReviewReturnTo,
   sourceLinksFromText,
@@ -30,7 +33,6 @@ import StewardshipNoticeSelector, { type StewardshipNoticeOption } from './Stewa
 
 export const dynamic = 'force-dynamic'
 
-type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted' | 'member'
 type PageParams = Promise<{ id: string }>
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
 type LocalizedTitle = {
@@ -77,6 +79,7 @@ type WorkDoc = {
   stewardshipNotices?: Array<string | number | StewardshipNoticeDoc>
   summary?: unknown
   radarAssessment?: RadarAssessmentDoc | null
+  humanAssessment?: { grade?: string; status?: string; note?: string; sourceSummary?: string; evidenceStatus?: string; sourceLinks?: Array<{ label?: string; url?: string }>; assessedAt?: string; assessedBy?: unknown } | null
   mediaGroup?: string
   mediaType?: string
   format?: string
@@ -91,7 +94,8 @@ type WorkDoc = {
   humanReviewedAt?: string
   humanReviewedBy?: unknown
   reviewReasons?: string[] | string
-  status?: string
+  _status?: string
+  catalogStatus?: string
   isLiteVisible?: boolean
   isFullVisible?: boolean
   hasEvidence?: boolean
@@ -111,13 +115,16 @@ type WorkDoc = {
   createdAt?: string
 }
 
-const staffRoles = new Set<Role>(['owner', 'admin', 'editor', 'reviewer'])
 const rankOptions = ['S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'trash', 'unknown']
+const humanAssessmentGradeOptions = ['S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'unknown']
 const mediaGroupOptions = ['anime', 'manga', 'novel', 'game', 'other', 'unknown']
 const mediaTypeOptions = ['anime', 'manga', 'novel', 'light_novel', 'visual_novel', 'game', 'audio_drama', 'live_action', 'webtoon', 'doujin', 'anthology', 'other', 'unknown']
 const formatOptions = ['tv_anime', 'anime_movie', 'ova', 'ona', 'manga_series', 'manga_oneshot', 'novel_series', 'light_novel_series', 'web_serial', 'visual_novel', 'pc_game', 'console_game', 'mobile_game', 'audio_drama', 'live_action', 'webtoon_series', 'doujin', 'anthology', 'other', 'unknown']
 const reviewStatusOptions = ['pending', 'reviewed', 'disputed', 'deprecated']
-const publicationStatusOptions = ['draft', 'published', 'archived']
+const humanAssessmentStatusOptions = ['pending', 'reviewed', 'disputed']
+const humanAssessmentEvidenceOptions = ['unassessed', 'source_checked', 'primary_checked', 'insufficient']
+const publicationStatusOptions = ['draft', 'published']
+const catalogStatusOptions = ['active', 'archived']
 const ratingNoticeOptions = ['ai_synthesized_pending_review', 'insufficient_information', 'manual_reviewed', 'none', 'other']
 const evidenceStrengthOptions = ['unassessed', 'weak', 'medium', 'strong']
 const languageOptions = new Set(['ja', 'zh-Hans', 'zh-Hant', 'en', 'ko', 'fr', 'de', 'es', 'und', 'other', 'unknown'])
@@ -130,7 +137,7 @@ const labels: Record<string, string> = {
   light_novel: '轻小说', visual_novel: '视觉小说', audio_drama: '广播剧 / 音声', webtoon: 'Webtoon', doujin: '同人作品', anthology: '合集 / 选集',
   tv_anime: 'TV 动画', anime_movie: '动画电影', ova: 'OVA', ona: 'ONA / 网络动画', manga_series: '漫画连载', manga_oneshot: '漫画短篇', novel_series: '小说系列', light_novel_series: '轻小说系列', web_serial: 'Web 连载', pc_game: 'PC 游戏', console_game: '主机游戏', mobile_game: '手机游戏', webtoon_series: 'Webtoon 连载',
   pending: '待复核', reviewed: '已复核', disputed: '有争议', deprecated: '已合并 / 已废弃',
-  draft: '草稿', published: '已发布', archived: '回收站 / 归档',
+  draft: '草稿', published: '已发布', active: '正常', archived: '回收站 / 归档',
   ai_synthesized_pending_review: 'AI 综合，待复核', insufficient_information: '信息不足', manual_reviewed: '人工已确认', none: '无',
   unassessed: '未评估', weak: '弱', medium: '中', strong: '强',
   day: '精确到日', month: '精确到月', year: '精确到年',
@@ -140,14 +147,8 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] || '' : value || ''
 }
 
-function roleOf(user: unknown): Role | undefined {
-  if (!user || typeof user !== 'object') return undefined
-  return (user as { role?: Role }).role
-}
-
 function canEdit(user: unknown) {
-  const role = roleOf(user)
-  return Boolean(role && staffRoles.has(role))
+  return isEditor(user)
 }
 
 function text(value: FormDataEntryValue | null, max = 10000) {
@@ -253,7 +254,7 @@ async function saveStudioWorkAction(formData: FormData) {
   const returnTo = safeReviewReturnTo(formData.get('returnTo'))
   if (!id) redirect('/me/studio?studioError=invalid_action')
 
-  const current = await payload.findByID({ collection: 'works', id, depth: 0, draft: true, overrideAccess: true }) as unknown as WorkDoc
+  const current = await payload.findByID({ collection: 'works', id, depth: 0, overrideAccess: true }) as unknown as WorkDoc
   if (isMergedDuplicateWork(current)) {
     const merged = mergedWorkReference(current)
     if (merged?.id) redirect(editorHref(merged.id, returnTo, { editorError: 'merged_duplicate', sourceId: id }))
@@ -263,7 +264,8 @@ async function saveStudioWorkAction(formData: FormData) {
   const title = text(formData.get('title'), 300)
   const rank = text(formData.get('rank'), 40)
   const reviewStatus = text(formData.get('reviewStatus'), 40)
-  const status = normalizePublicationStatus(formData.get('status'))
+  const publicationStatus = normalizePublicationStatus(formData.get('_status'))
+  const catalogStatus = normalizeCatalogStatus(formData.get('catalogStatus'))
   const ratingNotice = text(formData.get('ratingNotice'), 80)
   const evidenceStrength = text(formData.get('evidenceStrength'), 40)
   const mediaGroup = text(formData.get('mediaGroup'), 80)
@@ -275,7 +277,8 @@ async function saveStudioWorkAction(formData: FormData) {
   const invalid = !title
     || !rankOptions.includes(rank)
     || !reviewStatusOptions.includes(reviewStatus)
-    || !publicationStatusOptions.includes(status)
+    || !publicationStatusOptions.includes(publicationStatus)
+    || !catalogStatusOptions.includes(catalogStatus)
     || !ratingNoticeOptions.includes(ratingNotice)
     || !evidenceStrengthOptions.includes(evidenceStrength)
     || !mediaGroupOptions.includes(mediaGroup)
@@ -285,7 +288,14 @@ async function saveStudioWorkAction(formData: FormData) {
   if (invalid) redirect(editorHref(id, returnTo, { editorError: 'invalid_fields' }))
 
   const humanReviewNote = text(formData.get('humanReviewNote'), 4000)
+  const humanGrade = text(formData.get('humanGrade'), 40)
+  const humanStatus = text(formData.get('humanStatus'), 40) || (reviewStatus === 'reviewed' ? 'reviewed' : reviewStatus === 'disputed' ? 'disputed' : 'pending')
+  const humanEvidenceStatus = text(formData.get('humanEvidenceStatus'), 40) || 'unassessed'
+  const humanNote = text(formData.get('humanNote'), 4000)
+  const humanSourceSummary = text(formData.get('humanSourceSummary'), 4000)
   if (reviewStatus === 'disputed' && !humanReviewNote) redirect(editorHref(id, returnTo, { editorError: 'note_required' }))
+  if (humanGrade && !humanAssessmentGradeOptions.includes(humanGrade)) redirect(editorHref(id, returnTo, { editorError: 'invalid_fields' }))
+  if (!humanAssessmentStatusOptions.includes(humanStatus) || !humanAssessmentEvidenceOptions.includes(humanEvidenceStatus)) redirect(editorHref(id, returnTo, { editorError: 'invalid_fields' }))
 
   const decisiveRuleCode = normalizedRuleCode(formData.get('decisiveRuleCode'))
   const submittedMatchedRuleCodes = submittedRuleCodes(formData)
@@ -296,7 +306,7 @@ async function saveStudioWorkAction(formData: FormData) {
   const rulesChanged = currentDecisiveRuleCode !== resolvedDecisiveRuleCode || !sameValues(currentRuleCodes, orderedRuleCodes)
 
   const actorID = (auth.user as { id?: string | number }).id
-  const archived = status === 'archived'
+  const archived = catalogStatus === 'archived'
   const data: Record<string, unknown> = {
     title,
     originalTitle: text(formData.get('originalTitle'), 300),
@@ -310,10 +320,21 @@ async function saveStudioWorkAction(formData: FormData) {
     firstPublishedLabel: text(formData.get('firstPublishedLabel'), 120),
     rank,
     reviewStatus: archived ? 'deprecated' : reviewStatus,
-    status,
+    _status: archived ? 'draft' : publicationStatus,
+    catalogStatus,
     ratingNotice,
     evidenceStrength,
     humanReviewNote,
+    humanAssessment: {
+      grade: humanGrade || null,
+      status: humanStatus,
+      note: humanNote || humanReviewNote || '',
+      sourceSummary: humanSourceSummary,
+      evidenceStatus: humanEvidenceStatus,
+      sourceLinks: sourceLinksFromText(formData.get('humanSourceLinks')),
+      assessedAt: humanStatus !== 'pending' ? new Date().toISOString() : current.humanAssessment?.assessedAt,
+      assessedBy: humanStatus !== 'pending' ? actorID : current.humanAssessment?.assessedBy,
+    },
     isLiteVisible: archived ? false : checked(formData, 'isLiteVisible'),
     isFullVisible: archived ? false : checked(formData, 'isFullVisible'),
     hasEvidence: checked(formData, 'hasEvidence'),
@@ -377,7 +398,7 @@ async function saveStudioWorkAction(formData: FormData) {
       depth: 1,
       draft: false,
       overrideAccess: true,
-      context: { firstPartyStudio: true },
+      context: { firstPartyStudio: true, auditActorID: (auth.user as { id?: string | number }).id },
       data: data as never,
     }) as unknown as WorkDoc
   } catch (error) {
@@ -418,7 +439,7 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
 
   let work: WorkDoc
   try {
-    work = await payload.findByID({ collection: 'works', id, depth: 1, draft: true, overrideAccess: true }) as unknown as WorkDoc
+    work = await payload.findByID({ collection: 'works', id, depth: 1, overrideAccess: true }) as unknown as WorkDoc
   } catch {
     notFound()
   }
@@ -477,9 +498,9 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
           <p className="eyebrow">站内内容管理 · 作品编辑</p>
           <h1>{work.title || `作品 #${work.id}`}</h1>
           <p className="muted">这里直接修改作品正式字段。保存后会同步标题、正式分级、作品简介、规则建议、状态、类型、日期和公开来源；草稿仍不会自动公开。</p>
-          <div className="review-safety-note">写入通过 Payload 并保留版本历史。回收站只是 status=archived 与关闭可见性，不会永久删除数据。</div>
+          <div className="review-safety-note">写入通过 Payload 并保留版本历史。回收站使用 catalogStatus=archived，并强制 Payload _status=draft 与关闭可见性，不会永久删除数据。</div>
         </div>
-        <div className="review-stat-grid"><Stat label="作品 ID" value={String(work.id)} /><Stat label="人工正式分级字段" value={work.rank || 'unknown'} /><Stat label="AI 建议等级" value={work.radarAssessment?.suggestedGrade || '尚无'} /></div>
+        <div className="review-stat-grid"><Stat label="作品 ID" value={String(work.id)} /><Stat label="目录兼容等级" value={work.rank || 'unknown'} /><Stat label="人工参考等级" value={work.humanAssessment?.grade || '尚无'} /><Stat label="AI 建议等级" value={work.radarAssessment?.suggestedGrade || '尚无'} /></div>
       </section>
 
       {saved ? <div className="review-action-message review-action-message-success" role="status">作品 #{work.id} 已保存。{sync === 'ok' ? '现有前台索引也已同步。' : sync === 'draft_not_public' ? '它仍是未进入索引的新草稿，发布时再进入前台。' : sync === 'missing_index' ? '本地缺少公开索引文件，需要先生成索引。' : sync === 'failed' ? '数据库已保存，但前台索引同步失败，请查看服务器日志。' : ''}</div> : null}
@@ -525,10 +546,17 @@ export default async function StudioWorkEditorPage({ params, searchParams }: { p
           <div className="review-row-actions"><Link className="review-link" href="/terms">查看站务与用语</Link><Link className="review-link" href="/support">运营收支与支持</Link></div>
         </EditorSection>
 
-        <EditorSection title="人工正式分级、发布与可见性" description="这里保存人工正式字段。AI 建议等级保留在 radarAssessment 中，前台会与人工评级分开显示。">
-          <Field label="人工正式分级"><Select name="rank" options={rankOptions} value={work.rank || 'unknown'} /></Field>
+        <EditorSection title="人工审核参考、发布与可见性" description="人工轨道和 AI Radar 轨道独立保存。目录会优先采用人工参考等级，但页面仍分别展示两边的来源与证据。">
+          <Field label="目录兼容等级"><Select name="rank" options={rankOptions} value={work.rank || 'unknown'} /></Field>
+          <Field label="人工参考等级"><Select name="humanGrade" options={humanAssessmentGradeOptions} value={work.humanAssessment?.grade || 'unknown'} /></Field>
+          <Field label="人工轨道状态"><Select name="humanStatus" options={humanAssessmentStatusOptions} value={work.humanAssessment?.status || 'pending'} /></Field>
+          <Field label="人工证据状态"><Select name="humanEvidenceStatus" options={humanAssessmentEvidenceOptions} value={work.humanAssessment?.evidenceStatus || 'unassessed'} /></Field>
+          <Field wide label="人工判断说明"><textarea defaultValue={work.humanAssessment?.note || ''} maxLength={4000} name="humanNote" /></Field>
+          <Field wide label="人工来源摘要"><textarea defaultValue={work.humanAssessment?.sourceSummary || ''} maxLength={4000} name="humanSourceSummary" /></Field>
+          <Field wide label="人工来源链接"><textarea defaultValue={sourceLinksToText(work.humanAssessment?.sourceLinks)} name="humanSourceLinks" placeholder="名称 | https://..." /></Field>
           <Field label="人工复核状态"><Select name="reviewStatus" options={reviewStatusOptions} value={work.reviewStatus || 'pending'} /></Field>
-          <Field label="发布状态"><Select name="status" options={publicationStatusOptions} value={normalizePublicationStatus(work.status)} /></Field>
+          <Field label="Payload 发布状态"><Select name="_status" options={publicationStatusOptions} value={normalizePublicationStatus(work._status)} /></Field>
+          <Field label="目录状态"><Select name="catalogStatus" options={catalogStatusOptions} value={normalizeCatalogStatus(work.catalogStatus)} /></Field>
           <Field label="页面分级提示"><Select name="ratingNotice" options={ratingNoticeOptions} value={work.ratingNotice || 'none'} /></Field>
           <Field label="证据强度"><Select name="evidenceStrength" options={evidenceStrengthOptions} value={work.evidenceStrength || 'unassessed'} /></Field>
           <Field wide label="人工复核 / 编辑记录"><textarea defaultValue={work.humanReviewNote || ''} maxLength={4000} name="humanReviewNote" /></Field>

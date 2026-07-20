@@ -19,7 +19,7 @@ import { aliasesFromText, safeReviewReturnTo, sourceLinksFromText } from '../../
 
 export const dynamic = 'force-dynamic'
 
-type Role = 'owner' | 'admin' | 'editor' | 'reviewer' | 'trusted' | 'member'
+type Role = 'owner' | 'admin' | 'editor' | 'member'
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
 type FeedbackDoc = {
   id: string | number
@@ -44,7 +44,7 @@ type DuplicateCandidate = {
   status?: string
 }
 
-const staffRoles = new Set<Role>(['owner', 'admin', 'editor', 'reviewer'])
+const staffRoles = new Set<Role>(['owner', 'admin', 'editor'])
 const rankOptions = ['S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'trash', 'unknown'] as const
 const mediaGroupOptions = ['anime', 'manga', 'novel', 'game', 'other', 'unknown'] as const
 const mediaTypeOptions = ['anime', 'manga', 'novel', 'light_novel', 'visual_novel', 'game', 'audio_drama', 'live_action', 'webtoon', 'doujin', 'anthology', 'other', 'unknown'] as const
@@ -149,8 +149,7 @@ async function createWorkAction(formData: FormData) {
   const candidates = await payload.find({
     collection: 'works',
     depth: 0,
-    draft: true,
-    limit: 8,
+        limit: 8,
     page: 1,
     pagination: false,
     overrideAccess: true,
@@ -200,7 +199,8 @@ async function createWorkAction(formData: FormData) {
       firstPublishedAt: text(formData.get('firstPublishedAt'), 40) || null,
       firstPublishedPrecision,
       firstPublishedLabel: text(formData.get('firstPublishedLabel'), 120),
-      status: 'draft',
+      _status: 'draft',
+      catalogStatus: 'active',
       isLiteVisible: false,
       isFullVisible: false,
       hasEvidence: sourceLinks.length > 0 || Boolean(evidenceNote),
@@ -282,7 +282,7 @@ export default async function NewStudioWorkPage({ searchParams }: { searchParams
   }
 
   const duplicateCandidates = query
-    ? (await payload.find({ collection: 'works', depth: 0, draft: true, limit: 10, page: 1, pagination: false, overrideAccess: true, where: candidateWhere(query, '') })).docs as unknown as DuplicateCandidate[]
+    ? (await payload.find({ collection: 'works', depth: 0, limit: 10, page: 1, pagination: false, overrideAccess: true, where: candidateWhere(query, '') })).docs as unknown as DuplicateCandidate[]
     : []
   const createError = first(raw.createError)
   const duplicateWarning = first(raw.duplicateWarning)

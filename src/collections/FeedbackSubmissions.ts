@@ -1,6 +1,7 @@
 import type { Access, CollectionConfig, FieldAccess } from 'payload'
 
 import { isEditor, isOwner, signedIn } from '@/access/roles'
+import { recordAuditEvent } from '@/lib/audit'
 
 type FeedbackUser = {
   id?: string | number
@@ -97,6 +98,37 @@ export const FeedbackSubmissions: CollectionConfig = {
           }
         }
         return data
+      },
+    ],
+    afterChange: [
+      async ({ doc, previousDoc, req, operation }) => {
+        await recordAuditEvent({
+          req,
+          action: operation === 'create' ? 'feedback.created' : 'feedback.updated',
+          targetCollection: 'feedback-submissions',
+          targetID: doc?.id,
+          targetTitle: doc?.targetTitle,
+          summary: '用户反馈提交或审核状态发生变化。',
+          metadata: {
+            operation,
+            beforeWorkflowStatus: previousDoc?.workflowStatus,
+            afterWorkflowStatus: doc?.workflowStatus,
+            feedbackType: doc?.feedbackType,
+          },
+        })
+      },
+    ],
+    afterDelete: [
+      async ({ doc, req }) => {
+        await recordAuditEvent({
+          req,
+          action: 'feedback.deleted',
+          targetCollection: 'feedback-submissions',
+          targetID: doc?.id,
+          targetTitle: doc?.targetTitle,
+          summary: '反馈记录被最高领袖永久删除。',
+          metadata: { workflowStatus: doc?.workflowStatus, feedbackType: doc?.feedbackType },
+        })
       },
     ],
   },

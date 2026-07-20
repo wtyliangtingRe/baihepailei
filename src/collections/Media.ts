@@ -1,11 +1,11 @@
 import type { CollectionConfig } from 'payload'
 
-import { anyone, trustedAndUp } from '@/access/roles'
+import { anyone, editorsAndUp } from '@/access/roles'
 
 export const Media: CollectionConfig = {
   slug: 'media',
   admin: { defaultColumns: ['filename', 'mediaScope', 'updatedAt'], group: '内容' },
-  access: { create: trustedAndUp, delete: trustedAndUp, read: anyone, update: trustedAndUp },
+  access: { create: editorsAndUp, delete: editorsAndUp, read: anyone, update: editorsAndUp },
   upload: { staticDir: 'media' },
   fields: [
     { name: 'alt', type: 'text', label: 'Alt text' },
@@ -18,7 +18,6 @@ export const Media: CollectionConfig = {
       ],
       admin: { description: '低流量正式版不渲染封面和证据图片；增强媒体版可按用途展示。' },
     },
-    { name: 'legacyXWikiPage', type: 'text', admin: { hidden: true } },
     { name: 'originalFilename', type: 'text', label: '原始文件名', admin: { description: '外部来源中的原始文件名。' } },
     { name: 'sourceNote', type: 'textarea', label: '来源备注', admin: { description: '记录图片来源、证据说明和整理备注等。' } },
   ],

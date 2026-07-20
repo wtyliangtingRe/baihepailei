@@ -82,6 +82,7 @@ export type DetailItem = {
   slug: string
   url: string
   rank?: string
+  humanGrade?: string
   category?: string
   organizationType?: string
   evidenceType?: string
@@ -91,6 +92,15 @@ export type DetailItem = {
   reviewOrigin?: string
   reviewReasons?: string[]
   radarAssessment?: RadarAssessmentMetrics
+  humanAssessment?: {
+    grade?: string
+    status?: string
+    note?: string
+    sourceSummary?: string
+    evidenceStatus?: string
+    sourceLinks?: DetailSourceLink[]
+    assessedAt?: string
+  }
   researchPreview?: RadarResearchPreview
   originalTitle?: string
   aliases?: string[]
@@ -129,6 +139,7 @@ export type DetailItem = {
   updatedAt?: string
   createdAt?: string
   status?: string
+  catalogStatus?: string
 }
 
 export type DetailIndex = {
@@ -146,9 +157,11 @@ export type DetailIndex = {
 const detailIndexPath = path.join(process.cwd(), 'public', 'detail-index.json')
 
 let cachedIndex: DetailIndex | null | undefined
+let cachedLookup: Map<string, DetailItem> | undefined
 
 export function clearDetailIndexCache() {
   cachedIndex = undefined
+  cachedLookup = undefined
 }
 
 export function readDetailIndex() {
@@ -161,6 +174,11 @@ export function readDetailIndex() {
 
   const raw = fs.readFileSync(detailIndexPath, 'utf8')
   cachedIndex = JSON.parse(raw) as DetailIndex
+  cachedLookup = new Map()
+  for (const item of cachedIndex.items) {
+    cachedLookup.set(item.collection + ':slug:' + item.slug, item)
+    if (item.recordId) cachedLookup.set(item.collection + ':id:' + String(item.recordId), item)
+  }
   return cachedIndex
 }
 
@@ -175,14 +193,12 @@ export function findDetailItem(collection: DetailCollection, slug: string) {
   if (canonicalCollection) {
     const recordId = recordIdFromContentRoute(canonicalCollection, slug)
     if (recordId) {
-      const byRecordId = index.items.find(
-        (item) => item.collection === collection && String(item.recordId || '') === recordId,
-      )
+      const byRecordId = cachedLookup?.get(collection + ':id:' + recordId)
       if (byRecordId) return byRecordId
     }
   }
 
-  return index.items.find((item) => item.collection === collection && item.slug === slug) || null
+  return cachedLookup?.get(collection + ':slug:' + slug) || null
 }
 
 function uniqueItems(items: DetailItem[]) {

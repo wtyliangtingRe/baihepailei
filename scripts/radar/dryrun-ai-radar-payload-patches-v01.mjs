@@ -73,7 +73,7 @@ async function fetchAllWorks(baseUrl, token) {
   let page = 1
   let totalPages = 1
   do {
-    const params = new URLSearchParams({ limit: '200', page: String(page), depth: '0', draft: 'true' })
+    const params = new URLSearchParams({ limit: '200', page: String(page), depth: '0' })
     const result = await requestJson(`${baseUrl}/api/works?${params.toString()}`, { headers: authHeaders(token) })
     docs.push(...(Array.isArray(result?.docs) ? result.docs : []))
     totalPages = Number(result?.totalPages || 1)

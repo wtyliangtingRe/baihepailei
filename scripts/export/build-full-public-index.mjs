@@ -16,5 +16,4 @@ function run(script) {
 console.log('[export] Building the complete, enhanced public edition')
 run('scripts/export/build-and-enrich-lite-search-index.mjs')
 run('scripts/export/build-and-enrich-lite-detail-index.mjs')
-run('scripts/export/enrich-public-work-status.mjs')
 console.log('[export] Complete public search and detail indexes are ready')

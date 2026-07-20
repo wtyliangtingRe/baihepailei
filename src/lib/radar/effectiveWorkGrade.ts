@@ -4,6 +4,7 @@ export type WorkGradeInput = {
   rank?: string | null
   reviewStatus?: string | null
   ratingNotice?: string | null
+  humanAssessment?: { grade?: string | null; status?: string | null } | null
   radarAssessment?: {
     suggestedGrade?: string | null
     assessedAt?: string | null
@@ -29,14 +30,25 @@ export function normalizeWorkGrade(value: unknown) {
 }
 
 export function isHumanReviewedWork(item: WorkGradeInput) {
-  return item.reviewStatus === 'reviewed' || item.ratingNotice === 'manual_reviewed'
+  const humanStatus = String(item.humanAssessment?.status || '').trim()
+  return (Boolean(String(item.humanAssessment?.grade || '').trim()) && humanStatus !== 'pending')
+    || item.reviewStatus === 'reviewed'
+    || item.ratingNotice === 'manual_reviewed'
 }
 
 export function effectiveWorkGrade(item: WorkGradeInput): EffectiveWorkGrade {
   const humanReviewed = isHumanReviewedWork(item)
   const storedGrade = normalizeWorkGrade(item.rank)
+  const explicitHumanGrade = String(item.humanAssessment?.grade || '').trim()
+  const humanStatus = String(item.humanAssessment?.status || '').trim()
 
-  // A completed human review is authoritative, including an explicit unknown result.
+  // A pending human form is not an opinion yet. Only a recorded or disputed
+  // human track can become the catalog preference.
+  if (explicitHumanGrade && humanStatus !== 'pending') {
+    return { grade: normalizeWorkGrade(explicitHumanGrade), source: 'human', humanReviewed: true }
+  }
+
+  // Legacy reviewed records remain compatible until their humanAssessment is backfilled.
   if (humanReviewed) return { grade: storedGrade, source: 'human', humanReviewed: true }
 
   const suggestedGrade = normalizeWorkGrade(
@@ -56,7 +68,7 @@ export function effectiveWorkGrade(item: WorkGradeInput): EffectiveWorkGrade {
 }
 
 export function effectiveWorkGradeLabel(source: WorkGradeSource) {
-  if (source === 'human') return '人工正式'
+  if (source === 'human') return '人工参考'
   if (source === 'ai') return 'AI 建议'
   if (source === 'ai_legacy') return 'AI / 历史建议'
   return '尚未评级'

@@ -1,8 +1,13 @@
 import type { CollectionConfig, CollectionSlug } from 'payload'
 
-import { adminsOnly, publishedOrSignedIn, trustedAndUp } from '@/access/roles'
+import { adminsOnly, editorsAndUp, publishedActiveWorkOrSignedIn } from '@/access/roles'
 
 import { localizedTitlesField, mediaGroupOptions } from './fields/localizedMetadata'
+
+const assessmentGradeOptions = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'unknown'].map((value) => ({
+  label: value === 'unknown' ? '未知' : value,
+  value,
+}))
 
 const reviewStatusOptions = [
   { label: '待复核', value: 'pending' },
@@ -143,15 +148,15 @@ export const Works: CollectionConfig = {
     plural: '作品',
   },
   admin: {
-    defaultColumns: ['title', 'siteId', 'mediaGroup', 'mediaType', 'rank', 'reviewStatus', 'reviewReasons', 'ratingNotice', 'evidenceStrength', 'isLiteVisible', 'status', 'updatedAt'],
+    defaultColumns: ['title', 'siteId', 'mediaGroup', 'mediaType', 'rank', 'reviewStatus', 'reviewReasons', 'ratingNotice', 'evidenceStrength', 'isLiteVisible', 'catalogStatus', '_status', 'updatedAt'],
     group: '内容',
     useAsTitle: 'title',
   },
   access: {
-    create: trustedAndUp,
+    create: editorsAndUp,
     delete: adminsOnly,
-    read: publishedOrSignedIn,
-    update: trustedAndUp,
+    read: publishedActiveWorkOrSignedIn,
+    update: editorsAndUp,
   },
   versions: {
     drafts: true,
@@ -185,7 +190,7 @@ export const Works: CollectionConfig = {
     {
       name: 'rank',
       type: 'select',
-      label: '分级',
+      label: '目录兼容等级（自动优先人工、否则 AI）',
       required: true,
       defaultValue: 'unknown',
       options: [
@@ -203,20 +208,66 @@ export const Works: CollectionConfig = {
       ],
     },
     {
+      name: 'humanAssessment',
+      type: 'group',
+      label: '人工审核轨道（参考）',
+      admin: {
+        description: '与 AI Radar 独立保存。人工审核是可追溯的参考意见，不会覆盖 AI 轨道；目录展示优先采用人工等级，但两条证据始终分别呈现。',
+      },
+      fields: [
+        { name: 'grade', type: 'select', label: '人工参考等级', options: assessmentGradeOptions },
+        {
+          name: 'status',
+          type: 'select',
+          label: '人工轨道状态',
+          defaultValue: 'pending',
+          options: [
+            { label: '未提交', value: 'pending' },
+            { label: '已记录', value: 'reviewed' },
+            { label: '有争议', value: 'disputed' },
+          ],
+        },
+        { name: 'note', type: 'textarea', label: '人工判断说明', maxLength: 4000 },
+        { name: 'sourceSummary', type: 'textarea', label: '人工来源摘要', maxLength: 4000 },
+        {
+          name: 'evidenceStatus',
+          type: 'select',
+          label: '人工证据状态',
+          options: [
+            { label: '尚未评估', value: 'unassessed' },
+            { label: '来源已核对', value: 'source_checked' },
+            { label: '原作已核对', value: 'primary_checked' },
+            { label: '证据不足', value: 'insufficient' },
+          ],
+        },
+        {
+          name: 'sourceLinks',
+          type: 'array',
+          label: '人工来源链接',
+          fields: [
+            { name: 'label', type: 'text', label: '名称' },
+            { name: 'url', type: 'text', label: 'URL' },
+          ],
+        },
+        { name: 'assessedAt', type: 'date', label: '人工记录时间', admin: { readOnly: true } },
+        { name: 'assessedBy', type: 'relationship', label: '人工记录人', relationTo: 'users', admin: { readOnly: true } },
+      ],
+    },
+    {
       name: 'reviewStatus',
       type: 'select',
-      label: '复核状态',
+      label: '人工轨道兼容状态',
       required: true,
       defaultValue: 'pending',
       options: reviewStatusOptions,
       admin: {
-        description: '本站的人工复核状态。只在完成逐条核验后改为“已复核”。',
+        description: '旧字段兼容状态；新的人工意见请填写 humanAssessment，AI Radar 保留在 radarAssessment。',
       },
     },
     {
       name: 'humanReviewNote',
       type: 'textarea',
-      label: '人工复核记录',
+      label: '人工轨道兼容记录',
       maxLength: 4000,
       admin: {
         description: '记录本次人工复核的结论、仍待确认的问题或退回原因。',
@@ -692,23 +743,18 @@ export const Works: CollectionConfig = {
       },
     },
     {
-      name: 'legacyXWikiPage',
-      type: 'text',
-      admin: {
-        hidden: true,
-      },
-    },
-    {
-      name: 'status',
+      name: 'catalogStatus',
       type: 'select',
-      label: '状态',
-      defaultValue: 'draft',
+      label: '目录状态',
+      defaultValue: 'active',
       required: true,
       options: [
-        { label: '草稿', value: 'draft' },
-        { label: '已发布', value: 'published' },
-        { label: '归档', value: 'archived' },
+        { label: '正常', value: 'active' },
+        { label: '归档 / 回收站', value: 'archived' },
       ],
+      admin: {
+        description: '只表示作品是否仍在本站目录中。草稿与发布由 Payload 内置 _status 管理。',
+      },
     },
   ],
 }
