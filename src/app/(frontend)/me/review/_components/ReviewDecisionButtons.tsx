@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useFormStatus } from 'react-dom'
 
 type ReviewDecision = {
@@ -11,6 +12,7 @@ type ReviewDecision = {
 
 export default function ReviewDecisionButtons({ actions }: { actions: ReviewDecision[] }) {
   const { pending } = useFormStatus()
+  const [submittedAction, setSubmittedAction] = useState('')
 
   return (
     <div className="review-content-actions" aria-busy={pending}>
@@ -21,12 +23,16 @@ export default function ReviewDecisionButtons({ actions }: { actions: ReviewDeci
           key={action.value}
           name="intent"
           onClick={(event) => {
-            if (action.confirm && !window.confirm(action.confirm)) event.preventDefault()
+            if (action.confirm && !window.confirm(action.confirm)) {
+              event.preventDefault()
+              return
+            }
+            setSubmittedAction(action.value)
           }}
           type="submit"
           value={action.value}
         >
-          {pending ? '正在保存……' : action.label}
+          {pending && submittedAction === action.value ? '正在保存……' : action.label}
         </button>
       ))}
     </div>
