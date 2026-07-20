@@ -70,7 +70,9 @@ export const publishedActiveWorkOrSignedIn: Access = ({ req }) => {
   if (req.user) return true
 
   return {
-    _status: { equals: 'published' },
-    catalogStatus: { equals: 'active' },
+    and: [
+      { _status: { equals: 'published' } },
+      { catalogStatus: { in: ['active', 'temporary'] } },
+    ],
   }
 }
