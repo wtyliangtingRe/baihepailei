@@ -83,7 +83,7 @@ export default function AccountClient() {
       <section className="account-card detail-card">
         <p className="eyebrow">用户账户</p>
         <h1>登录后使用社区功能</h1>
-        <p className="muted">注册后可以发表评论、管理“我的列表”、提交人工排雷材料，也可以提议收录新的作品。</p>
+        <p className="muted">注册后可以发表评论、管理“我的列表”、接收站务消息、提交人工排雷材料，也可以提议收录新的作品。</p>
         <div className="account-actions">
           <Link className="result-link" href="/account/login">登录</Link>
           <Link className="back-link" href="/account/register">注册</Link>
@@ -120,11 +120,12 @@ export default function AccountClient() {
       </section>
 
       <section className="account-feature-grid" aria-label="账户功能">
+        <Link className="detail-card account-feature" href="/me/messages"><strong>站务消息</strong><span>查看评论回复，以及建议被核查、采纳、驳回或要求补充材料的通知。</span></Link>
         <Link className="detail-card account-feature" href="/me/lists"><strong>我的列表</strong><span>想看、在看、已看、喜欢、避雷与待复核。</span></Link>
         <Link className="detail-card account-feature" href="/feedback"><strong>提交人工排雷</strong><span>补充规则、等级建议、来源链接与证据说明。</span></Link>
         <Link className="detail-card account-feature" href="/me/studio"><strong>{isStaff ? '站内内容管理' : '提交新作品'}</strong><span>{isStaff ? '直接搜索、创建、编辑、隐藏和恢复作品；不是 AI 审核队列。' : '普通用户只提交新作品申请，由编辑审核后创建草稿。'}</span></Link>
-        {isStaff ? <Link className="detail-card account-feature" href="/me/review/content"><strong>AI / 内容审核</strong><span>处理机器建议和旧数据的待复核队列，不承担日常完整编辑。</span></Link> : null}
-        {isStaff ? <Link className="detail-card account-feature" href="/me/review/feedback"><strong>用户反馈审核</strong><span>独立处理人工排雷、纠错和新作品申请，并明确采纳、退回或要求补充。</span></Link> : null}
+        {isStaff ? <Link className="detail-card account-feature" href="/me/review/content"><strong>AI / 内容审核</strong><span>从待处理队列进入独立审查页，再明确保存、通过或驳回。</span></Link> : null}
+        {isStaff ? <Link className="detail-card account-feature" href="/me/review/feedback"><strong>用户反馈审核</strong><span>先开始核查，再在独立页面采纳、退回、归档或要求补充材料。</span></Link> : null}
         {mayManagePersonnel ? <Link className="detail-card account-feature" href="/me/personnel"><strong>人员与封停管理</strong><span>任命管理员或编辑，封停违规账户并查看锁定状态。</span></Link> : null}
         {mayUsePayload ? <Link className="detail-card account-feature" href="/admin"><strong>Payload 高级维护</strong><span>仅最高领袖和管理员使用；处理危险操作、底层关系与永久删除。</span></Link> : null}
       </section>
