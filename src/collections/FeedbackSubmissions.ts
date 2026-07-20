@@ -155,8 +155,11 @@ export const FeedbackSubmissions: CollectionConfig = {
       async ({ doc, previousDoc, req, operation }) => {
         const linkedWorkID = relationshipID(doc?.linkedWork)
         const previousLinkedWorkID = relationshipID(previousDoc?.linkedWork)
+        const skipMetadataTransfer = Boolean(
+          (req.context as { skipFeedbackMetadataTransfer?: boolean } | undefined)?.skipFeedbackMetadataTransfer,
+        )
 
-        if (doc?.feedbackType === 'new_work' && linkedWorkID && linkedWorkID !== previousLinkedWorkID) {
+        if (!skipMetadataTransfer && doc?.feedbackType === 'new_work' && linkedWorkID && linkedWorkID !== previousLinkedWorkID) {
           const work = await req.payload.findByID({
             collection: 'works',
             id: linkedWorkID,
