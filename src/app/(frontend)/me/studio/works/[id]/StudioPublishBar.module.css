@@ -1,36 +1,28 @@
 .bar {
-  position: sticky;
-  top: 12px;
-  z-index: 60;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex: 1 1 620px;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
-  width: min(1180px, calc(100% - 32px));
-  margin: 12px auto 4px;
-  padding: 14px 16px;
-  border: 1px solid rgb(255 142 190 / 0.46);
-  border-radius: 18px;
-  background: rgb(20 16 19 / 0.96);
-  box-shadow: 0 16px 42px rgb(0 0 0 / 0.34);
-  backdrop-filter: blur(14px);
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
 }
 
 .copy {
   display: grid;
-  gap: 3px;
-  min-width: 0;
+  gap: 2px;
+  min-width: 190px;
 }
 
 .copy strong {
   color: #ffd3e6;
-  font-size: 1.02rem;
+  font-size: 0.98rem;
 }
 
 .copy span {
   color: #bdb4b8;
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: 0.82rem;
+  line-height: 1.4;
 }
 
 .actions {
@@ -79,9 +71,9 @@
 }
 
 @media (max-width: 820px) {
-  .bar {
-    position: static;
-    grid-template-columns: 1fr;
+  .bar,
+  .actions {
+    width: 100%;
   }
 
   .actions {
@@ -89,14 +81,8 @@
   }
 
   .actions button {
-    flex: 1 1 150px;
+    flex: 1 1 145px;
   }
-}
-
-:global([data-theme='light']) .bar {
-  border-color: rgb(184 87 125 / 0.36);
-  background: rgb(255 249 246 / 0.97);
-  box-shadow: 0 14px 36px rgb(96 62 72 / 0.16);
 }
 
 :global([data-theme='light']) .copy strong {
