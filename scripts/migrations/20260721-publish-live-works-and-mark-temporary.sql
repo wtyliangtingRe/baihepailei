@@ -51,18 +51,21 @@ WHERE COALESCE("catalog_status", 'active') <> 'archived'
     OR COALESCE("import_batch", '') LIKE 'feedback-intake:%'
   );
 
--- Every remaining non-archived work is a live published record. Visibility is
--- no longer coupled to a hidden draft switch.
+-- Every remaining non-archived work is a live published record. Keep lifecycle
+-- enum assignments separate from the visibility update: PostgreSQL resolves a
+-- mixed CASE expression as text and will not implicitly cast it back to enum.
 UPDATE "public"."works"
 SET "_status" = 'published',
     "is_lite_visible" = true,
-    "is_full_visible" = true,
-    "catalog_status" = CASE
-      WHEN "catalog_status" = 'temporary' THEN 'temporary'
-      ELSE 'active'
-    END
+    "is_full_visible" = true
 WHERE COALESCE("catalog_status", 'active') <> 'archived'
   AND COALESCE("review_status", 'pending') <> 'deprecated';
+
+UPDATE "public"."works"
+SET "catalog_status" = 'active'
+WHERE COALESCE("catalog_status", 'active') <> 'archived'
+  AND COALESCE("review_status", 'pending') <> 'deprecated'
+  AND "catalog_status" IS DISTINCT FROM 'temporary';
 
 -- Controlled AI results without a recorded human assessment stay public but
 -- are explicitly marked as waiting for human review. Column existence checks
@@ -79,15 +82,18 @@ BEGIN
       AND column_name = 'human_assessment_status'
   ) THEN
     UPDATE "public"."works"
-    SET "review_status" = CASE
-          WHEN "review_status" = 'disputed' THEN 'disputed'
-          ELSE 'pending'
-        END,
-        "rating_notice" = 'ai_synthesized_pending_review'
+    SET "rating_notice" = 'ai_synthesized_pending_review'
     WHERE "radar_assessment_assessed_at" IS NOT NULL
       AND COALESCE("human_assessment_status", 'pending') <> 'reviewed'
       AND COALESCE("catalog_status", 'active') <> 'archived'
       AND COALESCE("review_status", 'pending') <> 'deprecated';
+
+    UPDATE "public"."works"
+    SET "review_status" = 'pending'
+    WHERE "radar_assessment_assessed_at" IS NOT NULL
+      AND COALESCE("human_assessment_status", 'pending') <> 'reviewed'
+      AND COALESCE("catalog_status", 'active') <> 'archived'
+      AND COALESCE("review_status", 'pending') NOT IN ('deprecated', 'disputed');
   END IF;
 END $$;
 
