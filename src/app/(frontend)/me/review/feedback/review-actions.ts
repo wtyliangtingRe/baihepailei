@@ -5,10 +5,12 @@ import { randomUUID } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 import { getPayload, type Where } from 'payload'
 
 import { isEditor } from '@/access/roles'
 import { newWorkProposalToWorkTransfer, type NewWorkProposalMetadata } from '@/lib/newWorkProposal'
+import { syncWorkToPublicIndexes } from '@/lib/publicIndexSync'
 import { plainTextToRichText } from '@/lib/richTextPlain'
 
 import { canonicalContentUrl } from '../../../_lib/content-identity'
@@ -183,7 +185,10 @@ export async function reviewFeedbackDetailAction(formData: FormData) {
       depth: 0,
       draft: false,
       overrideAccess: true,
-      context: { firstPartyStudio: true, feedbackIntake: true, feedbackID, auditActorID: actorID },
+      // Do not synchronously rewrite the full public indexes inside this request.
+      // The lifecycle hook still marks feedback intake as a published temporary work,
+      // and a single index sync is scheduled with Next.js after() below.
+      context: { feedbackIntake: true, feedbackID, auditActorID: actorID },
       data: {
         title,
         slug: intakeSlug(title, feedbackID),
@@ -213,7 +218,11 @@ export async function reviewFeedbackDetailAction(formData: FormData) {
       id: feedbackID,
       depth: 0,
       overrideAccess: true,
-      context: { reviewWorkbench: true, auditActorID: actorID },
+      context: {
+        reviewWorkbench: true,
+        skipFeedbackMetadataTransfer: true,
+        auditActorID: actorID,
+      },
       data: {
         workflowStatus: 'accepted',
         linkedWork: createdID,
@@ -221,6 +230,18 @@ export async function reviewFeedbackDetailAction(formData: FormData) {
         reviewedAt: new Date().toISOString(),
         reviewNote: note || `已采纳并创建公开的临时作品 #${createdID}；AI 轨道等待后续管线，人工轨道尚未复核。`,
       },
+    })
+
+    after(() => {
+      try {
+        syncWorkToPublicIndexes(created as Parameters<typeof syncWorkToPublicIndexes>[0])
+      } catch (error) {
+        console.error('Accepted temporary work saved but deferred public index sync failed', {
+          feedbackID,
+          workID: createdID,
+          error,
+        })
+      }
     })
 
     revalidatePath('/me/review/feedback')
