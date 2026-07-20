@@ -81,7 +81,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 
   if (String(target.id) === String(actor.id)) return responseError('不能在人员页面修改自己的身份或状态。', 403)
-  if (target.role === 'owner') return responseError('最高领袖账户不能通过人员页面修改。', 403)
+  if (getRole(target) === 'owner') return responseError('最高领袖账户不能通过人员页面修改。', 403)
   if (actorRole === 'admin' && target.role === 'admin') return responseError('管理员不能修改另一位管理员。', 403)
 
   let input: Record<string, unknown>
