@@ -6,13 +6,9 @@
 --
 -- This migration is additive/idempotent and does not delete content.
 
-BEGIN;
-
-LOCK TABLE "public"."works"
-  IN SHARE ROW EXCLUSIVE MODE;
-
 -- Payload normally stores select values in varchar columns. If this database
--- uses a PostgreSQL enum for catalog_status, extend it safely before updates.
+-- uses a PostgreSQL enum for catalog_status, extend it in its own transaction:
+-- PostgreSQL does not allow a newly-added enum value to be used until commit.
 DO $$
 DECLARE
   catalog_type text;
@@ -30,6 +26,11 @@ BEGIN
     EXECUTE format('ALTER TYPE %I ADD VALUE IF NOT EXISTS %L', catalog_type, 'temporary');
   END IF;
 END $$;
+
+BEGIN;
+
+LOCK TABLE "public"."works"
+  IN SHARE ROW EXCLUSIVE MODE;
 
 -- Existing first-party/manual and accepted-feedback drafts become temporary.
 UPDATE "public"."works"
