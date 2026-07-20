@@ -16,6 +16,13 @@ function submitTarget() {
   return document.querySelector<HTMLElement>('form.review-editor-form .review-editor-submit')
 }
 
+function supersededElements(target: HTMLElement | null) {
+  return {
+    button: target?.querySelector<HTMLButtonElement>(':scope > button[type="submit"]') || null,
+    note: target?.querySelector<HTMLElement>(':scope > span') || null,
+  }
+}
+
 function setSelect(form: HTMLFormElement, name: string, value: string) {
   const field = form.elements.namedItem(name)
   if (!(field instanceof HTMLSelectElement)) return
@@ -39,14 +46,16 @@ export default function StudioPublishBar() {
     setBusy(null)
     const frame = window.requestAnimationFrame(() => {
       const nextTarget = submitTarget()
-      const oldSubmit = nextTarget?.querySelector<HTMLButtonElement>('button[type="submit"]')
-      if (oldSubmit) oldSubmit.hidden = true
+      const old = supersededElements(nextTarget)
+      if (old.button) old.button.hidden = true
+      if (old.note) old.note.hidden = true
       setTarget(nextTarget)
     })
     return () => {
       window.cancelAnimationFrame(frame)
-      const oldSubmit = submitTarget()?.querySelector<HTMLButtonElement>('button[type="submit"]')
-      if (oldSubmit) oldSubmit.hidden = false
+      const old = supersededElements(submitTarget())
+      if (old.button) old.button.hidden = false
+      if (old.note) old.note.hidden = false
       setTarget(null)
     }
   }, [pathname])
