@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import { createPortal } from 'react-dom'
 import { useEffect, useState } from 'react'
 
 import styles from './StudioPublishBar.module.css'
@@ -9,6 +10,10 @@ type PublishAction = 'draft' | 'save' | 'publish'
 
 function editorForm() {
   return document.querySelector<HTMLFormElement>('form.review-editor-form')
+}
+
+function submitTarget() {
+  return document.querySelector<HTMLElement>('form.review-editor-form .review-editor-submit')
 }
 
 function setSelect(form: HTMLFormElement, name: string, value: string) {
@@ -27,16 +32,26 @@ function setCheckbox(form: HTMLFormElement, name: string, checked: boolean) {
 
 export default function StudioPublishBar() {
   const pathname = usePathname()
-  const [available, setAvailable] = useState(false)
+  const [target, setTarget] = useState<HTMLElement | null>(null)
   const [busy, setBusy] = useState<PublishAction | null>(null)
 
   useEffect(() => {
     setBusy(null)
-    const frame = window.requestAnimationFrame(() => setAvailable(Boolean(editorForm())))
-    return () => window.cancelAnimationFrame(frame)
+    const frame = window.requestAnimationFrame(() => {
+      const nextTarget = submitTarget()
+      const oldSubmit = nextTarget?.querySelector<HTMLButtonElement>('button[type="submit"]')
+      if (oldSubmit) oldSubmit.hidden = true
+      setTarget(nextTarget)
+    })
+    return () => {
+      window.cancelAnimationFrame(frame)
+      const oldSubmit = submitTarget()?.querySelector<HTMLButtonElement>('button[type="submit"]')
+      if (oldSubmit) oldSubmit.hidden = false
+      setTarget(null)
+    }
   }, [pathname])
 
-  if (!available) return null
+  if (!target) return null
 
   function submit(action: PublishAction) {
     const form = editorForm()
@@ -65,11 +80,11 @@ export default function StudioPublishBar() {
     window.setTimeout(() => setBusy(null), 8000)
   }
 
-  return (
-    <aside className={styles.bar} aria-label="作品保存与发布操作">
+  return createPortal(
+    <div className={styles.bar} aria-label="作品保存与发布操作">
       <div className={styles.copy}>
-        <strong>作品发布出口</strong>
-        <span>“保存并发布”会自动完成发布状态、正常目录和前台可见性，不必再到下方组合多个开关。</span>
+        <strong>保存与发布</strong>
+        <span>发布会自动设为正常目录并开启两个前台版本。</span>
       </div>
       <div className={styles.actions}>
         <button className={styles.draft} disabled={Boolean(busy)} onClick={() => submit('draft')} type="button">
@@ -82,6 +97,7 @@ export default function StudioPublishBar() {
           {busy === 'publish' ? '正在发布……' : '保存并发布'}
         </button>
       </div>
-    </aside>
+    </div>,
+    target,
   )
 }
