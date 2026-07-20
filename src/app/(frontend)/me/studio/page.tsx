@@ -213,8 +213,7 @@ export default async function ContentStudioPage({ searchParams }: { searchParams
   const auth = await payload.auth({ headers: await headers() })
   if (!auth.user) redirect(`/account/login?redirect=${encodeURIComponent('/me/studio')}`)
 
-  const role = roleOf(auth.user)
-  if (!role || !staffRoles.has(role)) {
+  if (!canEdit(auth.user)) {
     return (
       <main className="page review-workbench studio-page">
         <section className="review-hero"><div className="review-hero-copy"><p className="eyebrow">资料库共建</p><h1>提交新作品申请</h1><p className="muted">普通用户不会直接修改正式资料库。你可以提交作品名称、别名、来源和收录理由，之后由编辑审核并建立草稿。</p></div></section>
