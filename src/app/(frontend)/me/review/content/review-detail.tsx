@@ -103,6 +103,7 @@ export async function ContentReviewDetail({ collection, id, searchParams }: {
 
   const title = itemTitle(collection, doc)
   const frontUrl = canonicalContentUrl(collection, doc.id)
+  const previewUrl = `${frontUrl}?preview=1`
   const merged = collection === 'works' && isMergedDuplicateWork(doc) ? mergedWorkReference(doc) : null
   const mayUsePayload = isAdmin(auth.user)
   const actions = [
@@ -159,9 +160,9 @@ export async function ContentReviewDetail({ collection, id, searchParams }: {
 
         <details className="review-editor-section">
           <summary><strong>展开站内前台预览</strong></summary>
-          <p className="muted">预览放在审核页中，避免在队列和编辑器之间来回跳转。草稿会使用当前工作人员登录状态读取。</p>
-          <iframe loading="lazy" src={frontUrl} style={{ width: '100%', minHeight: '720px', border: '1px solid #303030', borderRadius: '16px', background: '#111' }} title={`${title}前台预览`} />
-          <div className="review-row-actions"><Link className="review-link" href={frontUrl}>在新页面打开预览</Link></div>
+          <p className="muted">预览放在审核页中，并使用工作人员实时预览参数叠加数据库最新值，避免在队列和编辑器之间来回跳转。</p>
+          <iframe loading="lazy" src={previewUrl} style={{ width: '100%', minHeight: '720px', border: '1px solid #303030', borderRadius: '16px', background: '#111' }} title={`${title}前台预览`} />
+          <div className="review-row-actions"><Link className="review-link" href={previewUrl}>在新页面打开实时预览</Link></div>
         </details>
       </section>
 
