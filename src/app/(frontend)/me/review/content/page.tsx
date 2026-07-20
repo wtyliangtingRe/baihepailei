@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getPayload, type Where } from 'payload'
 
+import { isEditor } from '@/access/roles'
+
 import { canonicalContentUrl } from '../../../_lib/content-identity'
 import {
   isMergedDuplicateWork,
@@ -17,7 +19,6 @@ import {
 export const dynamic = 'force-dynamic'
 
 type ContentCollection = 'works' | 'creators' | 'organizations'
-type Role = 'owner' | 'admin' | 'editor'
 type ReviewQueue = 'pending' | 'processed' | 'all'
 type ReviewStatus = 'all' | 'pending' | 'reviewed' | 'disputed' | 'deprecated'
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
@@ -58,7 +59,6 @@ type Filters = {
   perPage: 20 | 50 | 100
 }
 
-const allowedRoles: Role[] = ['owner', 'admin', 'editor']
 const collectionMeta: Record<ContentCollection, { label: string; titleField: 'title' | 'name' }> = {
   works: { label: '作品', titleField: 'title' },
   creators: { label: '创作者', titleField: 'name' },
@@ -106,14 +106,8 @@ function parseFilters(params: Record<string, string | string[] | undefined>): Fi
   }
 }
 
-function roleOf(user: unknown): Role | undefined {
-  if (!user || typeof user !== 'object') return undefined
-  return (user as { role?: Role }).role
-}
-
 function canReview(user: unknown) {
-  const role = roleOf(user)
-  return Boolean(role && allowedRoles.includes(role))
+  return isEditor(user)
 }
 
 function reviewReasons(value: ContentDoc['reviewReasons']) {
@@ -326,7 +320,7 @@ export default async function ContentReviewPage({ searchParams }: { searchParams
   if (!auth.user) redirect(`/account/login?redirect=${encodeURIComponent('/me/review/content')}`)
 
   if (!canReview(auth.user)) {
-    return <main className="page review-workbench"><section className="review-empty"><h1>权限不足</h1><p>该页面只开放给最高领袖、管理员、编辑和审核人员。</p></section></main>
+    return <main className="page review-workbench"><section className="review-empty"><h1>权限不足</h1><p>该页面只开放给最高领袖、管理员和编辑。</p></section></main>
   }
 
   const rawParams = await searchParams
