@@ -52,7 +52,7 @@ function detailHref(id: number, returnTo: string, values: Record<string, string 
   return `/me/review/feedback/${id}?${params.toString()}`
 }
 
-function draftSlug(title: string, id: number) {
+function intakeSlug(title: string, id: number) {
   const normalized = title.normalize('NFKC').toLowerCase()
     .replace(/[^a-z0-9\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]+/gu, '-')
     .replace(/^-+|-+$/gu, '')
@@ -166,7 +166,7 @@ export async function reviewFeedbackDetailAction(formData: FormData) {
           workflowStatus: 'triaging',
           reviewer: actorID,
           reviewedAt: new Date().toISOString(),
-          reviewNote: note || '发现可能重复的现有作品；请先进入重复核查页，再决定是否创建独立草稿。',
+          reviewNote: note || '发现可能重复的现有作品；请先完成重复核查，再决定是否创建独立临时作品。',
         },
       })
       redirect(detailHref(feedbackID, returnTo, { reviewError: 'duplicate_candidates' }))
@@ -186,7 +186,7 @@ export async function reviewFeedbackDetailAction(formData: FormData) {
       context: { firstPartyStudio: true, feedbackIntake: true, feedbackID, auditActorID: actorID },
       data: {
         title,
-        slug: draftSlug(title, feedbackID),
+        slug: intakeSlug(title, feedbackID),
         siteId: `feedback:${feedbackID}:${randomUUID().slice(0, 12)}`,
         ...transfer.workData,
         ...(transfer.summaryText ? { summary: plainTextToRichText(transfer.summaryText) } : {}),
@@ -194,19 +194,19 @@ export async function reviewFeedbackDetailAction(formData: FormData) {
         reviewStatus: 'pending',
         ratingNotice: 'none',
         evidenceStrength: 'unassessed',
-        _status: 'draft',
-        catalogStatus: 'active',
-        isLiteVisible: false,
-        isFullVisible: false,
+        _status: 'published',
+        catalogStatus: 'temporary',
+        isLiteVisible: true,
+        isFullVisible: true,
         hasEvidence: sourceLinks.length > 0 || Boolean(feedback.evidenceSummary),
         sourceLinks,
         evidenceNote: String(feedback.evidenceSummary || '').trim(),
-        humanReviewNote: `[${new Date().toISOString()}] 由用户新作品申请 #${feedbackID} 采纳生成草稿；事实资料已转入，AI Radar 保持空白并等待下一次未评估管线。\n${String(feedback.claim || '').trim()}`.slice(0, 4000),
+        humanReviewNote: `[${new Date().toISOString()}] 由用户新作品申请 #${feedbackID} 采纳生成临时作品；事实资料已转入并公开，AI Radar 保持空白，等待下一次未评估管线。\n${String(feedback.claim || '').trim()}`.slice(0, 4000),
         importBatch: `feedback-intake:${feedbackID}`,
       },
     })
     const createdID = numericID(created.id)
-    if (!createdID) throw new Error('草稿创建后未取得有效作品 ID。')
+    if (!createdID) throw new Error('临时作品创建后未取得有效作品 ID。')
 
     await payload.update({
       collection: 'feedback-submissions',
@@ -219,13 +219,15 @@ export async function reviewFeedbackDetailAction(formData: FormData) {
         linkedWork: createdID,
         reviewer: actorID,
         reviewedAt: new Date().toISOString(),
-        reviewNote: note || `已采纳并创建待复核作品草稿 #${createdID}；尚未公开，AI 轨道等待后续管线。`,
+        reviewNote: note || `已采纳并创建公开的临时作品 #${createdID}；AI 轨道等待后续管线，人工轨道尚未复核。`,
       },
     })
 
     revalidatePath('/me/review/feedback')
     revalidatePath('/me/messages')
     revalidatePath('/me/studio')
+    revalidatePath('/works')
+    revalidatePath(canonicalContentUrl('works', createdID))
     revalidatePath(`/me/studio/works/${createdID}`)
     redirect(detailHref(feedbackID, returnTo, { createdWork: createdID, reviewed: 'accepted' }))
   }
