@@ -1,4 +1,4 @@
-import { ContentReviewDetail } from '../../review-detail'
+import { AIWorkReviewDetail } from '../../ai-work-review-detail'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,5 +7,5 @@ type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
 
 export default async function WorkContentReviewPage({ params, searchParams }: { params: PageParams; searchParams: PageSearchParams }) {
   const { id } = await params
-  return ContentReviewDetail({ collection: 'works', id, searchParams })
+  return AIWorkReviewDetail({ id, searchParams })
 }
