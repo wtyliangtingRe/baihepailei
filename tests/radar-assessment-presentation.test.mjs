@@ -21,7 +21,7 @@ test('Payload registers optional radar assessment metrics on works', () => {
   assert.match(fields, /max: 100/u)
   assert.match(fields, /value: 'conflicting_evidence'/u)
   assert.match(fields, /value: 'insufficient_evidence'/u)
-  assert.match(config, /withRadarAssessmentFields\(Works\)/u)
+  assert.match(config, /withRadarAssessmentFields\(WorksWithOptionalStewardship\)/u)
   assert.match(config, /WorksWithRadarAssessment/u)
 })
 
