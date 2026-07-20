@@ -119,11 +119,21 @@ export const FeedbackSubmissions: CollectionConfig = {
         }
 
         if (!isEditor(req.user) && !fromReviewWorkbench) {
+          const previousStatus = String(originalDoc?.workflowStatus || 'pending')
           return {
             ...bounded,
+            // Members edit the same submission record. Immutable identity and
+            // staff workflow fields cannot be forged through a PATCH request.
+            feedbackType: originalDoc?.feedbackType,
+            targetCollection: originalDoc?.targetCollection,
+            targetSlug: originalDoc?.targetSlug,
+            pageUrl: originalDoc?.pageUrl,
+            linkedWork: originalDoc?.linkedWork,
             submitter: originalDoc?.submitter,
             submitterName: originalDoc?.submitterName,
-            workflowStatus: originalDoc?.workflowStatus,
+            // Saving requested material returns the same record to the pending
+            // queue instead of forcing the user to create a second empty form.
+            workflowStatus: previousStatus === 'needs_information' ? 'pending' : previousStatus,
             reviewer: originalDoc?.reviewer,
             reviewedAt: originalDoc?.reviewedAt,
             reviewNote: originalDoc?.reviewNote,
@@ -154,10 +164,10 @@ export const FeedbackSubmissions: CollectionConfig = {
             draft: false,
             overrideAccess: true,
           }) as unknown as FeedbackWork
-          const directIntakeDraft = String(work.siteId || '').startsWith(`feedback:${String(doc.id)}:`)
+          const directIntakeWork = String(work.siteId || '').startsWith(`feedback:${String(doc.id)}:`)
             || work.importBatch === `feedback-intake:${String(doc.id)}`
 
-          if (directIntakeDraft) {
+          if (directIntakeWork) {
             const transfer = newWorkProposalToWorkTransfer(doc.newWorkMetadata, {
               feedbackID: doc.id,
               targetTitle: doc.targetTitle,
@@ -166,12 +176,12 @@ export const FeedbackSubmissions: CollectionConfig = {
             })
             const workData: Record<string, unknown> = {
               ...transfer.workData,
-              _status: 'draft',
-              catalogStatus: 'active',
+              _status: 'published',
+              catalogStatus: 'temporary',
               rank: 'unknown',
               reviewStatus: 'pending',
-              isLiteVisible: false,
-              isFullVisible: false,
+              isLiteVisible: true,
+              isFullVisible: true,
             }
             if (transfer.summaryText) workData.summary = plainTextToRichText(transfer.summaryText)
 
