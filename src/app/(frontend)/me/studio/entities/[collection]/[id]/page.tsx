@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 
+import { getRole, isAdmin, isEditor } from '@/access/roles'
+
 import { canonicalContentUrl } from '../../../../../_lib/content-identity'
 import { plainTextToRichText, richTextToPlainText } from '@/lib/richTextPlain'
 
@@ -49,11 +51,8 @@ const nameKinds = new Set(['original', 'official', 'localized', 'romanized', 'al
 function collectionOf(value: string): EntityCollection | null {
   return value === 'organizations' ? 'organizations' : value === 'creators' ? 'creators' : null
 }
-function roleOf(user: unknown) {
-  return user && typeof user === 'object' ? String((user as { role?: string }).role || '') : ''
-}
 function canEdit(user: unknown) {
-  return new Set(['owner', 'admin', 'editor']).has(roleOf(user))
+  return isEditor(user)
 }
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] || '' : value || ''
@@ -198,7 +197,7 @@ export default async function EntityEditor({
   }) as unknown as Entity
   const paramsValue = await searchParams
   const isCreator = collection === 'creators'
-  const canOpenPayloadAdmin = ['owner', 'admin'].includes(roleOf(auth.user))
+  const canOpenPayloadAdmin = isAdmin(auth.user)
 
   return (
     <main className="page review-workbench">
