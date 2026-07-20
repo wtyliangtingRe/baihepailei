@@ -2,6 +2,7 @@ import type { Access, CollectionConfig, FieldAccess } from 'payload'
 
 import { isEditor, isOwner, signedIn } from '@/access/roles'
 import { recordAuditEvent } from '@/lib/audit'
+import { sanitizeNewWorkProposalMetadata } from '@/lib/newWorkProposal'
 
 type FeedbackUser = {
   id?: string | number
@@ -41,6 +42,26 @@ const staffFieldAccess: FieldAccess = ({ req }) => isEditor(req.user)
 
 const gradeOptions = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X'].map((value) => ({ label: value, value }))
 
+function withNewWorkProposalBoundary(
+  data: Record<string, unknown> | undefined,
+  originalDoc: Record<string, unknown> | undefined,
+) {
+  const next = { ...(data || {}) }
+  const feedbackType = String(next.feedbackType || originalDoc?.feedbackType || '')
+  if (feedbackType !== 'new_work') {
+    next.newWorkMetadata = null
+    return next
+  }
+
+  next.newWorkMetadata = sanitizeNewWorkProposalMetadata(next.newWorkMetadata ?? originalDoc?.newWorkMetadata)
+  // New-work submitters provide factual catalog metadata and sources. Rating,
+  // rule matching and AI Radar fields are deliberately left to the controlled
+  // assessment pipeline and staff review.
+  next.proposedGrade = null
+  next.matchedRuleCodes = []
+  return next
+}
+
 export const FeedbackSubmissions: CollectionConfig = {
   slug: 'feedback-submissions',
   labels: {
@@ -65,13 +86,18 @@ export const FeedbackSubmissions: CollectionConfig = {
         const fromReviewWorkbench = Boolean(
           (req.context as { reviewWorkbench?: boolean } | undefined)?.reviewWorkbench,
         )
+        const bounded = withNewWorkProposalBoundary(
+          data as Record<string, unknown> | undefined,
+          originalDoc as Record<string, unknown> | undefined,
+        )
+
         if (operation === 'create') {
           return {
-            ...data,
+            ...bounded,
             pageUrl: '',
             submitter: user?.id,
             submitterName: user?.displayName || user?.email || '注册用户',
-            targetCollection: data?.linkedWork ? 'works' : data?.targetCollection,
+            targetCollection: bounded.linkedWork ? 'works' : bounded.targetCollection,
             targetSlug: '',
             workflowStatus: 'pending',
           }
@@ -79,7 +105,7 @@ export const FeedbackSubmissions: CollectionConfig = {
 
         if (!isEditor(req.user) && !fromReviewWorkbench) {
           return {
-            ...data,
+            ...bounded,
             submitter: originalDoc?.submitter,
             submitterName: originalDoc?.submitterName,
             workflowStatus: originalDoc?.workflowStatus,
@@ -89,15 +115,15 @@ export const FeedbackSubmissions: CollectionConfig = {
           }
         }
 
-        const nextStatus = String(data?.workflowStatus || originalDoc?.workflowStatus || 'pending')
+        const nextStatus = String(bounded.workflowStatus || originalDoc?.workflowStatus || 'pending')
         if (nextStatus !== 'pending' && nextStatus !== originalDoc?.workflowStatus) {
           return {
-            ...data,
-            reviewer: user?.id || data?.reviewer,
-            reviewedAt: data?.reviewedAt || new Date().toISOString(),
+            ...bounded,
+            reviewer: user?.id || bounded.reviewer,
+            reviewedAt: bounded.reviewedAt || new Date().toISOString(),
           }
         }
-        return data
+        return bounded
       },
     ],
     afterChange: [
@@ -151,6 +177,14 @@ export const FeedbackSubmissions: CollectionConfig = {
     { name: 'targetCollection', type: 'text', label: '对象类型', defaultValue: 'works' },
     { name: 'targetSlug', type: 'text', label: '旧作品 / 页面 Slug', admin: { hidden: true } },
     { name: 'targetTitle', type: 'text', label: '作品 / 页面名称', required: true, maxLength: 200 },
+    {
+      name: 'newWorkMetadata',
+      type: 'json',
+      label: '新作品结构化资料',
+      admin: {
+        description: '仅用于新增作品建议：原名、别名、作品类别、形态、首次日期、简介和搜索补充信息。评级与 AI 字段不由提交者填写。',
+      },
+    },
     { name: 'pageUrl', type: 'text', label: '旧相关页面 URL', maxLength: 500, admin: { hidden: true } },
     { name: 'proposedGrade', type: 'select', label: '建议分级', options: gradeOptions },
     {
