@@ -5,11 +5,12 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getPayload, type Where } from 'payload'
 
+import { isEditor } from '@/access/roles'
+
 import { canonicalContentUrl } from '../../_lib/content-identity'
 
 export const dynamic = 'force-dynamic'
 
-type Role = 'owner' | 'admin' | 'editor' | 'member'
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>
 type StudioWork = {
   id: string | number
@@ -35,7 +36,6 @@ type StudioFilters = {
   perPage: number
 }
 
-const staffRoles = new Set<Role>(['owner', 'admin', 'editor'])
 const rankOptions = ['all', 'S', 'AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X', 'trash', 'unknown']
 const statusOptions = ['active', 'archived', 'all']
 
@@ -43,14 +43,8 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] || '' : value || ''
 }
 
-function roleOf(user: unknown): Role | undefined {
-  if (!user || typeof user !== 'object') return undefined
-  return (user as { role?: Role }).role
-}
-
 function canEdit(user: unknown) {
-  const role = roleOf(user)
-  return Boolean(role && staffRoles.has(role))
+  return isEditor(user)
 }
 
 function positiveInteger(value: string, fallback: number) {
