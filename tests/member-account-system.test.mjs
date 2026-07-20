@@ -7,6 +7,7 @@ const users = read('src/collections/Users.ts')
 const roles = read('src/access/roles.ts')
 const actions = read('src/app/(frontend)/_actions/account.ts')
 const session = read('src/app/(frontend)/api/account/session/route.ts')
+const personnelRoute = read('src/app/(frontend)/api/personnel/users/[id]/route.ts')
 const auth = read('src/app/(frontend)/_components/AuthPanel.tsx')
 const account = read('src/app/(frontend)/_components/AccountClient.tsx')
 const personnel = read('src/app/(frontend)/_components/PersonnelClient.tsx')
@@ -79,6 +80,18 @@ test('frontend exposes an account entry instead of a public admin entry', () => 
   assert.match(personnel, /保存任命/u)
   assert.match(personnel, /封停账号/u)
   assert.match(locked, /此账户已被封停/u)
+})
+
+test('personnel writes use a same-origin route and preserve Payload access checks', () => {
+  assert.match(personnel, /\/api\/personnel\/users\//u)
+  assert.doesNotMatch(personnel, /method: 'PATCH'[\s\S]{0,220}\/api\/users\//u)
+  assert.match(personnelRoute, /isSameOrigin\(request\)/u)
+  assert.match(personnelRoute, /payload\.auth\(\{ headers: request\.headers \}\)/u)
+  assert.match(personnelRoute, /actorRole !== 'owner' && actorRole !== 'admin'/u)
+  assert.match(personnelRoute, /ownerAssignableRoles/u)
+  assert.match(personnelRoute, /adminAssignableRoles/u)
+  assert.match(personnelRoute, /overrideAccess: false/u)
+  assert.match(personnelRoute, /user: authUser/u)
 })
 
 test('account suspension is audited, revokes sessions and respects hierarchy', () => {
