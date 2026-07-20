@@ -6,7 +6,8 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), '
 const collection = read('src/collections/Comments.ts')
 const block = read('src/app/(frontend)/_components/CommentBlock.tsx')
 const messages = read('src/app/(frontend)/me/messages/page.tsx')
-const migration = read('scripts/migrations/20260720-add-comment-reply-recipient.sql')
+const replyMigration = read('scripts/migrations/20260720-add-comment-reply-recipient.sql')
+const moderationMigration = read('scripts/migrations/20260721-add-comment-moderation-columns.sql')
 const css = read('src/app/(frontend)/comments.css')
 
 test('comments publish immediately and preserve server-stamped authorship', () => {
@@ -29,9 +30,18 @@ test('reply recipients are server-stamped and available only to internal message
   assert.match(collection, /access: \{ read: \(\{ req \}\) => isEditor\(req\.user\) \}/u)
   assert.match(messages, /replyToUser: \{ equals: userID \}/u)
   assert.match(messages, /uniqueComments/u)
-  assert.match(migration, /ADD COLUMN IF NOT EXISTS "reply_to_user_id" integer/u)
-  assert.match(migration, /CREATE INDEX IF NOT EXISTS "comments_reply_to_user_idx"/u)
-  assert.doesNotMatch(migration, /DROP TABLE|DROP COLUMN|DELETE FROM|UPDATE /iu)
+  assert.match(replyMigration, /ADD COLUMN IF NOT EXISTS "reply_to_user_id" integer/u)
+  assert.match(replyMigration, /CREATE INDEX IF NOT EXISTS "comments_reply_to_user_idx"/u)
+  assert.doesNotMatch(replyMigration, /DROP TABLE|DROP COLUMN|DELETE FROM/iu)
+})
+
+test('comment moderation fields have an additive schema repair migration', () => {
+  assert.match(collection, /name: 'reportCount'/u)
+  assert.match(collection, /name: 'hiddenReason'/u)
+  assert.match(moderationMigration, /ADD COLUMN IF NOT EXISTS "report_count" integer DEFAULT 0/u)
+  assert.match(moderationMigration, /ADD COLUMN IF NOT EXISTS "hidden_reason" text/u)
+  assert.match(moderationMigration, /ALTER COLUMN "report_count" SET DEFAULT 0/u)
+  assert.doesNotMatch(moderationMigration, /DROP TABLE|DROP COLUMN|DELETE FROM/iu)
 })
 
 test('frontend shows immediate comments with owner and staff deletion controls', () => {
