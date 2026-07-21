@@ -109,3 +109,29 @@ test('runner warms Payload before requiring a database connection', () => {
     /if \(\$mainConnections(?:Before)? -lt 1\)/u,
   )
 })
+
+test('runner accepts an empty ready-for-assessment package collection', () => {
+  const functionStart = source.indexOf('function Write-UploadPlan')
+  const functionEnd = source.indexOf(
+    '\nAssert-IntegerRange',
+    functionStart,
+  )
+
+  assert.ok(functionStart >= 0)
+  assert.ok(functionEnd > functionStart)
+
+  const functionSource = source.slice(functionStart, functionEnd)
+
+  assert.match(
+    functionSource,
+    /\[AllowEmptyCollection\(\)\]\s*\n\s*\[object\[\]\]\$Packages/u,
+  )
+  assert.match(
+    functionSource,
+    /if \(\$Packages\.Count -eq 0\)/u,
+  )
+  assert.match(
+    functionSource,
+    /当前没有 ready_for_ai_assessment 批次/u,
+  )
+})
