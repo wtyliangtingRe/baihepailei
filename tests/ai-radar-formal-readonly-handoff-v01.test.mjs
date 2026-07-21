@@ -135,3 +135,26 @@ test('runner accepts an empty ready-for-assessment package collection', () => {
     /当前没有 ready_for_ai_assessment 批次/u,
   )
 })
+
+test('runner reads clean rows from the duplicate guard summary schema', () => {
+  assert.match(
+    source,
+    /\$cleanRows = \[int\]\$catalogSummary\.duplicateGuard\.rowsWritten/u,
+  )
+  assert.match(
+    source,
+    /\$accountedRows = \[int\]\$catalogSummary\.queue\.accountedRows/u,
+  )
+  assert.match(
+    source,
+    /if \(\$cleanRows -ne \$accountedRows\)/u,
+  )
+  assert.match(
+    source,
+    /cleanRows = \$cleanRows/u,
+  )
+  assert.doesNotMatch(
+    source,
+    /\$catalogSummary\.audit\.cleanRows/u,
+  )
+})

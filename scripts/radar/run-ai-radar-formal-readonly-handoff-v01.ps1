@@ -488,6 +488,12 @@ try {
     throw 'Formal database topology changed during the read-only export.'
   }
 
+  $cleanRows = [int]$catalogSummary.duplicateGuard.rowsWritten
+  $accountedRows = [int]$catalogSummary.queue.accountedRows
+  if ($cleanRows -ne $accountedRows) {
+    throw "Clean row accounting mismatch: clean=$cleanRows accounted=$accountedRows"
+  }
+
   $uploadPlanFile = Join-Path $runRoot 'UPLOAD_PLAN.md'
   Write-UploadPlan -File $uploadPlanFile -Packages $packages -RunRoot $runRoot
 
@@ -507,7 +513,7 @@ try {
     catalog = [ordered]@{
       worksRead = [int]$catalogSummary.raw.worksRead
       packetsWritten = [int]$catalogSummary.raw.packetsWritten
-      cleanRows = [int]$catalogSummary.audit.cleanRows
+      cleanRows = $cleanRows
       allRowsAccountedFor = [bool]$catalogSummary.queue.allRowsAccountedFor
       byQueue = $catalogSummary.queue.byQueue
       batchCounts = $catalogSummary.queue.batchCounts
