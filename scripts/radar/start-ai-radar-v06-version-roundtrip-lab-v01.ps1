@@ -9,20 +9,20 @@ if ($Port -ne 3100) {
   throw 'The Radar version-roundtrip lab server must use port 3100.'
 }
 
-$labUri = [Environment]::GetEnvironmentVariable('RADAR_LAB_DATABASE_URI', 'Process')
+$labUri = [Environment]::GetEnvironmentVariable('RADAR_LAB_DATABASE_URL', 'Process')
 if ([string]::IsNullOrWhiteSpace($labUri)) {
-  throw 'RADAR_LAB_DATABASE_URI is required in the child process environment.'
+  throw 'RADAR_LAB_DATABASE_URL is required in the child process environment.'
 }
 
 $parsed = [System.Uri]$labUri
 $databaseName = $parsed.AbsolutePath.Trim('/')
 if ($databaseName -notmatch '^baihepailei_radar_lab_[a-z0-9_]+$') {
-  throw 'RADAR_LAB_DATABASE_URI does not target an approved lab database name.'
+  throw 'RADAR_LAB_DATABASE_URL does not target an approved lab database name.'
 }
 
-$env:DATABASE_URI = $labUri
+$env:DATABASE_URL = $labUri
 $env:NEXT_PUBLIC_SERVER_URL = "http://127.0.0.1:$Port"
-Remove-Item Env:RADAR_LAB_DATABASE_URI -ErrorAction SilentlyContinue
+Remove-Item Env:RADAR_LAB_DATABASE_URL -ErrorAction SilentlyContinue
 $labUri = $null
 
 Write-Host "Starting isolated Radar lab server on http://127.0.0.1:$Port" -ForegroundColor Yellow
