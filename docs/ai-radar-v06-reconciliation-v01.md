@@ -13,6 +13,27 @@ Payload drafts 开启后，更新请求使用 `draft=true` 会只写 versions ta
 
 本工具组只盘点，不恢复、不迁移、不发布、不重新运行 AI。
 
+## 已验证的本地基线（2026-07-21）
+
+真实 Windows、Payload 与本地 v0.6 产物对账结果：
+
+```text
+Works read with draft=true:            35,615
+Execute summaries:                         45
+Observed batches:                          44
+Latest-run PATCH requests:              9,364
+Latest-run applied and verified:         9,364
+Unique Works with verified evidence:     9,364
+Latest draft exact v0.6 matches:         9,363
+Latest draft other formal conclusion:        1
+Missing after verified apply:                0
+Artifact integrity issues:                   0
+```
+
+另有一个早期执行尝试使全部历史运行的 PATCH 请求合计为 9,365，但每个批次只采用最新执行后，严格闭合为 9,364。该早期尝试保留在 `incomplete-or-inconsistent-runs.json`，不能重复计入成功数。
+
+这组结果证明：v0.6 成果没有丢失，9,363 条仍精确存在于 latest draft/version 视图；下一步是区分哪些已经发布、哪些只存在于草稿。
+
 ## 工具
 
 ### 1. 最新版本对账
