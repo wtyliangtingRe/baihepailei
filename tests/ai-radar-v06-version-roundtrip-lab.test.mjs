@@ -144,3 +144,13 @@ test('obsolete single-publication executor is hard disabled', () => {
   assert.match(source, /permanently disabled/u)
   assert.doesNotMatch(source, /method:\s*['"]PATCH['"]/u)
 })
+
+test('lab launcher maps inherited lab URL to the actual Payload DATABASE_URL variable', () => {
+  const source = fs.readFileSync(
+    new URL('../scripts/radar/start-ai-radar-v06-version-roundtrip-lab-v01.ps1', import.meta.url),
+    'utf8',
+  )
+  assert.match(source, /RADAR_LAB_DATABASE_URL/u)
+  assert.match(source, /\$env:DATABASE_URL\s*=\s*\$labUri/u)
+  assert.doesNotMatch(source, /DATABASE_URI/u)
+})
