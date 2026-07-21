@@ -58,82 +58,93 @@ original latest draft version:          79558
 
 正式数据库不得用于本实验。
 
-## 执行器
+## 已验证的当前执行器
 
-当前实验执行器：
-
-```text
-scripts/radar/lab-ai-radar-v06-version-roundtrip-v02.mjs
-```
-
-精确确认字符串：
+早期的 v0.1–v0.4 文件保留为实验和诊断历史；当前通过临时数据库闭环验证的引擎是：
 
 ```text
-EXECUTE-V06-VERSION-ROUNDTRIP-LAB-V02-ONLY
+scripts/radar/lab-ai-radar-v06-draft-restore-roundtrip-v05.mjs
 ```
 
-一次成功实验最多发出 3 个 Payload 写请求：
+面向日常使用的会话无关入口是：
 
-1. 恢复干净 published-content draft；
+```text
+scripts/radar/run-ai-radar-v06-draft-restore-roundtrip-lab-v06.ps1
+```
+
+外层执行确认字符串：
+
+```text
+EXECUTE-V06-DRAFT-RESTORE-ROUNDTRIP-LAB-V06-ONLY
+```
+
+v0.6 runner 内部只委托已验证的 v0.5 三阶段引擎：
+
+1. REST `?draft=true` 恢复干净 published-content 版本；
 2. 发布 Radar 白名单 patch；
-3. 恢复原始 latest draft。
+3. REST `?draft=true` 恢复原始 latest draft。
 
-每一步后都重新读取 published 与 `draft=true` 视图并验证：
-
-- unrelated published state；
-- human track；
-- Radar patch；
-- clean draft 内容；
-- 原始 latest draft；
-- 恢复原 draft 后 published main 不变。
+一次成功实验必须正好包含两次 restore-as-draft 和一次部分发布 PATCH。
 
 ## 本地检查
 
 ```powershell
-node --check scripts/radar/lab-ai-radar-v06-version-roundtrip-v02.mjs
+node --check scripts/radar/lab-ai-radar-v06-draft-restore-roundtrip-v05.mjs
+
 node --test `
   tests/ai-radar-v06-version-roundtrip-lab.test.mjs `
-  tests/ai-radar-v06-version-roundtrip-lab-v02.test.mjs
+  tests/ai-radar-v06-version-roundtrip-lab-v02.test.mjs `
+  tests/ai-radar-v06-synthesized-draft-roundtrip-lab-v03.test.mjs `
+  tests/ai-radar-v06-clean-draft-write-diagnostic-v04.test.mjs `
+  tests/ai-radar-v06-draft-restore-roundtrip-lab-v05.test.mjs `
+  tests/ai-radar-v06-draft-restore-roundtrip-runner-v06.test.mjs
 ```
 
-## 只读发现
+## 默认只读入口
 
 ```powershell
-node --env-file=.env `
-  scripts/radar/lab-ai-radar-v06-version-roundtrip-v02.mjs `
-  --candidate-manifest "$CandidateManifest" `
-  --url "http://127.0.0.1:3100"
+pwsh -NoProfile -ExecutionPolicy Bypass `
+  -File scripts/radar/run-ai-radar-v06-draft-restore-roundtrip-lab-v06.ps1
 ```
 
-预期选择版本 `8744` 与 `79558`，且写请求数为 0。
+默认模式为 `Inspect`，Payload 写请求必须为 0。
 
 ## 临时数据库执行
 
-执行前必须重新生成 30 分钟有效的数据库证明。
-
-```powershell
-$env:RADAR_VERSION_ROUNDTRIP_LAB = "YES"
-
-node --env-file=.env `
-  scripts/radar/lab-ai-radar-v06-version-roundtrip-v02.mjs `
-  --candidate-manifest "$CandidateManifest" `
-  --url "http://127.0.0.1:3100" `
-  --lab-database "$LabDb" `
-  --database-proof "$ProofFile" `
-  --confirmation "EXECUTE-V06-VERSION-ROUNDTRIP-LAB-V02-ONLY" `
-  --execute-lab
-```
-
-成功必须同时满足：
+执行模式只允许新近从已验证 checkpoint 恢复、仍处于已审核七版本基线的临时实验库：
 
 ```text
-status: version_roundtrip_lab_verified
-payloadWriteRequests: 3
-final.patchMatchedPublished: true
-final published state == after-Radar published state
-final unrelated published state == baseline published state
-final human state == baseline published state
-final draft state == original latest draft state
+versions read:          7
+clean version:          8744
+original draft version: 79558
 ```
 
-PR 保持 Draft，直到本地测试与临时数据库实验全部通过。
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass `
+  -File scripts/radar/run-ai-radar-v06-draft-restore-roundtrip-lab-v06.ps1 `
+  -Mode Execute `
+  -Confirmation "EXECUTE-V06-DRAFT-RESTORE-ROUNDTRIP-LAB-V06-ONLY"
+```
+
+已经执行过的实验库会出现新增版本，必须被 freshness gate 拒绝再次执行。
+
+## 已验证结果
+
+Work `3839` 的隔离实验已经证明：
+
+```text
+status: draft_restore_roundtrip_lab_verified
+payloadWriteRequests: 3
+restoreAsDraftRequests: 2
+partialPublishedPatchRequests: 1
+original draft restored: true
+published Radar preserved: true
+human state preserved: true
+unrelated published state preserved: true
+formal database targeted: false
+direct PostgreSQL write: false
+```
+
+该结果只验证实验室路径，不授权正式数据库 canary 或批量发布。
+
+PR 保持 Draft，直到最终代码、测试和实验凭证审查完成。

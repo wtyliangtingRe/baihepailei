@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -48,6 +49,29 @@ function canonical(value) {
 
 function equal(a, b) {
   return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b))
+}
+
+function sha256File(file) {
+  return createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+}
+
+export function writeRequestBreakdown(payloadWriteRequests) {
+  const requests = Math.max(
+    0,
+    Math.min(
+      3,
+      Math.trunc(Number(payloadWriteRequests) || 0),
+    ),
+  )
+
+  return {
+    restoreAsDraftRequests: requests >= 3 ? 2 : requests >= 1 ? 1 : 0,
+    partialPublishedPatchRequests: requests >= 2 ? 1 : 0,
+    genericRestoreWithoutDraftRequests: 0,
+    wholeDocumentDraftPatchRequests: 0,
+    localApiRestoreUsed: false,
+    restRestoreDraftQueryExplicit: true,
+  }
 }
 
 function parseArgs(argv) {
@@ -198,22 +222,77 @@ function validateCandidate(candidate) {
   return unique(blockers)
 }
 
-function validateProof(proof, candidate, baseUrl, labDatabase) {
+export function validateProof(
+  proof,
+  candidate,
+  baseUrl,
+  labDatabase,
+  candidateManifestFile,
+) {
   const blockers = []
-  if (val(proof?.version) !== 'ai-radar-v06-lab-database-proof-v0.1') blockers.push('lab_proof_version_mismatch')
-  if (val(proof?.serverUrl).replace(/\/+$/u, '') !== baseUrl) blockers.push('lab_proof_server_url_mismatch')
-  if (val(proof?.databaseName) !== labDatabase) blockers.push('lab_proof_database_name_mismatch')
-  if (!/^baihepailei_radar_lab_[a-z0-9_]+$/u.test(labDatabase)) blockers.push('lab_database_name_invalid')
-  if (val(proof?.mainDatabase) !== 'baihepailei') blockers.push('lab_proof_main_database_mismatch')
-  if (Number(proof?.mainDatabaseConnections) !== 0) blockers.push('lab_main_database_has_connections')
-  if (Number(proof?.labDatabaseConnections) < 1) blockers.push('lab_database_has_no_server_connection')
-  if (val(proof?.sourceDumpSha256).toLowerCase() !== val(candidate?.files?.checkpointDump?.sha256).toLowerCase()) {
+
+  if (val(proof?.version) !== 'ai-radar-v06-lab-database-proof-v0.1') {
+    blockers.push('lab_proof_version_mismatch')
+  }
+  if (val(proof?.serverUrl).replace(/\/+$/u, '') !== baseUrl) {
+    blockers.push('lab_proof_server_url_mismatch')
+  }
+  if (val(proof?.databaseName) !== labDatabase) {
+    blockers.push('lab_proof_database_name_mismatch')
+  }
+  if (!/^baihepailei_radar_lab_[a-z0-9_]+$/u.test(labDatabase)) {
+    blockers.push('lab_database_name_invalid')
+  }
+  if (val(proof?.mainDatabase) !== 'baihepailei') {
+    blockers.push('lab_proof_main_database_mismatch')
+  }
+  if (Number(proof?.mainDatabaseConnections) !== 0) {
+    blockers.push('lab_main_database_has_connections')
+  }
+  if (Number(proof?.labDatabaseConnections) < 1) {
+    blockers.push('lab_database_has_no_server_connection')
+  }
+  if (Number(proof?.publicTableCount) !== 83) {
+    blockers.push('lab_proof_public_table_count_mismatch')
+  }
+
+  if (
+    val(proof?.sourceDumpSha256).toLowerCase() !==
+    val(candidate?.files?.checkpointDump?.sha256).toLowerCase()
+  ) {
     blockers.push('lab_proof_dump_hash_mismatch')
   }
+
+  if (!candidateManifestFile || !fs.existsSync(candidateManifestFile)) {
+    blockers.push('lab_candidate_manifest_missing_for_proof')
+  } else {
+    const expectedManifestPath = path.resolve(candidateManifestFile)
+    const proofManifestPath = val(proof?.candidateManifest)
+
+    if (
+      !proofManifestPath ||
+      path.resolve(proofManifestPath) !== expectedManifestPath
+    ) {
+      blockers.push('lab_proof_candidate_manifest_path_mismatch')
+    }
+
+    if (
+      val(proof?.candidateManifestSha256).toLowerCase() !==
+      sha256File(candidateManifestFile)
+    ) {
+      blockers.push('lab_proof_candidate_manifest_hash_mismatch')
+    }
+  }
+
   const generatedAt = Date.parse(val(proof?.generatedAt))
-  if (!Number.isFinite(generatedAt) || Date.now() - generatedAt > 30 * 60 * 1000 || generatedAt > Date.now() + 60_000) {
+  if (
+    !Number.isFinite(generatedAt) ||
+    Date.now() - generatedAt > 30 * 60 * 1000 ||
+    generatedAt > Date.now() + 60_000
+  ) {
     blockers.push('lab_proof_expired_or_invalid')
   }
+
   return unique(blockers)
 }
 
@@ -239,7 +318,15 @@ export async function runLabV05(options) {
   const initialBlockers = unique([
     ...validateLabUrl(baseUrl),
     ...validateCandidate(candidate),
-    ...(execute ? validateProof(proof, candidate, baseUrl, labDatabase) : []),
+    ...(execute
+      ? validateProof(
+        proof,
+        candidate,
+        baseUrl,
+        labDatabase,
+        candidateManifestFile,
+      )
+      : []),
   ])
   if (initialBlockers.length) throw new Error(`Draft restore roundtrip lab v0.5 blocked: ${initialBlockers.join(', ')}`)
 
@@ -365,9 +452,7 @@ export async function runLabV05(options) {
         expectedMaximumWriteRequests: 3,
         mainDatabaseTargeted: false,
         directPostgresqlWrite: false,
-        restoreAsDraftRequests: payloadWriteRequests >= 1 ? 1 : 0,
-        partialPublishedPatchRequests: payloadWriteRequests >= 2 ? 1 : 0,
-        localApiRestoreUsed: false,
+        ...writeRequestBreakdown(payloadWriteRequests),
       },
     })
   }
@@ -490,12 +575,7 @@ export async function runLabV05(options) {
       requiresLoopbackPort3100: true,
       requiresFreshDatabaseProof: true,
       directPostgresqlWrite: false,
-      restoreAsDraftRequests: 2,
-      partialPublishedPatchRequests: 1,
-      genericRestoreWithoutDraftRequests: 0,
-      wholeDocumentDraftPatchRequests: 0,
-      localApiRestoreUsed: false,
-      restRestoreDraftQueryExplicit: true,
+      ...writeRequestBreakdown(payloadWriteRequests),
     },
   }
   writeEvidence(outputs.summary, summary)
