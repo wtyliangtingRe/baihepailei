@@ -72,3 +72,19 @@ test('runner creates a fresh proof only after inspect and keeps artifacts under 
   assert.match(source, /candidateManifestSha256/u)
   assert.match(source, /sourceDumpSha256/u)
 })
+
+test('runner keeps inspect child output out of the function return pipeline', () => {
+  const inspectStart = source.indexOf('function Invoke-LabInspect')
+  const inspectEnd = source.indexOf('\nfunction New-DatabaseProof', inspectStart)
+
+  assert.ok(inspectStart >= 0)
+  assert.ok(inspectEnd > inspectStart)
+
+  const inspectSource = source.slice(inspectStart, inspectEnd)
+  assert.match(inspectSource, /\$nodeOutput = @\(/u)
+  assert.match(
+    inspectSource,
+    /\$nodeOutput \| ForEach-Object \{ Write-Host \$_ \}/u,
+  )
+  assert.match(inspectSource, /--url \$LabUrl 2>&1/u)
+})

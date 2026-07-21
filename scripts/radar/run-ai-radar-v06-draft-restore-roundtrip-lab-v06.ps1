@@ -179,12 +179,15 @@ function Read-RunSummary {
 
 function Invoke-LabInspect {
   $startedAt = Get-Date
-  & node `
-    --env-file=.env `
-    $LabScript `
-    --candidate-manifest $CandidateManifest `
-    --url $LabUrl
+  $nodeOutput = @(
+    & node `
+      --env-file=.env `
+      $LabScript `
+      --candidate-manifest $CandidateManifest `
+      --url $LabUrl 2>&1
+  )
   $exitCode = $LASTEXITCODE
+  $nodeOutput | ForEach-Object { Write-Host $_ }
   $runDirectory = Get-NewestRunDirectory -StartedAt $startedAt
 
   if ($exitCode -ne 0) {
