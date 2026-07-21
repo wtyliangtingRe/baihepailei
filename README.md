@@ -60,7 +60,7 @@ pnpm dev
 
 打开 `http://localhost:3000` 和 `http://localhost:3000/admin`。
 
-联网自动扩库在 Windows/PowerShell 下的实际端口、`.env`、管理员密码临时输入、v2rayN 代理、来源故障判断和 35,615 条 Works 基线，统一记录在 [本地联网扩库运行手册](docs/local-controlled-online-refresh-runbook.md)。不要把真实密码、token、cookie 或个人代理凭据提交到仓库。
+联网自动扩库在 Windows/PowerShell 下的实际端口、`.env`、管理员密码临时输入、v2rayN 代理、来源故障判断和 35,615 条 Works 基线，统一记录在 [本地联网扩库运行手册](docs/local-controlled-online-refresh-runbook.md)。日常使用推荐通过 [统一 PowerShell 入口](docs/local-controlled-online-refresh-one-command.md) 调用内部抓取、审计、标准化与去重模块。不要把真实密码、token、cookie 或个人代理凭据提交到仓库。
 
 如需重新生成 Payload 类型或 Admin import map：
 
