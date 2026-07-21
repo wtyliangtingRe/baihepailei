@@ -34,9 +34,13 @@ test('VNDB tag gates separate romance and sex-only candidates', () => {
   assert.equal(row.createCandidatePreview.payloadPreview.externalIds.vndbId, 'v123')
 })
 
-test('Steam search parsing deduplicates app ids and classifies strong yuri text', () => {
+test('Steam search parsing deduplicates app ids and only classifies page evidence', () => {
   const ids = parseSteamSearchAppIds({ results_html: '<a data-ds-appid="11" href="/app/11/x"></a><a href="/app/22/y"></a><a data-ds-appid="11"></a>' })
   assert.deepEqual(ids, ['11', '22'])
+
+  const unrelated = { name: 'Ordinary Puzzle', short_description: 'A quiet tile-matching puzzle.', required_age: 0 }
+  assert.equal(classifySteamApp(unrelated, ['yuri']).bucket, 'p9-other-review', 'the discovery query itself must not become content evidence')
+
   const app = { name: 'Example', short_description: 'A yuri girls love romance.', required_age: 0, release_date: { date: '1 Jul, 2026' } }
   assert.equal(classifySteamApp(app, ['yuri']).bucket, 'p1-strong-yuri-nonadult')
   const row = steamAppToCandidate('11', app, ['yuri'], '2026-07-21T00:00:00.000Z')
