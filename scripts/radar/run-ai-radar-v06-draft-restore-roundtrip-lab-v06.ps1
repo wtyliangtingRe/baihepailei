@@ -81,7 +81,7 @@ function Get-DatabaseConnectionCount {
     throw "Failed to read PostgreSQL connection count for $DatabaseName."
   }
   if ($result -notmatch '^\d+$') {
-    throw "Invalid PostgreSQL connection count for $DatabaseName: $result"
+    throw "Invalid PostgreSQL connection count for ${DatabaseName}: $result"
   }
   return [int]$result
 }
