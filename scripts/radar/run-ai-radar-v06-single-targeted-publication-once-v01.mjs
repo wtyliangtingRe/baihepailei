@@ -3,6 +3,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 
+import { targetedPublicationSha256 } from './dryrun-ai-radar-v06-targeted-publication-v01.mjs'
+import { canonical, payloadComparable } from './lib/payload-plan-v01.mjs'
 import { sha256File } from './lib/payload-apply-v01.mjs'
 import {
   SINGLE_EXECUTE_VERSION,
@@ -19,6 +21,7 @@ import {
 } from './lib/v06-single-targeted-publication-v01.mjs'
 
 const DEFAULT_OUT_ROOT = 'data_local/staging/ai-radar/v06-single-targeted-publication-execute-v01'
+const VOLATILE_FIELDS = new Set(['createdAt', 'updatedAt', 'publishedAt'])
 
 function val(value) {
   return String(value ?? '').trim()
@@ -39,6 +42,13 @@ function parseArgs(argv) {
 
 function gitValue(args) {
   return execFileSync('git', args, { encoding: 'utf8' }).trim()
+}
+
+function unrelatedState(work, patch) {
+  const patchFields = new Set(Object.keys(patch || {}))
+  return canonical(payloadComparable(Object.fromEntries(
+    Object.entries(work || {}).filter(([key]) => !patchFields.has(key) && !VOLATILE_FIELDS.has(key)),
+  )))
 }
 
 async function requestJson(url, options = {}) {
@@ -135,6 +145,7 @@ async function main() {
   const publishedBefore = await readWork(baseUrl, token, targetId, { draft: false })
   const draftBefore = await readWork(baseUrl, token, targetId, { draft: true })
   const preflight = validateCurrentForSingleExecution(candidate, publishedBefore, draftBefore)
+  const unrelatedBeforeSha256 = targetedPublicationSha256(unrelatedState(publishedBefore, candidate.expected.patch))
   writeJson(outputs.preflight, {
     generatedAt: new Date().toISOString(),
     version: SINGLE_EXECUTE_VERSION,
@@ -144,6 +155,7 @@ async function main() {
     blockers: preflight.blockers,
     changedFields: preflight.changedFields,
     observedBefore: preflight.observedBefore,
+    unrelatedPublishedStateSha256: unrelatedBeforeSha256,
     safety: {
       payloadRead: true,
       payloadWrite: false,
@@ -193,6 +205,7 @@ async function main() {
     candidateId: candidate.candidateId,
     targetId,
     changedFields: preflight.changedFields,
+    unrelatedPublishedStateSha256: unrelatedBeforeSha256,
     payloadPatchRequests: 0,
   })
 
@@ -215,7 +228,16 @@ async function main() {
 
   const publishedAfter = await readWork(baseUrl, token, targetId, { draft: false })
   const draftAfter = await readWork(baseUrl, token, targetId, { draft: true })
-  const verification = verifySingleExecution(candidate, publishedBefore, publishedAfter, draftAfter)
+  const baseVerification = verifySingleExecution(candidate, publishedBefore, publishedAfter, draftAfter)
+  const unrelatedAfterSha256 = targetedPublicationSha256(unrelatedState(publishedAfter, candidate.expected.patch))
+  const unrelatedBlockers = unrelatedAfterSha256 === unrelatedBeforeSha256 ? [] : ['single_verify_unrelated_published_state_changed']
+  const verification = {
+    ...baseVerification,
+    verified: baseVerification.verified && unrelatedBlockers.length === 0,
+    blockers: unique([...baseVerification.blockers, ...unrelatedBlockers]),
+    unrelatedPublishedStateBeforeSha256: unrelatedBeforeSha256,
+    unrelatedPublishedStateAfterSha256: unrelatedAfterSha256,
+  }
   const commonSummary = {
     generatedAt: new Date().toISOString(),
     version: SINGLE_EXECUTE_VERSION,
@@ -239,6 +261,7 @@ async function main() {
       directPostgresqlWrite: false,
       wholeDraftPublication: false,
       partialAllowlistedPatchOnly: true,
+      unrelatedPublishedFieldsVerified: true,
       automaticRollback: false,
       approvalTokenPrinted: false,
     },
@@ -277,6 +300,7 @@ async function main() {
     payloadPatchRequests,
     publishedStateSha256: verification.publishedStateSha256,
     humanStateSha256: verification.humanStateSha256,
+    unrelatedPublishedStateSha256: verification.unrelatedPublishedStateAfterSha256,
   })
   console.log(JSON.stringify({
     ok: true,
