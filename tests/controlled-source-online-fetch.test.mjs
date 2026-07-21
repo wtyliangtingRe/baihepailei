@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
 import test from 'node:test'
 
 import {
@@ -44,8 +45,8 @@ test('Steam search parsing deduplicates app ids and classifies strong yuri text'
 })
 
 test('online refresh and fetch commands reject direct writes', () => {
-  const fetchSource = String.raw`${fs.readFileSync('scripts/radar/fetch-controlled-source-snapshots-v01.mjs', 'utf8')}`
-  const refreshSource = String.raw`${fs.readFileSync('scripts/radar/run-controlled-online-refresh-v01.mjs', 'utf8')}`
+  const fetchSource = fs.readFileSync('scripts/radar/fetch-controlled-source-snapshots-v01.mjs', 'utf8')
+  const refreshSource = fs.readFileSync('scripts/radar/run-controlled-online-refresh-v01.mjs', 'utf8')
   assert.match(fetchSource, /cannot apply, create, update, assess, or publish Works/u)
   assert.match(refreshSource, /checkpoint-gated release stage/u)
 })
