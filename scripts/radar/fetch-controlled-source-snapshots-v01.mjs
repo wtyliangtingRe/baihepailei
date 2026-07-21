@@ -32,6 +32,14 @@ function parseArgs(argv) {
   }
   return args
 }
+function parseBoolean(value, fallback = false) {
+  if (value === undefined || value === null || value === '') return fallback
+  if (typeof value === 'boolean') return value
+  const normalized = String(value).trim().toLowerCase()
+  if (['1', 'true', 'yes', 'y', 'on'].includes(normalized)) return true
+  if (['0', 'false', 'no', 'n', 'off'].includes(normalized)) return false
+  return fallback
+}
 function parseNumber(value, fallback, { min = 0, max = Number.MAX_SAFE_INTEGER } = {}) {
   const number = Number(value)
   if (!Number.isFinite(number)) return fallback
@@ -246,7 +254,7 @@ const FEMALE_SUBJECT_PATTERNS = [/\bgirls?\b/iu, /\bwom[ae]n\b|\bfemale\b/iu, /�
 const SENSITIVE_PATTERNS = [/\badult\b|\bsexual\b|\bsex\b|\berotic\b|\bnudity\b/iu, /性内容|性暗示|性爱|裸露|成人向|成人内容/u]
 function patternHits(text, patterns) { return unique(patterns.flatMap((pattern) => text.match(pattern)?.[0] || []).map(cleanText)) }
 export function classifySteamApp(app, searchTerms = []) {
-  const text = cleanText([app?.name, app?.short_description, app?.about_the_game, app?.detailed_description, list(app?.genres).map((item) => item?.description).join(' '), list(app?.categories).map((item) => item?.description).join(' '), list(searchTerms).join(' ')].join('\n'))
+  const text = cleanText([app?.name, app?.short_description, app?.about_the_game, app?.detailed_description, list(app?.genres).map((item) => item?.description).join(' '), list(app?.categories).map((item) => item?.description).join(' ')].join('\n'))
   const strongYuriHits = patternHits(text, STRONG_YURI_PATTERNS)
   const romanceHits = patternHits(text, FEMALE_ROMANCE_PATTERNS)
   const femaleHits = patternHits(text, FEMALE_SUBJECT_PATTERNS)
@@ -266,13 +274,12 @@ export function classifySteamApp(app, searchTerms = []) {
 export function steamAppToCandidate(appId, app, searchTerms, fetchedAt = new Date().toISOString()) {
   const classification = classifySteamApp(app, searchTerms)
   const sourceUrl = `${STEAM_STORE}/app/${appId}`
-  const isVisualNovel = /visual novel|ビジュアルノベル|视觉小说|視覺小說/iu.test(cleanText([app?.short_description, app?.about_the_game, list(app?.genres).map((item) => item?.description).join(' ')].join('\n')))
   const payloadPreview = {
     title: cleanText(app?.name),
     originalTitle: cleanText(app?.name),
     mediaGroup: 'game',
-    mediaType: isVisualNovel ? 'visual_novel' : 'game',
-    format: isVisualNovel ? 'visual_novel' : 'pc_game',
+    mediaType: 'game',
+    format: /visual novel|ビジュアルノベル|视觉小说|視覺小說/iu.test(cleanText([app?.short_description, app?.about_the_game, list(app?.genres).map((item) => item?.description).join(' ')].join('\n'))) ? 'visual_novel' : 'pc_game',
     firstPublishedAt: val(app?.release_date?.date),
     externalIds: { steamAppId: String(appId) },
     sourceLinks: [{ label: `Steam ${appId}`, url: sourceUrl, fetchedAt }],
@@ -311,7 +318,11 @@ async function fetchVndb({ outDir, delayMs, retries, retryDelayMs, timeoutMs, us
     const body = {
       filters: ['or', ['tag', '=', ['g97', 2, 1]], ['tag', '=', ['g82', 2, 1]]],
       fields: 'title,alttitle,titles{title,lang,official,main},aliases,released,description,languages,platforms,image{url,sexual,violence},tags{id,rating,spoiler,lie,name,category},developers{id,name,original}',
-      sort: 'id', reverse: false, results: resultsPerPage, page, count: false,
+      sort: 'id',
+      reverse: false,
+      results: resultsPerPage,
+      page,
+      count: false,
     }
     const json = await fetchJson(`${VNDB_API}/vn`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) }, { retries, retryDelayMs, timeoutMs, userAgent })
     const pageRows = list(json?.results)
@@ -320,10 +331,9 @@ async function fetchVndb({ outDir, delayMs, retries, retryDelayMs, timeoutMs, us
     if (!json?.more) break
     await sleep(delayMs)
   }
-  const uniqueRows = uniqueBy(rows, (row) => row.vndbId)
   const output = path.join(outDir, 'vndb', 'vndb-yuri-online-v01.jsonl')
-  writeJsonl(output, uniqueRows)
-  return { source: 'vndb', output, fetchedAt, count: uniqueRows.length, batches }
+  writeJsonl(output, uniqueBy(rows, (row) => row.vndbId))
+  return { source: 'vndb', output, fetchedAt, count: rows.length, batches }
 }
 
 async function fetchYurizukan({ outDir, delayMs, retries, retryDelayMs, timeoutMs, userAgent, pages, maxArticles }) {
@@ -412,7 +422,19 @@ function fetchBangumi({ outDir, profile, pages, delayMs }) {
   const output = path.join(outDir, 'bangumi', 'bangumi-yuri-tagged.jsonl')
   const report = path.join(outDir, 'bangumi', 'bangumi-yuri-tagged-summary.json')
   fs.mkdirSync(path.dirname(output), { recursive: true })
-  const args = [path.resolve('tools/source_import/scripts/fetch-bangumi-tagged-subjects.mjs'), '--out', output, '--report', report, '--tags', profile === 'quick' ? '百合,GL' : '百合,轻百合,GL', '--types', '1,2,4', '--limit', '20', '--pages', String(pages), '--delay-ms', String(delayMs), '--stop-after-empty-pages', profile === 'quick' ? '1' : '3', '--retries', '2', '--retry-delay-ms', '1500']
+  const args = [
+    path.resolve('tools/source_import/scripts/fetch-bangumi-tagged-subjects.mjs'),
+    '--out', output,
+    '--report', report,
+    '--tags', profile === 'quick' ? '百合,GL' : '百合,轻百合,GL',
+    '--types', '1,2,4',
+    '--limit', '20',
+    '--pages', String(pages),
+    '--delay-ms', String(delayMs),
+    '--stop-after-empty-pages', profile === 'quick' ? '1' : '3',
+    '--retries', '2',
+    '--retry-delay-ms', '1500',
+  ]
   const result = spawnSync(process.execPath, args, { stdio: 'inherit', shell: false })
   if (result.error) throw result.error
   if (result.status !== 0) throw new Error(`Bangumi fetcher failed with exit code ${result.status}`)
@@ -438,10 +460,15 @@ export async function fetchControlledSourceSnapshots(options = {}) {
 
   for (const source of sources) {
     if (!SOURCE_KEYS.includes(source)) throw new Error(`Unsupported controlled source: ${source}`)
-    if (source === 'bangumi') results.push(fetchBangumi({ outDir, profile, pages: options.bangumiPages || (profile === 'full' ? 30 : 4), delayMs }))
-    else if (source === 'vndb') results.push(await fetchVndb({ outDir, delayMs, retries, retryDelayMs, timeoutMs, userAgent, maxPages: options.vndbPages || (profile === 'full' ? 100 : 5), resultsPerPage: 100 }))
-    else if (source === 'yurizukan') results.push(await fetchYurizukan({ outDir, delayMs, retries, retryDelayMs, timeoutMs, userAgent, pages: options.yurizukanPages || (profile === 'full' ? 20 : 3), maxArticles: options.yurizukanMaxArticles || (profile === 'full' ? 2000 : 100) }))
-    else if (source === 'steam') results.push(await fetchSteam({ outDir, delayMs, retries, retryDelayMs, timeoutMs, userAgent, searchTerms: options.steamTerms || ['yuri', 'girls love', 'lesbian', 'sapphic', '百合'], pagesPerTerm: options.steamPages || (profile === 'full' ? 10 : 2), countPerPage: 50, maxApps: options.steamMaxApps || (profile === 'full' ? 2000 : 250) }))
+    if (source === 'bangumi') {
+      results.push(fetchBangumi({ outDir, profile, pages: options.bangumiPages || (profile === 'full' ? 30 : 4), delayMs }))
+    } else if (source === 'vndb') {
+      results.push(await fetchVndb({ outDir, delayMs, retries, retryDelayMs, timeoutMs, userAgent, maxPages: options.vndbPages || (profile === 'full' ? 100 : 5), resultsPerPage: 100 }))
+    } else if (source === 'yurizukan') {
+      results.push(await fetchYurizukan({ outDir, delayMs, retries, retryDelayMs, timeoutMs, userAgent, pages: options.yurizukanPages || (profile === 'full' ? 20 : 3), maxArticles: options.yurizukanMaxArticles || (profile === 'full' ? 2000 : 100) }))
+    } else if (source === 'steam') {
+      results.push(await fetchSteam({ outDir, delayMs, retries, retryDelayMs, timeoutMs, userAgent, searchTerms: options.steamTerms || ['yuri', 'girls love', 'lesbian', 'sapphic', '百合'], pagesPerTerm: options.steamPages || (profile === 'full' ? 10 : 2), countPerPage: 50, maxApps: options.steamMaxApps || (profile === 'full' ? 2000 : 250) }))
+    }
   }
 
   const summary = {
@@ -453,7 +480,19 @@ export async function fetchControlledSourceSnapshots(options = {}) {
     requestedSources: sources,
     results,
     outputs: Object.fromEntries(results.map((result) => [result.source, result.output])),
-    safety: { externalFetch: true, payloadRead: false, payloadWrite: false, directPostgresqlWrite: false, createsWorks: false, updatesWorks: false, publishesWorks: false, mutatesHumanAssessment: false, mutatesRadarAssessment: false, rawSnapshotsOnly: true, firstErrorStopsSource: true },
+    safety: {
+      externalFetch: true,
+      payloadRead: false,
+      payloadWrite: false,
+      directPostgresqlWrite: false,
+      createsWorks: false,
+      updatesWorks: false,
+      publishesWorks: false,
+      mutatesHumanAssessment: false,
+      mutatesRadarAssessment: false,
+      rawSnapshotsOnly: true,
+      firstErrorStopsSource: true,
+    },
     nextStep: 'Pass these immutable source snapshots to the controlled normalization and candidate planner. Network responses still cannot write Works directly.',
   }
   writeJson(path.join(outDir, 'summary.json'), summary)
@@ -462,12 +501,18 @@ export async function fetchControlledSourceSnapshots(options = {}) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
-  if (args.apply || args.execute || args.confirm || args.write || args.patch || args.publish) throw new Error('Online source fetching only creates local snapshots. It cannot apply, create, update, assess, or publish Works.')
+  if (args.apply || args.execute || args.confirm || args.write || args.patch || args.publish) {
+    throw new Error('Online source fetching only creates local snapshots. It cannot apply, create, update, assess, or publish Works.')
+  }
+  const sources = parseCsv(args.sources, SOURCE_KEYS)
   const summary = await fetchControlledSourceSnapshots({
     outDir: val(args['out-dir']) || undefined,
     profile: val(args.profile || 'quick'),
-    sources: parseCsv(args.sources, SOURCE_KEYS),
-    delayMs: args['delay-ms'], retries: args.retries, retryDelayMs: args['retry-delay-ms'], timeoutMs: args['timeout-ms'],
+    sources,
+    delayMs: args['delay-ms'],
+    retries: args.retries,
+    retryDelayMs: args['retry-delay-ms'],
+    timeoutMs: args['timeout-ms'],
     userAgent: val(args['user-agent'] || process.env.BAIHEPAILEI_SOURCE_USER_AGENT || DEFAULT_USER_AGENT),
     bangumiPages: parseNumber(args['bangumi-pages'], undefined, { min: 1, max: 500 }),
     vndbPages: parseNumber(args['vndb-pages'], undefined, { min: 1, max: 1000 }),
@@ -481,4 +526,9 @@ async function main() {
 }
 
 const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
-if (isDirectRun) main().catch((error) => { console.error(error?.stack || error); process.exitCode = 1 })
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error(error?.stack || error)
+    process.exitCode = 1
+  })
+}
