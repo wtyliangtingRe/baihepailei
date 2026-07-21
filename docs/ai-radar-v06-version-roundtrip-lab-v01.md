@@ -1,293 +1,127 @@
-# AI Radar v0.6 版本回环实验室 v0.1
+# AI Radar v0.6 版本回环实验室
 
 ## 背景
 
 单条真实 canary 已证明：在已有 newer draft 的 Work 上执行部分 PATCH，并设置 `_status: "published"`，Payload 会把 latest draft 中未出现在 PATCH 请求体里的字段一并带入 published/main。
 
-旧执行器已永久禁用。本实验只在从发布前 checkpoint 恢复出的临时 PostgreSQL 数据库中验证：
+因此旧的：
 
 ```text
-恢复与当前 published 完全相同的历史 published version
-→ 确认 latest version 已变成干净 published 基线
-→ 发布 Radar 白名单补丁
-→ 确认 published 无关字段和人工轨道不变
-→ 恢复原 latest draft version
-→ 确认 published 保留 Radar，latest draft 恢复原状
+partial PATCH + _status=published
 ```
 
-Payload 官方文档说明：`draft=true` 的普通 draft 更新只写 versions table；`_status=published` 会执行正式发布；读取 `draft=true` 返回最新版本；恢复版本操作可通过 REST 或 Local API 调用。
+路线已经永久禁用，不能再次对正式数据库执行。
 
-实验成功也只允许继续设计新的单条正式 canary，不允许直接批量发布。
+## 实验目标
 
-## 安全边界
+仅在由已验证 checkpoint 恢复出的临时 PostgreSQL 数据库上，验证下面的三步版本回环：
 
-实验器：
+1. 恢复一个与当前 published 内容一致的干净 draft 版本；
+2. 在这个干净 draft 上发布 Radar 白名单字段；
+3. 恢复原始 latest draft，同时确认 published Radar 不变。
+
+## v0.2 基线匹配规则
+
+现场只读诊断发现 Work 3839 的版本 `8744` 与当前 published 的全部内容完全一致，唯一差异是根级 `_status`：
 
 ```text
-scripts/radar/lab-ai-radar-v06-version-roundtrip-v01.mjs
+published main: _status=published
+version 8744:   _status=draft
 ```
 
-强制要求：
+因此 v0.2 采用严格的状态感知规则：
 
-- URL 必须是 loopback 且端口必须为 `3100`；
-- 临时数据库名必须匹配 `baihepailei_radar_lab_*`；
-- 正式数据库连接数必须为 0；
-- 临时数据库必须有应用连接；
-- 数据库证明文件不得超过 30 分钟；
-- 临时库来源 dump 哈希必须与 candidate 绑定值一致；
-- 写模式要求 `RADAR_VERSION_ROUNDTRIP_LAB=YES` 和精确确认字符串；
-- 最多三次 Payload 写请求；
-- 不直接写 PostgreSQL 表；
-- 不向 API 发送整份 draft 文档。
+- published 基线候选只忽略根级 `_status`；
+- 任何其他字段缺失、默认值差异、嵌套状态差异或内容差异都会被拒绝；
+- original latest draft 仍要求完整精确匹配，包括根级 `_status`；
+- Payload 自动生成的嵌套 row ID 与等价时间格式仍按既有规范化规则处理。
 
-旧执行器：
+对 Work 3839，预期选择：
 
 ```text
-scripts/radar/run-ai-radar-v06-single-targeted-publication-once-v01.mjs
+clean published-content draft version: 8744
+original latest draft version:          79558
 ```
 
-已替换为无条件退出脚本，不再包含 PATCH 逻辑。
+## 隔离要求
 
-## 代码检查
+实验器只接受：
+
+- loopback 地址；
+- 端口 `3100`；
+- 名称以 `baihepailei_radar_lab_` 开头的数据库；
+- 30 分钟内生成的数据库证明文件；
+- 正式数据库连接数为 0；
+- 实验数据库应用连接数至少为 1；
+- 与 candidate 绑定的 checkpoint dump SHA-256；
+- 精确确认字符串和专用环境开关。
+
+正式数据库不得用于本实验。
+
+## 执行器
+
+当前实验执行器：
+
+```text
+scripts/radar/lab-ai-radar-v06-version-roundtrip-v02.mjs
+```
+
+精确确认字符串：
+
+```text
+EXECUTE-V06-VERSION-ROUNDTRIP-LAB-V02-ONLY
+```
+
+一次成功实验最多发出 3 个 Payload 写请求：
+
+1. 恢复干净 published-content draft；
+2. 发布 Radar 白名单 patch；
+3. 恢复原始 latest draft。
+
+每一步后都重新读取 published 与 `draft=true` 视图并验证：
+
+- unrelated published state；
+- human track；
+- Radar patch；
+- clean draft 内容；
+- 原始 latest draft；
+- 恢复原 draft 后 published main 不变。
+
+## 本地检查
 
 ```powershell
-node --check scripts/radar/lab-ai-radar-v06-version-roundtrip-v01.mjs
-node --check scripts/radar/run-ai-radar-v06-single-targeted-publication-once-v01.mjs
-node --test tests/ai-radar-v06-version-roundtrip-lab.test.mjs
+node --check scripts/radar/lab-ai-radar-v06-version-roundtrip-v02.mjs
+node --test `
+  tests/ai-radar-v06-version-roundtrip-lab.test.mjs `
+  tests/ai-radar-v06-version-roundtrip-lab-v02.test.mjs
 ```
 
-## 固定输入
-
-```powershell
-$CandidateManifest = Join-Path `
-  (Get-Location) `
-  "data_local\staging\ai-radar\v06-single-targeted-publication-v01\rc-v06-single-cab8a120e61ea9f8f26e\candidate-manifest.json"
-
-$PreWriteCheckpoint = `
-  "D:\Baihepailei-backups\Baihepailei-20260721-165805"
-
-$PreWriteDump = Join-Path `
-  $PreWriteCheckpoint `
-  "payload-postgresql.dump"
-
-$Candidate = Get-Content `
-  -LiteralPath $CandidateManifest `
-  -Raw `
-  -Encoding UTF8 |
-  ConvertFrom-Json -Depth 100
-
-$ExpectedDumpHash = `
-  ([string]$Candidate.files.checkpointDump.sha256).ToLowerInvariant()
-
-$ActualDumpHash = `
-  (Get-FileHash $PreWriteDump -Algorithm SHA256).Hash.ToLowerInvariant()
-
-if ($ExpectedDumpHash -ne $ActualDumpHash) {
-  throw "candidate 与发布前 dump 的哈希不一致"
-}
-```
-
-## 停止正式站点
-
-在运行 `pnpm dev` 的窗口按 `Ctrl+C`，然后确认：
-
-```powershell
-foreach ($Port in @(3000, 3100)) {
-  if (Test-NetConnection 127.0.0.1 -Port $Port -InformationLevel Quiet) {
-    throw "端口 $Port 仍在监听"
-  }
-}
-```
-
-## 建立临时数据库
-
-```powershell
-$PgContainer = "baihepailei-postgres"
-$PgUser = (docker exec $PgContainer printenv POSTGRES_USER | Out-String).Trim()
-$MainDb = (docker exec $PgContainer printenv POSTGRES_DB | Out-String).Trim()
-
-if ([string]::IsNullOrWhiteSpace($PgUser)) { $PgUser = "postgres" }
-if ([string]::IsNullOrWhiteSpace($MainDb)) { $MainDb = $PgUser }
-
-$MaintenanceDb = $(if ($MainDb -eq "postgres") {
-  "template1"
-} else {
-  "postgres"
-})
-
-$LabDb = (
-  "baihepailei_radar_lab_" +
-  (Get-Date -Format "yyyyMMddHHmmss")
-).ToLowerInvariant()
-
-$ContainerDump = `
-  "/tmp/$LabDb-$([guid]::NewGuid().ToString('N')).dump"
-
-docker cp "$PreWriteDump" "${PgContainer}:$ContainerDump"
-if ($LASTEXITCODE -ne 0) { throw "复制 dump 失败" }
-
-docker exec $PgContainer createdb `
-  "--username=$PgUser" `
-  "--maintenance-db=$MaintenanceDb" `
-  "--owner=$PgUser" `
-  "--template=template0" `
-  $LabDb
-if ($LASTEXITCODE -ne 0) { throw "创建临时数据库失败" }
-
-docker exec $PgContainer pg_restore `
-  "--username=$PgUser" `
-  "--dbname=$LabDb" `
-  --no-owner `
-  --no-privileges `
-  --single-transaction `
-  --exit-on-error `
-  $ContainerDump
-if ($LASTEXITCODE -ne 0) { throw "恢复临时数据库失败" }
-
-docker exec $PgContainer rm -f $ContainerDump
-```
-
-## 派生临时 URI，不打印凭据
-
-```powershell
-$DatabaseUriLine = Get-Content -LiteralPath ".env" |
-  Where-Object { $_ -match '^\s*DATABASE_URI=' } |
-  Select-Object -First 1
-
-if (-not $DatabaseUriLine) {
-  throw ".env 中没有 DATABASE_URI"
-}
-
-$BaseDatabaseUri = `
-  $DatabaseUriLine.Split('=', 2)[1].Trim().Trim('"').Trim("'")
-
-$LabDatabaseUri = node --input-type=module -e @'
-const url = new URL(process.argv[1]);
-url.pathname = `/${process.argv[2]}`;
-process.stdout.write(url.toString());
-'@ "$BaseDatabaseUri" "$LabDb"
-
-if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($LabDatabaseUri)) {
-  throw "无法派生临时 DATABASE_URI"
-}
-
-$BaseDatabaseUri = $null
-```
-
-## 安全启动 3100 临时站点
-
-URI 只通过子进程继承，不放入命令行参数：
-
-```powershell
-$env:RADAR_LAB_DATABASE_URI = $LabDatabaseUri
-
-$LabProcess = Start-Process `
-  pwsh `
-  -ArgumentList @(
-    '-NoExit',
-    '-File',
-    (Join-Path (Get-Location) `
-      'scripts\radar\start-ai-radar-v06-version-roundtrip-lab-v01.ps1')
-  ) `
-  -WorkingDirectory (Get-Location) `
-  -PassThru
-
-Remove-Item Env:RADAR_LAB_DATABASE_URI -ErrorAction SilentlyContinue
-$LabDatabaseUri = $null
-```
-
-等待端口：
-
-```powershell
-$LabReady = $false
-for ($Attempt = 1; $Attempt -le 60; $Attempt += 1) {
-  if (Test-NetConnection 127.0.0.1 -Port 3100 -InformationLevel Quiet) {
-    $LabReady = $true
-    break
-  }
-  Start-Sleep -Seconds 2
-}
-if (-not $LabReady) { throw "临时站点没有启动" }
-```
-
-## 建立短时数据库证明
-
-```powershell
-function Get-DatabaseConnectionCount([string]$DatabaseName) {
-  $Escaped = $DatabaseName.Replace("'", "''")
-  return [int]((
-    docker exec $PgContainer psql `
-      "--username=$PgUser" `
-      "--dbname=$MaintenanceDb" `
-      --tuples-only `
-      --no-align `
-      --command "SELECT count(*) FROM pg_stat_activity WHERE datname = '$Escaped';" |
-    Out-String
-  ).Trim())
-}
-
-$MainConnections = Get-DatabaseConnectionCount $MainDb
-$LabConnections = Get-DatabaseConnectionCount $LabDb
-
-if ($MainConnections -ne 0) { throw "正式数据库仍有应用连接" }
-if ($LabConnections -lt 1) { throw "临时数据库没有应用连接" }
-
-$ProofDir = Join-Path `
-  "data_local\staging\ai-radar\v06-version-roundtrip-lab-proof-v01" `
-  (Get-Date -Format "yyyyMMddHHmmss")
-
-New-Item -ItemType Directory -Force -Path $ProofDir | Out-Null
-$ProofFile = Join-Path $ProofDir "lab-database-proof.json"
-
-[ordered]@{
-  generatedAt = [datetimeoffset]::Now.ToString('o')
-  version = 'ai-radar-v06-lab-database-proof-v0.1'
-  serverUrl = 'http://127.0.0.1:3100'
-  databaseName = $LabDb
-  mainDatabase = $MainDb
-  mainDatabaseConnections = $MainConnections
-  labDatabaseConnections = $LabConnections
-  sourceDumpSha256 = $ActualDumpHash
-} | ConvertTo-Json -Depth 5 | Set-Content `
-  -LiteralPath $ProofFile `
-  -Encoding UTF8
-```
-
-## 只读发现版本
+## 只读发现
 
 ```powershell
 node --env-file=.env `
-  scripts/radar/lab-ai-radar-v06-version-roundtrip-v01.mjs `
+  scripts/radar/lab-ai-radar-v06-version-roundtrip-v02.mjs `
   --candidate-manifest "$CandidateManifest" `
   --url "http://127.0.0.1:3100"
 ```
 
-必须得到：
+预期选择版本 `8744` 与 `79558`，且写请求数为 0。
 
-```text
-inspect_ready_for_lab_execution
-payloadWriteRequests: 0
-matchingPublishedVersions: >= 1
-matchingDraftVersions: >= 1
-```
+## 临时数据库执行
 
-## 执行临时数据库回环
+执行前必须重新生成 30 分钟有效的数据库证明。
 
 ```powershell
 $env:RADAR_VERSION_ROUNDTRIP_LAB = "YES"
 
 node --env-file=.env `
-  scripts/radar/lab-ai-radar-v06-version-roundtrip-v01.mjs `
+  scripts/radar/lab-ai-radar-v06-version-roundtrip-v02.mjs `
   --candidate-manifest "$CandidateManifest" `
   --url "http://127.0.0.1:3100" `
   --lab-database "$LabDb" `
   --database-proof "$ProofFile" `
-  --confirmation "EXECUTE-V06-VERSION-ROUNDTRIP-LAB-ONLY" `
+  --confirmation "EXECUTE-V06-VERSION-ROUNDTRIP-LAB-V02-ONLY" `
   --execute-lab
-
-if ($LASTEXITCODE -ne 0) {
-  throw "版本回环实验失败；正式数据库未参与"
-}
 ```
 
 成功必须同时满足：
@@ -295,54 +129,11 @@ if ($LASTEXITCODE -ne 0) {
 ```text
 status: version_roundtrip_lab_verified
 payloadWriteRequests: 3
-final.patchMatched: true
-final.unrelatedPublishedStateSha256 == baseline.unrelatedPublishedStateSha256
-final.humanStateSha256 == baseline.humanStateSha256
-final.draftStateSha256 == baseline.draftStateSha256
-final.publishedStateSha256 == afterRadar.publishedStateSha256
+final.patchMatchedPublished: true
+final published state == after-Radar published state
+final unrelated published state == baseline published state
+final human state == baseline published state
+final draft state == original latest draft state
 ```
 
-## 清理临时环境
-
-先关闭 3100 窗口，或：
-
-```powershell
-if ($LabProcess -and -not $LabProcess.HasExited) {
-  Stop-Process -Id $LabProcess.Id
-}
-
-Start-Sleep -Seconds 2
-if (Test-NetConnection 127.0.0.1 -Port 3100 -InformationLevel Quiet) {
-  throw "3100 端口仍然开放"
-}
-```
-
-删除临时数据库：
-
-```powershell
-$EscapedLabDb = $LabDb.Replace("'", "''")
-
-docker exec $PgContainer psql `
-  "--username=$PgUser" `
-  "--dbname=$MaintenanceDb" `
-  --set=ON_ERROR_STOP=1 `
-  --command "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$EscapedLabDb' AND pid <> pg_backend_pid();"
-
-docker exec $PgContainer dropdb `
-  "--username=$PgUser" `
-  "--maintenance-db=$MaintenanceDb" `
-  $LabDb
-
-if ($LASTEXITCODE -ne 0) { throw "删除临时数据库失败" }
-
-Remove-Item Env:RADAR_VERSION_ROUNDTRIP_LAB -ErrorAction SilentlyContinue
-```
-
-最后重新用普通 `.env` 启动 3000 正式本地站点，并只读运行发布差距审计。正式数据库必须仍保持：
-
-```text
-publishedMatchesV06: 2
-draftOnlyV06Matches: 9361
-latestDraftHasOtherFormalConclusion: 1
-missing / needsReview / artifact issues: 0
-```
+PR 保持 Draft，直到本地测试与临时数据库实验全部通过。
