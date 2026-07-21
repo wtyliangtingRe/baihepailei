@@ -11,12 +11,15 @@ import {
   newestFile,
   readJsonl,
   selectSingleReadyRow,
-  val,
   writeJson,
 } from './lib/v06-single-targeted-publication-v01.mjs'
 
 const DEFAULT_DRYRUN_ROOT = 'data_local/staging/ai-radar/v06-targeted-publication-dryrun-v01'
 const DEFAULT_OUT_ROOT = 'data_local/staging/ai-radar/v06-single-targeted-publication-v01'
+
+function val(value) {
+  return String(value ?? '').trim()
+}
 
 function parseArgs(argv) {
   const args = {}
