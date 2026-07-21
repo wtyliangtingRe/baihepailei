@@ -37,7 +37,9 @@ test('runner is pinned to the formal loopback server and database topology', () 
   assert.match(source, /\$MainDatabase = 'baihepailei'/u)
   assert.match(source, /\$ExpectedPublicTableCount = 83/u)
   assert.match(source, /\$MinimumExpectedFullCatalogWorks = 35000/u)
-  assert.match(source, /if \(\$mainConnections -lt 1\)/u)
+  assert.match(source, /\$mainConnectionsBefore = Get-DatabaseConnectionCount/u)
+  assert.match(source, /\$mainConnectionsAfterRead = Get-DatabaseConnectionCount/u)
+  assert.match(source, /if \(\$mainConnectionsAfterRead -lt 1\)/u)
   assert.match(source, /-Port 3000/u)
 })
 
@@ -83,4 +85,27 @@ test('runner writes a hashed upload plan under data_local with explicit no-write
   assert.match(source, /directPostgresqlWrite = \$false/u)
   assert.match(source, /publishesRatings = \$false/u)
   assert.match(source, /existingRankNotTreatedAsGroundTruth = \$true/u)
+})
+
+test('runner warms Payload before requiring a database connection', () => {
+  const inspectReadIndex = source.indexOf(
+    "-FailureMessage 'Formal read-only inspect failed.'",
+  )
+  const afterReadConnectionIndex = source.indexOf(
+    '$mainConnectionsAfterRead = Get-DatabaseConnectionCount',
+  )
+  const afterReadGuardIndex = source.indexOf(
+    'if ($mainConnectionsAfterRead -lt 1)',
+  )
+
+  assert.ok(inspectReadIndex >= 0)
+  assert.ok(afterReadConnectionIndex > inspectReadIndex)
+  assert.ok(afterReadGuardIndex > afterReadConnectionIndex)
+
+  const beforeInspectRead = source.slice(0, inspectReadIndex)
+
+  assert.doesNotMatch(
+    beforeInspectRead,
+    /if \(\$mainConnections(?:Before)? -lt 1\)/u,
+  )
 })

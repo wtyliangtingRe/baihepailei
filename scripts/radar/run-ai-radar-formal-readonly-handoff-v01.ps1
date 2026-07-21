@@ -273,19 +273,16 @@ if (-not $SkipTests) {
     -FailureMessage 'Formal read-only handoff tests failed.'
 }
 
-$mainConnections = Get-DatabaseConnectionCount -DatabaseName $MainDatabase
-$publicTableCount = Get-PublicTableCount -DatabaseName $MainDatabase
+$mainConnectionsBefore = Get-DatabaseConnectionCount -DatabaseName $MainDatabase
+$publicTableCountBefore = Get-PublicTableCount -DatabaseName $MainDatabase
 $portListening = Test-NetConnection `
   -ComputerName '127.0.0.1' `
   -Port 3000 `
   -InformationLevel Quiet `
   -WarningAction SilentlyContinue
 
-if ($mainConnections -lt 1) {
-  throw 'The formal database has no application connection.'
-}
-if ($publicTableCount -ne $ExpectedPublicTableCount) {
-  throw "The formal database table count is unexpected: $publicTableCount"
+if ($publicTableCountBefore -ne $ExpectedPublicTableCount) {
+  throw "The formal database table count is unexpected: $publicTableCountBefore"
 }
 if (-not $portListening) {
   throw 'Formal Payload port 3000 is not listening.'
@@ -350,6 +347,16 @@ try {
       ) `
       -FailureMessage 'Formal read-only inspect failed.'
 
+    $mainConnectionsAfterRead = Get-DatabaseConnectionCount -DatabaseName $MainDatabase
+    $publicTableCountAfterRead = Get-PublicTableCount -DatabaseName $MainDatabase
+
+    if ($mainConnectionsAfterRead -lt 1) {
+      throw 'The successful Payload read did not establish a formal database connection.'
+    }
+    if ($publicTableCountAfterRead -ne $ExpectedPublicTableCount) {
+      throw "The formal database table count changed after the Payload read: $publicTableCountAfterRead"
+    }
+
     $summary = Read-Json -File $summaryFile
     if (
       [int]$summary.worksRead -ne 1 -or
@@ -372,8 +379,9 @@ try {
       Commit = $currentCommit
       FormalUrl = $FormalUrl
       Database = $MainDatabase
-      DatabaseConnections = $mainConnections
-      PublicTableCount = $publicTableCount
+      DatabaseConnectionsBefore = $mainConnectionsBefore
+      DatabaseConnectionsAfterRead = $mainConnectionsAfterRead
+      PublicTableCount = $publicTableCountAfterRead
       WorksRead = $summary.worksRead
       FirstWorkId = $packet.workId
       FirstTitle = $packet.title
@@ -490,9 +498,9 @@ try {
     commit = $currentCommit
     serverUrl = $FormalUrl
     database = $MainDatabase
-    databaseConnectionsBefore = $mainConnections
+    databaseConnectionsBefore = $mainConnectionsBefore
     databaseConnectionsAfter = $mainConnectionsAfter
-    publicTableCountBefore = $publicTableCount
+    publicTableCountBefore = $publicTableCountBefore
     publicTableCountAfter = $publicTableCountAfter
     limit = if ($Limit -gt 0) { $Limit } else { $null }
     catalog = [ordered]@{
