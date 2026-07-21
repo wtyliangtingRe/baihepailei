@@ -1,272 +1,409 @@
-# 受控外部发现与本地 AI 数据管道 v0.1
+# 联网发现与本地 AI 自动扩库管道 v0.2
 
-## 1. 目标
+## 1. 真正目标
 
-这条管道把“网站已有但尚未 AI 审核的作品”与“外部来源发现的新作品候选”放进同一套可回滚、可复查的本地流程，但始终保留两种身份：
+这条管道不是一次性导入，也不是要求站务人员长期手工准备来源文件。它的长期目标是：
 
-- **站内既有作品**：已有 `Works.id`，只允许 AI 刷新 `Works.radarAssessment`；
-- **外部候选作品**：尚未成为 Works，只能先生成候选、重复检查和编辑草稿计划。
+> 每隔一段时间执行尽可能少的命令，由代码联网发现近期新增或变化的百合作品，自动生成基础作品资料、完成去重、运行 AI 排雷、做 dry-run，并在一次批次级确认后把符合门槛的作品写入网站。
 
-完整流程：
+人工数量有限，因此正常路径应由代码与 AI 完成；人工只负责：
 
-```text
-网站拉取待处理 Works 快照
-→ 从受控来源生成不可变来源快照
-→ 统一标准化候选
-→ 站内与候选去重，生成 create / update / duplicate / blocker 计划
-→ 编辑批准后建立 temporary Works 或补充既有作品来源
-→ AI 仅生成独立 radarAssessment
-→ dry-run 审计
-→ 新 checkpoint + 明确确认后 apply
-→ API 回读核对
-→ 重建前台搜索与详情索引
-→ 导入后 checkpoint
+- 批次开始前确认 checkpoint；
+- 查看总量、异常和高风险摘要；
+- 输入一次明确确认短语；
+- 处理 `possible_duplicate`、`blocked` 和低置信度例外。
+
+不应要求人工逐条填写标题、来源、类型、别名、基础简介或 AI 评级，也不应要求每次手工串联十几个旧脚本。
+
+最终目标命令形态：
+
+```powershell
+# 周期性快速更新：联网抓取、生成计划与 dry-run，不写网站
+pnpm radar:refresh-online -- --url "http://127.0.0.1:3001" --profile quick
+
+# 定期完整扫描
+pnpm radar:refresh-online -- --url "http://127.0.0.1:3001" --profile full
+
+# 后续 release 阶段完成后：验证 checkpoint，批次确认后自动写回并重建索引
+pnpm radar:refresh-online -- --url "http://127.0.0.1:3001" --profile quick --apply --confirm "APPLY CONTROLLED CATALOG REFRESH <run-id>"
 ```
 
-本版本只实现到“统一标准化与只读计划”，不联网抓取、不写 Payload、不写 PostgreSQL、不创建 Works、不运行 AI、不发布。
+本 PR 已实现前两种命令所需的联网抓取、站内快照、标准化和只读计划核心。`--apply` 仍被明确拒绝；它会在下一阶段接入 checkpoint、AI candidate contract、批量写入、API 回读与索引重建后再开放。
 
-## 2. 仓库现状与复用点
-
-当前仓库已经具备以下基础，不应另造旁路：
-
-- `pnpm radar:local-update`：生成 Works/AI 输入快照、清理输入、受控模型契约、AI 结果解析、Payload patch plan 和 dry-run；
-- `Works.humanAssessment` 与 `Works.radarAssessment` 双轨隔离；
-- armed release、checkpoint、回读与审计边界；
-- Bangumi、Yurizukan、VNDB、Steam 的历史来源脚本和本地原始数据目录；
-- `pnpm radar:plan-discovered-works`：外部候选与站内 Works 的只读重复检查；
-- temporary / active / archived 生命周期与前台全量索引导出。
-
-因此正式结构采用“适配既有来源产物 → 统一候选契约 → 统一计划器”，而不是替换已有抓取和清洗成果。
-
-## 3. 四个受控来源的职责
-
-| 来源 | 主要职责 | 可作为百合结论吗 | 默认门槛 |
-| --- | --- | --- | --- |
-| Bangumi | 动画、漫画、小说、游戏的广泛发现与基础元数据 | 不可单独作为最终结论 | 必须来自受控标签检索快照；保留标签计数与抓取时间 |
-| Yurizukan | 高纯度百合作品发现锚点 | 可作为“值得收录/复核”的强候选信号，不等于本站评级 | 必须保留 Yurizukan 条目页；卷/系列合并仍需人工复核 |
-| VNDB | 视觉小说身份、标题、发行信息与标签发现 | 不可单独决定本站等级 | 必须经过 Girl x Girl Romance 等标签门槛；敏感、sex-only、标题修复行单独复核 |
-| Steam | 商店身份、发售页、语言与内容描述补充 | 不可作为唯一百合证据 | 只接受现有 p1–p4 发现桶；敏感或弱信号桶保留人工复核提示 |
-
-四个来源都只能产生候选事实和来源提示。它们不能写人工轨道，也不能把“来源标记为百合”直接转换成本站 S/A/B/C/D/E 等级。
-
-## 4. 本地目录与产物
-
-建议每次运行都使用新的 run ID：
+## 2. 完整自动化流程
 
 ```text
-data_local/staging/ai-radar/controlled-source-discovery-v01/<run-id>/
-├─ normalized/
-│  ├─ controlled-source-candidates-v01.jsonl
-│  ├─ controlled-source-candidates-v01-blocked.jsonl
-│  └─ controlled-source-candidates-v01-review.jsonl
-├─ candidate-plan/
-│  ├─ discovered-work-candidate-plan-v01.jsonl
-│  ├─ discovered-work-candidate-plan-v01-ready-create.jsonl
-│  ├─ discovered-work-candidate-plan-v01-ready-update.jsonl
-│  ├─ discovered-work-candidate-plan-v01-possible-duplicate.jsonl
-│  ├─ discovered-work-candidate-plan-v01-blocked.jsonl
-│  └─ discovered-work-candidate-plan-v01-summary.json
+一条本地命令启动
+→ 从网站拉取全部 Works 身份与当前双轨状态
+→ 联网抓取 Bangumi / Yurizukan / VNDB / Steam
+→ 每个来源保存不可变快照、参数与抓取摘要
+→ 标准化作品身份、类型、日期、别名、外部 ID 与来源
+→ 跨来源聚合与站内去重
+→ 生成 create / update / duplicate / blocker 计划
+→ AI 为可创建候选生成基础资料和独立 radarAssessment
+→ 规则引擎判定 auto-eligible / review / blocked
+→ 完整 Payload dry-run
+→ 新 checkpoint 并验证恢复列表
+→ 一次批次确认
+→ 创建 temporary Works、补充既有 Works、写 AI 轨道
+→ API 回读比对
+→ 重建搜索与详情索引
+→ 校验作品、创作者、机构总数
+→ 建立导入后 checkpoint
+```
+
+每个阶段都产生文件；外部网页或 API 响应永远不能直接写 Payload。
+
+## 3. 人工轨道与自动轨道
+
+### 代码和 AI 可以做
+
+- 发现候选作品；
+- 生成标题、原名、别名、媒介类型、格式、日期和外部 ID；
+- 汇总可追溯来源；
+- 生成摘要草稿、搜索文本和来源说明；
+- 判定重复候选；
+- 创建 `catalogStatus=temporary` 的作品；
+- 写入或刷新 `Works.radarAssessment`；
+- 自动把高可信批次写回网站；
+- 重建前台索引。
+
+### 代码和 AI 永远不能做
+
+- 写入、覆盖或清空 `humanAssessment`；
+- 把外部来源的“百合”标签冒充成人工确认等级；
+- 把新作品标记为人工已复核；
+- 按标题自动合并两个 Works；
+- 忽略身份冲突继续写下一条；
+- 在没有 checkpoint 和明确批次确认时 apply。
+
+因此“主要由 AI/代码维护”与“双轨安全”并不矛盾：自动内容进入 AI 轨道和 temporary 生命周期，人工轨道仍保留为更高优先级的独立结论。
+
+## 4. 四个联网来源
+
+| 来源 | 联网方式 | 主要用途 | 自动收录信号 |
+| --- | --- | --- | --- |
+| Bangumi | 复用仓库现有 `/v0/search/subjects` 与 subject detail 抓取器 | 动画、漫画、小说、游戏广覆盖，中文名、原名、标签与基础资料 | 单来源默认需较强标签信号或第二来源/AI 佐证 |
+| Yurizukan | 低频抓取“新着作品”列表和公开详情页 | 高纯度百合作品发现、关系/题材与媒介提示 | 可作为强候选锚点；系列/卷册仍需代码聚合与重复检查 |
+| VNDB | 官方 Kana HTTPS API `POST /vn` | 视觉小说、标题、发行日期、标签、敏感内容分流 | `g97` Girl x Girl Romance 可进入普通候选；`g82` sex-only 与敏感行单独分流 |
+| Steam | 商店搜索结果发现 app ID，再读取 appdetails | 新游戏发现、商店身份、描述、年龄与类型提示 | Steam 单来源不直接成为正式百合结论；强文本信号可生成 temporary 候选 |
+
+注意：
+
+- Bangumi 与 VNDB 有明确 API；请求必须带稳定 User-Agent、分页、重试和延迟。
+- Yurizukan 没有公开 API，本管道只访问公开列表和详情页，设置低并发与延迟；正式全量运行前还应再次核对网站条款和 robots 配置。
+- Steam 商店搜索/appdetails 不是稳定的正式分类 API，页面或字段变化必须导致抓取阶段失败或阻断，不能返回空数据后继续 apply。后续可以在配置 `STEAM_WEB_API_KEY` 时加入官方 `IStoreService.GetAppList` 增量入口，但分类仍需商店详情或其他来源。
+
+## 5. quick 与 full
+
+### quick
+
+适合每周或每几周执行：
+
+- Bangumi 少量标签分页；
+- Yurizukan 最近若干页新着作品；
+- VNDB 前若干分页的标签候选；
+- Steam 每个关键词少量搜索页；
+- 完整站内去重；
+- 默认不写网站。
+
+### full
+
+适合每月、季度或规则变化后执行：
+
+- 扩大四来源分页和候选上限；
+- 重新验证较早候选；
+- 允许发现旧条目后补上的标签或来源；
+- 仍然先产生新的 run 目录和 dry-run，不复用旧结果。
+
+首次建立基线应运行 full；日常使用 quick。后续将加入来源游标与定期回扫窗口，减少重复网络请求，同时避免漏掉旧 ID 后补标签的作品。
+
+## 6. 当前一条命令入口
+
+当前 PR 新增：
+
+```powershell
+node scripts/radar/run-controlled-online-refresh-v01.mjs `
+  --url "http://127.0.0.1:3001" `
+  --profile quick
+```
+
+它会自动：
+
+1. 从本地网站读取全部 Works；
+2. 生成并审计 Works 身份快照；
+3. 联网抓取四个受控来源；
+4. 生成每来源 JSONL 快照与摘要；
+5. 统一标准化候选；
+6. 跨来源标记；
+7. 按固定身份优先级生成 create / update / duplicate / blocked 计划；
+8. 写出总 `summary.json`。
+
+可只运行部分来源：
+
+```powershell
+node scripts/radar/run-controlled-online-refresh-v01.mjs `
+  --url "http://127.0.0.1:3001" `
+  --profile quick `
+  --sources "bangumi,yurizukan,vndb"
+```
+
+当前命令明确拒绝：
+
+```text
+--apply
+--auto-apply
+--execute
+--confirm
+--write
+--patch
+--publish
+```
+
+这不是长期目标的终点，而是让真实联网结果先经过完整仓库和本地数据库验证后，再安全接上自动写回。
+
+## 7. Run 目录
+
+```text
+data_local/staging/ai-radar/online-catalog-refresh-v01/<run-id>/
+├─ works-snapshot/
+│  ├─ all-packets.jsonl
+│  ├─ all-packets-summary.json
+│  └─ audit/
+├─ source-fetch/
+│  ├─ bangumi/
+│  ├─ yurizukan/
+│  ├─ vndb/
+│  ├─ steam/
+│  └─ summary.json
+├─ discovery-plan/
+│  ├─ normalized/
+│  ├─ candidate-plan/
+│  └─ summary.json
 └─ summary.json
 ```
 
-每个来源输入文件记录：
+每个来源快照保留：
 
-- 文件路径；
-- SHA-256；
-- 字节数；
-- 文件修改时间；
-- 读取行数；
-- 每个候选对应的来源文件和行号。
+- 抓取开始和结束时间；
+- 请求范围与分页；
+- User-Agent；
+- 成功、失败和拒绝数量；
+- 原始来源 ID；
+- canonical source URL；
+- 文件 SHA-256；
+- 候选对应的输入文件与行号。
 
-输出目录必须位于 Git 忽略的 `data_local/`，且拒绝复用已有 run 目录。
+每次运行使用新目录，禁止复用旧 run 目录。
 
-## 5. 统一候选契约
+## 8. 去重优先级
 
-标准化后的每一行至少包含：
-
-```json
-{
-  "version": "controlled-source-discovery-v0.1",
-  "discoveryId": "source:sourceRecordId",
-  "source": "bangumi | yurizukan | vndb | steam",
-  "sourceRecordId": "...",
-  "sourceSnapshotAt": "...",
-  "sourceInput": {
-    "path": "...",
-    "sha256": "...",
-    "rowNumber": 1
-  },
-  "title": "...",
-  "originalTitle": "...",
-  "aliases": [],
-  "mediaGroup": "...",
-  "mediaType": "...",
-  "format": "...",
-  "firstPublishedAt": "...",
-  "firstPublishedPrecision": "day | month | year | unknown",
-  "externalIds": {},
-  "sourceLinks": [],
-  "discoverySignals": {},
-  "discoveryBlockers": [],
-  "discoveryWarnings": [],
-  "sourcePolicy": {}
-}
-```
-
-模型不能参与生成这些身份字段。候选身份、来源页、输入哈希、来源策略和阻断项都由本地代码固定生成。
-
-## 6. 去重与计划优先级
-
-站内匹配使用固定优先级：
+站内匹配固定为：
 
 1. 本站 `siteId`；
 2. 外部 ID；
 3. slug；
-4. 标题 + 媒介大类 + 媒介类型 + 日期。
+4. 标题 + 媒介大类 + 媒介类型 + 日期；
+5. 标题 + 类型但日期缺失或冲突，仅作为弱候选。
 
-处理规则：
+输出：
 
-- `siteId`、外部 ID 或 slug 唯一命中：`ready_for_editor_update`；
-- 标题 + 类型 + 日期命中：`possible_duplicate`；
-- 标题 + 类型命中但日期缺失或冲突：仍保守进入 `possible_duplicate`，附警告；
-- 不同身份层级指向不同 Works：`blocked`，原因 `identity_tier_conflict`；
-- 无匹配且无阻断：`ready_for_editor_draft`；
-- 标题匹配绝不自动合并。
+- `ready_for_editor_draft`：没有站内命中，可进入自动创建资格判断；
+- `ready_for_editor_update`：外部 ID、siteId 或 slug 唯一命中，可生成增量补资料计划；
+- `possible_duplicate`：标题/类型/日期或跨语言信号疑似重复；
+- `blocked`：来源缺失、身份层冲突、多重命中、格式错误等。
 
-同一批候选若跨来源出现相同“标题 + 类型 + 日期”，只增加 `cross_source_title_type_date_candidate` 提示和关联 discovery ID，不自动合并候选。
+标题相似永远不会自动合并。高身份层与低身份层指向不同 Works 时，使用 `identity_tier_conflict` 阻断整个候选。
 
-## 7. 运行方式
+## 9. 自动创建资格
 
-先准备站内 Works 快照。可以让现有本地 AI 总入口在没有 assessor 的情况下只生成输入：
+下一阶段不会把所有 `ready_for_editor_draft` 无条件写入。代码先分为：
 
-```powershell
-pnpm radar:local-update -- --url "http://127.0.0.1:3001" --scope unassessed
+### auto_eligible
+
+满足全部基础条件：
+
+- 标题、类型和 canonical source URL 完整；
+- 至少一个稳定外部 ID；
+- 没有站内重复和身份冲突；
+- 来源快照可追溯；
+- AI 输出完整且符合契约；
+- AI 置信度与 evidence coverage 达到策略门槛；
+- 没有未知规则、严重矛盾或禁止自动发布的内容状态。
+
+并满足至少一种强信号：
+
+- Yurizukan 强候选，且系列/卷册聚合没有冲突；
+- VNDB `g97` 普通 romance 候选；
+- 两个以上来源指向同一身份；
+- Bangumi 高标签信号并由第二来源或 AI 证据确认；
+- Steam 强文本信号并由另一受控来源或更高 AI 证据覆盖确认。
+
+### review_required
+
+- Steam 单来源；
+- Bangumi 弱标签；
+- VNDB sensitive、sex-only 或标题修复行；
+- 只有标题匹配；
+- 日期缺失；
+- 系列/卷册关系不清楚；
+- AI 置信度不足。
+
+这些行可以自动保存为本地候选，不自动写 Payload。
+
+### blocked
+
+- 外部 ID 冲突；
+- 多个 Works 命中；
+- 来源 URL 域名不符；
+- 模型改写身份字段；
+- 输入或输出行数不一致；
+- 人工轨道差异；
+- 规则不存在或来源不可追溯。
+
+## 10. 自动写回后的作品状态
+
+新建作品：
+
+```text
+catalogStatus = temporary
+_status = published
+reviewStatus = pending
+humanAssessment = unchanged / empty
+radarAssessment = AI 结果
+ratingNotice = ai_synthesized_pending_review
+importBatch = controlled-refresh:<run-id>
 ```
 
-也可以使用已生成的 `all-packets.jsonl` 或 `ai-radar-clean-input-v01.jsonl`。然后把已有四来源产物交给统一入口：
+这意味着作品可以进入网站、搜索和后续更新，但前台明确显示它是 AI 辅助、待人工复核，而不是人工确认。
 
-```powershell
-node scripts/radar/prepare-controlled-source-discovery-v01.mjs `
-  --works "data_local/staging/ai-radar/local-update-v01/<run-id>/input-audit/ai-radar-clean-input-v01.jsonl" `
-  --bangumi "data_local/raw/bangumi/...jsonl" `
-  --yurizukan "data_local/staging/yurizukan-work-integration-v02/yurizukan-work-integration-v02-create.jsonl" `
-  --vndb "data_local/staging/vndb-yuri-create-candidates/vndb-yuri-create-candidates-v03.rows.jsonl" `
-  --steam "data_local/staging/steam-work-integration/create-v02"
+既有作品更新只允许增量追加：
+
+- 外部 ID；
+- 来源链接；
+- 可信别名；
+- 可确认的类型和日期；
+- 搜索文本；
+- AI 轨道刷新。
+
+不得用空值覆盖非空值，不得清除现有来源，不得改人工轨道。
+
+## 11. AI candidate contract
+
+外部候选在创建 Works 前也需要独立 AI 契约。模型只可返回白名单字段：
+
+- 建议标题与别名排序；
+- 简介草稿；
+- 媒介与系列关系建议；
+- evidence coverage / status；
+- source summary；
+- rule assessments；
+- contradictions；
+- assessment notes；
+- confidence。
+
+模型不能改写：
+
+- discovery ID；
+- source record ID；
+- source URL；
+- 文件 SHA-256；
+- 站内匹配；
+- write protection；
+- humanAssessment；
+- policy version。
+
+输出必须与输入一行一行严格对应。少行、多行、未知 ID、重复 ID或身份变化立即停止。
+
+## 12. 批次级人工操作
+
+长期日常流程应只有两次主要交互：
+
+1. 运行默认命令，查看摘要；
+2. 确认 checkpoint 后输入一次批次确认短语。
+
+用户不需要逐条审核 `auto_eligible`。摘要应重点显示：
+
+```text
+fetched
+new_candidates
+would_create_temporary
+would_update
+already_current
+review_required
+possible_duplicate
+blocked
+AI_confidence_distribution
+source_failures
+human_track_changes = 0
 ```
 
-可以只提供其中一个或多个来源。命令不接受 `--fetch`、`--apply`、`--execute`、`--confirm`、`--write` 或 `--patch`。
+只有异常队列需要以后慢慢处理；它们不阻挡其他已经通过门槛的作品，但正式 apply 遇到写入错误仍在首个错误停止，并保留可恢复进度。
 
-## 8. 编辑批准与未来 apply 设计
+## 13. apply 门槛
 
-下一阶段的编辑 apply 不应直接把候选变成正式人工确认作品。建议动作：
+正式写回必须：
 
-### ready_for_editor_draft
-
-- 创建 `catalogStatus=temporary` 的 Works；
-- `reviewStatus=pending`；
-- 保留来源快照摘要、source links、external IDs、import batch 和 discovery ID；
-- `humanAssessment` 为空；
-- `radarAssessment` 为空，等待下一次 AI 管道；
-- 不因来源声称“百合”而自动写正式 rank。
-
-### ready_for_editor_update
-
-- 只追加/修复来源、别名、外部 ID 和可确认基础元数据；
-- 不清空现有字段；
-- 不修改 `humanAssessment`；
-- 不修改已有 `radarAssessment`，除非另行进入 AI 重评批次；
-- 一次 update 只能命中唯一 Works，否则阻断。
-
-### possible_duplicate / blocked
-
-- 不允许批量 apply；
-- 进入人工重复候选或来源修复队列；
-- 合并必须走现有单组预览、审计和明确确认流程。
-
-## 9. AI 评估包要求
-
-作品成为站内 temporary/active Works 后，AI 包至少记录：
-
-- 策略版本；
-- assessment batch / run ID；
-- 输入文件 SHA-256；
-- `workId` 与 `siteId`；
-- 来源摘要与来源数量；
-- 规则命中；
-- 置信度；
-- evidence coverage；
-- evidence status；
-- 矛盾与限制；
-- assessedAt。
-
-AI 输出必须一行对应一行，未知 ID、重复 ID、少行、多行、身份变化或来源字段被模型改写时立即停止。
-
-## 10. apply 前后验证门槛
-
-正式写回前至少检查：
-
-1. 新 checkpoint 已创建并验证可恢复；
-2. 所有输入与候选文件均有 SHA-256；
-3. `would_create`、`would_update`、`possible_duplicate`、`blocked` 数量明确；
-4. 来源 host 与 source policy 一致；
-5. 已有 `humanAssessment` 在计划前后完全相同；
-6. 新作品只建立 temporary Works，不自动标为人工已确认；
-7. 每条写入带 import batch、operator、discovery ID 和 AuditEvent；
-8. apply 遇到首个错误即停止，不继续静默写后续行；
-9. apply 后重新读取 API，对比创建、更新、已当前、阻断数量；
-10. 重建完整索引，核对作品、创作者、机构总数与数据库一致；
-11. 抽样检查人工/AI 双轨、来源链接、搜索命中和规则展示；
+1. 创建并验证导入前 checkpoint；
+2. 验证所有输入 SHA-256；
+3. 外部抓取阶段没有静默空响应；
+4. dry-run 完成；
+5. `humanAssessment` 差异为零；
+6. 自动创建行全部为 `auto_eligible`；
+7. 明确确认短语包含 run ID；
+8. 每条写入生成 AuditEvent；
+9. 首个错误停止；
+10. API 回读创建、更新、已当前和阻断数量；
+11. 重建完整索引并核对总数；
 12. 建立导入后 checkpoint。
 
-## 11. 分阶段 PR
+## 14. PR 分段
 
-### PR 1：统一候选与只读计划（本 PR）
+### 当前 PR #281
 
-- 正式流程报告；
-- 四来源策略注册；
-- 读取既有来源快照并生成统一候选；
-- 来源文件哈希与行级追踪；
+- 正式流程与来源策略；
+- 四来源联网抓取；
+- quick / full 入口；
+- Works 自动快照；
+- 统一候选与来源哈希；
 - create / update / duplicate / blocked 计划；
-- 固定身份匹配优先级；
-- 测试。
+- 禁止直接写入；
+- parser 和安全边界测试。
 
-### PR 2：四来源快照编排
+### 下一阶段
 
-- 把现有 Bangumi/Yurizukan/VNDB/Steam 抓取与计划脚本包装成统一的 snapshot-only 入口；
-- 记录请求参数、分页、速率限制、抓取开始/结束时间和完整文件哈希；
-- 不允许外部请求结果直接进入 Payload。
+- 外部候选 AI contract；
+- 自动资格策略；
+- temporary Works create/update plan；
+- Payload dry-run；
+- checkpoint 验证与批次确认；
+- apply、API 回读和 AuditEvent；
+- 创建后自动运行 `radar:local-update`；
+- 重建索引；
+- 导入后 checkpoint。
 
-### PR 3：checkpoint-gated 编辑 apply
+### 再下一阶段
 
-- 只处理明确 allowlist；
-- 单条预览与批次确认；
-- temporary draft 创建和来源更新；
-- 审计事件、失败即停、API 回读；
-- 断言人工轨道不变。
+- 来源游标与重叠回扫窗口；
+- 每月自动 full、平时 quick；
+- 失败来源单独恢复；
+- 统计趋势和异常队列页面；
+- 自动测试来源页面结构变化。
 
-### PR 4：新作品 AI 扫雷与 armed release
+## 15. 当前仍需本地验证
 
-- temporary Works 自动进入 `unassessed`；
-- AI 独立轨道；
-- dry-run、arm、execute-once、回读与重评支持。
+联网抓取依赖你的真实网络、本地 Payload 和既有数据库，因此合并前需要在完整 checkout 中：
 
-### PR 5：索引重建与批次验收
+```powershell
+node --test tests/controlled-source-online-fetch.test.mjs
+node --test tests/controlled-source-discovery.test.mjs
+node --test tests/discovered-work-candidate-plan.test.mjs
+node --test tests/bangumi-tag-fetcher.test.mjs
 
-- 前台索引总数核对；
-- 抽样报告；
-- 导入前后 checkpoint 清单；
-- 可重复运行手册。
+node scripts/radar/run-controlled-online-refresh-v01.mjs `
+  --url "http://127.0.0.1:3001" `
+  --profile quick `
+  --sources "bangumi,yurizukan,vndb,steam"
+```
 
-## 12. 当前还需要的本地资料
-
-继续实现与真实 dry-run 时，最有用的是以下**非敏感文件**：
-
-- 最近一次 `radar:local-update` 生成的 Works 输入 JSONL、`summary.json` 和输入审计摘要；
-- Bangumi 标签抓取 JSONL 与其 summary；
-- `yurizukan-work-integration-v02-create.jsonl` 与 summary；
-- VNDB v03 rows/first-wave/review 文件与 summary；
-- Steam p1–p4 全量候选文件、compact 文件与 summary；
-- 当前数据库 checkpoint 的验证摘要和恢复文件清单；
-- 最近一次完整前台索引导出的总数摘要。
-
-不要上传数据库 dump、真实 `.env`、密码、token、cookie、私钥、生产证书或完整用户数据。
+第一次真实联网建议把分页和 app 数量调小。确认四个来源都能生成非空且合理的候选后，再扩大到 quick 默认值和 full。任何来源结构变化、HTTP 失败或异常空结果都只允许停止在本地计划阶段，不能进入未来 apply。
