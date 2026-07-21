@@ -167,6 +167,7 @@ function Write-UploadPlan {
     [Parameter(Mandatory)]
     [string]$File,
     [Parameter(Mandatory)]
+    [AllowEmptyCollection()]
     [object[]]$Packages,
     [Parameter(Mandatory)]
     [string]$RunRoot

@@ -66,7 +66,7 @@ upload chunk size:         25
 prepared assessment batch: 1
 ```
 
-默认只为第一批 `ready_for_ai_assessment` 生成上传文件，先验证 AI 审核与回收流程。要一次生成全部可评估批次，可以设置：
+默认只为第一批 `ready_for_ai_assessment` 生成上传文件，先验证 AI 审核与回收流程。若当前没有符合条件的批次，导出仍应成功完成，并在 `UPLOAD_PLAN.md` 中明确记录空队列。要一次生成全部可评估批次，可以设置：
 
 ```powershell
 -AssessmentHandoffBatchLimit 0
