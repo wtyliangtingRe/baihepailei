@@ -1,11 +1,30 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import test from 'node:test'
 
-const source = fs.readFileSync(
-  'scripts/radar/run-ai-radar-v06-draft-restore-roundtrip-lab-v06.ps1',
-  'utf8',
-)
+const runnerFile = 'scripts/radar/run-ai-radar-v06-draft-restore-roundtrip-lab-v06.ps1'
+const source = fs.readFileSync(runnerFile, 'utf8')
+
+test('runner parses as valid PowerShell', () => {
+  const command = [
+    '$tokens = $null',
+    '$errors = $null',
+    `[System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path '${runnerFile}').Path, [ref]$tokens, [ref]$errors) | Out-Null`,
+    "if (@($errors).Count -ne 0) { $errors | ForEach-Object { [Console]::Error.WriteLine($_.Message) }; exit 1 }",
+  ].join('; ')
+
+  const result = spawnSync('pwsh', ['-NoProfile', '-Command', command], {
+    encoding: 'utf8',
+  })
+
+  assert.equal(
+    result.status,
+    0,
+    [result.error?.message, result.stdout, result.stderr].filter(Boolean).join('\n'),
+  )
+  assert.match(source, /\$\{DatabaseName\}: \$result/u)
+})
 
 test('runner defaults to read-only inspect and requires a new execute confirmation', () => {
   assert.match(source, /\[string\]\$Mode = 'Inspect'/u)
