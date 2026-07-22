@@ -99,13 +99,17 @@ test('packager emits portable subwave manifests, recovery plan and hashes', () =
   fs.rmSync(root, { recursive: true, force: true })
 })
 
-test('2500 start runner is fixed, repository-relative and read-only', () => {
+test('2500 start runner is fixed, repository-relative, legacy-aware and read-only', () => {
   const runner = fs.readFileSync(RUNNER, 'utf8')
   assert.match(runner, /\$TargetRows = 2500/u)
   assert.match(runner, /\$SubwaveSize = 250/u)
   assert.match(runner, /\$ChunkSize = 5/u)
   assert.match(runner, /\$ExpectedSubwaves = 10/u)
   assert.match(runner, /\$ExpectedTotalChunks = 500/u)
+  assert.match(runner, /build-ai-radar-processing-ledger-v01\.mjs/u)
+  assert.match(runner, /legacyRowsScanned/u)
+  assert.match(runner, /legacyReusableRows/u)
+  assert.match(runner, /input-v02/u)
   assert.match(runner, /select-ai-radar-incremental-wave-v01\.mjs/u)
   assert.match(runner, /package-ai-radar-incremental-wave-v01\.mjs/u)
   assert.doesNotMatch(runner, /[A-Za-z]:\\/u)
