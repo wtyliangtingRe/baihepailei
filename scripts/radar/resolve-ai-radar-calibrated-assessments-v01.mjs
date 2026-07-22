@@ -3,13 +3,15 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { resolveRadarAssessment } from './lib/resolve-radar-assessment-v01.mjs'
+import { assertUnderDataLocal } from './lib/assessment-handoff-v01.mjs'
 
-const VERSION = 'ai-radar-calibrated-assessment-resolve-v0.1'
+const VERSION = 'ai-radar-calibrated-assessment-resolve-v0.2'
 const DEFAULT_INPUT = 'data_local/staging/ai-radar/calibrated-assessment-handoffs-v01/raw-assessments.jsonl'
 const DEFAULT_OUT_DIR = 'data_local/staging/ai-radar/calibrated-assessment-resolved-v01'
 
 function val(value) { return String(value ?? '').trim() }
 function list(value) { return Array.isArray(value) ? value : [] }
+function unique(values) { return [...new Set(values.map(val).filter(Boolean))] }
 function parseArgs(argv) {
   const args = {}
   for (let index = 0; index < argv.length; index += 1) {
@@ -47,31 +49,34 @@ function countBy(rows, getter) {
   }
   return Object.fromEntries(Object.entries(output).sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])))
 }
+function aiQaReasons(resolved) {
+  const reasons = []
+  if (list(resolved?.blockers).length) reasons.push(...list(resolved.blockers).map((item) => `resolver_blocker:${val(item)}`))
+  if (resolved?.overallConfidence < 0.7) reasons.push('low_overall_confidence')
+  if (resolved?.evidenceCoverage < 0.3) reasons.push('low_evidence_coverage')
+  if (list(resolved?.matchedRules).some((item) => item?.requiresHumanReview)) reasons.push('rule_requires_ai_qa_legacy_flag')
+  if (val(resolved?.currentGradeSuggestion) === 'X') reasons.push('x_grade_human_adjudication_required_before_publication')
+  return unique(reasons)
+}
 function writeReviewCsv(file, rows) {
   const headers = [
-    'workId', 'siteId', 'title', 'currentGradeSuggestion', 'decisiveRuleCode',
-    'confidencePercent', 'evidenceCoveragePercent', 'evidenceStatus', 'planStatus',
+    'workId', 'siteId', 'title', 'track', 'currentGradeSuggestion', 'decisiveRuleCode',
+    'confidencePercent', 'evidenceCoveragePercent', 'evidenceStatus', 'legacyPlanStatus',
+    'aiQaRequired', 'aiQaStatus', 'aiQaReasons', 'humanReviewStatus', 'humanReviewRecordId',
     'calibrationProfileId', 'calibrationSignalIds', 'calibrationNotes',
     'matchedRuleCodes', 'blockers', 'warnings',
   ]
   const lines = [headers.map(csvCell).join(',')]
   for (const row of rows) {
     lines.push([
-      row.workId,
-      row.siteId,
-      row.title,
-      row.currentGradeSuggestion,
-      row.decisiveRule?.code,
-      row.confidencePercent,
-      row.evidenceCoveragePercent,
-      row.evidenceStatus,
-      row.planStatus,
+      row.workId, row.siteId, row.title, row.track, row.currentGradeSuggestion,
+      row.decisiveRule?.code, row.confidencePercent, row.evidenceCoveragePercent,
+      row.evidenceStatus, row.planStatus, row.aiQaRequired, row.aiQaStatus,
+      row.aiQaReasons, row.humanReviewStatus, row.humanReviewRecordId,
       row.calibration?.profileId,
       list(row.calibration?.signals).map((item) => `${val(item?.type)}:${val(item?.id)}`),
-      row.calibration?.notes,
-      list(row.matchedRules).map((item) => item.code),
-      row.blockers,
-      row.warnings,
+      row.calibration?.notes, list(row.matchedRules).map((item) => item.code),
+      row.blockers, row.warnings,
     ].map(csvCell).join(','))
   }
   fs.mkdirSync(path.dirname(file), { recursive: true })
@@ -87,13 +92,24 @@ function main() {
   const outDir = val(args['out-dir']) || DEFAULT_OUT_DIR
   const minimumMatchConfidence = args['minimum-match-confidence'] ?? 0.5
   const positiveCoverageThreshold = args['positive-coverage-threshold'] ?? 0.5
+  assertUnderDataLocal(input)
+  assertUnderDataLocal(outDir)
   if (!fs.existsSync(input)) throw new Error(`Calibrated assessment input not found: ${input}`)
 
   const sourceRows = readRows(input)
   const rows = sourceRows.map((source) => {
     const resolved = resolveRadarAssessment(source, { minimumMatchConfidence, positiveCoverageThreshold })
+    const reasons = aiQaReasons(resolved)
+    const aiQaRequired = reasons.length > 0 || val(resolved?.planStatus).startsWith('blocked')
     return {
       ...resolved,
+      track: 'ai_review',
+      aiQaRequired,
+      aiQaStatus: 'ai_unreviewed',
+      aiQaPriority: aiQaRequired ? 'priority' : 'routine',
+      aiQaReasons: reasons,
+      humanReviewStatus: 'not_started_separate_track',
+      humanReviewRecordId: null,
       calibration: {
         profileId: val(source?.calibrationProfileId),
         profileVersion: val(source?.calibrationProfileVersion),
@@ -112,8 +128,9 @@ function main() {
     reviewCsv: path.join(outDir, 'ai-radar-calibrated-review-v01.csv'),
     summary: path.join(outDir, 'ai-radar-calibrated-resolve-v01-summary.json'),
   }
-  const ready = rows.filter((row) => !row.planStatus.startsWith('blocked'))
-  const blocked = rows.filter((row) => row.planStatus.startsWith('blocked'))
+  Object.values(outputs).forEach(assertUnderDataLocal)
+  const ready = rows.filter((row) => !val(row.planStatus).startsWith('blocked'))
+  const blocked = rows.filter((row) => val(row.planStatus).startsWith('blocked'))
   writeJsonl(outputs.resolved, rows)
   writeJsonl(outputs.ready, ready)
   writeJsonl(outputs.blocked, blocked)
@@ -124,16 +141,22 @@ function main() {
     version: VERSION,
     policyVersion: rows[0]?.policyVersion || 'radar-rating-policy-v0.4-draft',
     calibrationProfileId: rows[0]?.calibration?.profileId || null,
+    track: 'ai_review',
     input,
     rowsRead: rows.length,
     readyRows: ready.length,
     blockedRows: blocked.length,
-    humanReviewRequiredRows: rows.filter((row) => row.requiresHumanReview).length,
+    aiQaRequiredRows: rows.filter((row) => row.aiQaRequired).length,
+    aiQaRoutineRows: rows.filter((row) => !row.aiQaRequired).length,
+    legacyResolverReviewFlagRows: rows.filter((row) => row.requiresHumanReview).length,
+    humanTrackRowsCreated: 0,
+    humanTrackMutations: 0,
     rowsWithCalibrationSignals: rows.filter((row) => list(row.calibration?.signals).length > 0).length,
     rowsWithoutCalibrationSignals: rows.filter((row) => list(row.calibration?.signals).length === 0).length,
     byGrade: countBy(rows, (row) => row.currentGradeSuggestion),
     byDecisiveRule: countBy(rows, (row) => row.decisiveRule?.code),
-    byPlanStatus: countBy(rows, (row) => row.planStatus),
+    byLegacyPlanStatus: countBy(rows, (row) => row.planStatus),
+    byAiQaPriority: countBy(rows, (row) => row.aiQaPriority),
     byCalibrationSignal: countBy(rows.flatMap((row) => list(row.calibration?.signals)), (item) => `${val(item?.type)}:${val(item?.id)}`),
     outputs,
     safety: {
@@ -145,8 +168,11 @@ function main() {
       overwritesHumanVerified: false,
       calibrationIsAdvisory: true,
       factsOverrideCalibration: true,
+      aiAndHumanTracksSeparated: true,
+      humanTrackMutations: 0,
+      onlyWritesUnderDataLocal: true,
     },
-    nextStep: 'Review the calibrated CSV and all blocked/human-review rows. No database write is included in this workflow.',
+    nextStep: 'Run AI-track QA on priority and routine rows. Human-review records remain a separate, untouched track.',
   }
   fs.mkdirSync(path.dirname(outputs.summary), { recursive: true })
   fs.writeFileSync(outputs.summary, `${JSON.stringify(summary, null, 2)}\n`, 'utf8')
