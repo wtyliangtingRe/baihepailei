@@ -67,6 +67,19 @@ The stored legacy `rank` field is not an assessment source. During transition, p
 
 A pending human grade remains visible as reference material but does not override a current public AI grade.
 
+### Historical rank preservation
+
+Retiring `rank` does not authorize silent data loss.
+
+Every non-`unknown` historical `rank` must first be classified:
+
+- `canonical_human`: backed by a valid canonical human assessment;
+- `private_ai_requires_publication_review`: backed only by a private Works Radar suggestion and therefore not yet public;
+- `legacy_rank_provenance_unknown`: no canonical human or private AI source is currently identifiable;
+- `no_effective_grade_source`: no usable grade source.
+
+`legacy_rank_provenance_unknown` must not automatically become a human assessment or a public AI conclusion. It remains a migration-review candidate until import batch, source metadata, historical policy, or an explicit decision establishes its provenance.
+
 ### Public AI isolation
 
 Public AI conclusions remain in `radar-public-conclusions` and never publish, patch, or restore Works drafts.
@@ -102,11 +115,24 @@ Known pre-migration exceptions from the read-only audit:
 
 Exact Work IDs must be included in the migration dry-run report before any write is approved.
 
+## Audit integrity
+
+Candidate reports are valid migration evidence only when:
+
+- PostgreSQL JSON is converted to UTF-8 inside PostgreSQL;
+- cross-process transport uses Base64 ASCII;
+- PowerShell decodes with UTF-8;
+- every decoded row passes JSON parsing;
+- `validation.json` records the verified transport;
+- file SHA-256 values are included in `manifest.json`.
+
+A report with mojibake or invalid JSON may be retained for incident analysis but cannot be used as a source of before-values, titles, notes, or migration decisions.
+
 ## Database migration phases
 
 ### Phase 0 — read-only proof
 
-Produce exact IDs, before-values, proposed after-values, counts, and checksums. No database write.
+Produce exact IDs, before-values, proposed after-values, counts, checksums, JSON validation proof, and rank provenance classes. No database write.
 
 ### Phase 1 — human data normalization
 
@@ -114,7 +140,7 @@ Copy non-conflicting meaningful legacy human values into `humanAssessment`. Isol
 
 ### Phase 2 — verification
 
-Re-run value, count, and conflict audits. Confirm no meaningful value exists only in legacy fields.
+Re-run value, count, conflict, encoding, and provenance audits. Confirm no meaningful value exists only in legacy fields and no historical rank was silently discarded.
 
 ### Phase 3 — legacy retirement
 
@@ -134,7 +160,7 @@ Keep:
 
 ### Phase 4 — rank retirement
 
-After all readers consume `effectiveGrade`, stop storing or editing `rank`. Keep a derived compatibility property only as long as an older client still requires it.
+After all readers consume `effectiveGrade` and all historical rank candidates have explicit provenance decisions, stop storing or editing `rank`. Keep a derived compatibility property only as long as an older client still requires it.
 
 ## Safety gates
 
@@ -144,5 +170,8 @@ No phase may:
 - promote a Works draft;
 - overwrite a canonical human value with a disagreeing legacy value;
 - treat `rank` as independent evidence;
+- silently discard a non-`unknown` historical rank;
+- promote an unknown-provenance rank into the human track;
 - expose a private Works AI draft as a public AI conclusion;
+- use mojibake or invalid JSON audit output as migration evidence;
 - execute database writes without a fresh verified backup and reviewed SQL.
