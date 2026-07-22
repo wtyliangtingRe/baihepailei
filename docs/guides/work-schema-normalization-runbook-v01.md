@@ -65,6 +65,27 @@
 
 ## 只读审计入口
 
+### 推荐：一条命令完成候选审计与打包
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\radar\run-and-package-work-normalization-audit-v01.ps1
+```
+
+该入口会：
+
+1. 建立带时间戳的明确输出目录；
+2. 运行只读候选审计；
+3. 验证六个必要文件均存在；
+4. 生成 ZIP；
+5. 输出 ZIP 的 SHA-256。
+
+输出位置：
+
+```text
+exports/work-normalization-candidates-<timestamp>/
+exports/WORK-NORMALIZATION-CANDIDATES-<timestamp>.zip
+```
+
 ### 根结构审计
 
 ```powershell
@@ -77,19 +98,15 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\radar\audit-work-schema-
 exports/schema-root-audit-<timestamp>/
 ```
 
-### 规范化候选审计
+### 仅运行规范化候选审计
+
+高级调试时可直接运行：
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\radar\audit-work-normalization-candidates-v01.ps1
 ```
 
-输出到：
-
-```text
-exports/work-normalization-candidates-<timestamp>/
-```
-
-应包含：
+输出目录应包含：
 
 - `counts.json`
 - `human-normalization-candidates.jsonl`
@@ -97,6 +114,8 @@ exports/work-normalization-candidates-<timestamp>/
 - `rank-retirement-candidates.jsonl`
 - `manifest.json`
 - `summary.txt`
+
+候选查询结果在脚本中显式包装为数组，因此 0 条、1 条和多条记录应具有相同的 `.Count`、写文件和打包行为。
 
 这些文件可能包含 Work ID、标题和审核说明，不提交到 Git。
 
@@ -151,7 +170,7 @@ exports/work-normalization-candidates-<timestamp>/
 - 不包含 Works 草稿发布或版本恢复；
 - 不从旧 `status` 推导 `_status`；
 - 冲突行有明确人工决定；
-- 回滚 SQL 与验收 SQL 已准备；
+- 回滚 SQL 与验收 SQL已准备；
 - 用户明确批准执行。
 
 ## 当前禁止事项
