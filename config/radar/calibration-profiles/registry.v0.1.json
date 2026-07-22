@@ -1,0 +1,19 @@
+{
+  "version": "ai-radar-calibration-registry-v0.1",
+  "activeProfileId": "site-owner-primary-v0.1",
+  "profiles": [
+    {
+      "profileId": "site-owner-primary-v0.1",
+      "status": "approved",
+      "weight": 1,
+      "file": "config/radar/calibration-profiles/site-owner-primary.v0.1.json",
+      "policyVersion": "radar-rating-policy-v0.4-draft"
+    }
+  ],
+  "safety": {
+    "approvedProfilesOnly": true,
+    "factsOverrideCalibration": true,
+    "autoPublishes": false,
+    "autoAssignsX": false
+  }
+}
