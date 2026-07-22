@@ -5,17 +5,13 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$scriptPath = Join-Path $PSScriptRoot 'prepare-radar-public-conclusions-migration-v02.ps1'
-$arguments = @(
-  '-NoProfile',
-  '-ExecutionPolicy',
-  'Bypass',
-  '-File',
-  $scriptPath
-)
-if ($CommitAndPush) {
-  $arguments += '-CommitAndPush'
-}
+throw @'
+Radar public conclusion migration generation is paused.
 
-& pwsh @arguments
-exit $LASTEXITCODE
+The read-only schema audit proved that the committed migration snapshot is older than the actual PostgreSQL schema. Do not generate or run a migration until the Work normalization candidates, legacy human-field mapping, schema retirement SQL, and current-schema baseline have been reviewed.
+
+Next safe command:
+  pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\radar\audit-work-normalization-candidates-v01.ps1
+
+No database write or migration was performed.
+'@
