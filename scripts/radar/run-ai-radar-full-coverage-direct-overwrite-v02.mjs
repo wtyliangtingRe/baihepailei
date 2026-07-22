@@ -16,8 +16,7 @@ function replaceExactly(source, needle, replacement, label) {
 }
 
 function replaceRegexExactly(source, pattern, replacement, label) {
-  const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`
-  const matches = [...source.matchAll(new RegExp(pattern.source, flags))]
+  const matches = [...source.matchAll(new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`))]
   if (matches.length !== 1) {
     throw new Error(`${label} replacement count was ${matches.length}, expected 1`)
   }
@@ -25,7 +24,9 @@ function replaceRegexExactly(source, pattern, replacement, label) {
 }
 
 export function buildDirectOverwriteSource(source) {
-  let patched = source
+  // Git may materialize the reviewed source with CRLF on Windows. Normalize only
+  // the temporary generated runtime so exact source guards remain deterministic.
+  let patched = String(source).replace(/\r\n?/gu, '\n')
 
   patched = replaceExactly(
     patched,
@@ -87,11 +88,12 @@ export function buildDirectOverwriteSource(source) {
     'roundtrip executor removal',
   )
 
-  patched = replaceRegexExactly(
+  patched = replaceExactly(
     patched,
-    /async function restoreVersion\(baseUrl, token, versionId\) \{[^\n]+\}\n/u,
+    `async function restoreVersion(baseUrl, token, versionId) { return requestJson(\`${'${baseUrl}'}/api/works/versions/\${encodeURIComponent(versionId)}?depth=0\`, { method: 'POST', headers: { authorization: \`JWT \${token}\` }, body: '{}' }) }
+`,
     '',
-    'restore endpoint removal',
+    'restore version function removal',
   )
 
   patched = replaceExactly(
