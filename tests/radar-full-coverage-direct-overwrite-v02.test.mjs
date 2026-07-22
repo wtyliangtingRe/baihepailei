@@ -12,6 +12,13 @@ const source = fs.readFileSync(
 )
 const patched = buildDirectOverwriteSource(source)
 
+test('direct overwrite generator accepts Windows CRLF source materialization', () => {
+  const crlfSource = source.replace(/\r?\n/gu, '\r\n')
+  const crlfPatched = buildDirectOverwriteSource(crlfSource)
+  assert.equal(crlfPatched, patched)
+  assert.doesNotMatch(crlfPatched, /\r/u)
+})
+
 test('direct overwrite removes all version roundtrip execution', () => {
   assert.doesNotMatch(patched, /executeRoundtrip\(/u)
   assert.doesNotMatch(patched, /restoreVersion\(/u)
