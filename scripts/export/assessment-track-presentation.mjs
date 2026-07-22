@@ -39,7 +39,10 @@ export function grade(value) {
 }
 
 function displayGrade(value) {
-  const normalized = text(value).toUpperCase()
+  const raw = text(value)
+  if (!raw) return ''
+  if (raw.toLowerCase() === 'unknown') return 'unknown'
+  const normalized = raw.toUpperCase()
   return DISPLAY_GRADES.has(normalized) ? normalized : ''
 }
 
@@ -48,12 +51,18 @@ export function relationshipID(value) {
   return text(value)
 }
 
+function hasNumberValue(value) {
+  return value !== null && value !== undefined && text(value) !== ''
+}
+
 function boundedPercent(value) {
+  if (!hasNumberValue(value)) return null
   const number = Number(value)
   return Number.isFinite(number) ? Math.min(100, Math.max(0, number)) : null
 }
 
 function nonNegativeInteger(value) {
+  if (!hasNumberValue(value)) return null
   const number = Number(value)
   return Number.isFinite(number) ? Math.max(0, Math.round(number)) : null
 }
@@ -254,7 +263,7 @@ export function normalizeAIConclusionTrack(conclusion) {
     grade: effectiveGrade,
     summary: radar.decisiveRuleReason || radar.sourceSummary || null,
     sourceSummary: radar.sourceSummary || null,
-    sourceLinks: radar.sourceLinks || normalizeLinks(conclusion.sourceLinks),
+    sourceLinks: radar.sourceLinks?.length ? radar.sourceLinks : normalizeLinks(conclusion.sourceLinks),
     evidenceStatus: radar.evidenceStatus || null,
     evidenceStrength: text(conclusion.evidenceStrength) || null,
     confidencePercent: radar.confidencePercent ?? null,
