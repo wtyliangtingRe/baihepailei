@@ -3,10 +3,17 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import {
+  buildAssessmentTracks,
+  grade,
+  normalizeRadarAssessment,
+  relationshipID,
+  text,
+} from './assessment-track-presentation.mjs'
+
 const DEFAULT_FILE = 'public/search-index.json'
 const COLLECTION = 'radar-public-conclusions'
 const PAGE_LIMIT = 500
-const VALID_GRADES = new Set(['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X'])
 const RADAR_REASONS = new Set([
   'radar_v06_package_import',
   'radar_publication_guard',
@@ -29,20 +36,6 @@ function parseArgs(argv) {
     }
   }
   return args
-}
-
-function text(value) {
-  return String(value ?? '').trim()
-}
-
-function grade(value) {
-  const normalized = text(value).toUpperCase()
-  return VALID_GRADES.has(normalized) ? normalized : ''
-}
-
-function relationshipID(value) {
-  if (value && typeof value === 'object') return text(value.id || value.value)
-  return text(value)
 }
 
 function unique(values) {
@@ -114,53 +107,6 @@ export async function fetchPublicConclusions(baseUrl, fetcher = requestJson) {
   return docs
 }
 
-function normalizeRadarAssessment(value) {
-  if (!value || typeof value !== 'object') return undefined
-  const matchedRules = Array.isArray(value.matchedRules)
-    ? value.matchedRules.map((rule) => ({
-        code: text(rule?.code) || undefined,
-        grade: grade(rule?.grade) || undefined,
-        confidencePercent: Number.isFinite(Number(rule?.confidencePercent))
-          ? Math.min(100, Math.max(0, Number(rule.confidencePercent)))
-          : undefined,
-        reason: text(rule?.reason) || undefined,
-      })).filter((rule) => Object.values(rule).some((entry) => entry !== undefined))
-    : undefined
-  const contradictions = Array.isArray(value.contradictions)
-    ? value.contradictions
-        .map((item) => text(typeof item === 'string' ? item : item?.value))
-        .filter(Boolean)
-    : undefined
-  const assessment = {
-    confidencePercent: Number.isFinite(Number(value.confidencePercent))
-      ? Math.min(100, Math.max(0, Number(value.confidencePercent)))
-      : undefined,
-    evidenceCoveragePercent: Number.isFinite(Number(value.evidenceCoveragePercent))
-      ? Math.min(100, Math.max(0, Number(value.evidenceCoveragePercent)))
-      : undefined,
-    evidenceStatus: text(value.evidenceStatus) || undefined,
-    sourceSummary: text(value.sourceSummary) || undefined,
-    sourceCount: Number.isFinite(Number(value.sourceCount)) ? Math.max(0, Math.round(Number(value.sourceCount))) : undefined,
-    policyVersion: text(value.policyVersion) || undefined,
-    assessmentBatch: text(value.assessmentBatch) || undefined,
-    suggestedGrade: grade(value.suggestedGrade) || undefined,
-    decisiveRuleCode: text(value.decisiveRuleCode) || undefined,
-    decisiveRuleReason: text(value.decisiveRuleReason) || undefined,
-    matchedRules,
-    contradictions,
-    requiresHumanReview: typeof value.requiresHumanReview === 'boolean' ? value.requiresHumanReview : undefined,
-    assessedAt: text(value.assessedAt) || undefined,
-  }
-  return Object.values(assessment).some((entry) => entry !== undefined) ? assessment : undefined
-}
-
-function hasHumanGrade(item) {
-  return Boolean(grade(item?.humanGrade) || (
-    item?.humanAssessment?.status !== 'pending'
-    && grade(item?.humanAssessment?.grade)
-  ))
-}
-
 function preservedReviewReasons(value) {
   const reasons = Array.isArray(value) ? value : []
   return reasons.map(text).filter((reason) => reason && !RADAR_REASONS.has(reason))
@@ -173,17 +119,17 @@ function conclusionReviewReasons(conclusion) {
 }
 
 function researchPreview(conclusion) {
-  if (text(conclusion?.conclusionMode) !== 'bounded_range') return undefined
-  const radar = normalizeRadarAssessment(conclusion?.radarAssessment)
+  if (!conclusion || text(conclusion.conclusionMode) !== 'bounded_range') return undefined
+  const radar = normalizeRadarAssessment(conclusion.radarAssessment)
   return {
     researchStatus: 'partial',
-    likelyGrade: grade(conclusion?.likelyGrade || conclusion?.compatibilityGrade) || undefined,
-    bestGrade: grade(conclusion?.bestGrade) || undefined,
-    worstGrade: grade(conclusion?.worstGrade) || undefined,
+    likelyGrade: grade(conclusion.likelyGrade || conclusion.compatibilityGrade) || undefined,
+    bestGrade: grade(conclusion.bestGrade) || undefined,
+    worstGrade: grade(conclusion.worstGrade) || undefined,
     sourceSummary: text(radar?.sourceSummary) || undefined,
     sourceCount: Number(radar?.sourceCount || 0),
-    confidencePercent: radar?.confidencePercent,
-    importedAt: text(conclusion?.publishedAt) || undefined,
+    confidencePercent: radar?.confidencePercent ?? undefined,
+    importedAt: text(conclusion.publishedAt) || undefined,
   }
 }
 
@@ -201,11 +147,15 @@ export function conclusionByWorkID(conclusions) {
   return byWork
 }
 
-export function overlayConclusion(item, conclusion) {
-  if (!item || item.collection !== 'works' || !conclusion) return item
-  const radarAssessment = normalizeRadarAssessment(conclusion.radarAssessment)
-  const aiGrade = grade(conclusion.compatibilityGrade || conclusion.likelyGrade || radarAssessment?.suggestedGrade)
-  const humanPriority = hasHumanGrade(item)
+export function overlayConclusion(item, conclusion = null) {
+  if (!item || item.collection !== 'works') return item
+
+  const tracks = buildAssessmentTracks(item, conclusion)
+  const humanPriority = tracks.effectiveGradeSource === 'human'
+  const aiTrack = tracks.ai
+  const radarAssessment = aiTrack
+    ? normalizeRadarAssessment(conclusion?.radarAssessment)
+    : null
   const reasons = unique([
     preservedReviewReasons(item.reviewReasons),
     conclusionReviewReasons(conclusion),
@@ -213,23 +163,55 @@ export function overlayConclusion(item, conclusion) {
   const preview = researchPreview(conclusion)
   const searchText = unique([
     text(item.searchText),
-    aiGrade,
-    radarAssessment?.sourceSummary,
-    radarAssessment?.decisiveRuleCode,
-    (radarAssessment?.matchedRules || []).flatMap((rule) => [rule.code, rule.grade, rule.reason]),
-    preview ? [preview.bestGrade, preview.likelyGrade, preview.worstGrade] : [],
+    tracks.effectiveGrade,
+    tracks.human
+      ? [
+          tracks.human.summary,
+          tracks.human.sourceSummary,
+          tracks.human.decisiveRuleCode,
+          tracks.human.decisiveRuleReason,
+          tracks.human.matchedRules.flatMap((rule) => [rule.code, rule.grade, rule.reason]),
+          tracks.human.contradictions,
+        ]
+      : [],
+    aiTrack
+      ? [
+          aiTrack.summary,
+          aiTrack.sourceSummary,
+          aiTrack.decisiveRuleCode,
+          aiTrack.decisiveRuleReason,
+          aiTrack.matchedRules.flatMap((rule) => [rule.code, rule.grade, rule.reason]),
+          aiTrack.contradictions,
+          aiTrack.bestGrade,
+          aiTrack.likelyGrade,
+          aiTrack.worstGrade,
+        ]
+      : [],
   ]).join('\n')
+
+  const assessmentTracks = tracks.human || aiTrack
+    ? { human: tracks.human, ai: aiTrack }
+    : undefined
 
   return {
     ...item,
-    rank: humanPriority ? item.rank : (aiGrade || item.rank || 'unknown'),
+    // Compatibility output only. It is derived from the two assessment tracks
+    // and is never treated as an independent source of truth.
+    rank: tracks.effectiveGrade,
+    effectiveGrade: tracks.effectiveGrade,
+    effectiveGradeSource: tracks.effectiveGradeSource,
+    assessmentTracks,
     ratingNotice: humanPriority
-      ? (item.ratingNotice || 'manual_reviewed')
-      : (text(conclusion.ratingNotice) || 'ai_synthesized_pending_review'),
+      ? 'manual_reviewed'
+      : (aiTrack
+          ? (text(conclusion?.ratingNotice) || 'ai_synthesized_pending_review')
+          : 'insufficient_information'),
     reviewReasons: reasons,
-    evidenceStrength: text(conclusion.evidenceStrength) || item.evidenceStrength || 'unassessed',
-    radarAssessment: radarAssessment || item.radarAssessment,
-    researchPreview: preview || item.researchPreview,
+    evidenceStrength: humanPriority
+      ? (text(tracks.human?.evidenceStrength) || 'unassessed')
+      : (text(aiTrack?.evidenceStrength) || 'unassessed'),
+    radarAssessment: radarAssessment || undefined,
+    researchPreview: preview,
     searchText,
   }
 }
@@ -240,15 +222,14 @@ export function overlayPublicConclusions(index, conclusions) {
   const items = (index?.items || []).map((item) => {
     if (item.collection !== 'works') return item
     const workID = text(item.recordId)
-    const conclusion = byWork.get(workID)
-    if (!conclusion) return item
-    matchedWorks += 1
+    const conclusion = byWork.get(workID) || null
+    if (conclusion) matchedWorks += 1
     return overlayConclusion(item, conclusion)
   })
   return {
     index: {
       ...index,
-      schemaVersion: Math.max(Number(index?.schemaVersion || 1), 6),
+      schemaVersion: Math.max(Number(index?.schemaVersion || 1), 7),
       counts: {
         ...(index?.counts || {}),
         [COLLECTION]: byWork.size,
@@ -257,6 +238,8 @@ export function overlayPublicConclusions(index, conclusions) {
         overlaidAt: new Date().toISOString(),
         currentRecords: byWork.size,
         matchedWorks,
+        gradePriority: ['human', 'ai', 'unknown'],
+        rankIsCompatibilityOnly: true,
       },
       items,
     },
