@@ -42,6 +42,7 @@ function Invoke-ReadOnlyQuery {
   if ($LASTEXITCODE -ne 0) {
     throw '只读 PostgreSQL 查询失败。'
   }
+
   return @($output | ForEach-Object { [string]$_ })
 }
 
@@ -53,7 +54,8 @@ function Write-Utf8Lines {
   [System.IO.File]::WriteAllLines($Path, $Lines, [System.Text.UTF8Encoding]::new($false))
 }
 
-$humanCandidates = Invoke-ReadOnlyQuery -Sql @'
+$humanCandidates = @(
+  Invoke-ReadOnlyQuery -Sql @'
 SELECT row_to_json(candidate)::text
 FROM (
   SELECT
@@ -135,10 +137,12 @@ FROM (
   ORDER BY id
 ) AS candidate;
 '@
+)
 $humanPath = Join-Path $outDir 'human-normalization-candidates.jsonl'
 Write-Utf8Lines -Path $humanPath -Lines ([string[]]$humanCandidates)
 
-$schemaExceptions = Invoke-ReadOnlyQuery -Sql @'
+$schemaExceptions = @(
+  Invoke-ReadOnlyQuery -Sql @'
 SELECT row_to_json(candidate)::text
 FROM (
   SELECT
@@ -161,10 +165,12 @@ FROM (
   ORDER BY id
 ) AS candidate;
 '@
+)
 $schemaPath = Join-Path $outDir 'schema-retirement-exceptions.jsonl'
 Write-Utf8Lines -Path $schemaPath -Lines ([string[]]$schemaExceptions)
 
-$rankCandidates = Invoke-ReadOnlyQuery -Sql @'
+$rankCandidates = @(
+  Invoke-ReadOnlyQuery -Sql @'
 SELECT row_to_json(candidate)::text
 FROM (
   SELECT
@@ -194,10 +200,12 @@ FROM (
   ORDER BY id
 ) AS candidate;
 '@
+)
 $rankPath = Join-Path $outDir 'rank-retirement-candidates.jsonl'
 Write-Utf8Lines -Path $rankPath -Lines ([string[]]$rankCandidates)
 
-$counts = Invoke-ReadOnlyQuery -Sql @'
+$counts = @(
+  Invoke-ReadOnlyQuery -Sql @'
 SELECT json_build_object(
   'worksTotal', COUNT(*),
   'meaningfulLegacyHumanRows', COUNT(*) FILTER (
@@ -240,6 +248,7 @@ SELECT json_build_object(
 )::text
 FROM public.works;
 '@
+)
 $countsPath = Join-Path $outDir 'counts.json'
 Write-Utf8Lines -Path $countsPath -Lines ([string[]]$counts)
 
