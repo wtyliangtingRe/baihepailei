@@ -77,7 +77,9 @@ data_local/outputs/ai-radar/waves/
 RADAR-INCREMENTAL-WAVE-0004-2500-input-v02.zip
 ```
 
-旧的 `input-v01.zip` 已废弃，不应继续处理。只上传新的 v02 ZIP，不需要逐个上传 500 个研究块。
+旧的 `RADAR-INCREMENTAL-WAVE-0004-2500-input-v01.zip` 已废弃：它已被验收为结构完整，但后来发现其台账没有覆盖更早的 10,250 条批量评级成果，因此其中存在可避免的重复工作。不得继续研究、回收或合并这份 v01 包。
+
+只上传新的 v02 ZIP，不需要逐个上传 500 个研究块。
 
 ## 安全边界
 
