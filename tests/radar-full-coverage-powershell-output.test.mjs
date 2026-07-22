@@ -12,6 +12,14 @@ const wrapper = fs.readFileSync(
   path.join(repoRoot, 'scripts/radar/run-ai-radar-full-coverage-publication-v02.ps1'),
   'utf8',
 )
+const forensicsNode = fs.readFileSync(
+  path.join(repoRoot, 'scripts/radar/inspect-ai-radar-roundtrip-failure-v01.mjs'),
+  'utf8',
+)
+const forensicsPowerShell = fs.readFileSync(
+  path.join(repoRoot, 'scripts/radar/inspect-ai-radar-roundtrip-failure-v01.ps1'),
+  'utf8',
+)
 
 test('preflight finalizer keeps test log out of the return value', () => {
   assert.match(finalizer, /\$TestLines = @\(& node --test \$TestFile 2>&1\)/u)
@@ -60,6 +68,29 @@ test('v02 wrapper exposes a read-only backup probe', () => {
   assert.match(wrapper, /PayloadWrite\s+: False/u)
   assert.match(wrapper, /DirectPostgresqlWrite\s+: False/u)
   assert.match(wrapper, /Remove-Item -LiteralPath \$ProbeFile -Force/u)
+})
+
+test('v02 wrapper blocks unsafe execute mode after observed roundtrip failure', () => {
+  assert.match(wrapper, /if \(\$Execute\) \{\s*throw "正式发布已临时禁用：version_roundtrip/u)
+})
+
+test('roundtrip forensics reads current state without Payload data mutation', () => {
+  assert.match(forensicsNode, /readWork\(baseUrl, token, targetId, false\)/u)
+  assert.match(forensicsNode, /readWork\(baseUrl, token, targetId, true\)/u)
+  assert.match(forensicsNode, /readVersions\(baseUrl, token, targetId\)/u)
+  assert.match(forensicsNode, /readResearch\(baseUrl, token, targetId\)/u)
+  assert.match(forensicsNode, /payloadDataMutation: false/u)
+  assert.match(forensicsNode, /payloadRestoreVersion: false/u)
+  assert.doesNotMatch(forensicsNode, /method:\s*'PATCH'/u)
+  assert.doesNotMatch(forensicsNode, /\/versions\/\$\{encodeURIComponent\([^)]*\)\}.*method:\s*'POST'/u)
+})
+
+test('roundtrip forensics wrapper creates a checksum-protected checkpoint', () => {
+  assert.match(forensicsPowerShell, /RADAR-FULL-COVERAGE-ROUNDTRIP-FAILURE-FORENSICS-v01\.zip/u)
+  assert.match(forensicsPowerShell, /PayloadDataMutation\s+: False/u)
+  assert.match(forensicsPowerShell, /PayloadPatch\s+: False/u)
+  assert.match(forensicsPowerShell, /PayloadRestoreVersion\s+: False/u)
+  assert.match(forensicsPowerShell, /SHA256SUMS\.txt/u)
 })
 
 test('preflight finalizer reuses a paired existing plan and stays read-only', () => {

@@ -15,6 +15,10 @@ if ($Execute -and $BackupProbe) {
   throw "-Execute 与 -BackupProbe 不能同时使用"
 }
 
+if ($Execute) {
+  throw "正式发布已临时禁用：version_roundtrip 恢复草稿会丢失刚发布的补丁。请先运行只读取证流程。"
+}
+
 $Original = Join-Path $PSScriptRoot "run-ai-radar-full-coverage-publication-v01.ps1"
 $BackupScriptRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\backup")).Path
 if (-not (Test-Path -LiteralPath $Original)) {
