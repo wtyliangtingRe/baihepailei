@@ -93,7 +93,7 @@ function Confirm-Package([string]$ZipPath) {
       Remove-Item -LiteralPath $InstallRoot -Recurse -Force
     }
     New-Item -ItemType Directory -Path $InstallRoot -Force | Out-Null
-    Copy-Item -LiteralPath (Join-Path $Temp "*") -Destination $InstallRoot -Recurse -Force
+    Copy-Item -Path (Join-Path $Temp "*") -Destination $InstallRoot -Recurse -Force
 
     return @{
       Manifest = $Manifest
@@ -220,7 +220,7 @@ function New-Checkpoint(
     $PlanFile = Find-LatestFile $OutRoot "publication-plan.jsonl"
     if (-not $PlanFile) { throw "没有找到 publication-plan.jsonl" }
 
-    $ExecutionSummary = Find-LatestFile $OutRoot "execution-summary.json"
+    $ExecutionSummary = if ($WasExecute) { Find-LatestFile $OutRoot "execution-summary.json" } else { $null }
     if ($WasExecute -and -not $ExecutionSummary) {
       throw "执行模式没有找到 execution-summary.json"
     }
@@ -228,7 +228,7 @@ function New-Checkpoint(
       Copy-Item -LiteralPath $ExecutionSummary -Destination (Join-Path $Temp "execution-summary.json")
     }
 
-    $ExecutionLedger = Find-LatestFile $OutRoot "execution-ledger.jsonl"
+    $ExecutionLedger = if ($WasExecute) { Find-LatestFile $OutRoot "execution-ledger.jsonl" } else { $null }
     $Manifest = [ordered]@{
       version = "ai-radar-full-coverage-publication-checkpoint-v0.1"
       generatedAt = (Get-Date).ToUniversalTime().ToString("o")
