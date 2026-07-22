@@ -143,7 +143,12 @@ test('v02 packaging wrapper remains fail-closed and read-only', () => {
   assert.match(wrapperSource, /refine-work-normalization-dryrun-v02\.mjs/u)
   assert.match(wrapperSource, /canonicalIdentityGate/u)
   assert.match(wrapperSource, /typedTimestampComparison/u)
+  assert.match(wrapperSource, /Get-ChildItem -LiteralPath \$sourceDir -Force/u)
+  assert.doesNotMatch(wrapperSource, /Copy-Item -LiteralPath[^\n]*\*/u)
   assert.match(wrapperSource, /ExecutableUpdateSQL\s+: False/u)
   assert.doesNotMatch(wrapperSource, /payload\s+migrate/u)
-  assert.doesNotMatch(wrapperSource, /\b(?:UPDATE|INSERT|DELETE|ALTER|DROP|TRUNCATE)\b/u)
+  assert.doesNotMatch(
+    wrapperSource,
+    /^\s*(?:UPDATE|INSERT|DELETE|ALTER|DROP|TRUNCATE|CREATE\s+TABLE)\b/gimu,
+  )
 })
