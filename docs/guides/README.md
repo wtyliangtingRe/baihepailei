@@ -22,11 +22,17 @@
   - 备份、SQL 审阅与回滚要求
 
 - [Work 规范化候选决定 v0.1](./work-normalization-candidate-decisions-v01.md)
-  - 8 条人工候选的处理类别
+  - 8 条人工候选的初步处理类别
   - 56 条等级候选的来源保护
-  - 53 条公共 AI 审阅候选
+  - v01 dry-run 的 53 条公共 AI 初步候选
   - `status`、`legacy_x_wiki_page` 与 `rank` 的退役前置条件
-  - 只读规范化 dry-run 入口
+
+- [Work 规范化 dry-run v02 语义门槛](./work-normalization-dryrun-v02-gates.md)
+  - 非公开记录优先拦截
+  - canonical Work identity gate
+  - 同作品分裂记录提示
+  - `timestamptz` 类型安全比较
+  - v02 只读校正与打包入口
 
 ### 审计产物完整性
 
