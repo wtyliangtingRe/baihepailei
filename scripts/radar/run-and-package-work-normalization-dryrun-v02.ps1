@@ -22,7 +22,8 @@ $sanitizedInput = Join-Path `
   ("work-normalization-dryrun-v02-input-" + [Guid]::NewGuid().ToString('N'))
 
 New-Item -ItemType Directory -Path $sanitizedInput -Force | Out-Null
-Copy-Item -LiteralPath (Join-Path $sourceDir '*') -Destination $sanitizedInput -Force
+Get-ChildItem -LiteralPath $sourceDir -Force |
+  Copy-Item -Destination $sanitizedInput -Recurse -Force
 
 # v01 SQL contains explanatory comments such as "does not UPDATE / DROP".
 # The semantic planner scans SQL keywords fail-closed, so remove only full-line
