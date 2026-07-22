@@ -100,11 +100,11 @@ if ($newMigrationName -notmatch [regex]::Escape($MigrationName)) {
 
 $migrationSource = Get-Content -LiteralPath $newMigration -Raw -Encoding UTF8
 $forbiddenPatterns = @(
-  'ALTER TABLE\s+"(?:public"\.)?"works"',
-  'DROP TABLE\s+"(?:public"\.)?"works"',
-  'CREATE TABLE\s+"(?:public"\.)?"_works_v"',
-  'ALTER TABLE\s+"(?:public"\.)?"_works_v"',
-  'DROP TABLE\s+"(?:public"\.)?"_works_v"'
+  'ALTER TABLE\s+(?:"public"\.)?"works"',
+  'DROP TABLE\s+(?:"public"\.)?"works"',
+  'CREATE TABLE\s+(?:"public"\.)?"_works_v"',
+  'ALTER TABLE\s+(?:"public"\.)?"_works_v"',
+  'DROP TABLE\s+(?:"public"\.)?"_works_v"'
 )
 foreach ($pattern in $forbiddenPatterns) {
   if ($migrationSource -match $pattern) {
@@ -112,7 +112,7 @@ foreach ($pattern in $forbiddenPatterns) {
   }
 }
 
-if ($migrationSource -notmatch 'CREATE TABLE\s+"(?:public"\.)?"radar_public"') {
+if ($migrationSource -notmatch 'CREATE TABLE\s+(?:"public"\.)?"radar_public"') {
   throw '生成的迁移没有包含缩短后的 radar_public 表结构。'
 }
 
