@@ -14,7 +14,8 @@ const patched = buildDirectOverwriteSource(source)
 
 test('direct overwrite removes all version roundtrip execution', () => {
   assert.doesNotMatch(patched, /executeRoundtrip\(/u)
-  assert.doesNotMatch(patched, /await restoreVersion\(/u)
+  assert.doesNotMatch(patched, /restoreVersion\(/u)
+  assert.doesNotMatch(patched, /\/api\/works\/versions\/\$\{encodeURIComponent\(versionId\)\}/u)
   assert.doesNotMatch(patched, /strategy = 'version_roundtrip'/u)
   assert.doesNotMatch(patched, /safeDirect \?/u)
 })
