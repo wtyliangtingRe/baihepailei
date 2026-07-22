@@ -61,6 +61,28 @@ test('deferred rows retry research while policy changes only reassess', () => {
   assert.equal(policy.needsAssessment, true)
 })
 
+test('legacy assessments reuse evidence and never consume network research capacity', () => {
+  const decision = decideIncrementalAction(baseRow, {
+    ...baseRow,
+    catalogFingerprint: catalogFingerprint(baseRow),
+    researchStatus: 'ready_for_ai_assessment',
+    policyVersion: 'radar-rating-policy-v0.4-draft',
+    calibrationProfileId: 'site-owner-primary-v0.1',
+    aiQaStatus: 'legacy_assessed',
+    reusableEvidence: {
+      sourceSummary: 'Existing evidence',
+      evidenceCoverage: 0.7,
+      evidenceStatus: 'single_secondary_supported',
+    },
+  }, {
+    policyVersion: 'radar-rating-policy-v0.4-draft',
+    calibrationProfileId: 'site-owner-primary-v0.1',
+  })
+  assert.equal(decision.action, 'reassess_legacy_assessment')
+  assert.equal(decision.needsResearch, false)
+  assert.equal(decision.needsAssessment, true)
+})
+
 test('catalog changes trigger targeted research refresh', () => {
   const changed = { ...baseRow, summaryText: 'changed' }
   const decision = decideIncrementalAction(changed, {
