@@ -9,6 +9,10 @@ import {
   val,
 } from './lib/assessment-handoff-v01.mjs'
 import {
+  extractLegacyReusableEvidence,
+  isLegacyAssessmentFile,
+} from './lib/legacy-assessment-overlay-v01.mjs'
+import {
   PROCESSING_LEDGER_VERSION,
   catalogFingerprint,
   identityKey,
@@ -63,10 +67,12 @@ function loadCatalogRows(manifestFile) {
 }
 
 function nextAction(entry) {
-  if (entry.aiQaStatus === 'ai_qa_passed') return 'skip_completed_unchanged'
+  if (['needs_more_research', 'identity_review'].includes(entry.researchStatus)) {
+    return `retry_${entry.researchStatus}`
+  }
   if (entry.aiQaStatus === 'ai_qa_deferred') return 'retry_ai_qa_deferred'
-  if (entry.researchStatus === 'needs_more_research') return 'retry_needs_more_research'
-  if (entry.researchStatus === 'identity_review') return 'retry_identity_review'
+  if (entry.aiQaStatus === 'ai_qa_passed') return 'skip_completed_unchanged'
+  if (entry.aiQaStatus === 'legacy_assessed') return 'reassess_legacy_assessment'
   if (entry.researchStatus === 'ready_for_ai_assessment') return 'assess_existing_research'
   return 'retry_incomplete'
 }
@@ -103,6 +109,7 @@ function main() {
   }
 
   const files = walkFiles(scanRoot)
+  const legacyFiles = files.filter(isLegacyAssessmentFile)
   const researchFiles = files.filter((file) => path.basename(file) === 'research-results-v01.jsonl')
   const qaFiles = files.filter((file) => {
     const name = path.basename(file)
@@ -110,6 +117,63 @@ function main() {
       || /ai-radar-ai-qa-final-v0\.1\.jsonl$/iu.test(name)
   })
 
+  const legacyCandidates = new Map()
+  const legacyRejectedByReason = {}
+  let legacyRowsScanned = 0
+  let legacyRowsOutsideCatalog = 0
+  let legacyFilesUnreadable = 0
+
+  for (const file of legacyFiles) {
+    let rows
+    try {
+      rows = readJsonl(file)
+    } catch {
+      legacyFilesUnreadable += 1
+      continue
+    }
+    const sourceFile = path.relative(process.cwd(), file).replace(/\\/gu, '/')
+    for (const row of rows) {
+      legacyRowsScanned += 1
+      let key
+      try {
+        key = identityKey(row)
+      } catch {
+        legacyRejectedByReason.identity_missing = (legacyRejectedByReason.identity_missing || 0) + 1
+        continue
+      }
+      if (!catalogByIdentity.has(key)) {
+        legacyRowsOutsideCatalog += 1
+        continue
+      }
+      const extracted = extractLegacyReusableEvidence(row, sourceFile)
+      if (!extracted.accepted) {
+        legacyRejectedByReason[extracted.reason] = (legacyRejectedByReason[extracted.reason] || 0) + 1
+        continue
+      }
+      const existing = legacyCandidates.get(key)
+      if (!existing || extracted.score > existing.score) legacyCandidates.set(key, extracted)
+    }
+  }
+
+  for (const extracted of legacyCandidates.values()) {
+    const entry = ensure(extracted.entry)
+    entry.researchStatus = extracted.entry.researchStatus
+    entry.researchVersion = extracted.entry.researchVersion
+    entry.researchResultSha256 = extracted.entry.researchResultSha256
+    entry.policyVersion = extracted.entry.policyVersion
+    entry.calibrationProfileId = extracted.entry.calibrationProfileId
+    entry.assessmentResultSha256 = extracted.entry.assessmentResultSha256
+    entry.aiQaStatus = extracted.entry.aiQaStatus
+    entry.completedAt = extracted.entry.completedAt || entry.completedAt
+    entry.reusableEvidence = extracted.entry.reusableEvidence
+    entry.sourceBatchIds = [...new Set([
+      ...entry.sourceBatchIds,
+      ...extracted.entry.sourceBatchIds,
+    ].filter(Boolean))]
+  }
+
+  // Current research and AI-QA artifacts are applied after legacy evidence so that
+  // newer workflow decisions always override an older assessment snapshot.
   for (const file of researchFiles) {
     for (const row of readJsonl(file)) {
       const entry = ensure(row)
@@ -152,6 +216,13 @@ function main() {
     catalogManifest,
     catalogRows: catalogRows.length,
     ledgerRows: rows.length,
+    legacyFilesScanned: legacyFiles.length,
+    legacyFilesUnreadable,
+    legacyRowsScanned,
+    legacyRowsOutsideCatalog,
+    legacyReusableRows: legacyCandidates.size,
+    legacyRejectedRows: Object.values(legacyRejectedByReason).reduce((sum, count) => sum + count, 0),
+    legacyRejectedByReason,
     researchFilesScanned: researchFiles.length,
     aiQaFilesScanned: qaFiles.length,
     byNextAction,
