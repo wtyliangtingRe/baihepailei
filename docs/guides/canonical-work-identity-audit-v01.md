@@ -32,9 +32,11 @@
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass `
-  -File .\scripts\radar\run-and-package-canonical-work-identity-audit-v01.ps1 `
+  -File .\scripts\radar\run-and-package-canonical-work-identity-audit-v02.ps1 `
   -DryRunV02Directory .\exports\work-normalization-dryrun-v02-<timestamp>
 ```
+
+v02 是当前唯一推荐入口。它在临时副本中修正 v01 的 PowerShell 字符串插值解析边界，执行后立即删除临时文件；原始脚本、数据库和 dry-run 产物保持不变。
 
 入口会从 v02 dry-run 的 `canonical-identity-review-alerts.jsonl` 自动读取目标组和 Work ID，因此真实 ID 不写入仓库脚本或指南。
 
