@@ -54,7 +54,6 @@ function Write-Utf8Lines {
 }
 
 $humanCandidates = Invoke-ReadOnlyQuery -Sql @'
-BEGIN TRANSACTION READ ONLY;
 SELECT row_to_json(candidate)::text
 FROM (
   SELECT
@@ -135,13 +134,11 @@ FROM (
     OR human_reviewed_by_id IS NOT NULL
   ORDER BY id
 ) AS candidate;
-ROLLBACK;
 '@
 $humanPath = Join-Path $outDir 'human-normalization-candidates.jsonl'
 Write-Utf8Lines -Path $humanPath -Lines ([string[]]$humanCandidates)
 
 $schemaExceptions = Invoke-ReadOnlyQuery -Sql @'
-BEGIN TRANSACTION READ ONLY;
 SELECT row_to_json(candidate)::text
 FROM (
   SELECT
@@ -163,13 +160,11 @@ FROM (
     OR legacy_x_wiki_page IS NOT NULL
   ORDER BY id
 ) AS candidate;
-ROLLBACK;
 '@
 $schemaPath = Join-Path $outDir 'schema-retirement-exceptions.jsonl'
 Write-Utf8Lines -Path $schemaPath -Lines ([string[]]$schemaExceptions)
 
 $rankCandidates = Invoke-ReadOnlyQuery -Sql @'
-BEGIN TRANSACTION READ ONLY;
 SELECT row_to_json(candidate)::text
 FROM (
   SELECT
@@ -198,13 +193,11 @@ FROM (
      OR radar_assessment_suggested_grade IS NOT NULL
   ORDER BY id
 ) AS candidate;
-ROLLBACK;
 '@
 $rankPath = Join-Path $outDir 'rank-retirement-candidates.jsonl'
 Write-Utf8Lines -Path $rankPath -Lines ([string[]]$rankCandidates)
 
 $counts = Invoke-ReadOnlyQuery -Sql @'
-BEGIN TRANSACTION READ ONLY;
 SELECT json_build_object(
   'worksTotal', COUNT(*),
   'meaningfulLegacyHumanRows', COUNT(*) FILTER (
@@ -246,7 +239,6 @@ SELECT json_build_object(
   )
 )::text
 FROM public.works;
-ROLLBACK;
 '@
 $countsPath = Join-Path $outDir 'counts.json'
 Write-Utf8Lines -Path $countsPath -Lines ([string[]]$counts)
