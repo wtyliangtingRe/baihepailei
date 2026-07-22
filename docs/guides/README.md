@@ -21,6 +21,13 @@
   - 规范化阶段与验收门槛
   - 备份、SQL 审阅与回滚要求
 
+- [Work 规范化候选决定 v0.1](./work-normalization-candidate-decisions-v01.md)
+  - 8 条人工候选的处理类别
+  - 56 条等级候选的来源保护
+  - 53 条公共 AI 审阅候选
+  - `status`、`legacy_x_wiki_page` 与 `rank` 的退役前置条件
+  - 只读规范化 dry-run 入口
+
 ### 审计产物完整性
 
 - [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
