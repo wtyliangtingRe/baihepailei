@@ -81,6 +81,18 @@ RADAR-INCREMENTAL-WAVE-0004-2500-input-v02.zip
 
 只上传新的 v02 ZIP，不需要逐个上传 500 个研究块。
 
+## 真实 Windows 验收标准
+
+运行完成时至少确认：
+
+- `LegacyRowsScanned >= 10000`；
+- `LegacyReusableRows >= 8000`；
+- `LegacyReassessmentRows > 0`；
+- `ResearchRows = 2500`；
+- `Subwaves = 10`；
+- `Chunks = 500`；
+- Payload、PostgreSQL、Works、评级发布和人工审核线写入全部为 0。
+
 ## 安全边界
 
 - 不写 Payload；
