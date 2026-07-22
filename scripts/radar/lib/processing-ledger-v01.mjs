@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 
-export const PROCESSING_LEDGER_VERSION = 'ai-radar-processing-ledger-v0.1'
+export const PROCESSING_LEDGER_VERSION = 'ai-radar-processing-ledger-v0.2'
 
 function val(value) {
   return String(value ?? '').trim()
@@ -66,6 +66,11 @@ export function normalizeLedgerEntry(entry) {
     completedAt: val(entry?.completedAt) || null,
     nextAction: val(entry?.nextAction) || null,
     supersedes: list(entry?.supersedes).map(val).filter(Boolean),
+    reusableEvidence: entry?.reusableEvidence
+      && typeof entry.reusableEvidence === 'object'
+      && !Array.isArray(entry.reusableEvidence)
+      ? entry.reusableEvidence
+      : null,
   }
 }
 
@@ -104,6 +109,15 @@ export function decideIncrementalAction(row, ledgerEntry, context = {}) {
 
   if (entry.aiQaStatus === 'ai_qa_passed') {
     return { action: 'skip_completed_unchanged', needsResearch: false, needsAssessment: false }
+  }
+
+  if (entry.aiQaStatus === 'legacy_assessed') {
+    return {
+      action: 'reassess_legacy_assessment',
+      needsResearch: false,
+      needsAssessment: true,
+      refreshReason: 'legacy_assessment_reuse',
+    }
   }
 
   if (entry.researchStatus === 'ready_for_ai_assessment') {
