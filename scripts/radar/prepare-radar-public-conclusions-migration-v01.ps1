@@ -8,9 +8,9 @@ Set-StrictMode -Version Latest
 $ExpectedBranch = 'agent/radar-public-conclusions-v01'
 $BaselineMigrationName = 'current_schema_baseline_before_radar_public_v01'
 $MigrationName = 'radar_public_conclusions_v01'
-$AllowedLocalFiles = @('next-env.d.ts', 'payload-types.ts')
 $MigrationDirectory = '.\src\migrations'
 $RadarSchemaEnvName = 'RADAR_PUBLIC_CONCLUSIONS_SCHEMA_READY'
+$AllowedLocalFiles = @('next-env.d.ts', 'payload-types.ts')
 
 function Invoke-Checked {
   param(
@@ -26,24 +26,28 @@ function Invoke-Checked {
   }
 }
 
-function Get-UnexpectedDirtyPaths {
+function Get-DirtyPaths {
   $paths = @()
   foreach ($line in @(git status --short)) {
     if ([string]::IsNullOrWhiteSpace($line)) { continue }
     $path = ([string]$line).Substring(3).Trim()
     if ($path -match ' -> ') { $path = ($path -split ' -> ')[-1].Trim() }
-    if ($AllowedLocalFiles -contains $path) { continue }
     $paths += $path
   }
   return @($paths)
 }
 
-function Get-MigrationFiles {
-  param([Parameter(Mandatory = $true)][string]$Extension)
+function Get-UnexpectedDirtyPaths {
+  return @(Get-DirtyPaths | Where-Object { $AllowedLocalFiles -notcontains $_ })
+}
 
+function Get-MigrationArtifacts {
   return @(
-    Get-ChildItem -LiteralPath $MigrationDirectory -File -Filter "*.$Extension" |
-      Where-Object { $_.Name -ne 'index.ts' } |
+    Get-ChildItem -LiteralPath $MigrationDirectory -File |
+      Where-Object {
+        $_.Name -ne 'index.ts' -and
+        ($_.Extension -eq '.ts' -or $_.Extension -eq '.json')
+      } |
       Select-Object -ExpandProperty FullName
   )
 }
@@ -57,27 +61,36 @@ function Get-NewPaths {
   return @($After | Where-Object { $Before -notcontains $_ })
 }
 
-function Assert-OneGeneratedPair {
+function Get-GeneratedPair {
   param(
     [Parameter(Mandatory = $true)][string]$Label,
     [Parameter(Mandatory = $true)][string]$ExpectedName,
-    [Parameter(Mandatory = $true)][object[]]$NewTypeScriptFiles,
-    [Parameter(Mandatory = $true)][object[]]$NewSnapshotFiles
+    [Parameter(Mandatory = $true)][object[]]$Before,
+    [Parameter(Mandatory = $true)][object[]]$After
   )
 
-  if ($NewTypeScriptFiles.Count -ne 1 -or $NewSnapshotFiles.Count -ne 1) {
-    $NewTypeScriptFiles | ForEach-Object { Write-Host "$Label TypeScript: $_" -ForegroundColor Yellow }
-    $NewSnapshotFiles | ForEach-Object { Write-Host "$Label snapshot: $_" -ForegroundColor Yellow }
+  $newPaths = @(Get-NewPaths -Before $Before -After $After)
+  $typeScriptFiles = @($newPaths | Where-Object { [System.IO.Path]::GetExtension([string]$_) -eq '.ts' })
+  $snapshotFiles = @($newPaths | Where-Object { [System.IO.Path]::GetExtension([string]$_) -eq '.json' })
+
+  if ($typeScriptFiles.Count -ne 1 -or $snapshotFiles.Count -ne 1) {
+    $newPaths | ForEach-Object { Write-Host "$Label generated: $_" -ForegroundColor Yellow }
     throw "$Label 预期生成 1 个 TypeScript 和 1 个 JSON 快照。"
   }
 
-  $typeScriptStem = [System.IO.Path]::GetFileNameWithoutExtension([string]$NewTypeScriptFiles[0])
-  $snapshotStem = [System.IO.Path]::GetFileNameWithoutExtension([string]$NewSnapshotFiles[0])
+  $typeScriptStem = [System.IO.Path]::GetFileNameWithoutExtension([string]$typeScriptFiles[0])
+  $snapshotStem = [System.IO.Path]::GetFileNameWithoutExtension([string]$snapshotFiles[0])
   if ($typeScriptStem -ne $snapshotStem) {
     throw "$Label 的 TypeScript 与 JSON 快照名称不一致：$typeScriptStem / $snapshotStem"
   }
   if ($typeScriptStem -notmatch [regex]::Escape($ExpectedName)) {
     throw "$Label 文件名不包含预期名称：$typeScriptStem"
+  }
+
+  return [PSCustomObject]@{
+    TypeScript = [string]$typeScriptFiles[0]
+    Snapshot = [string]$snapshotFiles[0]
+    Stem = $typeScriptStem
   }
 }
 
@@ -88,7 +101,11 @@ function Invoke-WithRadarSchemaState {
   )
 
   $hadOriginalValue = Test-Path "Env:$RadarSchemaEnvName"
-  $originalValue = if ($hadOriginalValue) { [Environment]::GetEnvironmentVariable($RadarSchemaEnvName, 'Process') } else { $null }
+  $originalValue = if ($hadOriginalValue) {
+    [Environment]::GetEnvironmentVariable($RadarSchemaEnvName, 'Process')
+  } else {
+    $null
+  }
 
   try {
     [Environment]::SetEnvironmentVariable($RadarSchemaEnvName, $State, 'Process')
@@ -103,18 +120,69 @@ function Invoke-WithRadarSchemaState {
 }
 
 function Reset-GeneratedMigrationArtifacts {
-  param(
-    [Parameter(Mandatory = $true)][object[]]$OriginalTypeScriptFiles,
-    [Parameter(Mandatory = $true)][object[]]$OriginalSnapshotFiles
-  )
+  param([Parameter(Mandatory = $true)][object[]]$OriginalArtifacts)
 
-  foreach ($path in @(Get-NewPaths -Before $OriginalTypeScriptFiles -After (Get-MigrationFiles -Extension 'ts'))) {
-    if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force }
-  }
-  foreach ($path in @(Get-NewPaths -Before $OriginalSnapshotFiles -After (Get-MigrationFiles -Extension 'json'))) {
-    if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force }
+  $currentArtifacts = @(Get-MigrationArtifacts)
+  foreach ($path in @(Get-NewPaths -Before $OriginalArtifacts -After $currentArtifacts)) {
+    if (Test-Path -LiteralPath $path) {
+      Remove-Item -LiteralPath $path -Force
+    }
   }
   git restore --worktree -- 'src/migrations/index.ts' 2>$null
+}
+
+function Assert-RadarOnlyDDL {
+  param([Parameter(Mandatory = $true)][string]$MigrationSource)
+
+  $forbiddenPatterns = @(
+    'ALTER TABLE\s+(?:"public"\.)?"works"',
+    'DROP TABLE\s+(?:"public"\.)?"works"',
+    'CREATE TABLE\s+(?:"public"\.)?"_works_v"',
+    'ALTER TABLE\s+(?:"public"\.)?"_works_v"',
+    'DROP TABLE\s+(?:"public"\.)?"_works_v"',
+    'ALTER TABLE\s+(?:"public"\.)?"payload_locked_documents_rels"',
+    'human_assessment_grade',
+    'legacy_x_wiki_page'
+  )
+  foreach ($pattern in $forbiddenPatterns) {
+    if ($MigrationSource -match $pattern) {
+      throw "Radar 迁移混入了既有结构变更：$pattern"
+    }
+  }
+
+  if ($MigrationSource -notmatch 'CREATE TABLE\s+(?:"public"\.)?"radar_public"') {
+    throw '生成的迁移没有包含缩短后的 radar_public 表结构。'
+  }
+
+  $tooLongEnumName = 'enum_radar_public_conclusions_radar_assessment_matched_rules_grade'
+  if ($MigrationSource -match [regex]::Escape($tooLongEnumName)) {
+    throw "生成的迁移仍包含超长 enum 标识符：$tooLongEnumName"
+  }
+
+  foreach ($match in [regex]::Matches($MigrationSource, '(?i)CREATE TABLE\s+(?:"public"\.)?"([^"]+)"')) {
+    $tableName = $match.Groups[1].Value
+    if (-not $tableName.StartsWith('radar_public', [System.StringComparison]::Ordinal)) {
+      throw "Radar 迁移创建了非 Radar 表：$tableName"
+    }
+  }
+  foreach ($match in [regex]::Matches($MigrationSource, '(?i)(?:ALTER|DROP) TABLE\s+(?:"public"\.)?"([^"]+)"')) {
+    $tableName = $match.Groups[1].Value
+    if (-not $tableName.StartsWith('radar_public', [System.StringComparison]::Ordinal)) {
+      throw "Radar 迁移修改或删除了非 Radar 表：$tableName"
+    }
+  }
+  foreach ($match in [regex]::Matches($MigrationSource, '(?i)CREATE TYPE\s+(?:"public"\.)?"([^"]+)"')) {
+    $typeName = $match.Groups[1].Value
+    if (-not $typeName.StartsWith('enum_radar_public', [System.StringComparison]::Ordinal)) {
+      throw "Radar 迁移创建了非 Radar enum：$typeName"
+    }
+  }
+  foreach ($match in [regex]::Matches($MigrationSource, '(?i)DROP TYPE\s+(?:"public"\.)?"([^"]+)"')) {
+    $typeName = $match.Groups[1].Value
+    if (-not $typeName.StartsWith('enum_radar_public', [System.StringComparison]::Ordinal)) {
+      throw "Radar 迁移删除了非 Radar enum：$typeName"
+    }
+  }
 }
 
 Set-Location (Resolve-Path (Join-Path $PSScriptRoot '..\..'))
@@ -151,8 +219,7 @@ Invoke-Checked '运行 TypeScript 静态检查' {
   pnpm exec tsc --noEmit
 }
 
-$beforeTypeScriptFiles = @(Get-MigrationFiles -Extension 'ts')
-$beforeSnapshotFiles = @(Get-MigrationFiles -Extension 'json')
+$beforeArtifacts = @(Get-MigrationArtifacts)
 
 try {
   Invoke-WithRadarSchemaState -State 'false' -Action {
@@ -161,55 +228,52 @@ try {
     }
   }
 
-  $afterBaselineTypeScriptFiles = @(Get-MigrationFiles -Extension 'ts')
-  $afterBaselineSnapshotFiles = @(Get-MigrationFiles -Extension 'json')
-  $baselineTypeScriptFiles = @(Get-NewPaths -Before $beforeTypeScriptFiles -After $afterBaselineTypeScriptFiles)
-  $baselineSnapshotFiles = @(Get-NewPaths -Before $beforeSnapshotFiles -After $afterBaselineSnapshotFiles)
-
-  Assert-OneGeneratedPair `
+  $afterBaselineArtifacts = @(Get-MigrationArtifacts)
+  $baseline = Get-GeneratedPair `
     -Label '当前结构基线' `
     -ExpectedName $BaselineMigrationName `
-    -NewTypeScriptFiles $baselineTypeScriptFiles `
-    -NewSnapshotFiles $baselineSnapshotFiles
+    -Before $beforeArtifacts `
+    -After $afterBaselineArtifacts
 
-  $baselineTypeScript = [string]$baselineTypeScriptFiles[0]
-  $baselineSnapshot = [string]$baselineSnapshotFiles[0]
-  $baselineSnapshotSource = Get-Content -LiteralPath $baselineSnapshot -Raw -Encoding UTF8
-
+  $baselineSnapshotSource = Get-Content -LiteralPath $baseline.Snapshot -Raw -Encoding UTF8
   if ($baselineSnapshotSource -notmatch '"human_assessment_grade"') {
     throw '当前结构基线快照缺少 Works human_assessment_grade；不能把旧快照漂移伪装为已部署结构。'
   }
   if ($baselineSnapshotSource -notmatch '"public\.works"') {
     throw '当前结构基线快照缺少 public.works。'
   }
-  if ($baselineSnapshotSource -match '"public\.radar_public"' -or $baselineSnapshotSource -match '"name"\s*:\s*"radar_public"') {
+  if (
+    $baselineSnapshotSource -match '"public\.radar_public"' -or
+    $baselineSnapshotSource -match '"name"\s*:\s*"radar_public"'
+  ) {
     throw '当前结构基线快照意外包含 radar_public；无法生成独立增量迁移。'
   }
 
-  $baselineSource = @'
-import type { MigrateDownArgs, MigrateUpArgs } from '@payloadcms/db-postgres'
-
-/**
- * Snapshot-only baseline for the schema already deployed before the independent
- * Radar public conclusion collection. The adjacent JSON file is used only as
- * the next Drizzle diff base. Running this migration must not alter any table,
- * enum, index, constraint, or row.
- */
-export async function up(_args: MigrateUpArgs): Promise<void> {
-  // Intentionally empty. Existing schema is recorded, never recreated.
-}
-
-export async function down(_args: MigrateDownArgs): Promise<void> {
-  // Intentionally empty. Existing schema must never be removed.
-}
-'@
+  $baselineSource = @(
+    "import type { MigrateDownArgs, MigrateUpArgs } from '@payloadcms/db-postgres'",
+    '',
+    '/**',
+    ' * Snapshot-only baseline for the schema already deployed before the independent',
+    ' * Radar public conclusion collection. The adjacent JSON file is used only as',
+    ' * the next Drizzle diff base. Running this migration must not alter any table,',
+    ' * enum, index, constraint, or row.',
+    ' */',
+    'export async function up(_args: MigrateUpArgs): Promise<void> {',
+    '  // Intentionally empty. Existing schema is recorded, never recreated.',
+    '}',
+    '',
+    'export async function down(_args: MigrateDownArgs): Promise<void> {',
+    '  // Intentionally empty. Existing schema must never be removed.',
+    '}',
+    ''
+  ) -join "`n"
   [System.IO.File]::WriteAllText(
-    $baselineTypeScript,
+    $baseline.TypeScript,
     $baselineSource,
     [System.Text.UTF8Encoding]::new($false)
   )
 
-  $writtenBaselineSource = Get-Content -LiteralPath $baselineTypeScript -Raw -Encoding UTF8
+  $writtenBaselineSource = Get-Content -LiteralPath $baseline.TypeScript -Raw -Encoding UTF8
   if ($writtenBaselineSource -match 'db\.execute|\bsql`|ALTER TABLE|CREATE TABLE|DROP TABLE') {
     throw '快照基线 TypeScript 仍包含可执行数据库结构语句。'
   }
@@ -220,76 +284,17 @@ export async function down(_args: MigrateDownArgs): Promise<void> {
     }
   }
 
-  $afterMigrationTypeScriptFiles = @(Get-MigrationFiles -Extension 'ts')
-  $afterMigrationSnapshotFiles = @(Get-MigrationFiles -Extension 'json')
-  $migrationTypeScriptFiles = @(Get-NewPaths -Before $afterBaselineTypeScriptFiles -After $afterMigrationTypeScriptFiles)
-  $migrationSnapshotFiles = @(Get-NewPaths -Before $afterBaselineSnapshotFiles -After $afterMigrationSnapshotFiles)
-
-  Assert-OneGeneratedPair `
+  $afterMigrationArtifacts = @(Get-MigrationArtifacts)
+  $radarMigration = Get-GeneratedPair `
     -Label 'Radar 公共结论迁移' `
     -ExpectedName $MigrationName `
-    -NewTypeScriptFiles $migrationTypeScriptFiles `
-    -NewSnapshotFiles $migrationSnapshotFiles
+    -Before $afterBaselineArtifacts `
+    -After $afterMigrationArtifacts
 
-  $newMigration = [string]$migrationTypeScriptFiles[0]
-  $newMigrationSnapshot = [string]$migrationSnapshotFiles[0]
-  $newMigrationName = [System.IO.Path]::GetFileName($newMigration)
-  $newMigrationSnapshotName = [System.IO.Path]::GetFileName($newMigrationSnapshot)
-  $baselineTypeScriptName = [System.IO.Path]::GetFileName($baselineTypeScript)
-  $baselineSnapshotName = [System.IO.Path]::GetFileName($baselineSnapshot)
+  $migrationSource = Get-Content -LiteralPath $radarMigration.TypeScript -Raw -Encoding UTF8
+  $migrationSnapshotSource = Get-Content -LiteralPath $radarMigration.Snapshot -Raw -Encoding UTF8
 
-  $migrationSource = Get-Content -LiteralPath $newMigration -Raw -Encoding UTF8
-  $migrationSnapshotSource = Get-Content -LiteralPath $newMigrationSnapshot -Raw -Encoding UTF8
-
-  $forbiddenPatterns = @(
-    'ALTER TABLE\s+(?:"public"\.)?"works"',
-    'DROP TABLE\s+(?:"public"\.)?"works"',
-    'CREATE TABLE\s+(?:"public"\.)?"_works_v"',
-    'ALTER TABLE\s+(?:"public"\.)?"_works_v"',
-    'DROP TABLE\s+(?:"public"\.)?"_works_v"',
-    'ALTER TABLE\s+(?:"public"\.)?"payload_locked_documents_rels"',
-    'human_assessment_grade',
-    'legacy_x_wiki_page'
-  )
-  foreach ($pattern in $forbiddenPatterns) {
-    if ($migrationSource -match $pattern) {
-      throw "Radar 迁移混入了既有结构变更：$pattern"
-    }
-  }
-
-  if ($migrationSource -notmatch 'CREATE TABLE\s+(?:"public"\.)?"radar_public"') {
-    throw '生成的迁移没有包含缩短后的 radar_public 表结构。'
-  }
-
-  $tooLongEnumName = 'enum_radar_public_conclusions_radar_assessment_matched_rules_grade'
-  if ($migrationSource -match [regex]::Escape($tooLongEnumName)) {
-    throw "生成的迁移仍包含超长 enum 标识符：$tooLongEnumName"
-  }
-
-  foreach ($match in [regex]::Matches($migrationSource, '(?i)CREATE TABLE\s+(?:"public"\.)?"([^"]+)"')) {
-    $tableName = $match.Groups[1].Value
-    if (-not $tableName.StartsWith('radar_public', [System.StringComparison]::Ordinal)) {
-      throw "Radar 迁移创建了非 Radar 表：$tableName"
-    }
-  }
-  foreach ($match in [regex]::Matches($migrationSource, '(?i)(?:ALTER|DROP) TABLE\s+(?:"public"\.)?"([^"]+)"')) {
-    $tableName = $match.Groups[1].Value
-    if (-not $tableName.StartsWith('radar_public', [System.StringComparison]::Ordinal)) {
-      throw "Radar 迁移修改或删除了非 Radar 表：$tableName"
-    }
-  }
-  foreach ($match in [regex]::Matches($migrationSource, '(?i)CREATE TYPE\s+(?:"public"\.)?"([^"]+)"')) {
-    $typeName = $match.Groups[1].Value
-    if (-not $typeName.StartsWith('enum_radar_public', [System.StringComparison]::Ordinal)) {
-      throw "Radar 迁移创建了非 Radar enum：$typeName"
-    }
-  }
-  foreach ($match in [regex]::Matches($migrationSource, '(?i)DROP TYPE\s+(?:"public"\.)?"([^"]+)"')) {
-    $typeName = $match.Groups[1].Value
-    if (-not $typeName.StartsWith('enum_radar_public', [System.StringComparison]::Ordinal)) {
-      throw "Radar 迁移删除了非 Radar enum：$typeName"
-    }
-  }
+  Assert-RadarOnlyDDL -MigrationSource $migrationSource
 
   if ($migrationSnapshotSource -notmatch '"public\.radar_public"') {
     throw 'Radar 迁移快照缺少 public.radar_public。'
@@ -298,24 +303,20 @@ export async function down(_args: MigrateDownArgs): Promise<void> {
     throw 'Radar 迁移快照丢失了既有 Works human_assessment_grade。'
   }
 
-  $changedPaths = @(
-    git status --short |
-      ForEach-Object {
-        $path = ([string]$_).Substring(3).Trim()
-        if ($path -match ' -> ') { $path = ($path -split ' -> ')[-1].Trim() }
-        $path
-      }
-  )
+  $baselineTypeScriptName = [System.IO.Path]::GetFileName($baseline.TypeScript)
+  $baselineSnapshotName = [System.IO.Path]::GetFileName($baseline.Snapshot)
+  $radarTypeScriptName = [System.IO.Path]::GetFileName($radarMigration.TypeScript)
+  $radarSnapshotName = [System.IO.Path]::GetFileName($radarMigration.Snapshot)
 
   $allowedGenerated = @(
     'src/migrations/index.ts',
     ('src/migrations/' + $baselineTypeScriptName),
     ('src/migrations/' + $baselineSnapshotName),
-    ('src/migrations/' + $newMigrationName),
-    ('src/migrations/' + $newMigrationSnapshotName)
+    ('src/migrations/' + $radarTypeScriptName),
+    ('src/migrations/' + $radarSnapshotName)
   ) + $AllowedLocalFiles
 
-  $unexpectedAfter = @($changedPaths | Where-Object { $allowedGenerated -notcontains $_ })
+  $unexpectedAfter = @(Get-DirtyPaths | Where-Object { $allowedGenerated -notcontains $_ })
   if ($unexpectedAfter.Count -gt 0) {
     $unexpectedAfter | ForEach-Object { Write-Host "unexpected generated change: $_" -ForegroundColor Yellow }
     throw '生成迁移后出现了预期之外的文件修改。'
@@ -336,18 +337,16 @@ export async function down(_args: MigrateDownArgs): Promise<void> {
 } catch {
   Write-Host ''
   Write-Host '迁移准备失败，正在清理本轮生成的迁移文件。' -ForegroundColor Yellow
-  Reset-GeneratedMigrationArtifacts `
-    -OriginalTypeScriptFiles $beforeTypeScriptFiles `
-    -OriginalSnapshotFiles $beforeSnapshotFiles
+  Reset-GeneratedMigrationArtifacts -OriginalArtifacts $beforeArtifacts
   throw
 }
 
 Write-Host ''
 Write-Host '快照基线与 Radar 迁移已生成，尚未执行数据库迁移' -ForegroundColor Green
-Write-Host "BaselineMigration : $baselineTypeScript"
-Write-Host "BaselineSnapshot  : $baselineSnapshot"
-Write-Host "RadarMigration    : $newMigration"
-Write-Host "RadarSnapshot     : $newMigrationSnapshot"
+Write-Host "BaselineMigration : $($baseline.TypeScript)"
+Write-Host "BaselineSnapshot  : $($baseline.Snapshot)"
+Write-Host "RadarMigration    : $($radarMigration.TypeScript)"
+Write-Host "RadarSnapshot     : $($radarMigration.Snapshot)"
 Write-Host 'DatabaseMigrate   : False'
 Write-Host 'WorksSchemaWrite  : False'
 Write-Host 'WorkDataWrite     : False'
@@ -358,8 +357,8 @@ if ($CommitAndPush) {
       'src/migrations/index.ts' `
       ("src/migrations/$baselineTypeScriptName") `
       ("src/migrations/$baselineSnapshotName") `
-      ("src/migrations/$newMigrationName") `
-      ("src/migrations/$newMigrationSnapshotName")
+      ("src/migrations/$radarTypeScriptName") `
+      ("src/migrations/$radarSnapshotName")
   }
 
   $staged = @(git diff --cached --name-only)
@@ -367,8 +366,8 @@ if ($CommitAndPush) {
     'src/migrations/index.ts',
     "src/migrations/$baselineTypeScriptName",
     "src/migrations/$baselineSnapshotName",
-    "src/migrations/$newMigrationName",
-    "src/migrations/$newMigrationSnapshotName"
+    "src/migrations/$radarTypeScriptName",
+    "src/migrations/$radarSnapshotName"
   ) | Sort-Object
   $actualStaged = @($staged | Sort-Object)
   if (($expectedStaged -join "`n") -ne ($actualStaged -join "`n")) {
