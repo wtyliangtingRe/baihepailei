@@ -37,3 +37,12 @@ test('wave 3 kickoff declares zero formal and human-track writes', () => {
   assert.doesNotMatch(text, /payload\/api\//u)
   assert.doesNotMatch(text, /UPDATE\s+works/iu)
 })
+
+test('future waves have ledger-aware incremental selection support', () => {
+  for (const file of [
+    'scripts/radar/lib/processing-ledger-v01.mjs',
+    'scripts/radar/build-ai-radar-processing-ledger-v01.mjs',
+    'scripts/radar/select-ai-radar-incremental-wave-v01.mjs',
+    'docs/ai-radar-incremental-ledger-v01.md',
+  ]) assert.equal(fs.existsSync(file), true, `missing ${file}`)
+})
