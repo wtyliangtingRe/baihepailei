@@ -11,6 +11,7 @@ import { Evidence } from './src/collections/Evidence'
 import { FeedbackSubmissions } from './src/collections/FeedbackSubmissions'
 import { Media } from './src/collections/Media'
 import { Organizations } from './src/collections/Organizations'
+import { RadarPublicConclusions } from './src/collections/RadarPublicConclusions'
 import { RadarResearchRecords } from './src/collections/RadarResearchRecords'
 import { Rules } from './src/collections/Rules'
 import { StewardshipNotices } from './src/collections/StewardshipNotices'
@@ -202,6 +203,7 @@ const CreatorsWithAudit = withContentAudit(CreatorsWithOptionalStewardship, 'cre
 const OrganizationsWithAudit = withContentAudit(OrganizationsWithOptionalStewardship, 'organizations')
 
 const EvidenceWithAudit = withContentAudit(Evidence, 'evidence')
+const RadarPublicConclusionsWithAudit = withContentAudit(RadarPublicConclusions, 'radar-public-conclusions')
 const RadarResearchRecordsWithAudit = withContentAudit(RadarResearchRecords, 'radar-research-records')
 const TermsWithAudit = withContentAudit(Terms, 'terms')
 const WarningsWithAudit = withContentAudit(Warnings, 'warnings')
@@ -256,6 +258,7 @@ export default buildConfig({
     AuditEvents,
     Media,
     WorksWithSafeLifecycleStatus,
+    RadarPublicConclusionsWithAudit,
     CreatorsWithAudit,
     OrganizationsWithAudit,
     EvidenceWithAudit,
