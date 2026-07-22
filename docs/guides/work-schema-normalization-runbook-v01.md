@@ -63,6 +63,8 @@
 
 存储的 `rank` 只作为兼容输出，不能用作迁移证据或第三个真相源。
 
+在删除或忽略历史 `rank` 前，必须确认每个非 `unknown` 值的来源。没有人工或私有 AI 证据的旧 `rank` 进入 `legacy_rank_provenance_unknown`，不得静默丢弃，也不得自动升级为人工结论。
+
 ## 只读审计入口
 
 ### 推荐：一条命令完成候选审计与打包
@@ -74,10 +76,11 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\radar\run-and-package-wo
 该入口会：
 
 1. 建立带时间戳的明确输出目录；
-2. 运行只读候选审计；
-3. 验证六个必要文件均存在；
-4. 生成 ZIP；
-5. 输出 ZIP 的 SHA-256。
+2. 调用 UTF-8 安全的 v02 只读候选审计；
+3. 验证全部 JSON；
+4. 验证必要文件均存在；
+5. 生成 ZIP；
+6. 输出 ZIP 的 SHA-256。
 
 输出位置：
 
@@ -100,11 +103,22 @@ exports/schema-root-audit-<timestamp>/
 
 ### 仅运行规范化候选审计
 
-高级调试时可直接运行：
+高级调试时只运行：
 
 ```powershell
-pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\radar\audit-work-normalization-candidates-v01.ps1
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\radar\audit-work-normalization-candidates-v02.ps1
 ```
+
+v02 使用：
+
+```text
+PostgreSQL UTF-8 JSON
+→ Base64
+→ PowerShell UTF-8 解码
+→ 逐条 ConvertFrom-Json 校验
+```
+
+旧 v01 产物可能在 Docker/psql 与 Windows PowerShell 之间发生乱码，不能作为迁移输入。
 
 输出目录应包含：
 
@@ -112,10 +126,18 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\radar\audit-work-normali
 - `human-normalization-candidates.jsonl`
 - `schema-retirement-exceptions.jsonl`
 - `rank-retirement-candidates.jsonl`
+- `validation.json`
 - `manifest.json`
 - `summary.txt`
 
-候选查询结果在脚本中显式包装为数组，因此 0 条、1 条和多条记录应具有相同的 `.Count`、写文件和打包行为。
+`validation.json` 必须满足：
+
+```text
+transport = postgres_utf8_base64_to_powershell_utf8
+jsonValidated = true
+```
+
+候选查询结果显式包装为数组，因此 0 条、1 条和多条记录具有相同的 `.Count`、写文件和打包行为。
 
 这些文件可能包含 Work ID、标题和审核说明，不提交到 Git。
 
@@ -130,7 +152,9 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\radar\audit-work-normali
 - 拟迁移后值；
 - 记录数量；
 - SHA-256；
-- 冲突记录列表。
+- 冲突记录列表；
+- UTF-8 传输与逐行 JSON 校验证明；
+- 非 `unknown` 历史 `rank` 的来源分类。
 
 ### Phase 1：人工字段统一
 
@@ -145,7 +169,8 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\radar\audit-work-normali
 
 - 有意义的旧人工字段不再是唯一数据源；
 - 冲突数量符合批准结果；
-- 数据条数、关联和版本记录未意外变化。
+- 数据条数、关联和版本记录未意外变化；
+- 历史 `rank` 没有被无来源地丢弃或冒充成人工结论。
 
 ### Phase 3：废止字段
 
@@ -166,11 +191,13 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\radar\audit-work-normali
 
 - 新鲜且已验证可恢复的数据库备份；
 - 所有目标 ID 和 before/after 值已导出；
+- UTF-8/Base64 传输与逐行 JSON 校验通过；
 - SQL dry-run 报告无未解释 DDL；
 - 不包含 Works 草稿发布或版本恢复；
 - 不从旧 `status` 推导 `_status`；
 - 冲突行有明确人工决定；
-- 回滚 SQL 与验收 SQL已准备；
+- 历史 `rank` 来源有明确保留、迁移或放弃决定；
+- 回滚 SQL 与验收 SQL 已准备；
 - 用户明确批准执行。
 
 ## 当前禁止事项
@@ -181,4 +208,5 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\radar\audit-work-normali
 - 不 PATCH 或发布 Works；
 - 不手动选择 Drizzle rename 选项；
 - 不删除数据库列或 enum；
-- 不把 `exports/` 中的真实记录提交到仓库。
+- 不把 `exports/` 中的真实记录提交到仓库；
+- 不使用未通过 JSON 校验或已乱码的审计包作为迁移输入。
