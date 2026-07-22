@@ -61,7 +61,10 @@ test('collection is public-read, staff-write, versionless, and separate from Wor
   assert.doesNotMatch(collectionSource, /versions:/u)
   assert.doesNotMatch(collectionSource, /humanAssessment/u)
   assert.match(payloadConfig, /RadarPublicConclusionsWithAudit/u)
-  assert.match(payloadConfig, /RadarPublicConclusionsWithAudit,/u)
+  assert.match(
+    payloadConfig,
+    /\.\.\.\(radarPublicConclusionsSchemaReady \? \[RadarPublicConclusionsWithAudit\] : \[\]\)/u,
+  )
 })
 
 test('short database name keeps the deepest generated enum below the Postgres limit', () => {
