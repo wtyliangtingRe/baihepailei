@@ -20,6 +20,13 @@
   - 规范化阶段与验收门槛
   - 备份、SQL 审阅与回滚要求
 
+### 审计产物完整性
+
+- [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
+  - PostgreSQL、Docker、psql 与 PowerShell 之间的 UTF-8 安全传输
+  - Base64 传输封装与逐行 JSON 校验
+  - `validation.json`、SHA-256 与不可用于迁移的产物判定
+
 ### 发布安全
 
 - [Radar 公共结论与 Works 发布安全指南 v0.1](./radar-publication-safety-v01.md)
