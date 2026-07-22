@@ -34,6 +34,12 @@ import { syncWorkToPublicIndexes } from './src/lib/publicIndexSync'
  */
 const payloadSchemaPush = String(process.env['PAYLOAD_DB_PUSH'] || 'false').toLowerCase() === 'true'
 const stewardshipSchemaReady = String(process.env['STEWARDSHIP_NOTICES_SCHEMA_READY'] || 'true').toLowerCase() !== 'false'
+/**
+ * Radar public conclusions are enabled by default. The migration preparer sets
+ * this to false only while taking a no-SQL snapshot of the already-deployed
+ * schema, then restores it before generating the additive Radar migration.
+ */
+const radarPublicConclusionsSchemaReady = String(process.env['RADAR_PUBLIC_CONCLUSIONS_SCHEMA_READY'] || 'true').toLowerCase() !== 'false'
 
 const WorksWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Works) : Works
 const CreatorsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Creators) : Creators
@@ -258,7 +264,7 @@ export default buildConfig({
     AuditEvents,
     Media,
     WorksWithSafeLifecycleStatus,
-    RadarPublicConclusionsWithAudit,
+    ...(radarPublicConclusionsSchemaReady ? [RadarPublicConclusionsWithAudit] : []),
     CreatorsWithAudit,
     OrganizationsWithAudit,
     EvidenceWithAudit,
