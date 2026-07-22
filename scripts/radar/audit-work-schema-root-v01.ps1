@@ -300,7 +300,7 @@ Write-Utf8Lines -Path (Join-Path $outDir 'summary.txt') -Lines ([string[]]$summa
 $driftPreview = @(
   '# Work schema drift preview',
   '',
-  "- Migration snapshot: `$($snapshotFile.Name)`",
+  "- Migration snapshot: ``$($snapshotFile.Name)``",
   "- Database-only columns: $($databaseOnly.Count)",
   "- Snapshot-only columns: $($snapshotOnly.Count)",
   "- Type difference candidates: $($typeDiff.Count)",
@@ -308,11 +308,11 @@ $driftPreview = @(
   '## Database-only',
   ''
 )
-$driftPreview += if ($databaseOnly.Count) { $databaseOnly | ForEach-Object { "- `$($_.field)` — $($_.databaseType)" } } else { '- none' }
+$driftPreview += if ($databaseOnly.Count) { $databaseOnly | ForEach-Object { "- ``$($_.field)`` — $($_.databaseType)" } } else { '- none' }
 $driftPreview += @('', '## Snapshot-only', '')
-$driftPreview += if ($snapshotOnly.Count) { $snapshotOnly | ForEach-Object { "- `$($_.field)` — $($_.snapshotType)" } } else { '- none' }
+$driftPreview += if ($snapshotOnly.Count) { $snapshotOnly | ForEach-Object { "- ``$($_.field)`` — $($_.snapshotType)" } } else { '- none' }
 $driftPreview += @('', '## Type candidates', '')
-$driftPreview += if ($typeDiff.Count) { $typeDiff | ForEach-Object { "- `$($_.field)` — database: $($_.databaseType); snapshot: $($_.snapshotType)" } } else { '- none' }
+$driftPreview += if ($typeDiff.Count) { $typeDiff | ForEach-Object { "- ``$($_.field)`` — database: $($_.databaseType); snapshot: $($_.snapshotType)" } } else { '- none' }
 Write-Utf8Lines -Path (Join-Path $outDir 'drift-preview.md') -Lines ([string[]]$driftPreview)
 
 Write-Host ''
