@@ -1,6 +1,6 @@
 # Work 规范化候选决定 v0.1
 
-状态：基于 2026-07-23 UTF-8/Base64 验证审计包形成的只读决策。尚未执行数据库写入、迁移、schema push 或 Works 发布。
+状态：基于 2026-07-23 UTF-8/Base64 验证审计包形成的只读决策，并经 dry-run v02 语义门槛校正。尚未执行数据库写入、迁移、schema push 或 Works 发布。
 
 ## 输入完整性
 
@@ -16,11 +16,11 @@
 
 ## 人工审核候选
 
-8 条候选分为：
+8 条候选的 v01 分类为：
 
 - `copy_semantic_legacy_to_canonical`: 1
   - canonical 为空，旧轨道包含有意义的 `disputed/reviewed` 状态与说明；
-  - 仅此类可进入后续受保护写入候选；当前仍未生成可执行 UPDATE。
+  - 只具备“计划资格”，不能在 canonical Work identity 未确认时自动写入。
 - `metadata_only_no_copy`: 2
   - 旧轨道只有默认 `pending`、时间和人员；
   - 复制会伪造“已完成审核”的含义，因此只在备份中保留。
@@ -30,29 +30,55 @@
   - 新旧语义一致，canonical 已完整，无需写入。
 - `deprecated_legacy_requires_discard_approval`: 2
   - 旧说明混有隐藏、恢复或生命周期日志；
-  - 不得复制进 `humanAssessment`；删除旧列前需明确放弃或转入独立审计归档。
+  - 不得复制进 `humanAssessment`；删除旧列前需在备份/审计归档中保留后明确放弃。
 
 canonical 值始终优先，冲突旧值不得覆盖。
 
+v02 将全部实际 `automaticWriteEligible` 强制为 `false`。原本唯一的复制候选必须先通过 canonical identity gate。
+
 ## 等级候选
 
-56 条候选分为：
+56 条等级记录的来源保护保持不变：
 
-- `canonical_human`: 2
-  - 已有有效人工等级，继续作为有效公开等级。
-- `private_ai_requires_publication_review`: 6
-  - Works 内存在私有 AI 建议；
-  - 只有审阅并进入 `radar-public-conclusions` 后才能公开。
-- `legacy_ai_candidate_requires_review`: 47
-  - 原审计只能确认它们缺少 canonical 人工或私有 AI 字段；
-  - 但 `public-catalog-import-v02` 与 `ai_synthesized_pending_review` 共同构成强来源信号；
-  - 这些值作为旧 AI 候选保留，不能冒充人工结论，也不能自动公开。
-- `archived_nonpublic_legacy_rank`: 1
-  - 已归档/草稿测试记录，不继承为公开等级。
+- 有效 canonical 人工记录：2；
+- 公开目录导入形成的旧 AI 候选：47；
+- Works 私有 AI 字段候选：6；
+- 归档/草稿且无公开来源的旧等级：1。
 
-因此共有 53 条公共 AI 审阅候选，但自动发布资格均为 false。
+v01 曾把 6 条私有 AI 候选全部计入公共 AI 审阅队列，因此得到 53 条。
 
-存储的 `rank` 现在不能删除。必须先完成公共 AI 候选审阅、切换所有读取方到 `effectiveGrade`，再单独批准退役迁移。
+v02 语义复核发现其中一条同时满足：
+
+```text
+Payload _status = draft
+catalogStatus = archived
+```
+
+非公开生命周期必须优先于私有 AI 分支，所以该记录改为：
+
+```text
+archived_nonpublic_private_ai
+requiresPublicationReview = false
+automaticPublicationEligible = false
+```
+
+校正后的公共 AI 审阅候选为 **52 条**，且全部仍需 canonical identity gate，自动发布资格均为 false。
+
+存储的 `rank` 现在不能删除。必须先完成公共 AI 候选审阅、canonical Work 合并判断、所有读取方切换到 `effectiveGrade`，再单独批准退役迁移。
+
+## canonical Work identity
+
+当前 dry-run 数据已经直接提示至少两组同作品分裂记录：
+
+- `Endro~!` 的 AniList / Bangumi 记录；
+- `Soukou no Strain / 奏光之Strain` 的 AniList / Bangumi 记录。
+
+这意味着：
+
+- 人工说明不能先复制到一个 Work，而 AI 候选留在另一个 Work；
+- 同一作品的两个 AI 等级不能分别成为两条公共结论；
+- v02 只生成身份复核提示，不自动选择 canonical Work ID；
+- 最终选择必须结合外部 ID、来源、更新时间与既有合并规则。
 
 ## 状态与废止字段
 
@@ -68,32 +94,38 @@ canonical 值始终优先，冲突旧值不得覆盖。
 - 备份及验收后删除旧 `status`；
 - `legacy_x_wiki_page` 全库为空，删除时不提供替代字段。
 
-## 只读计划生成
+## 只读计划校正
+
+v01 生成基础只读计划：
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\radar\run-and-package-work-normalization-dryrun-v01.ps1
 ```
 
-该入口只读取最新通过验证的候选目录，并生成：
+随后必须通过 v02 语义门槛：
 
-- 人工规范化逐条计划；
-- 需明确决定的人工记录；
-- 等级来源保留计划；
-- 公共 AI 审阅候选；
-- 状态/废止字段计划；
-- 只读 before-value 验证 SQL；
-- SHA-256 清单。
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\radar\run-and-package-work-normalization-dryrun-v02.ps1 `
+  -DryRunDirectory .\exports\work-normalization-dryrun-<timestamp>
+```
 
-生成器不会输出可执行 UPDATE、DELETE、ALTER 或 DROP SQL。
+v02 会：
+
+- 先拦截 draft / archived 记录；
+- 为人工复制与公共 AI 候选增加 canonical identity gate；
+- 输出同作品分裂提示；
+- 将时间比较改为 `timestamptz` 类型比较；
+- 继续保证 SQL 只有只读事务与 SELECT。
 
 ## 下一阶段门槛
 
 进入任何写入前，仍需：
 
-1. 运行并审阅 dry-run 计划包；
-2. 对两条 deprecated 旧说明作出保留/放弃决定；
-3. 对 53 条 AI 候选确定批次与公开策略；
-4. 准备并验证可恢复备份；
-5. 单独生成带 exact-before guards 的最小写入 SQL；
-6. 准备回滚与验收查询；
-7. 获得明确执行批准。
+1. 运行并审阅 v02 dry-run 校正包；
+2. 对两条 deprecated 生命周期日志采用“备份归档后不迁移到 humanAssessment”的决定；
+3. 解决所有 canonical identity 提示；
+4. 对 52 条公共 AI 候选确定 canonical Work ID、批次和公开策略；
+5. 准备并验证可恢复备份；
+6. 单独生成带 exact-before guards 的最小写入 SQL；
+7. 准备回滚与验收查询；
+8. 获得明确执行批准。
