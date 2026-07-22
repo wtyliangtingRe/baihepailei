@@ -53,6 +53,7 @@ test('one-command wrapper validates artifacts before creating a literal-path arc
 test('guide index links all active normalization and safety guides', () => {
   assert.match(guideIndex, /work-assessment-model-v01\.md/u)
   assert.match(guideIndex, /work-schema-normalization-runbook-v01\.md/u)
+  assert.match(guideIndex, /work-normalization-candidate-decisions-v01\.md/u)
   assert.match(guideIndex, /audit-artifact-integrity-v01\.md/u)
   assert.match(guideIndex, /radar-publication-safety-v01\.md/u)
 })
