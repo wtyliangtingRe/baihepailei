@@ -112,8 +112,13 @@ foreach ($pattern in $forbiddenPatterns) {
   }
 }
 
-if ($migrationSource -notmatch 'radar_public_conclusions') {
-  throw '生成的迁移没有包含 radar_public_conclusions 表结构。'
+if ($migrationSource -notmatch 'CREATE TABLE\s+"(?:public"\.)?"radar_public"') {
+  throw '生成的迁移没有包含缩短后的 radar_public 表结构。'
+}
+
+$tooLongEnumName = 'enum_radar_public_conclusions_radar_assessment_matched_rules_grade'
+if ($migrationSource -match [regex]::Escape($tooLongEnumName)) {
+  throw "生成的迁移仍包含超长 enum 标识符：$tooLongEnumName"
 }
 
 $changedPaths = @(
@@ -171,7 +176,7 @@ if ($CommitAndPush) {
   Invoke-Checked '提交生成的迁移' {
     git commit -m 'Add Radar public conclusions migration'
   }
-  Invoke-Checked '推送迁移提交' {
+  Invoke-Checked '推送生成的迁移' {
     git push origin $ExpectedBranch
   }
 
