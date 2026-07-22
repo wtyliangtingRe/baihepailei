@@ -12,6 +12,7 @@ import {
   PROCESSING_LEDGER_VERSION,
   decideIncrementalAction,
   identityKey,
+  normalizeLedgerEntry,
   summarizeActions,
 } from './lib/processing-ledger-v01.mjs'
 
@@ -74,11 +75,16 @@ function main() {
   const ledgerByIdentity = new Map(ledgerRows.map((row) => [identityKey(row), row]))
   const catalogRows = loadCatalogRows(catalogManifest)
   const classified = catalogRows.map((row) => {
-    const decision = decideIncrementalAction(row, ledgerByIdentity.get(identityKey(row)), {
+    const ledgerEntry = ledgerByIdentity.get(identityKey(row)) || null
+    const decision = decideIncrementalAction(row, ledgerEntry, {
       policyVersion,
       calibrationProfileId,
     })
-    return { row, ...decision }
+    return {
+      row,
+      ledgerEntry: ledgerEntry ? normalizeLedgerEntry(ledgerEntry) : null,
+      ...decision,
+    }
   })
 
   const newRows = classified.filter((item) => item.action === 'research_new')
@@ -106,6 +112,9 @@ function main() {
       policyVersion,
       calibrationProfileId,
     },
+    incrementalReuse: item.needsAssessment && item.ledgerEntry?.reusableEvidence
+      ? item.ledgerEntry.reusableEvidence
+      : null,
   })
 
   fs.mkdirSync(outputRoot, { recursive: true })
@@ -121,7 +130,7 @@ function main() {
 
   const summary = {
     generatedAt: new Date().toISOString(),
-    version: 'ai-radar-incremental-selection-v0.1',
+    version: 'ai-radar-incremental-selection-v0.2',
     catalogManifest,
     ledgerFile: fs.existsSync(ledgerFile) ? ledgerFile : null,
     catalogRows: catalogRows.length,
@@ -132,6 +141,8 @@ function main() {
     selectedNewRows: selected.filter((item) => item.action === 'research_new').length,
     selectedRetryRows: selected.filter((item) => item.action !== 'research_new').length,
     reassessmentRows: reassessRows.length,
+    legacyReassessmentRows: reassessRows.filter((item) => item.ledgerEntry?.aiQaStatus === 'legacy_assessed').length,
+    reassessmentRowsWithReusableEvidence: reassessRows.filter((item) => item.ledgerEntry?.reusableEvidence).length,
     skippedRows: skippedRows.length,
     byAction: summarizeActions(classified),
     outputs,
