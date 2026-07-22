@@ -51,6 +51,17 @@ test('v02 wrapper converts the legacy positional database argument to --dbname',
   assert.match(wrapper, /\.Replace\(\$PgDumpNeedle, \$PgDumpReplacement\)/u)
 })
 
+test('v02 wrapper exposes a read-only backup probe', () => {
+  assert.match(wrapper, /\[switch\]\$BackupProbe/u)
+  assert.match(wrapper, /\$Execute -and \$BackupProbe/u)
+  assert.match(wrapper, /if \(\$BackupProbe\)/u)
+  assert.match(wrapper, /& pg_dump --dbname=\$env:DATABASE_URI --format=custom --file=\$ProbeFile/u)
+  assert.match(wrapper, /BackupProbe\s+: passed/u)
+  assert.match(wrapper, /PayloadWrite\s+: False/u)
+  assert.match(wrapper, /DirectPostgresqlWrite\s+: False/u)
+  assert.match(wrapper, /Remove-Item -LiteralPath \$ProbeFile -Force/u)
+})
+
 test('preflight finalizer reuses a paired existing plan and stays read-only', () => {
   assert.match(finalizer, /\$RunDir = Split-Path -Parent \$PlanSummaryFile/u)
   assert.match(finalizer, /\$PlanFile = Join-Path \$RunDir "publication-plan\.jsonl"/u)
