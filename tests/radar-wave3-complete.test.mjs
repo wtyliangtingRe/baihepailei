@@ -7,8 +7,15 @@ const FINALIZER = 'scripts/radar/finalize-ai-radar-wave3-v01.mjs'
 const runner = fs.readFileSync(RUNNER, 'utf8')
 const finalizer = fs.readFileSync(FINALIZER, 'utf8')
 
-test('Wave 3 finalizer parses successfully', async () => {
-  await import(`../${FINALIZER}?parse-test=${Date.now()}`)
+test('Wave 3 finalizer imports without executing CLI main', async () => {
+  const previousExitCode = process.exitCode
+  try {
+    process.exitCode = undefined
+    await import(`../${FINALIZER}?parse-test=${Date.now()}`)
+    assert.equal(process.exitCode, undefined)
+  } finally {
+    process.exitCode = previousExitCode
+  }
 })
 
 test('Wave 3 completion runner is repository-relative and fixed to verified counts', () => {
