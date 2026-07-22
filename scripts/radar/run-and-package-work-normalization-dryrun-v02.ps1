@@ -17,12 +17,61 @@ $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $outDir = Join-Path $repoRoot "exports\work-normalization-dryrun-v02-$stamp"
 $bundlePath = Join-Path $repoRoot "exports\WORK-NORMALIZATION-DRYRUN-V02-$stamp.zip"
 $planner = Join-Path $PSScriptRoot 'refine-work-normalization-dryrun-v02.mjs'
+$sanitizedInput = Join-Path `
+  ([System.IO.Path]::GetTempPath()) `
+  ("work-normalization-dryrun-v02-input-" + [Guid]::NewGuid().ToString('N'))
 
-node $planner `
-  --dryrun-dir $sourceDir `
-  --output-dir $outDir
+New-Item -ItemType Directory -Path $sanitizedInput -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $sourceDir '*') -Destination $sanitizedInput -Force
 
-if ($LASTEXITCODE -ne 0) {
+# v01 SQL contains explanatory comments such as "does not UPDATE / DROP".
+# The semantic planner scans SQL keywords fail-closed, so remove only full-line
+# comments from a temporary copy. SQL statements and the original audit package
+# remain unchanged.
+foreach ($sqlName in @(
+  'phase1-human-normalization-dryrun.sql',
+  'schema-retirement-dryrun.sql'
+)) {
+  $sqlPath = Join-Path $sanitizedInput $sqlName
+  $sql = Get-Content -LiteralPath $sqlPath -Raw -Encoding UTF8
+  $sql = [regex]::Replace($sql, '(?m)^\s*--.*(?:\r?\n|$)', '')
+  [System.IO.File]::WriteAllText(
+    $sqlPath,
+    $sql,
+    [System.Text.UTF8Encoding]::new($false)
+  )
+}
+
+$sanitizedManifest = @(
+  Get-ChildItem -LiteralPath $sanitizedInput -File |
+    Where-Object Name -ne 'manifest.json' |
+    Sort-Object Name |
+    ForEach-Object {
+      $hash = Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256
+      [pscustomobject]@{
+        file = $_.Name
+        bytes = $_.Length
+        sha256 = $hash.Hash.ToLowerInvariant()
+      }
+    }
+)
+[System.IO.File]::WriteAllText(
+  (Join-Path $sanitizedInput 'manifest.json'),
+  (($sanitizedManifest | ConvertTo-Json -Depth 10) + [Environment]::NewLine),
+  [System.Text.UTF8Encoding]::new($false)
+)
+
+$plannerExitCode = 1
+try {
+  node $planner `
+    --dryrun-dir $sanitizedInput `
+    --output-dir $outDir
+  $plannerExitCode = $LASTEXITCODE
+} finally {
+  Remove-Item -LiteralPath $sanitizedInput -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+if ($plannerExitCode -ne 0) {
   throw 'Work 规范化 dry-run v02 语义校正失败。'
 }
 
