@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
   [switch]$Execute,
+  [switch]$BackupProbe,
   [string]$ServerUrl = "http://127.0.0.1:3000",
   [int]$DelayMs = 25,
   [int]$MaxRows = 0,
@@ -9,6 +10,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+
+if ($Execute -and $BackupProbe) {
+  throw "-Execute 与 -BackupProbe 不能同时使用"
+}
 
 $Original = Join-Path $PSScriptRoot "run-ai-radar-full-coverage-publication-v01.ps1"
 $BackupScriptRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\backup")).Path
@@ -146,6 +151,7 @@ if ($PgDumpOccurrences -ne 1) {
 
 $Patched = $Source.Replace($OutputNeedle, $OutputReplacement).Replace($PgDumpNeedle, $PgDumpReplacement)
 $TempFile = Join-Path $env:TEMP ("run-ai-radar-full-coverage-publication-v02-" + [guid]::NewGuid().ToString("N") + ".ps1")
+$ProbeFile = $null
 
 $OriginalPath = $env:Path
 $HadDatabaseUri = Test-Path Env:DATABASE_URI
@@ -182,6 +188,30 @@ try {
     throw "pg_dump 解析失败；不会进入正式发布"
   }
 
+  if ($BackupProbe) {
+    $ProbeFile = Join-Path $env:TEMP ("radar-full-coverage-backup-probe-" + [guid]::NewGuid().ToString("N") + ".dump")
+    & pg_dump --dbname=$env:DATABASE_URI --format=custom --file=$ProbeFile
+    if ($LASTEXITCODE -ne 0) {
+      throw "数据库备份探针执行失败"
+    }
+    if (-not (Test-Path -LiteralPath $ProbeFile)) {
+      throw "数据库备份探针没有生成文件"
+    }
+    $ProbeItem = Get-Item -LiteralPath $ProbeFile
+    if ($ProbeItem.Length -le 0) {
+      throw "数据库备份探针生成了空文件"
+    }
+
+    Write-Host "BackupProbe             : passed" -ForegroundColor Green
+    Write-Host "DatabaseConnectionSource: $($Database.Source)"
+    Write-Host "PgDumpCommand           : $($ResolvedPgDump.Source)"
+    Write-Host "PostgresContainer       : $PostgresContainer"
+    Write-Host "ProbeBytes              : $($ProbeItem.Length)"
+    Write-Host "PayloadWrite            : False"
+    Write-Host "DirectPostgresqlWrite   : False"
+    return
+  }
+
   Set-Content -LiteralPath $TempFile -Value $Patched -Encoding UTF8 -NoNewline
 
   $Arguments = @(
@@ -203,6 +233,9 @@ try {
   }
 }
 finally {
+  if ($ProbeFile -and (Test-Path -LiteralPath $ProbeFile)) {
+    Remove-Item -LiteralPath $ProbeFile -Force
+  }
   if (Test-Path -LiteralPath $TempFile) {
     Remove-Item -LiteralPath $TempFile -Force
   }
