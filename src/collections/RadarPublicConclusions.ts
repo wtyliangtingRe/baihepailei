@@ -20,6 +20,7 @@ const currentPublicOrStaff: Access = ({ req }) => {
 
 export const RadarPublicConclusions: CollectionConfig = {
   slug: 'radar-public-conclusions',
+  dbName: 'radar_public',
   labels: {
     singular: 'Radar 公开结论',
     plural: 'Radar 公开结论',
