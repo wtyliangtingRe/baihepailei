@@ -242,7 +242,7 @@ foreach ($Queue in $QueueExpectations) {
 Write-Host "[5/7] Install local assessment and QA queues" -ForegroundColor Cyan
 Remove-Item -LiteralPath $OutputRoot -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $OutputRoot -Force | Out-Null
-Copy-Item -LiteralPath (Join-Path $PackageDir "*") -Destination $OutputRoot -Recurse -Force
+Copy-Item -Path (Join-Path $PackageDir "*") -Destination $OutputRoot -Recurse -Force
 
 Write-Host "[6/7] Run calibrated QA recovery tests" -ForegroundColor Cyan
 & node --test ".\tests\radar-wave4-calibrated-qa.test.mjs" 2>&1 |
