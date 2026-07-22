@@ -16,7 +16,8 @@ function replaceExactly(source, needle, replacement, label) {
 }
 
 function replaceRegexExactly(source, pattern, replacement, label) {
-  const matches = [...source.matchAll(new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`))]
+  const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`
+  const matches = [...source.matchAll(new RegExp(pattern.source, flags))]
   if (matches.length !== 1) {
     throw new Error(`${label} replacement count was ${matches.length}, expected 1`)
   }
@@ -86,6 +87,13 @@ export function buildDirectOverwriteSource(source) {
     'roundtrip executor removal',
   )
 
+  patched = replaceRegexExactly(
+    patched,
+    /async function restoreVersion\(baseUrl, token, versionId\) \{[^\n]+\}\n/u,
+    '',
+    'restore endpoint removal',
+  )
+
   patched = replaceExactly(
     patched,
     `        const safeDirect = equal(unrelatedPublishedState(publishedBefore, row.patch), unrelatedPublishedState(draftBefore, row.patch))
@@ -110,7 +118,8 @@ export function buildDirectOverwriteSource(source) {
 
   const forbidden = [
     'executeRoundtrip(',
-    'await restoreVersion(',
+    'restoreVersion(',
+    '/api/works/versions/${encodeURIComponent(versionId)}',
     "strategy = 'version_roundtrip'",
     'safeDirect ?',
   ]
