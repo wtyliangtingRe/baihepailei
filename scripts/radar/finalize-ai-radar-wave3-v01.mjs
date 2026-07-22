@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 import { stableRowSha256 } from './lib/ai-qa-package-v01.mjs'
 import {
@@ -54,7 +55,7 @@ function requiredInteger(args, name) {
   return value
 }
 
-function main() {
+export function main() {
   const args = parseArgs(process.argv.slice(2))
   if (args.execute || args.publish || args.patch || args.gate || args['approval-token']) {
     throw new Error('Wave 3 AI QA finalization is local-only. Publish/patch/gate flags are rejected.')
@@ -236,4 +237,9 @@ function main() {
   console.log(JSON.stringify({ ok: true, summary }, null, 2))
 }
 
-try { main() } catch (error) { console.error(error?.stack || error); process.exitCode = 1 }
+const isDirectInvocation = process.argv[1]
+  && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href
+
+if (isDirectInvocation) {
+  try { main() } catch (error) { console.error(error?.stack || error); process.exitCode = 1 }
+}
