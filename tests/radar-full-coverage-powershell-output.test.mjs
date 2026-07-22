@@ -70,6 +70,10 @@ test('v02 wrapper exposes a read-only backup probe', () => {
   assert.match(wrapper, /Remove-Item -LiteralPath \$ProbeFile -Force/u)
 })
 
+test('v02 wrapper blocks unsafe execute mode after observed roundtrip failure', () => {
+  assert.match(wrapper, /if \(\$Execute\) \{\s*throw "正式发布已临时禁用：version_roundtrip/u)
+})
+
 test('roundtrip forensics reads current state without Payload data mutation', () => {
   assert.match(forensicsNode, /readWork\(baseUrl, token, targetId, false\)/u)
   assert.match(forensicsNode, /readWork\(baseUrl, token, targetId, true\)/u)
