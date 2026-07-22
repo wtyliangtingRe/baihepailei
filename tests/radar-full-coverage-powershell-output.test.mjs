@@ -20,10 +20,46 @@ test('preflight finalizer keeps test log out of the return value', () => {
   assert.doesNotMatch(finalizer, /Tee-Object -FilePath \$TestOutput/u)
 })
 
-test('v02 wrapper applies exactly the output-isolation repair', () => {
-  assert.match(wrapper, /\$Occurrences -ne 1/u)
+test('v02 wrapper applies exactly one output-isolation repair', () => {
+  assert.match(wrapper, /\$OutputOccurrences -ne 1/u)
   assert.match(wrapper, /Tee-Object -FilePath \$TestOutput \| ForEach-Object \{ Write-Host \$_ \}/u)
-  assert.match(wrapper, /\$Source\.Replace\(\$Needle, \$Replacement\)/u)
+  assert.match(wrapper, /\.Replace\(\$OutputNeedle, \$OutputReplacement\)/u)
+})
+
+test('v02 wrapper resolves the canonical DATABASE_URL before DATABASE_URI', () => {
+  assert.match(wrapper, /\$Keys = @\('DATABASE_URL', 'DATABASE_URI'\)/u)
+  assert.match(wrapper, /\.env\.development\.local/u)
+  assert.match(wrapper, /\.env\.local/u)
+  assert.match(wrapper, /\.env\.development/u)
+  assert.match(wrapper, /\.env'/u)
+  assert.match(wrapper, /\$env:DATABASE_URI = \$Database\.Value/u)
+  assert.doesNotMatch(wrapper, /Write-Host.*\$Database\.Value/u)
+})
+
+test('v02 wrapper bridges pg_dump to the running Docker container', () => {
+  assert.match(wrapper, /PostgresContainer = "baihepailei-postgres"/u)
+  assert.match(wrapper, /Test-RunningContainer -Name \$PostgresContainer/u)
+  assert.match(wrapper, /BAIHEPAILEI_PG_DUMP_CONTAINER/u)
+  assert.match(wrapper, /Join-Path \$BackupScriptRoot 'pg_dump\.ps1'/u)
+  assert.match(wrapper, /\$env:Path = "\$BackupScriptRoot;\$env:Path"/u)
+})
+
+test('v02 wrapper converts the legacy positional database argument to --dbname', () => {
+  assert.match(wrapper, /\$PgDumpNeedle = '& pg_dump --format=custom --file=\$DumpFile \$env:DATABASE_URI'/u)
+  assert.match(wrapper, /\$PgDumpReplacement = '& pg_dump --dbname=\$env:DATABASE_URI --format=custom --file=\$DumpFile'/u)
+  assert.match(wrapper, /\$PgDumpOccurrences -ne 1/u)
+  assert.match(wrapper, /\.Replace\(\$PgDumpNeedle, \$PgDumpReplacement\)/u)
+})
+
+test('v02 wrapper exposes a read-only backup probe', () => {
+  assert.match(wrapper, /\[switch\]\$BackupProbe/u)
+  assert.match(wrapper, /\$Execute -and \$BackupProbe/u)
+  assert.match(wrapper, /if \(\$BackupProbe\)/u)
+  assert.match(wrapper, /& pg_dump --dbname=\$env:DATABASE_URI --format=custom --file=\$ProbeFile/u)
+  assert.match(wrapper, /BackupProbe\s+: passed/u)
+  assert.match(wrapper, /PayloadWrite\s+: False/u)
+  assert.match(wrapper, /DirectPostgresqlWrite\s+: False/u)
+  assert.match(wrapper, /Remove-Item -LiteralPath \$ProbeFile -Force/u)
 })
 
 test('preflight finalizer reuses a paired existing plan and stays read-only', () => {
