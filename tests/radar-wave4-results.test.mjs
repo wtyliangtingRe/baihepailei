@@ -6,8 +6,9 @@ const RUNNER = 'scripts/radar/run-ai-radar-wave4-2500-results-v01.ps1'
 const runner = fs.readFileSync(RUNNER, 'utf8')
 
 test('Wave 4 result runner is fixed to the verified input and result packages', () => {
-  assert.match(runner, /RADAR-INCREMENTAL-WAVE-0004-2500-input-v02/u)
-  assert.match(runner, /RADAR-INCREMENTAL-WAVE-0004-2500-complete-results-v01/u)
+  assert.match(runner, /\$WaveId = "RADAR-INCREMENTAL-WAVE-0004-2500"/u)
+  assert.match(runner, /\$InputPackageId = "\$WaveId-input-v02"/u)
+  assert.match(runner, /\$ResultPackageId = "\$WaveId-complete-results-v01"/u)
   assert.match(runner, /1a7b880c14c2a1c609306598b71ed313711c637663ea75b76a28eb647bbe5966/u)
   assert.match(runner, /3a99ee6aad204bce0b26329b7543ea0b7eae92d862ce2db2aca0d156a113072d/u)
 })
