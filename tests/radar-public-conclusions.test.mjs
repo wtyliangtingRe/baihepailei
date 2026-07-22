@@ -51,6 +51,7 @@ function conclusion(overrides = {}) {
 
 test('collection is public-read, staff-write, versionless, and separate from Works', () => {
   assert.match(collectionSource, /slug: 'radar-public-conclusions'/u)
+  assert.match(collectionSource, /dbName: 'radar_public'/u)
   assert.match(collectionSource, /read: currentPublicOrStaff/u)
   assert.match(collectionSource, /create: editorsAndUp/u)
   assert.match(collectionSource, /update: editorsAndUp/u)
@@ -61,6 +62,11 @@ test('collection is public-read, staff-write, versionless, and separate from Wor
   assert.doesNotMatch(collectionSource, /humanAssessment/u)
   assert.match(payloadConfig, /RadarPublicConclusionsWithAudit/u)
   assert.match(payloadConfig, /RadarPublicConclusionsWithAudit,/u)
+})
+
+test('short database name keeps the deepest generated enum below the Postgres limit', () => {
+  const generatedEnumName = 'enum_radar_public_radar_assessment_matched_rules_grade'
+  assert.ok(generatedEnumName.length <= 63)
 })
 
 test('public fetch filters current records and never writes Works', async () => {
