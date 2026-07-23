@@ -129,6 +129,13 @@
   - gate 只含禁用态 apply/rollback SQL 与证据链，不含生产执行 wrapper
   - apply 与 rollback 继续使用互不替代的精确授权短语
 
+- [Radar 公共结论 production apply-once v0.1](./radar-public-conclusions-production-apply-once-v01.md)
+  - 精确 apply 授权只覆盖已验收的 9,000 条 storage-normalized 公共结论
+  - 暂停 Compose writer，并要求生产与 gate baseline 零漂移
+  - 同窗口 fresh backup、无网络完整恢复与第二次 apply/rollback 演练
+  - 生产 serializable apply、22 项 acceptance、83 张原业务表零变化
+  - commit 后失败不自动 rollback，完整 dump 留本地、receipt ZIP 可上传
+
 ### 审计产物完整性
 
 - [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
