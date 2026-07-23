@@ -28,30 +28,34 @@ function Replace-Exact([string]$Needle, [string]$Replacement, [int]$Expected = 1
   $script:content = $script:content.Replace($Needle, $Replacement)
 }
 
+$summaryValidationReplacement = @'
+$summary.production.worksRead -ne 35615 -or
+    $summary.production.publishedWorksRead -ne 35613 -or
+'@
+$validationMetadataReplacement = @'
+productionWorksRead = 35615
+  publishedWorksRead = 35613
+'@
+$outputReplacement = @'
+Write-Host "ProductionWorksRead            : $($summary.production.worksRead)"
+Write-Host "PublishedWorksRead             : $($summary.production.publishedWorksRead)"
+'@
+
 Replace-Exact `
   "build-all-remaining-radar-global-audit-v02.mjs" `
   "build-all-remaining-radar-global-audit-v03.mjs"
 
 Replace-Exact `
   '$summary.production.worksRead -ne 35615 -or' `
-  @'
-$summary.production.worksRead -ne 35615 -or
-    $summary.production.publishedWorksRead -ne 35613 -or
-'@.TrimEnd()
+  $summaryValidationReplacement.TrimEnd()
 
 Replace-Exact `
   'productionWorksRead = 35615' `
-  @'
-productionWorksRead = 35615
-  publishedWorksRead = 35613
-'@.TrimEnd()
+  $validationMetadataReplacement.TrimEnd()
 
 Replace-Exact `
   'Write-Host "ProductionWorksRead            : $($summary.production.worksRead)"' `
-  @'
-Write-Host "ProductionWorksRead            : $($summary.production.worksRead)"
-Write-Host "PublishedWorksRead             : $($summary.production.publishedWorksRead)"
-'@.TrimEnd()
+  $outputReplacement.TrimEnd()
 
 $temporaryPath = Join-Path $PSScriptRoot ('.run-and-package-all-remaining-radar-global-audit-v03-' + [guid]::NewGuid().ToString('N') + '.ps1')
 [System.IO.File]::WriteAllText($temporaryPath, $content, [System.Text.UTF8Encoding]::new($false))
