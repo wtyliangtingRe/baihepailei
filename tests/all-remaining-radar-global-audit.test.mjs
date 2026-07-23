@@ -52,6 +52,13 @@ test('active v03 uses draft Works for private AI and published Works for public 
   assert.match(v03, /publishedWorksRead/u)
 })
 
+test('active v03 reports private and public blocker distributions independently', () => {
+  assert.match(v03, /privateBlockers: unique\(privatePlan\.blockers\)/u)
+  assert.match(v03, /publicBlockers: unique\(publicBlockers\)/u)
+  assert.match(v03, /row\.privateBlockers \|\| \[\]/u)
+  assert.match(v03, /row\.publicBlockers \|\| \[\]/u)
+})
+
 test('global audit keeps private and public tracks separate and publication-safe', () => {
   assert.match(v01, /ready_private_ai_write/u)
   assert.match(v01, /already_current_private_ai/u)
