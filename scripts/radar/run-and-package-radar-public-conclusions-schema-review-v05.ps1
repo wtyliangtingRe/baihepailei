@@ -160,7 +160,8 @@ try {
   if ($afterHead -eq $beforeHead) { throw '本地 migration commit 没有产生新 HEAD。' }
 
   $changedPaths = @(git diff --name-only "$beforeHead..$afterHead")
-  if (($changedPaths | Sort-Object) -join "`n" -ne ($expectedStaged -join "`n")) {
+  $actualCommitted = @($changedPaths | Sort-Object)
+  if (($actualCommitted -join "`n") -ne ($expectedStaged -join "`n")) {
     throw 'migration commit 文件集合与生成集合不一致。'
   }
   [System.IO.File]::WriteAllLines(
