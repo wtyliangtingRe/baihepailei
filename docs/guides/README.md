@@ -94,6 +94,13 @@
   - 四条已作废测试 assessment 不会重新写入
   - 审计通过后只生成一个全量生产执行包
 
+- [Radar 公共结论 schema review v0.1](./radar-public-conclusions-schema-review-v01.md)
+  - 绑定最终审计 ZIP 与 9,000 条唯一公共写入清单
+  - 生成并提交空操作 schema baseline 与 Radar-only 加法 migration
+  - 抽取 exact up/down SQL，但保持 `.sql.disabled`
+  - 禁止修改 Works、私有 AI、人工轨道或执行生产 migration
+  - 为隔离恢复库往返演练提供不可变输入
+
 ### 审计产物完整性
 
 - [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
