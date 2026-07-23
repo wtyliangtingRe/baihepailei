@@ -3,15 +3,16 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 'radar-public-blocked-remediation-waves-v0.1'
+const VERSION = 'radar-public-blocked-remediation-waves-v0.2'
 const EXPECTED_ROWS = 1805
 const EXPECTED_PUBLIC_CURRENT = 9000
 const DEFAULT_WAVE_SIZE = 250
 const REPAIR_ORDER = new Map([
-  ['A_automatic_format_repair', 0],
-  ['B_research_regeneration', 1],
-  ['C_human_adjudication', 2],
-  ['D_retained_blocked', 3],
+  ['A_latest_wins_candidate', 0],
+  ['A_automatic_format_repair', 1],
+  ['B_research_regeneration', 2],
+  ['C_human_adjudication', 3],
+  ['D_retained_blocked', 4],
 ])
 
 function parseArgs(argv) {
@@ -76,7 +77,7 @@ function compareNatural(a, b) {
   }
   return 0
 }
-function completeValid(candidate) {
+function completeCandidate(candidate) {
   return candidate?.structurallyValid === true &&
     candidate?.assessedAtValid === true &&
     Boolean(val(candidate?.policyVersion)) &&
@@ -95,15 +96,31 @@ function compareCandidates(a, b) {
   if (batch !== 0) return batch
   return val(a?.candidateSha256).localeCompare(val(b?.candidateSha256))
 }
-function selectCandidate(history) {
-  const complete = history.filter(completeValid).sort(compareCandidates)
-  if (complete.length) return { candidate: complete.at(-1), status: 'latest_valid_complete', pool: 'complete_valid' }
-  const structural = history.filter((item) => item?.structurallyValid === true).sort(compareCandidates)
-  if (structural.length) return { candidate: structural.at(-1), status: 'latest_structurally_valid_incomplete', pool: 'structurally_valid' }
+function selectLatest(history) {
+  const structurallyValid = history.filter((item) => item?.structurallyValid === true).sort(compareCandidates)
+  if (structurallyValid.length) {
+    const candidate = structurallyValid.at(-1)
+    return {
+      candidate,
+      status: completeCandidate(candidate)
+        ? 'latest_structurally_valid_complete'
+        : 'latest_structurally_valid_incomplete',
+      pool: 'structurally_valid',
+    }
+  }
   const available = [...history].sort(compareCandidates)
-  return { candidate: available.at(-1) || null, status: available.length ? 'latest_available_invalid' : 'missing_candidate', pool: 'all_available' }
+  return {
+    candidate: available.at(-1) || null,
+    status: available.length ? 'latest_available_invalid' : 'missing_candidate',
+    pool: 'all_available',
+  }
 }
-function repairPriority(value) { return REPAIR_ORDER.get(val(value)) ?? 9 }
+function priority(value) { return REPAIR_ORDER.get(val(value)) ?? 9 }
+function nonConflictBlockers(row) {
+  return [...new Set([...(row.privateBlockers || []), ...(row.publicBlockers || [])])]
+    .filter((item) => val(item) && !val(item).startsWith('contradiction:'))
+    .sort()
+}
 
 function main() {
   const args = parseArgs(process.argv.slice(2))
@@ -134,13 +151,21 @@ function main() {
     keys.add(publicationKey)
 
     const history = Array.isArray(row.history) ? row.history : []
-    const selection = selectCandidate(history)
-    const decisiveConflicts = (row.conflicts || []).filter((item) => item?.decisive === true)
-    const finalStatus = decisiveConflicts.length
-      ? 'blocked_decisive_conflict'
-      : selection.status === 'latest_valid_complete'
-        ? 'blocked_latest_valid_complete_candidate_preserved'
-        : `blocked_${selection.status}`
+    const selection = selectLatest(history)
+    const conflicts = Array.isArray(row.conflicts) ? row.conflicts : []
+    const decisiveConflicts = conflicts.filter((item) => item?.decisive === true)
+    const blockers = nonConflictBlockers(row)
+    const latestUsable = selection.status === 'latest_structurally_valid_complete'
+    const effectiveRepairClass = latestUsable ? 'A_latest_wins_candidate' : val(row.repairClass)
+    const effectiveResolutionLane = latestUsable
+      ? (decisiveConflicts.length ? 'latest_wins_conflict_overwrite' : 'latest_wins_current_candidate')
+      : val(row.resolutionLane)
+    const finalStatus = latestUsable
+      ? (blockers.length
+          ? 'selected_latest_wins_with_remaining_non_conflict_blockers'
+          : 'selected_latest_wins_ready_candidate')
+      : `blocked_${selection.status}`
+
     return canonical({
       ...row,
       selectedCandidateFromInventory: row.selectedCandidate || null,
@@ -148,18 +173,23 @@ function main() {
       selectedCandidateStatus: selection.status,
       selectedCandidatePool: selection.pool,
       selectedCandidateSelectionOrder: ['assessedAt', 'policyVersion', 'assessmentBatch', 'candidateSha256'],
-      latestAloneNeverWins: true,
+      latestStructurallyValidIdentityResolvedWins: true,
+      latestCompletePreferredOverNewerIncomplete: false,
+      decisiveConflictsBlockLatestSelection: false,
+      decisiveConflictsOverwrittenByLatest: decisiveConflicts.length > 0 && latestUsable,
       wholeSnapshotReplacementRequired: true,
       explicitNullClearsOldValue: true,
       fieldResidualMergeForbidden: true,
       historicalCandidatesPreserved: true,
-      decisiveConflictsRemainBlocked: true,
+      remainingNonConflictBlockers: blockers,
+      effectiveRepairClass,
+      effectiveResolutionLane,
       finalRemediationStatus: finalStatus,
-      remediationWavePriority: repairPriority(row.repairClass),
+      remediationWavePriority: priority(effectiveRepairClass),
     })
   }).sort((a, b) =>
     a.remediationWavePriority - b.remediationWavePriority ||
-    val(a.resolutionLane).localeCompare(val(b.resolutionLane)) ||
+    val(a.effectiveResolutionLane).localeCompare(val(b.effectiveResolutionLane)) ||
     Number(a.workId) - Number(b.workId) ||
     a.workId.localeCompare(b.workId))
 
@@ -169,6 +199,7 @@ function main() {
   writeJsonl(conflictPath, rows.filter((row) => (row.conflicts || []).length))
 
   const wavesDir = path.join(outDir, 'waves')
+  fs.mkdirSync(wavesDir, { recursive: true })
   const waves = []
   for (let offset = 0; offset < rows.length; offset += waveSize) {
     const waveRows = rows.slice(offset, offset + waveSize)
@@ -183,8 +214,8 @@ function main() {
       rows: waveRows.length,
       firstWorkId: waveRows[0]?.workId || null,
       lastWorkId: waveRows.at(-1)?.workId || null,
-      repairClasses: Object.fromEntries([...new Set(waveRows.map((row) => row.repairClass))].sort().map((key) => [key, waveRows.filter((row) => row.repairClass === key).length])),
-      resolutionLanes: Object.fromEntries([...new Set(waveRows.map((row) => row.resolutionLane))].sort().map((key) => [key, waveRows.filter((row) => row.resolutionLane === key).length])),
+      effectiveRepairClasses: Object.fromEntries([...new Set(waveRows.map((row) => row.effectiveRepairClass))].sort().map((key) => [key, waveRows.filter((row) => row.effectiveRepairClass === key).length])),
+      effectiveResolutionLanes: Object.fromEntries([...new Set(waveRows.map((row) => row.effectiveResolutionLane))].sort().map((key) => [key, waveRows.filter((row) => row.effectiveResolutionLane === key).length])),
       sha256: sha256File(file),
     }))
   }
@@ -223,25 +254,29 @@ function main() {
       withHistory: rows.filter((row) => (row.history || []).length).length,
       withConflicts: rows.filter((row) => (row.conflicts || []).length).length,
       withDecisiveConflicts: rows.filter((row) => (row.conflicts || []).some((item) => item?.decisive)).length,
-      latestValidComplete: rows.filter((row) => row.selectedCandidateStatus === 'latest_valid_complete').length,
+      decisiveConflictsOverwrittenByLatest: rows.filter((row) => row.decisiveConflictsOverwrittenByLatest === true).length,
+      latestStructurallyValidComplete: rows.filter((row) => row.selectedCandidateStatus === 'latest_structurally_valid_complete').length,
       latestStructurallyValidIncomplete: rows.filter((row) => row.selectedCandidateStatus === 'latest_structurally_valid_incomplete').length,
       latestAvailableInvalid: rows.filter((row) => row.selectedCandidateStatus === 'latest_available_invalid').length,
       missingCandidate: rows.filter((row) => row.selectedCandidateStatus === 'missing_candidate').length,
-      byRepairClass: countBy((row) => row.repairClass),
-      byResolutionLane: countBy((row) => row.resolutionLane),
+      byEffectiveRepairClass: countBy((row) => row.effectiveRepairClass),
+      byEffectiveResolutionLane: countBy((row) => row.effectiveResolutionLane),
       byFinalStatus: countBy((row) => row.finalRemediationStatus),
       waves: waves.length,
       waveSize,
     },
     conflictPolicy: {
-      currentSelection: 'latest_valid_complete_identity_resolved',
+      currentSelection: 'latest_structurally_valid_identity_resolved',
       tieBreakOrder: ['assessedAt', 'policyVersion', 'assessmentBatch', 'candidateSha256'],
-      latestAloneNeverWins: true,
+      newestStructurallyValidWins: true,
+      olderCompleteCannotOverrideNewerStructurallyValid: true,
+      decisiveConflictsBlockLatestSelection: false,
+      decisiveConflictsOverwrittenByLatest: true,
       wholeSnapshotReplacement: true,
       explicitNullClearsOldValue: true,
       fieldResidualMergeForbidden: true,
-      decisiveConflictsRemainBlocked: true,
       historicalCandidatesPreserved: true,
+      hardInvalidCandidatesRemainBlocked: true,
       humanTrackNeverOverwritten: true,
     },
     safety: {
@@ -266,11 +301,11 @@ function main() {
     return { file: name, bytes: fs.statSync(file).size, sha256: sha256File(file) }
   }))
 
-  console.log('Radar public blocked remediation waves complete')
+  console.log('Radar public blocked latest-wins remediation waves complete')
   console.log(`Rows: ${rows.length}`)
-  console.log(`LatestValidComplete: ${summary.ledger.latestValidComplete}`)
+  console.log(`LatestStructurallyValidComplete: ${summary.ledger.latestStructurallyValidComplete}`)
+  console.log(`DecisiveConflictsOverwrittenByLatest: ${summary.ledger.decisiveConflictsOverwrittenByLatest}`)
   console.log(`WithConflicts: ${summary.ledger.withConflicts}`)
-  console.log(`WithDecisiveConflicts: ${summary.ledger.withDecisiveConflicts}`)
   console.log(`Waves: ${waves.length}`)
   console.log('ProductionDatabaseWrite: False')
   console.log('ProductionApplyAuthorized: False')
