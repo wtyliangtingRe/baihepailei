@@ -54,7 +54,7 @@ test('v02 fixes PL/pgSQL diagnostics and guards skipped and preserved relation r
   assert.match(v02, /acceptance_preserved:/u)
   assert.match(v02, /rollback_guard_unchanged:/u)
   assert.match(v02, /rollback_guard_preserved:/u)
-  assert.match(v02, /node', \['--check', temporary\]/u)
+  assert.match(v02, /spawnSync\(process\.execPath, \['--check', temporary\]/u)
   assert.match(v02, /fs\.rmSync\(temporary, \{ force: true \}\)/u)
 })
 
