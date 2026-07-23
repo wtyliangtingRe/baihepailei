@@ -8,9 +8,11 @@ const root = process.cwd()
 const v01Path = path.join(root, 'scripts/radar/build-all-remaining-radar-global-audit-v01.mjs')
 const v02Path = path.join(root, 'scripts/radar/build-all-remaining-radar-global-audit-v02.mjs')
 const wrapperPath = path.join(root, 'scripts/radar/run-and-package-all-remaining-radar-global-audit-v01.ps1')
+const secureWrapperPath = path.join(root, 'scripts/radar/run-and-package-all-remaining-radar-global-audit-v02.ps1')
 const v01 = fs.readFileSync(v01Path, 'utf8')
 const v02 = fs.readFileSync(v02Path, 'utf8')
 const wrapper = fs.readFileSync(wrapperPath, 'utf8')
+const secureWrapper = fs.readFileSync(secureWrapperPath, 'utf8')
 
 test('global audit sources parse and v02 reaches normal required-argument validation', () => {
   for (const file of [v01Path, v02Path]) {
@@ -60,4 +62,17 @@ test('global audit and wrapper are read-only and leave the dedicated server stop
   assert.doesNotMatch(wrapper, /\b(?:UPDATE|INSERT|DELETE|ALTER|DROP|TRUNCATE|CREATE)\s+(?:TABLE|INTO|FROM|public\.)/iu)
   assert.doesNotMatch(wrapper, /payload migrate/u)
   assert.doesNotMatch(wrapper, /PAYLOAD_DB_PUSH = 'true'/u)
+})
+
+test('secure wrapper prompts only when credentials are missing and restores process environment', () => {
+  assert.match(secureWrapper, /Read-Host '请输入 Payload 管理员邮箱'/u)
+  assert.match(secureWrapper, /Read-Host '请输入 Payload 管理员密码（输入不会显示）' -AsSecureString/u)
+  assert.match(secureWrapper, /ConvertFrom-SecureString \$securePassword -AsPlainText/u)
+  assert.match(secureWrapper, /Save-ProcessEnvironment 'RADAR_PAYLOAD_EMAIL'/u)
+  assert.match(secureWrapper, /Save-ProcessEnvironment 'RADAR_PAYLOAD_PASSWORD'/u)
+  assert.match(secureWrapper, /Restore-ProcessEnvironment \$savedRadarEmail/u)
+  assert.match(secureWrapper, /Restore-ProcessEnvironment \$savedRadarPassword/u)
+  assert.match(secureWrapper, /run-and-package-all-remaining-radar-global-audit-v01\.ps1/u)
+  assert.doesNotMatch(secureWrapper, /PAYLOAD_DB_PUSH\s*=\s*'true'/u)
+  assert.doesNotMatch(secureWrapper, /payload migrate/u)
 })
