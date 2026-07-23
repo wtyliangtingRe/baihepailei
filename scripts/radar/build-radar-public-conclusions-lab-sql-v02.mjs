@@ -40,16 +40,24 @@ if (!fs.existsSync(applyPath) || !fs.existsSync(summaryPath)) {
 }
 
 let apply = fs.readFileSync(applyPath, 'utf8')
-const incorrect = 'SELECT count(*) INTO mismatch_count FROM ('
-const corrected = 'SELECT q.mismatch_count INTO mismatch_count FROM ('
-const count = apply.split(incorrect).length - 1
-if (count !== 1) throw new Error(`Expected one main mismatch assignment, received ${count}.`)
-apply = apply.replace(incorrect, corrected)
-if (!apply.includes('SELECT count(*)\nFROM input i')) {
-  throw new Error('Main mismatch subquery no longer has a named aggregate result.')
+const incorrectAssignment = 'SELECT count(*) INTO mismatch_count FROM ('
+const correctedAssignment = 'SELECT q.mismatch_count INTO mismatch_count FROM ('
+const assignmentCount = apply.split(incorrectAssignment).length - 1
+if (assignmentCount !== 1) {
+  throw new Error(`Expected one main mismatch assignment, received ${assignmentCount}.`)
 }
-if (!apply.includes('SELECT q.mismatch_count INTO mismatch_count FROM (')) {
-  throw new Error('Main mismatch assignment correction was not written.')
+apply = apply.replace(incorrectAssignment, correctedAssignment)
+
+const unnamedAggregate = 'SELECT count(*)\nFROM input i'
+const namedAggregate = 'SELECT count(*) AS mismatch_count\nFROM input i'
+const aggregateCount = apply.split(unnamedAggregate).length - 1
+if (aggregateCount !== 1) {
+  throw new Error(`Expected one unnamed main mismatch aggregate, received ${aggregateCount}.`)
+}
+apply = apply.replace(unnamedAggregate, namedAggregate)
+
+if (!apply.includes(correctedAssignment) || !apply.includes(namedAggregate)) {
+  throw new Error('Main mismatch aggregate alias correction was not written.')
 }
 fs.writeFileSync(applyPath, apply, 'utf8')
 
@@ -57,9 +65,11 @@ const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8').replace(/^\uFEFF
 summary.schemaVersion = 2
 summary.builderVersion = 'radar-public-conclusions-lab-sql-v0.2'
 summary.mainFieldMismatchCheckCorrected = true
+summary.mainFieldMismatchAggregateAliased = true
 summary.runtimeSourcePatching = false
 summary.generatedSqlNormalization = true
 fs.writeFileSync(summaryPath, `${JSON.stringify(summary, null, 2)}\n`, 'utf8')
 
 console.log('Radar public conclusions lab SQL v02 validated')
 console.log('MainFieldMismatchCheckCorrected: True')
+console.log('MainFieldMismatchAggregateAliased: True')
