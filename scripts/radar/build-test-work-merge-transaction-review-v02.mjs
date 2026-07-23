@@ -4,8 +4,9 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 
-const source = path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/u, (value) => value.slice(1))), 'build-test-work-merge-transaction-review-v01.mjs')
+const source = path.join(path.dirname(fileURLToPath(import.meta.url)), 'build-test-work-merge-transaction-review-v01.mjs')
 if (!fs.existsSync(source)) throw new Error(`Missing v01 source: ${source}`)
 
 let content = fs.readFileSync(source, 'utf8').replace(/^\uFEFF/u, '')
