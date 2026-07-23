@@ -13,17 +13,25 @@ import {
 } from '../scripts/radar/lib/public-conclusion-storage-v01.mjs'
 
 const root = process.cwd()
+const libraryPath = path.join(root, 'scripts/radar/lib/public-conclusion-storage-v01.mjs')
 const builderPath = path.join(root, 'scripts/radar/build-radar-public-storage-normalization-v01.mjs')
+const runnerPath = path.join(root, 'scripts/radar/run-and-package-radar-public-storage-normalization-v01.ps1')
 const builder = fs.readFileSync(builderPath, 'utf8')
+const runner = fs.readFileSync(runnerPath, 'utf8')
 
-test('storage normalization library and builder pass the Node parser', () => {
-  for (const file of [
-    path.join(root, 'scripts/radar/lib/public-conclusion-storage-v01.mjs'),
-    builderPath,
-  ]) {
+test('storage normalization library, builder, and runner pass their real parsers', () => {
+  for (const file of [libraryPath, builderPath]) {
     const result = spawnSync(process.execPath, ['--check', file], { cwd: root, encoding: 'utf8' })
     assert.equal(result.status, 0, result.stderr || result.stdout)
   }
+  const command = [
+    '$tokens = $null;',
+    '$errors = $null;',
+    `[System.Management.Automation.Language.Parser]::ParseFile('${runnerPath.replaceAll("'", "''")}', [ref]$tokens, [ref]$errors) | Out-Null;`,
+    'if (@($errors).Count -gt 0) { $errors | Format-List | Out-String | Write-Error; exit 1 }',
+  ].join(' ')
+  const result = spawnSync('pwsh', ['-NoProfile', '-Command', command], { cwd: root, encoding: 'utf8' })
+  assert.equal(result.status, 0, result.stderr || result.stdout)
 })
 
 test('PostgreSQL timestamp(3) normalization rounds and canonicalizes UTC', () => {
@@ -98,12 +106,28 @@ test('builder is bound to accepted evidence and supersedes only the old data pla
   assert.match(builder, new RegExp(PUBLIC_CONCLUSION_STORAGE_VERSION.replaceAll('.', '\\.')))
 })
 
-test('normalization builder has no database, Payload, migration, or production apply path', () => {
-  assert.doesNotMatch(builder, /\bfetch\s*\(/u)
-  assert.doesNotMatch(builder, /payload\s+(?:migrate|update|create)/iu)
-  assert.doesNotMatch(builder, /\b(?:INSERT|UPDATE|DELETE|ALTER|DROP|CREATE TABLE)\b/iu)
-  assert.doesNotMatch(builder, /docker\s+exec/iu)
-  assert.doesNotMatch(builder, /AUTHORIZE-PRODUCTION/u)
+test('package runner binds the failed lab and emits a manifest-protected replacement package', () => {
+  assert.match(runner, /FailedLabDirectory/u)
+  assert.match(runner, /RADAR-PUBLIC-STORAGE-NORMALIZATION-/u)
+  assert.match(runner, /public-ai-storage-ready\.jsonl/u)
+  assert.match(runner, /public-conclusion-storage-rewrite-map\.jsonl/u)
+  assert.match(runner, /public-conclusions-storage-write-plan\.jsonl/u)
+  assert.match(runner, /manifest\.json/u)
+  assert.match(runner, /OldDataPlanSuperseded\s+: True/u)
+  assert.match(runner, /BusinessAuditSuperseded\s+: False/u)
+  assert.match(runner, /MigrationDdlSuperseded\s+: False/u)
+})
+
+test('normalization path has no database, Payload, migration, or production apply operation', () => {
+  for (const source of [builder, runner]) {
+    assert.doesNotMatch(source, /\bfetch\s*\(/u)
+    assert.doesNotMatch(source, /payload\s+(?:migrate|update|create)/iu)
+    assert.doesNotMatch(source, /\b(?:INSERT|UPDATE|DELETE|ALTER|DROP|CREATE TABLE)\b/iu)
+    assert.doesNotMatch(source, /docker\s+exec/iu)
+    assert.doesNotMatch(source, /AUTHORIZE-PRODUCTION/u)
+  }
   assert.match(builder, /productionDatabaseWrite: false/u)
   assert.match(builder, /productionApplyAuthorized: false/u)
+  assert.match(runner, /ProductionDatabaseWrite\s+: False/u)
+  assert.match(runner, /ProductionApplyAuthorized\s+: False/u)
 })
