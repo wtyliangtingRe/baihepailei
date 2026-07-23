@@ -45,25 +45,31 @@ if ($gate.evidenceChainVerified -ne $true -or $gate.readyToRequestProductionAppl
 if ($lab.labRoundTripVerified -ne $true -or $lab.businessTableCountChecks -ne 83 -or $lab.safety.productionDatabaseWrite -ne $false) { throw 'Lab rehearsal 证据不完整。' }
 if ($review.execution.executed -ne $false -or $review.operationCounts.exactBeforeRows -ne 1146) { throw 'Transaction review 状态或数量发生漂移。' }
 
-$runnerPath = Join-Path $PSScriptRoot 'execute-test-work-production-apply-once-v01.ps1'
+$runnerV01Path = Join-Path $PSScriptRoot 'execute-test-work-production-apply-once-v01.ps1'
+$runnerV02Path = Join-Path $PSScriptRoot 'execute-test-work-production-apply-once-v02.ps1'
 $receiptBuilderPath = Join-Path $PSScriptRoot 'build-test-work-production-apply-receipt-v01.mjs'
-foreach ($file in @($runnerPath,$receiptBuilderPath)) { if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "缺少 runner 文件：$file" } }
+foreach ($file in @($runnerV01Path,$runnerV02Path,$receiptBuilderPath)) { if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "缺少 runner 文件：$file" } }
 
-$runnerText = Get-Content -LiteralPath $runnerPath -Raw -Encoding UTF8
-if ($runnerText -notmatch "ValidateSet\('AUTHORIZE-PRODUCTION-TEST-WORK-MERGE-APPLY-V01'\)" -or
-    $runnerText -notmatch 'run-and-package-test-work-backup-verification-v02.ps1' -or
-    $runnerText -notmatch 'run-and-package-test-work-write-schema-audit-v01.ps1' -or
-    $runnerText -notmatch 'Assert-NoOtherClientSessions' -or
-    $runnerText -notmatch 'ProductionRollbackAuthorized : False' -or
-    $runnerText -notmatch 'rollbackAutomaticallyExecuted = \$false') {
-  throw 'Production runner 缺少必要安全门槛。'
+$runnerV01Text = Get-Content -LiteralPath $runnerV01Path -Raw -Encoding UTF8
+$runnerV02Text = Get-Content -LiteralPath $runnerV02Path -Raw -Encoding UTF8
+if ($runnerV01Text -notmatch 'run-and-package-test-work-backup-verification-v02.ps1' -or
+    $runnerV01Text -notmatch 'run-and-package-test-work-write-schema-audit-v01.ps1' -or
+    $runnerV01Text -notmatch 'Assert-NoOtherClientSessions' -or
+    $runnerV01Text -notmatch 'ProductionRollbackAuthorized : False' -or
+    $runnerV01Text -notmatch 'rollbackAutomaticallyExecuted = \$false' -or
+    $runnerV02Text -notmatch "ValidateSet\('AUTHORIZE-PRODUCTION-TEST-WORK-MERGE-APPLY-V01'\)" -or
+    $runnerV02Text -notmatch 'return ,\$set' -or
+    $runnerV02Text -notmatch 'writerContainersRestarted = \$true' -or
+    $runnerV02Text -notmatch 'ParseFile\(\$temporary') {
+  throw 'Production runner chain 缺少必要安全门槛。'
 }
 
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $outDir = Join-Path $repoRoot "exports\test-work-production-apply-runner-review-$stamp"
 $bundlePath = Join-Path $repoRoot "exports\TEST-WORK-PRODUCTION-APPLY-RUNNER-REVIEW-$stamp.zip"
 New-Item -ItemType Directory -Path $outDir -Force | Out-Null
-Copy-Item -LiteralPath $runnerPath -Destination (Join-Path $outDir 'execute-test-work-production-apply-once-v01.ps1.review-copy') -Force
+Copy-Item -LiteralPath $runnerV01Path -Destination (Join-Path $outDir 'execute-test-work-production-apply-once-v01.ps1.review-copy') -Force
+Copy-Item -LiteralPath $runnerV02Path -Destination (Join-Path $outDir 'execute-test-work-production-apply-once-v02.ps1.review-copy') -Force
 Copy-Item -LiteralPath $receiptBuilderPath -Destination (Join-Path $outDir 'build-test-work-production-apply-receipt-v01.mjs.review-copy') -Force
 
 $head = (git rev-parse HEAD).Trim()
@@ -82,7 +88,9 @@ $contract = [ordered]@{
   gateManifestSha256 = (Get-FileHash -LiteralPath (Join-Path $gateDir 'manifest.json') -Algorithm SHA256).Hash.ToLowerInvariant()
   labManifestSha256 = (Get-FileHash -LiteralPath (Join-Path $labDir 'manifest.json') -Algorithm SHA256).Hash.ToLowerInvariant()
   baselineSchemaManifestSha256 = (Get-FileHash -LiteralPath (Join-Path $schemaDir 'manifest.json') -Algorithm SHA256).Hash.ToLowerInvariant()
-  runnerSha256 = (Get-FileHash -LiteralPath $runnerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  runnerV01Sha256 = (Get-FileHash -LiteralPath $runnerV01Path -Algorithm SHA256).Hash.ToLowerInvariant()
+  runnerV02Sha256 = (Get-FileHash -LiteralPath $runnerV02Path -Algorithm SHA256).Hash.ToLowerInvariant()
+  activeRunner = 'execute-test-work-production-apply-once-v02.ps1'
   receiptBuilderSha256 = (Get-FileHash -LiteralPath $receiptBuilderPath -Algorithm SHA256).Hash.ToLowerInvariant()
   freshBackupRequiredAtExecution = $true
   freshRestoreVerificationRequiredAtExecution = $true
@@ -108,6 +116,7 @@ $readme = @"
 
 - Authorization received: true
 - Branch head: $head
+- Active runner: execute-test-work-production-apply-once-v02.ps1
 - Target Works: 32186, 10097, 32094, 25561
 - Fresh backup at execution: required
 - Fresh isolated restore verification: required
@@ -134,6 +143,7 @@ Write-Host "OutputDirectory           : $outDir"
 Write-Host "Bundle                    : $bundlePath"
 Write-Host "SHA256                    : $($bundleHash.Hash)"
 Write-Host "BranchHead                : $head"
+Write-Host 'ActiveRunner              : execute-test-work-production-apply-once-v02.ps1'
 Write-Host 'AuthorizationReceived     : True'
 Write-Host 'RunnerGenerated           : True'
 Write-Host 'RunnerReviewed            : False'
