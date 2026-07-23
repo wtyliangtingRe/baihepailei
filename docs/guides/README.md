@@ -54,6 +54,12 @@
   - 全部非系统表行数一致性比较
   - 本地备份与小型上传证据包分离
 
+- [Test Work 合并写目标 schema 审计 v0.1](./test-work-write-schema-audit-v01.md)
+  - 绑定已验证本地 dump 与 v03 计划
+  - 自动推导真实写目标表和物理列
+  - 审计约束、索引、trigger、RLS、policy、enum 与 sequence
+  - 在事务 SQL 生成前保持 PostgreSQL 只读
+
 ### 审计产物完整性
 
 - [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
