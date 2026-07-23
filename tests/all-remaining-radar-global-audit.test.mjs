@@ -47,11 +47,16 @@ test('active v03 uses latest Works for private AI and complete live snapshots fo
   assert.match(v03, /fetchCollection\(baseUrl, token, 'works', \{ draft: 'false' \}\)/u)
   assert.match(v03, /const draftWorkById/u)
   assert.match(v03, /const publishedWorkById/u)
-  assert.match(v03, /nonPublishedLiveRows/u)
-  assert.match(v03, /payload_live_snapshot_nonpublished_rows_/u)
-  assert.match(v03, /lifecycleBlockers\(publishedWork\)/u)
+  assert.match(v03, /const publishedWorkIdSet/u)
+  assert.match(v03, /payload_live_snapshot_missing_ids_/u)
+  assert.match(v03, /payload_live_snapshot_unexpected_ids_/u)
+  assert.match(v03, /publicLifecycleBlockers\(publishedWork\)/u)
   assert.match(v03, /publicAssessmentFor\(source, privatePlan, publishedWork\)/u)
   assert.match(v03, /publishedSnapshotStatusCounts/u)
+  assert.match(v03, /publishedSnapshotUniqueIds/u)
+  assert.match(v03, /publishedSnapshotIdSetMatchesDraft/u)
+  assert.doesNotMatch(v03, /payload_live_snapshot_nonpublished_rows_/u)
+  assert.doesNotMatch(v03, /val\(work\._status\) !== 'published'/u)
 })
 
 test('active v03 reports private and public blocker distributions independently', () => {
@@ -86,6 +91,8 @@ test('global audit and wrappers are read-only and leave the dedicated server sto
   assert.match(wrapper, /DedicatedAuditServer\s+: Stopped/u)
   assert.match(dualSnapshotWrapper, /build-all-remaining-radar-global-audit-v03\.mjs/u)
   assert.match(dualSnapshotWrapper, /publishedWorksRead -ne 35615/u)
+  assert.match(dualSnapshotWrapper, /publishedSnapshotUniqueIds -ne 35615/u)
+  assert.match(dualSnapshotWrapper, /publishedSnapshotIdSetMatchesDraft -ne \$true/u)
   for (const source of [wrapper, secureWrapper, dualSnapshotWrapper]) {
     assert.doesNotMatch(source, /\b(?:UPDATE|INSERT|DELETE|ALTER|DROP|TRUNCATE|CREATE)\s+(?:TABLE|INTO|FROM|public\.)/iu)
     assert.doesNotMatch(source, /payload migrate/u)
