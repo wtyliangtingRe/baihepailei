@@ -1,5 +1,6 @@
 import config from '@payload-config'
 import { REST_GET } from '@payloadcms/next/routes'
+import type { NextRequest } from 'next/server'
 
 import {
   isRadarReadonlyBearer,
@@ -8,10 +9,11 @@ import {
 
 const standardGET = REST_GET(config)
 
-export const GET: typeof standardGET = async (...args) => {
-  const [request] = args
+export async function GET(request: NextRequest) {
   if (isRadarReadonlyBearer(request)) {
     return radarReadonlyFind(request, 'radar-public-conclusions')
   }
-  return standardGET(...args)
+  return standardGET(request, {
+    params: Promise.resolve({ slug: ['radar-public-conclusions'] }),
+  })
 }
