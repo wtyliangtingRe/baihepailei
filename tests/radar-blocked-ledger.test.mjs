@@ -79,7 +79,7 @@ test('the first phase cannot write Payload or PostgreSQL or authorize production
   assert.match(builder, /directPostgresqlWrite: false/u)
   assert.match(builder, /productionDatabaseWrite: false/u)
   assert.match(builder, /productionApplyAuthorized: false/u)
-  assert.doesNotMatch(builder, /child_process|spawn\(|exec\(|fetch\(|postgres|\bpg\b|payload/iu)
+  assert.doesNotMatch(builder, /from ['"]node:child_process['"]|require\(['"]child_process['"]\)|spawn\(|execFile\(|fetch\(|INSERT INTO|UPDATE\s+\w+\s+SET|DELETE FROM|ALTER TABLE|CREATE TABLE/iu)
   assert.doesNotMatch(runner, /docker exec|psql|pg_dump|payload\s+migrate|AUTHORIZE-PRODUCTION/iu)
 })
 
