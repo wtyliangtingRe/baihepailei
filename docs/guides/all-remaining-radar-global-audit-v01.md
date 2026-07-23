@@ -28,13 +28,16 @@ publicationGuardRows               698
 审计要求：
 
 - 当前 Works draft/latest 快照总数为 35,615；
-- 当前 Works published/live 快照总数为 35,613；
+- 当前 Works published/live 快照总数为 35,615；
+- published/live 快照中的全部记录必须呈现 `_status = published`；
 - Test Work production apply receipt 已证明：
   - `10097 → 32186`；
   - `25561 → 32094`；
   - apply committed；
   - post-merge acceptance passed；
   - 83 张业务表变化与计划一致。
+
+这里的 35,615 条 live 快照不等于“最新版本中 `_status=published` 的记录数”。当前有两条 Work 存在更新后的草稿，但它们仍保留可公开的旧 published 版本；`draft=false` 会返回这些 live 版本，所以公开快照仍覆盖全部 35,615 条 Work。
 
 四个测试 Work 的旧 v0.6 assessment 均被标为：
 
@@ -106,11 +109,11 @@ schemaCreationRequired = true
 runner 会：
 
 1. 校验 v0.6 来源摘要；
-2. 校验最终 Test Work production receipt manifest；
+2. 校验最终 Test Work production apply receipt manifest；
 3. 只读查询 `public.radar_public` 是否存在；
 4. 以 `PAYLOAD_DB_PUSH=false` 启动独立端口的临时 Next/Payload 读取服务器；
 5. 读取 35,615 条 draft/latest Works；
-6. 独立读取 35,613 条 published/live Works；
+6. 独立读取 35,615 条 published/live Works，并确认全部为 published 快照；
 7. 逐条生成私有与公共分类；
 8. 关闭临时读取服务器；
 9. 生成 manifest 和 ZIP。
@@ -167,7 +170,8 @@ manifest.json
 ```text
 SourceRows                       10805
 ProductionWorksRead              35615
-PublishedWorksRead               35613
+PublishedWorksRead               35615
+PublishedSnapshotStatusCounts    published = 35615
 GlobalBlockers                   0
 ReadyForSingleExecutionPlanning  true
 PayloadWrite                     false
