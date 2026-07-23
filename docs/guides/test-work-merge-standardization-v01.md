@@ -26,7 +26,9 @@
 - 保留 Bangumi 基准、事实数据、子表、引用和版本均明显更完整的 Work；
 - 另一条 AniList 基准 Work 软归档并隐藏；
 - 把 AniList ID、MAL ID 和 canonical 缺失的事实来源资料补入；
-- 中文简介继续作为 canonical 当前简介；英文简介作为来源事实保留，不用旧测试评级决定覆盖关系；
+- `Soukou no Strain` 作为 canonical 别名保存；
+- canonical 搜索文本合并 AniList ID、AniList URL、英文标题及日文标题，但排除旧 merge 操作标记；
+- 中文简介继续作为 canonical 当前简介；英文简介继续保存在软归档来源记录及其版本中，不用旧测试评级决定覆盖关系；
 - 保留旧记录和版本历史。
 
 真实 Work ID 只在本地命令和被忽略的审计产物中出现，不写入本指南。
@@ -78,6 +80,7 @@ v02 会额外确认 `human_reviewed_at`、`human_reviewed_by_id` 等物理旧字
 - semantic key 不重复的 candidate sources；
 - semantic key 不重复的 source links；
 - 真实别名和本地化标题；
+- 清洗并去重后的搜索文本行；
 - 真实创作者、组织和作品关系；
 - 其他经 exact-before 确认的事实子表。
 
@@ -87,7 +90,8 @@ v02 会额外确认 `human_reviewed_at`、`human_reviewed_by_id` 等物理旧字
 - 私有 AI 等级、规则、来源摘要和评估批次；
 - 旧 `rank`；
 - Radar/manual review reasons；
-- 测试反馈给出的等级、规则和结论。
+- 测试反馈给出的等级、规则和结论；
+- `mergedIntoWorkId`、`duplicateMergeSourceKey` 等操作标记。
 
 ## 软归档策略
 
@@ -110,7 +114,7 @@ Payload _status = 保持原值
 
 v02 先读取 `_works_v.parent_id` 建立 version ID → Work ID 映射，再统计版本子表；不会把版本子表 `_parent_id` 错当成 Work ID。
 
-## Dry-run 入口
+## v02 基础 dry-run
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass `
@@ -120,14 +124,45 @@ pwsh -NoProfile -ExecutionPolicy Bypass `
   -DiscardTestAssessments
 ```
 
+## v03 执行前只读门槛
+
+v03 读取已验证的 identity audit 与 v02 dry-run，补齐：
+
+- merge-out 标题别名保护；
+- 清洗后的搜索文本合并；
+- 四条 Work 完整 JSONB exact-before 比较；
+- 所有计划关系行与反馈行的完整 JSONB 比较；
+- 19 个 Work 关系定位器的数量门槛；
+- 11 个版本关系定位器的数量门槛。
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass `
+  -File .\scripts\radar\run-and-package-test-work-merge-dryrun-v03.ps1 `
+  -IdentityAuditDirectory .\exports\canonical-work-identity-audit-<timestamp> `
+  -DryRunV02Directory .\exports\test-work-merge-dryrun-v02-<timestamp>
+```
+
 输出：
 
 ```text
-exports/test-work-merge-dryrun-v02-<timestamp>/
-exports/TEST-WORK-MERGE-DRYRUN-V02-<timestamp>.zip
+exports/test-work-merge-dryrun-v03-<timestamp>/
+exports/TEST-WORK-MERGE-DRYRUN-V03-<timestamp>.zip
 ```
 
-主要文件：
+v03 新增：
+
+- `work-standardization-plan.jsonl`
+- `exact-before-expectations.json`
+
+`exact-before-readonly.sql` 中每个结果都必须返回：
+
+```text
+matches = true
+```
+
+只要一个结果为 `false`，或行数与预期不一致，就必须停止，重新审计和生成计划。
+
+其他主要文件继续包括：
 
 - `canonical-merge-decisions.json`
 - `field-merge-plan.jsonl`
@@ -135,7 +170,6 @@ exports/TEST-WORK-MERGE-DRYRUN-V02-<timestamp>.zip
 - `test-assessment-cleanup-plan.jsonl`
 - `feedback-test-cleanup-plan.jsonl`
 - `version-preservation-plan.jsonl`
-- `exact-before-readonly.sql`
 - `merge-preview-commented.sql`
 - `merge-dryrun-summary.{json,md}`
 - `manifest.json`
@@ -144,10 +178,10 @@ exports/TEST-WORK-MERGE-DRYRUN-V02-<timestamp>.zip
 
 ## 写入前仍需满足
 
-1. 审阅 merge dry-run 的逐字段与逐关系决定；
-2. 运行 exact-before，只允许完全匹配当前数据库状态；
+1. 审阅 v03 的逐字段、逐关系和搜索标准化决定；
+2. 实际运行 v03 exact-before，所有结果均为 `matches = true`；
 3. 建立并验证新的可恢复 PostgreSQL 备份；
 4. 确认反馈表、别名表、来源表的枚举和唯一约束；
-5. 生成精确事务 SQL、回滚 SQL 和验收 SQL；
+5. 生成精确事务 SQL、回滚 SQL和验收 SQL；
 6. 逐行审阅；
 7. 用户明确批准执行。
