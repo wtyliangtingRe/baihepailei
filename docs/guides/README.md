@@ -108,6 +108,13 @@
   - 禁止修改 Works、私有 AI、人工轨道或执行生产 migration
   - 为隔离恢复库往返演练提供不可变输入
 
+- [Radar 公共结论隔离恢复库往返演练 v0.1](./radar-public-conclusions-lab-rehearsal-v01.md)
+  - 绑定最终审计、schema review、migration commit 与 9,000 条 ready 记录
+  - fresh production dump 恢复到 `--network none` 一次性 PostgreSQL
+  - schema + 数据 apply、字段与子表 acceptance、exact rollback
+  - 非 Radar 表行数往返一致，完整 dump 留本地、仅上传证据 ZIP
+  - 演练通过后仍需 production execution gate 与独立精确授权
+
 ### 审计产物完整性
 
 - [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
