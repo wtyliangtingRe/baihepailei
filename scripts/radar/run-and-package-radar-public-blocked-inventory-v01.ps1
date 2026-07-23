@@ -128,8 +128,15 @@ if ($existingRepoWriters.Count -gt 0) {
 
 Import-DotEnvFile (Join-Path $repoRoot '.env')
 Import-DotEnvFile (Join-Path $repoRoot '.env.local')
-$email = Get-PayloadCredential @('RADAR_PAYLOAD_EMAIL', 'PAYLOAD_EXPORT_EMAIL', 'PAYLOAD_SEED_EMAIL')
+$email = Get-PayloadCredential @('RADAR_PAYLOAD_EMAIL', 'PAYLOAD_EXPORT_EMAIL', 'PAYLOAD_SEED_EMAIL', 'SITE_OWNER_EMAIL')
+if ([string]::IsNullOrWhiteSpace($email)) {
+  $email = ([string](Read-Host '请输入 Payload 管理员邮箱')).Trim()
+}
 $password = Get-PayloadCredential @('RADAR_PAYLOAD_PASSWORD', 'PAYLOAD_EXPORT_PASSWORD', 'PAYLOAD_SEED_PASSWORD')
+if ([string]::IsNullOrWhiteSpace($password)) {
+  $securePassword = Read-Host '请输入 Payload 管理员密码（仅用于当前只读审计，不会写入文件）' -AsSecureString
+  $password = [System.Net.NetworkCredential]::new('', $securePassword).Password
+}
 if ([string]::IsNullOrWhiteSpace($email) -or [string]::IsNullOrWhiteSpace($password)) {
   throw '缺少 Payload 只读审计登录凭据。'
 }
@@ -198,14 +205,23 @@ try {
       if (-not [string]::IsNullOrWhiteSpace([string]$login.token)) { $ready = $true; break }
     } catch { Start-Sleep -Seconds 2 }
   }
-  if (-not $ready) { throw 'Blocked inventory 专用 Next 服务器未在限时内就绪。' }
+  if (-not $ready) { throw 'Blocked inventory 专用 Next 服务器未在限时内就绪或 Payload 登录失败。' }
 
-  & node $builderPath `
-    --audit-dir $auditDir `
-    --production-receipt-dir $receiptDir `
-    --out-dir $outDir `
-    --url $baseUrl
-  if ($LASTEXITCODE -ne 0) { throw 'Blocked inventory builder 执行失败。' }
+  $previousRadarPayloadEmail = [Environment]::GetEnvironmentVariable('RADAR_PAYLOAD_EMAIL', 'Process')
+  $previousRadarPayloadPassword = [Environment]::GetEnvironmentVariable('RADAR_PAYLOAD_PASSWORD', 'Process')
+  try {
+    [Environment]::SetEnvironmentVariable('RADAR_PAYLOAD_EMAIL', $email, 'Process')
+    [Environment]::SetEnvironmentVariable('RADAR_PAYLOAD_PASSWORD', $password, 'Process')
+    & node $builderPath `
+      --audit-dir $auditDir `
+      --production-receipt-dir $receiptDir `
+      --out-dir $outDir `
+      --url $baseUrl
+    if ($LASTEXITCODE -ne 0) { throw 'Blocked inventory builder 执行失败。' }
+  } finally {
+    [Environment]::SetEnvironmentVariable('RADAR_PAYLOAD_EMAIL', $previousRadarPayloadEmail, 'Process')
+    [Environment]::SetEnvironmentVariable('RADAR_PAYLOAD_PASSWORD', $previousRadarPayloadPassword, 'Process')
+  }
 } finally {
   if ($null -ne $server) {
     Stop-ProcessTree -ProcessId $server.Id
