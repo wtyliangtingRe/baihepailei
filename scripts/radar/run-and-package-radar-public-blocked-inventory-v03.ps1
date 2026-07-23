@@ -96,7 +96,7 @@ $finalBundle = Join-Path $repoRoot "exports\RADAR-PUBLIC-BLOCKED-REMEDIATION-$st
 $remediationDir = Join-Path $outDir 'remediation'
 
 Write-Host ''
-Write-Host '==> 按 latest-valid-complete 规则生成最终 ledger 与研究波次' -ForegroundColor Cyan
+Write-Host '==> 按 latest structurally-valid wins 规则生成最终 ledger 与研究波次' -ForegroundColor Cyan
 & node $finalizer `
   --inventory-dir $outDir `
   --out-dir $remediationDir `
@@ -110,19 +110,23 @@ if ($summary.ledger.rows -ne 1805 -or
     $summary.ledger.uniqueWorkIds -ne 1805 -or
     $summary.ledger.uniquePublicationKeys -ne 1805 -or
     $summary.currentProductionPublicBaseline -ne 9000 -or
-    $summary.conflictPolicy.currentSelection -ne 'latest_valid_complete_identity_resolved' -or
+    $summary.conflictPolicy.currentSelection -ne 'latest_structurally_valid_identity_resolved' -or
+    $summary.conflictPolicy.newestStructurallyValidWins -ne $true -or
+    $summary.conflictPolicy.olderCompleteCannotOverrideNewerStructurallyValid -ne $true -or
     $summary.conflictPolicy.wholeSnapshotReplacement -ne $true -or
     $summary.conflictPolicy.explicitNullClearsOldValue -ne $true -or
     $summary.conflictPolicy.fieldResidualMergeForbidden -ne $true -or
-    $summary.conflictPolicy.decisiveConflictsRemainBlocked -ne $true -or
+    $summary.conflictPolicy.decisiveConflictsBlockLatestSelection -ne $false -or
+    $summary.conflictPolicy.decisiveConflictsOverwrittenByLatest -ne $true -or
     $summary.conflictPolicy.historicalCandidatesPreserved -ne $true -or
+    $summary.conflictPolicy.hardInvalidCandidatesRemainBlocked -ne $true -or
     $summary.safety.productionDatabaseWrite -ne $false -or
     $summary.safety.productionApplyAuthorized -ne $false) {
-  throw 'Blocked remediation summary 未满足固定门槛。'
+  throw 'Blocked remediation summary 未满足 latest-wins 固定门槛。'
 }
 
 Write-Json -Path (Join-Path $outDir 'blocked-remediation-finalization.json') -Value ([ordered]@{
-  schemaVersion = 1
+  schemaVersion = 2
   generatedAt = [DateTime]::UtcNow.ToString('o')
   branchHead = $ExpectedBranchHead
   sourceInventoryBundle = $inventoryBundle
@@ -132,12 +136,16 @@ Write-Json -Path (Join-Path $outDir 'blocked-remediation-finalization.json') -Va
   currentPublicBaseline = 9000
   waveSize = $summary.ledger.waveSize
   waves = $summary.ledger.waves
-  currentSelection = 'latest_valid_complete_identity_resolved'
+  currentSelection = 'latest_structurally_valid_identity_resolved'
+  newestStructurallyValidWins = $true
+  olderCompleteCannotOverrideNewerStructurallyValid = $true
   wholeSnapshotReplacement = $true
   explicitNullClearsOldValue = $true
   fieldResidualMergeForbidden = $true
   historyPreserved = $true
-  decisiveConflictsRemainBlocked = $true
+  decisiveConflictsBlockLatestSelection = $false
+  decisiveConflictsOverwrittenByLatest = $true
+  hardInvalidCandidatesRemainBlocked = $true
   payloadWrite = $false
   directPostgresqlWrite = $false
   productionDatabaseWrite = $false
@@ -170,25 +178,29 @@ if (Test-Path -LiteralPath $inventoryBundle -PathType Leaf) {
 }
 
 Write-Host ''
-Write-Host 'Radar 1,805 条 blocked live inventory 与研究波次已完成' -ForegroundColor Green
-Write-Host "OutputDirectory                 : $outDir"
-Write-Host "Bundle                          : $finalBundle"
-Write-Host "BundleSHA256                    : $($finalHash.Hash)"
-Write-Host 'BlockedRows                     : 1805'
-Write-Host 'CurrentPublicBaseline           : 9000'
-Write-Host "LatestValidComplete             : $($summary.ledger.latestValidComplete)"
-Write-Host "LatestStructurallyIncomplete    : $($summary.ledger.latestStructurallyValidIncomplete)"
-Write-Host "LatestAvailableInvalid          : $($summary.ledger.latestAvailableInvalid)"
-Write-Host "MissingCandidate                : $($summary.ledger.missingCandidate)"
-Write-Host "WithConflicts                   : $($summary.ledger.withConflicts)"
-Write-Host "WithDecisiveConflicts           : $($summary.ledger.withDecisiveConflicts)"
-Write-Host "Waves                           : $($summary.ledger.waves)"
-Write-Host "WaveSize                        : $($summary.ledger.waveSize)"
-Write-Host "ManifestFiles                   : $finalManifestFiles"
-Write-Host 'WholeSnapshotReplacement        : True'
-Write-Host 'ExplicitNullClearsOldValue       : True'
-Write-Host 'FieldResidualMergeForbidden      : True'
-Write-Host 'HistoryPreserved                 : True'
-Write-Host 'PayloadWrite                    : False'
-Write-Host 'PostgreSQLWrite                 : False'
-Write-Host 'ProductionApplyAuthorized       : False'
+Write-Host 'Radar 1,805 条 blocked live inventory 与 latest-wins 研究波次已完成' -ForegroundColor Green
+Write-Host "OutputDirectory                     : $outDir"
+Write-Host "Bundle                              : $finalBundle"
+Write-Host "BundleSHA256                        : $($finalHash.Hash)"
+Write-Host 'BlockedRows                         : 1805'
+Write-Host 'CurrentPublicBaseline               : 9000'
+Write-Host "LatestStructurallyValidComplete     : $($summary.ledger.latestStructurallyValidComplete)"
+Write-Host "LatestStructurallyValidIncomplete   : $($summary.ledger.latestStructurallyValidIncomplete)"
+Write-Host "LatestAvailableInvalid              : $($summary.ledger.latestAvailableInvalid)"
+Write-Host "MissingCandidate                    : $($summary.ledger.missingCandidate)"
+Write-Host "WithConflicts                       : $($summary.ledger.withConflicts)"
+Write-Host "WithDecisiveConflicts               : $($summary.ledger.withDecisiveConflicts)"
+Write-Host "DecisiveConflictsOverwritten        : $($summary.ledger.decisiveConflictsOverwrittenByLatest)"
+Write-Host "Waves                               : $($summary.ledger.waves)"
+Write-Host "WaveSize                            : $($summary.ledger.waveSize)"
+Write-Host "ManifestFiles                       : $finalManifestFiles"
+Write-Host 'NewestStructurallyValidWins          : True'
+Write-Host 'WholeSnapshotReplacement            : True'
+Write-Host 'ExplicitNullClearsOldValue           : True'
+Write-Host 'FieldResidualMergeForbidden          : True'
+Write-Host 'HistoryPreserved                     : True'
+Write-Host 'DecisiveConflictsBlockSelection      : False'
+Write-Host 'HardInvalidCandidatesRemainBlocked   : True'
+Write-Host 'PayloadWrite                         : False'
+Write-Host 'PostgreSQLWrite                      : False'
+Write-Host 'ProductionApplyAuthorized            : False'
