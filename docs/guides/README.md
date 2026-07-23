@@ -35,11 +35,10 @@
   - v02 只读校正与打包入口
 
 - [Canonical Work 身份审计指南 v0.1](./canonical-work-identity-audit-v01.md)
-  - 从 v02 identity alert 自动读取目标组
-  - 完整主表、子表、版本和入站引用审计
-  - canonical ID 决策证据
-  - 禁止仅按更新时间或来源自动选主记录
-  - 只读审计与打包入口
+  - 完整主表、关系、引用与版本审计
+  - canonical ID 选择证据
+  - 用户明确指定测试记录时的评级清空与重新标准化规则
+  - parser-safe v02 只读审计入口
 
 ### 审计产物完整性
 
