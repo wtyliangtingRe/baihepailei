@@ -16,38 +16,27 @@ if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
 }
 
 $content = Get-Content -LiteralPath $source -Raw -Encoding UTF8
-$needle = @'
-$sourceTempFilesRemoved = $false
-$verificationContainerRemoved = $false
-$operationError = $null
-'@
-$replacement = @'
-$sourceTempFilesRemoved = $false
-$verificationContainerRemoved = $false
+$insertNeedle = '$operationError = $null'
+$insertReplacement = @'
 $operationError = $null
 $verificationLogStdout = Join-Path $outDir 'verification-container-stdout.log'
 $verificationLogStderr = Join-Path $outDir 'verification-container-stderr.log'
 '@
-if (-not $content.Contains($needle)) {
-  throw '未找到备份验证脚本的日志路径插入点；拒绝执行未知版本。'
+$insertOccurrences = ([regex]::Matches($content, [regex]::Escape($insertNeedle))).Count
+if ($insertOccurrences -ne 1) {
+  throw "预期找到一处日志路径插入点，实际为：$insertOccurrences"
 }
-$content = $content.Replace($needle, $replacement)
+$content = $content.Replace($insertNeedle, $insertReplacement)
 
-$oldLogBlock = @'
-  & docker logs $verifyContainer `
-    1> (Join-Path $outDir 'verification-container-stdout.log') `
-    2> (Join-Path $outDir 'verification-container-stderr.log')
-'@
-$newLogBlock = @'
-  & docker logs $verifyContainer `
-    1> $verificationLogStdout `
-    2> $verificationLogStderr
-'@
-$occurrences = ([regex]::Matches($content, [regex]::Escape($oldLogBlock))).Count
-if ($occurrences -ne 2) {
-  throw "预期找到两处容器日志重定向，实际为：$occurrences"
+$stdoutExpression = "(Join-Path `$outDir 'verification-container-stdout.log')"
+$stderrExpression = "(Join-Path `$outDir 'verification-container-stderr.log')"
+$stdoutOccurrences = ([regex]::Matches($content, [regex]::Escape($stdoutExpression))).Count
+$stderrOccurrences = ([regex]::Matches($content, [regex]::Escape($stderrExpression))).Count
+if ($stdoutOccurrences -ne 2 -or $stderrOccurrences -ne 2) {
+  throw "容器日志重定向数量不符合预期：stdout=$stdoutOccurrences, stderr=$stderrOccurrences"
 }
-$content = $content.Replace($oldLogBlock, $newLogBlock)
+$content = $content.Replace($stdoutExpression, '$verificationLogStdout')
+$content = $content.Replace($stderrExpression, '$verificationLogStderr')
 
 $temporary = Join-Path `
   ([System.IO.Path]::GetTempPath()) `
