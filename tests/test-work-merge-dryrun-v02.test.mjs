@@ -11,6 +11,10 @@ const wrapper = fs.readFileSync(
   path.join(repoRoot, 'scripts/radar/run-and-package-test-work-merge-dryrun-v02.ps1'),
   'utf8',
 )
+const legacyWrapper = fs.readFileSync(
+  path.join(repoRoot, 'scripts/radar/run-and-package-test-work-merge-dryrun-v01.ps1'),
+  'utf8',
+)
 
 function writeJson(file, value) {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
@@ -118,6 +122,18 @@ test('v02 refinement clears human_reviewed fields and maps version children thro
   assert.equal(summary.completeLegacyHumanReset, true)
   assert.equal(summary.versionOwnershipMappedThroughWorksV, true)
   assert.equal(summary.safety.mergePerformed, false)
+})
+
+test('both wrappers resolve relative identity-audit paths from the repository root', () => {
+  for (const source of [legacyWrapper, wrapper]) {
+    assert.match(source, /\[System\.IO\.Path\]::IsPathRooted\(\$IdentityAuditDirectory\)/u)
+    assert.match(source, /Join-Path \$repoRoot \$IdentityAuditDirectory/u)
+    assert.match(source, /Resolve-Path -LiteralPath \$candidateSourceDir/u)
+    assert.doesNotMatch(
+      source,
+      /\$sourceDir\s*=\s*\[System\.IO\.Path\]::GetFullPath\(\$IdentityAuditDirectory\)/u,
+    )
+  }
 })
 
 test('v02 wrapper remains fail-closed and non-executing', () => {
