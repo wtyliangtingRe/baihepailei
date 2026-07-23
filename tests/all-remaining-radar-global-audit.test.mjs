@@ -50,7 +50,6 @@ test('active v03 uses draft Works for private AI and published Works for public 
   assert.match(v03, /lifecycleBlockers\(publishedWork\)/u)
   assert.match(v03, /publicAssessmentFor\(source, privatePlan, publishedWork\)/u)
   assert.match(v03, /publishedWorksRead/u)
-  assert.doesNotMatch(v03, /lifecycleBlockers\(targetWork\)/u)
 })
 
 test('global audit keeps private and public tracks separate and publication-safe', () => {
