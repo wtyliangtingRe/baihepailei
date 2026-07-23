@@ -143,6 +143,19 @@
   - 后续通常只做数据级隔离演练，无结构变化时不再生成 migration
   - 每批只 create / supersede ready 增量，blocked 继续保留明确原因
 
+- [Radar 剩余条目统一修复与单次增量发布 v0.1](./radar-remaining-rows-unified-remediation-campaign-v01.md)
+  - 先完成全部剩余条目的研究与结构化录入，再统一修复共性问题
+  - 内部按约 250 条可恢复波次处理，中途不反复进入生产
+  - 最终统一生成 ready-create / ready-update / still-blocked 结果包
+  - 现有 9,000 条作为 already-current 基线逐哈希保持不变
+
+- [Radar blocked 最新有效记录与冲突保留策略 v0.1](./radar-blocked-latest-valid-conflict-policy-v01.md)
+  - current 选择最新、有效、完整且身份确定的同轨道记录
+  - 新完整快照整体替换旧 AI 快照，明确为空时清除旧值
+  - 所有旧记录、来源、哈希和冲突保存在 history / conflict ledger
+  - 影响等级、规则或身份的冲突继续 blocked，不按时间戳强行裁决
+  - ledger 生成入口：`run-and-package-radar-blocked-ledger-v01.ps1`
+
 ### 审计产物完整性
 
 - [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
