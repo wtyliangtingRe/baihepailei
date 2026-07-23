@@ -32,6 +32,7 @@ $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $outDir = Join-Path $repoRoot "exports\test-work-merge-transaction-review-$stamp"
 $bundlePath = Join-Path $repoRoot "exports\TEST-WORK-MERGE-TRANSACTION-REVIEW-$stamp.zip"
 $builder = Join-Path $PSScriptRoot 'build-test-work-merge-transaction-review-v02.mjs'
+$builderSource = Join-Path $PSScriptRoot 'build-test-work-merge-transaction-review-v01.mjs'
 
 & node $builder `
   --identity-audit-dir $identityDir `
@@ -129,8 +130,9 @@ foreach ($sql in @($acceptance, $rollbackAcceptance)) {
 }
 
 $scriptSources = @(
-  Get-Content -LiteralPath $builder -Raw -Encoding UTF8,
-  Get-Content -LiteralPath $PSCommandPath -Raw -Encoding UTF8
+  (Get-Content -LiteralPath $builder -Raw -Encoding UTF8)
+  (Get-Content -LiteralPath $builderSource -Raw -Encoding UTF8)
+  (Get-Content -LiteralPath $PSCommandPath -Raw -Encoding UTF8)
 ) -join "`n"
 if ($scriptSources -match '(?i)docker\s+exec.+psql' -or
     $scriptSources -match '(?i)Invoke-Sqlcmd' -or
