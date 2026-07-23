@@ -154,7 +154,7 @@
   - 新完整快照整体替换旧 AI 快照，明确为空时清除旧值
   - 所有旧记录、来源、哈希和冲突保存在 history / conflict ledger
   - 影响等级、规则或身份的冲突继续 blocked，不按时间戳强行裁决
-  - ledger 生成入口：`run-and-package-radar-blocked-ledger-v01.ps1`
+  - live inventory 与 250 条波次入口：`run-and-package-radar-public-blocked-inventory-v03.ps1`
 
 ### 审计产物完整性
 
