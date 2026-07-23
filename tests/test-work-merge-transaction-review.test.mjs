@@ -43,17 +43,20 @@ test('transaction review generators parse and the v02 fail-closed patch reaches 
   assert.deepEqual(after, before)
 })
 
-test('v02 fixes PL/pgSQL diagnostics and guards skipped and preserved relation rows exactly', () => {
+test('v02 fixes PL/pgSQL diagnostics and guards skipped, version, and version-child rows exactly', () => {
   assert.match(v02, /fileURLToPath\(import\.meta\.url\)/u)
   assert.match(v02, /count_mismatch actual_count=%/u)
   assert.match(v02, /update_count affected=%/u)
   assert.match(v02, /delete_count affected=%/u)
   assert.match(v02, /insert_count affected=%/u)
   assert.match(v02, /const preservedRows = \[\]/u)
+  assert.match(v02, /const versionPreservationExactRows = \[/u)
+  assert.match(v02, /targetVersionEntries/u)
   assert.match(v02, /acceptance_unchanged:/u)
-  assert.match(v02, /acceptance_preserved:/u)
+  assert.match(v02, /acceptance_version_preserved:/u)
   assert.match(v02, /rollback_guard_unchanged:/u)
-  assert.match(v02, /rollback_guard_preserved:/u)
+  assert.match(v02, /rollback_guard_version_preserved:/u)
+  assert.match(v02, /versionRowsGuardedExactly/u)
   assert.match(v02, /spawnSync\(process\.execPath, \['--check', temporary\]/u)
   assert.match(v02, /fs\.rmSync\(temporary, \{ force: true \}\)/u)
 })
@@ -79,7 +82,7 @@ test('transaction SQL is review-only, backup-bound, serializable, guarded, and r
   assert.doesNotMatch(v01, /\bpsql\b/u)
 })
 
-test('PowerShell wrapper packages evidence but contains no database execution path', () => {
+test('PowerShell wrapper requires the complete known operation set and contains no database execution path', () => {
   assert.match(wrapper, /build-test-work-merge-transaction-review-v02\.mjs/u)
   assert.match(wrapper, /build-test-work-merge-transaction-review-v01\.mjs/u)
   assert.match(wrapper, /ExecutableSQLText\s+: True/u)
@@ -88,7 +91,11 @@ test('PowerShell wrapper packages evidence but contains no database execution pa
   assert.match(wrapper, /ExplicitApprovalReceived\s+: False/u)
   assert.match(wrapper, /DatabaseWrite\s+: False/u)
   assert.match(wrapper, /MergePerformed\s+: False/u)
-  assert.match(wrapper, /exactBeforeRows -lt 45/u)
+  assert.match(wrapper, /factualChildReparents -ne 3/u)
+  assert.match(wrapper, /testAssessmentChildDeletes -ne 17/u)
+  assert.match(wrapper, /preservedRelationRows -ne 17/u)
+  assert.match(wrapper, /versionRowsGuardedExactly -ne 1118/u)
+  assert.match(wrapper, /exactBeforeRows -ne 1146/u)
   assert.doesNotMatch(wrapper, /Get-Content[^\n]+UTF8,/u)
   assert.doesNotMatch(wrapper, /docker\s+exec/u)
   assert.doesNotMatch(wrapper, /Invoke-Sqlcmd/u)
