@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 
 const root = process.cwd()
 const migrationPath = path.join(root, 'scripts/radar/prepare-radar-public-conclusions-migration-v05.ps1')
-const reviewPath = path.join(root, 'scripts/radar/run-and-package-radar-public-conclusions-schema-review-v04.ps1')
+const reviewPath = path.join(root, 'scripts/radar/run-and-package-radar-public-conclusions-schema-review-v05.ps1')
 const migration = fs.readFileSync(migrationPath, 'utf8')
 const review = fs.readFileSync(reviewPath, 'utf8')
 
@@ -35,6 +35,7 @@ test('active path is direct and contains no runtime source patching', () => {
     assert.doesNotMatch(source, /\.prepare-radar-public-conclusions-migration-v\d+-/u)
   }
   assert.match(review, /prepare-radar-public-conclusions-migration-v05\.ps1/u)
+  assert.doesNotMatch(review, /prepare-radar-public-conclusions-migration-v0[234]\.ps1/u)
 })
 
 test('both migrate create phases are database-enforced read-only', () => {
@@ -44,6 +45,17 @@ test('both migrate create phases are database-enforced read-only', () => {
   assert.equal((migration.match(/PAYLOAD_CONFIG_PATH = \$temporaryConfigPath/gu) || []).length, 2)
   assert.equal((migration.match(/pnpm payload migrate:create/gu) || []).length, 2)
   assert.doesNotMatch(migration, /pnpm payload migrate(?:\s|$)/u)
+})
+
+test('review package completes before the migration commit is pushed', () => {
+  const packageIndex = review.indexOf('Compress-Archive')
+  const pushIndex = review.indexOf('git push origin $ExpectedBranch')
+  assert.ok(packageIndex >= 0)
+  assert.ok(pushIndex > packageIndex)
+  assert.match(review, /remotePushDeferredUntilPackageComplete = \$true/u)
+  assert.match(review, /git reset --mixed \$beforeHead/u)
+  assert.match(review, /Remove-GeneratedMigrationPaths/u)
+  assert.doesNotMatch(review, /prepare-radar-public-conclusions-migration-v05\.ps1' -CommitAndPush/u)
 })
 
 test('direct runners do not write Works or authorize production apply', () => {
