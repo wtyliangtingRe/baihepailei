@@ -86,6 +86,14 @@
   - serializable apply、独立 acceptance、83 表差异与不可变 receipt
   - commit 后失败不自动 rollback，并保持 writer 暂停
 
+- [全量剩余 Radar 唯一审计 v0.1](./all-remaining-radar-global-audit-v01.md)
+  - 锁定 v0.6 的 10,805 条来源全集
+  - 重新读取当前 35,615 条 Works，而不是沿用历史 wouldUpdate
+  - 分离私有 AI 与公共 AI 写入集
+  - publication guard、人工保护与非公开生命周期继续生效
+  - 四条已作废测试 assessment 不会重新写入
+  - 审计通过后只生成一个全量生产执行包
+
 ### 审计产物完整性
 
 - [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
