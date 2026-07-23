@@ -193,3 +193,61 @@ manifest.json
 - Works 发布；
 - 人工或私有 AI 字段修改；
 - 任何其他数据清理或 schema 变更。
+
+## 2026-07-24 实际生产执行记录
+
+本入口已经成功执行一次；V01 apply 授权视为已消费，不得用于后续增补批次。
+
+```text
+Execution ID
+radar-public-production-apply-20260724-010844
+
+Production receipt ZIP
+RADAR-PUBLIC-CONCLUSIONS-PRODUCTION-APPLY-RECEIPT-20260724-010844.zip
+SHA-256 D1E8114371926C1CDA07D91DD2DB730180D5830ACF691D7CCC6F65DE84CBE6CA
+
+Production apply receipt core
+SHA-256 e7db5ebc80c668b8c26a0dcb26e20790500e7283af4c59a3a24338864442a1d9
+
+Fresh production backup
+SHA-256 e6190015a3567ab3887e0622fb7172184accb78e77f53f81c138465d97a16c9d
+```
+
+验收结果：
+
+```text
+production schema applied       true
+production public rows          9000
+production acceptance           22 / 22
+existing production tables      83 unchanged
+radar_public                     9000
+radar_public_review_reasons      9000
+matched rules                    9077
+contradictions                      0
+writer containers restarted     true
+Payload migration command       false
+Payload write                    false
+PR merge                         false
+implicit rollback                false
+```
+
+Receipt ZIP 的 manifest 共 48 项并全部匹配。完整 fresh dump 继续只留在本地。
+
+## 首次执行后的增补边界
+
+首次建表和 9,000 条公共写入成功后，后续批次不得再次运行本入口，也不得重用 V01 授权。
+
+后续流程改为：
+
+```text
+重新研究 blocked 行或接收新研究包
+→ 读取当前私有 AI 与 radar_public
+→ 分类 ready_create / ready_update / already_current / blocked
+→ 只对 ready_create / ready_update 做 storage normalization
+→ 数据级隔离演练
+→ 新 production gate
+→ 新版本精确授权
+→ 增量 create / supersede
+```
+
+只有公共集合的字段、约束、索引或 enum 发生变化时才重新生成 schema migration。现有 9,000 条记录应作为 `already_current` 保留，不得为了方便而全量重写。
