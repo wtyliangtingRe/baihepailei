@@ -66,6 +66,13 @@
   - canonical 搜索文本旧 merge 日志清理 refinement
   - `.sql.disabled` 与无执行 wrapper 的安全边界
 
+- [Test Work 合并隔离恢复库往返演练 v0.1](./test-work-merge-lab-rehearsal-v01.md)
+  - 生产 PostgreSQL 容器只做镜像 inspect
+  - `--network none` 一次性恢复容器
+  - baseline → apply → acceptance → rollback → baseline 完整往返
+  - 83 张业务表行数与 1,146 条 exact row 双重验收
+  - 演练完成后删除容器，仍不批准 production execution
+
 ### 审计产物完整性
 
 - [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
