@@ -13,6 +13,13 @@
   - 人工审核新旧字段统一原则
   - 历史 `rank` 来源保护
 
+- [Radar AI 增补与公共发布运行手册 v0.1](./radar-ai-incremental-publication-runbook-v01.md)
+  - 新研究包、私有 AI 与公共 AI 的双轨增补路线
+  - 已完成结论保持 `already_current`，只写新增或变化记录
+  - 双快照全局审计、publication guard 与 canonical Work 身份门槛
+  - 首次 schema、隔离往返演练、生产 apply-once 与独立 rollback 授权
+  - 大波次内部可恢复子批次、证据包与不可变 receipt
+
 ### 数据库结构整理
 
 - [Work 数据库结构规范化运行手册 v0.1](./work-schema-normalization-runbook-v01.md)
