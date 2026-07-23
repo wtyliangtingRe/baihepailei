@@ -40,16 +40,18 @@ test('global audit locks the complete v0.6 source and never reintroduces discard
   assert.match(v01, /testWorkAssessmentsReintroduced: false/u)
 })
 
-test('active v03 uses draft Works for private AI and published Works for public lifecycle', () => {
+test('active v03 uses latest Works for private AI and complete live snapshots for public lifecycle', () => {
   assert.match(v03, /EXPECTED_DRAFT_WORKS = 35615/u)
-  assert.match(v03, /EXPECTED_PUBLISHED_WORKS = 35613/u)
+  assert.match(v03, /EXPECTED_PUBLISHED_WORKS = 35615/u)
   assert.match(v03, /fetchCollection\(baseUrl, token, 'works', \{ draft: 'true' \}\)/u)
   assert.match(v03, /fetchCollection\(baseUrl, token, 'works', \{ draft: 'false' \}\)/u)
   assert.match(v03, /const draftWorkById/u)
   assert.match(v03, /const publishedWorkById/u)
+  assert.match(v03, /nonPublishedLiveRows/u)
+  assert.match(v03, /payload_live_snapshot_nonpublished_rows_/u)
   assert.match(v03, /lifecycleBlockers\(publishedWork\)/u)
   assert.match(v03, /publicAssessmentFor\(source, privatePlan, publishedWork\)/u)
-  assert.match(v03, /publishedWorksRead/u)
+  assert.match(v03, /publishedSnapshotStatusCounts/u)
 })
 
 test('active v03 reports private and public blocker distributions independently', () => {
@@ -83,7 +85,7 @@ test('global audit and wrappers are read-only and leave the dedicated server sto
   assert.match(wrapper, /Stop-ProcessTree/u)
   assert.match(wrapper, /DedicatedAuditServer\s+: Stopped/u)
   assert.match(dualSnapshotWrapper, /build-all-remaining-radar-global-audit-v03\.mjs/u)
-  assert.match(dualSnapshotWrapper, /publishedWorksRead -ne 35613/u)
+  assert.match(dualSnapshotWrapper, /publishedWorksRead -ne 35615/u)
   for (const source of [wrapper, secureWrapper, dualSnapshotWrapper]) {
     assert.doesNotMatch(source, /\b(?:UPDATE|INSERT|DELETE|ALTER|DROP|TRUNCATE|CREATE)\s+(?:TABLE|INTO|FROM|public\.)/iu)
     assert.doesNotMatch(source, /payload migrate/u)
