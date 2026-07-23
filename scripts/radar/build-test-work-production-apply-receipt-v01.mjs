@@ -24,6 +24,13 @@ function readJson(file) { return JSON.parse(readText(file)) }
 function writeJson(file, value) { fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8') }
 function sha256Bytes(value) { return crypto.createHash('sha256').update(value).digest('hex') }
 function sha256File(file) { return sha256Bytes(fs.readFileSync(file)) }
+function canonicalize(value) {
+  if (Array.isArray(value)) return value.map(canonicalize)
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]))
+  }
+  return value
+}
 
 function parseCounts(file) {
   const map = new Map()
@@ -100,7 +107,7 @@ function main() {
     rollbackNotImplicit: true,
     productionRollbackAuthorized: false,
   }
-  const canonical = Buffer.from(`${JSON.stringify(core, Object.keys(core).sort())}\n`, 'utf8')
+  const canonical = Buffer.from(`${JSON.stringify(canonicalize(core))}\n`, 'utf8')
   const receiptHash = sha256Bytes(canonical)
   const receipt = { ...core, productionMergeReceiptSha256: receiptHash }
   writeJson(path.join(directory, 'production-apply-receipt.json'), receipt)
