@@ -16,6 +16,7 @@ const root = process.cwd()
 const libraryPath = path.join(root, 'scripts/radar/lib/public-conclusion-storage-v01.mjs')
 const builderPath = path.join(root, 'scripts/radar/build-radar-public-storage-normalization-v01.mjs')
 const runnerPath = path.join(root, 'scripts/radar/run-and-package-radar-public-storage-normalization-v01.ps1')
+const library = fs.readFileSync(libraryPath, 'utf8')
 const builder = fs.readFileSync(builderPath, 'utf8')
 const runner = fs.readFileSync(runnerPath, 'utf8')
 
@@ -93,6 +94,9 @@ test('normalization changes only assessedAt and conclusionSha256', () => {
 })
 
 test('builder is bound to accepted evidence and supersedes only the old data plan', () => {
+  assert.equal(PUBLIC_CONCLUSION_STORAGE_VERSION, 'radar-public-storage-normalization-v0.1')
+  assert.match(library, /PUBLIC_CONCLUSION_STORAGE_VERSION = 'radar-public-storage-normalization-v0\.1'/u)
+  assert.match(builder, /PUBLIC_CONCLUSION_STORAGE_VERSION/u)
   assert.match(builder, /EXPECTED_ROWS = 9000/u)
   assert.match(builder, /7877020d0314352531290be0d4e334d2b17e18e6f552591dd14e30431f7837ba/u)
   assert.match(builder, /297fed9ab54675748e5ae0dd812cfa4ac367966d12e7732541913223d74ac0fb/u)
@@ -103,7 +107,6 @@ test('builder is bound to accepted evidence and supersedes only the old data pla
   assert.match(builder, /migrationDdlSuperseded: false/u)
   assert.match(builder, /oldReadyFileMustNotBeWritten: true/u)
   assert.match(builder, /ready_public_ai_storage_normalized/u)
-  assert.match(builder, new RegExp(PUBLIC_CONCLUSION_STORAGE_VERSION.replaceAll('.', '\\.')))
 })
 
 test('package runner binds the failed lab and emits a manifest-protected replacement package', () => {
@@ -118,14 +121,19 @@ test('package runner binds the failed lab and emits a manifest-protected replace
   assert.match(runner, /MigrationDdlSuperseded\s+: False/u)
 })
 
-test('normalization path has no database, Payload, migration, or production apply operation', () => {
-  for (const source of [builder, runner]) {
-    assert.doesNotMatch(source, /\bfetch\s*\(/u)
-    assert.doesNotMatch(source, /payload\s+(?:migrate|update|create)/iu)
-    assert.doesNotMatch(source, /\b(?:INSERT|UPDATE|DELETE|ALTER|DROP|CREATE TABLE)\b/iu)
-    assert.doesNotMatch(source, /docker\s+exec/iu)
-    assert.doesNotMatch(source, /AUTHORIZE-PRODUCTION/u)
-  }
+test('normalization path has no database, Payload, migration, or production apply capability', () => {
+  assert.doesNotMatch(builder, /node:child_process|child_process|spawn(?:Sync)?\s*\(|exec(?:File|Sync)?\s*\(/u)
+  assert.doesNotMatch(builder, /from\s+['"](?:pg|postgres|postgresql|@payloadcms\/db-postgres)['"]/iu)
+  assert.doesNotMatch(builder, /\bfetch\s*\(|https?:\/\/|\/api\//iu)
+  assert.doesNotMatch(builder, /\b(?:INSERT\s+INTO|UPDATE\s+(?:"?[a-z_][\w.]*"?)\s+SET|DELETE\s+FROM|ALTER\s+TABLE|DROP\s+TABLE|CREATE\s+TABLE)\b/iu)
+  assert.doesNotMatch(builder, /docker\s+exec|payload\s+(?:migrate|update|create)|AUTHORIZE-PRODUCTION/iu)
+
+  assert.doesNotMatch(runner, /docker\s+exec|psql(?:\.exe)?\b|pg_dump|pg_restore/iu)
+  assert.doesNotMatch(runner, /Invoke-(?:WebRequest|RestMethod)|Start-Process|System\.Diagnostics\.Process/iu)
+  assert.doesNotMatch(runner, /payload\s+(?:migrate|update|create)|AUTHORIZE-PRODUCTION/iu)
+  assert.doesNotMatch(runner, /\b(?:INSERT\s+INTO|UPDATE\s+(?:"?[a-z_][\w.]*"?)\s+SET|DELETE\s+FROM|ALTER\s+TABLE|DROP\s+TABLE|CREATE\s+TABLE)\b/iu)
+
+  assert.match(builder, /productionDatabaseRead: false/u)
   assert.match(builder, /productionDatabaseWrite: false/u)
   assert.match(builder, /productionApplyAuthorized: false/u)
   assert.match(runner, /ProductionDatabaseWrite\s+: False/u)
