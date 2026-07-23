@@ -93,6 +93,16 @@ function createInputs(root) {
   writeJsonl(path.join(dryRun, 'work-standardization-plan.jsonl'), [
     { action: 'merge_clean_search_text_lines', workId: 2 },
   ])
+  fs.writeFileSync(
+    path.join(dryRun, 'exact-before-readonly.sql'),
+    'BEGIN TRANSACTION READ ONLY;\nSELECT true AS matches;\nROLLBACK;\n',
+    'utf8',
+  )
+  writeJson(path.join(dryRun, 'exact-before-expectations.json'), {
+    exactRowChecks: 1,
+    relationCountChecks: 0,
+    versionRelationCountChecks: 0,
+  })
   manifest(dryRun, 'manifest.json', [
     'merge-dryrun-summary.json',
     'canonical-merge-decisions.json',
@@ -101,19 +111,30 @@ function createInputs(root) {
     'feedback-test-cleanup-plan.jsonl',
     'test-assessment-cleanup-plan.jsonl',
     'work-standardization-plan.jsonl',
+    'exact-before-readonly.sql',
+    'exact-before-expectations.json',
   ])
 
   fs.writeFileSync(path.join(backup, 'database-backup.dump'), Buffer.alloc(2048, 9))
   writeJson(path.join(backup, 'backup-verification-summary.json'), {
     backupRestoreVerified: true,
+    restoreCompleted: true,
+    restoreListValidated: true,
     backupBytes: 2048,
     backupSha256: sha256(path.join(backup, 'database-backup.dump')),
+    sourceSqlSha256: sha256(path.join(dryRun, 'exact-before-readonly.sql')),
+    sourceExpectationsSha256: sha256(path.join(dryRun, 'exact-before-expectations.json')),
     productionPreMatchedChecks: 37,
     productionPostMatchedChecks: 37,
     restoredMatchedChecks: 37,
     productionCountsStableDuringBackup: true,
     restoredCountsMatchProduction: true,
-    safety: { productionDatabaseWrite: false, mergePerformed: false },
+    safety: {
+      productionDatabaseWrite: false,
+      productionContainerTempFilesRemoved: true,
+      ephemeralVerificationContainerRemoved: true,
+      mergePerformed: false,
+    },
   })
   manifest(backup, 'evidence-manifest.json', ['backup-verification-summary.json'])
   return { dryRun, backup }
@@ -137,7 +158,11 @@ test('target builder binds write-schema audit to the verified local backup and e
   assert.deepEqual(names.sort(), ['feedback_submissions', 'works', 'works_review_reasons', 'works_source_links'])
   assert.ok(!names.includes('_works_v'))
   assert.equal(targets.localBackup.restoreVerified, true)
+  assert.equal(targets.localBackup.productionContainerTempFilesRemoved, true)
+  assert.equal(targets.localBackup.verificationContainerRemoved, true)
   assert.equal(targets.localBackup.sha256, sha256(path.join(backup, 'database-backup.dump')))
+  assert.equal(targets.sourceExactBeforeSqlSha256, sha256(path.join(dryRun, 'exact-before-readonly.sql')))
+  assert.equal(targets.sourceExactBeforeExpectationsSha256, sha256(path.join(dryRun, 'exact-before-expectations.json')))
   const works = targets.writeTargets.find((row) => row.tableName === 'works')
   assert.ok(works.plannedColumns.includes('human_reviewed_at'))
   assert.ok(works.plannedColumns.includes('external_ids_mal_id'))
