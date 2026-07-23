@@ -30,11 +30,11 @@ function Replace-Exact([string]$Needle, [string]$Replacement, [int]$Expected = 1
 
 $summaryValidationReplacement = @'
 $summary.production.worksRead -ne 35615 -or
-    $summary.production.publishedWorksRead -ne 35613 -or
+    $summary.production.publishedWorksRead -ne 35615 -or
 '@
 $validationMetadataReplacement = @'
 productionWorksRead = 35615
-  publishedWorksRead = 35613
+  publishedWorksRead = 35615
 '@
 $outputReplacement = @'
 Write-Host "ProductionWorksRead            : $($summary.production.worksRead)"
