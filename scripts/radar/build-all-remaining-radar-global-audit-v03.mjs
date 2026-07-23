@@ -55,6 +55,26 @@ replaceExact(
 )
 
 replaceExact(
+  `        blockers: ['discarded_test_assessment_requires_fresh_research'],\n        needsPublicationGuard: source.needsPublicationGuard === true,`,
+  `        privateBlockers: ['discarded_test_assessment_requires_fresh_research'],\n        publicBlockers: ['discarded_test_assessment_requires_fresh_research'],\n        blockers: ['discarded_test_assessment_requires_fresh_research'],\n        needsPublicationGuard: source.needsPublicationGuard === true,`,
+)
+
+replaceExact(
+  `      currentPublicId: currentPublicId || undefined,\n      blockers: unique([...privatePlan.blockers, ...publicBlockers]),\n      warnings: privatePlan.warnings,`,
+  `      currentPublicId: currentPublicId || undefined,\n      privateBlockers: unique(privatePlan.blockers),\n      publicBlockers: unique(publicBlockers),\n      blockers: unique([...privatePlan.blockers, ...publicBlockers]),\n      warnings: privatePlan.warnings,`,
+)
+
+replaceExact(
+  `      byBlocker: countBy(privateBlocked.flatMap((row) => row.blockers || []), (item) => item),`,
+  `      byBlocker: countBy(privateBlocked.flatMap((row) => row.privateBlockers || []), (item) => item),`,
+)
+
+replaceExact(
+  `      byBlocker: countBy(publicBlocked.flatMap((row) => row.blockers || []), (item) => item),`,
+  `      byBlocker: countBy(publicBlocked.flatMap((row) => row.publicBlockers || []), (item) => item),`,
+)
+
+replaceExact(
   `      worksRead: works.length,`,
   `      worksRead: draftWorks.length,\n      draftWorksRead: draftWorks.length,\n      publishedWorksRead: publishedWorks.length,`,
 )
