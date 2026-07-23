@@ -27,6 +27,7 @@ $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $outDir = Join-Path $repoRoot "exports\test-work-merge-dryrun-v03-$stamp"
 $bundlePath = Join-Path $repoRoot "exports\TEST-WORK-MERGE-DRYRUN-V03-$stamp.zip"
 $refiner = Join-Path $PSScriptRoot 'refine-test-work-merge-dryrun-v03.mjs'
+$aliasRecorder = Join-Path $PSScriptRoot 'record-test-work-merge-alias-protection-v03.mjs'
 
 & node $refiner `
   --identity-audit-dir $identityDir `
@@ -34,6 +35,13 @@ $refiner = Join-Path $PSScriptRoot 'refine-test-work-merge-dryrun-v03.mjs'
   --output-dir $outDir
 if ($LASTEXITCODE -ne 0) {
   throw 'Test Work merge dry-run v03 执行前校正失败。'
+}
+
+& node $aliasRecorder `
+  --identity-audit-dir $identityDir `
+  --output-dir $outDir
+if ($LASTEXITCODE -ne 0) {
+  throw 'Test Work merge-out 标题保护证据生成失败。'
 }
 
 $requiredFiles = @(
@@ -44,6 +52,7 @@ $requiredFiles = @(
   'feedback-test-cleanup-plan.jsonl',
   'version-preservation-plan.jsonl',
   'work-standardization-plan.jsonl',
+  'alias-protection-evidence.jsonl',
   'exact-before-readonly.sql',
   'exact-before-expectations.json',
   'merge-preview-commented.sql',
@@ -69,14 +78,16 @@ if ($summary.schemaVersion -ne 3 -or
     $summary.semanticRefinementVersion -ne 3 -or
     $summary.exactBeforeAllChecksRequireTrue -ne $true -or
     $summary.searchTextOperationalNoiseFiltered -ne $true -or
-    $summary.mergeOutTitleAliasProtected -ne $true) {
-  throw 'v03 标准化或 exact-before 门槛未生效。'
+    $summary.mergeOutTitleAliasProtected -ne $true -or
+    $summary.mergeOutTitleAliasProtectionEvidence -ne $true) {
+  throw 'v03 标准化、别名证据或 exact-before 门槛未生效。'
 }
 if ($summary.standardizationPlanRows -lt 1 -or
+    $summary.mergeOutTitleAliasProtectionRows -lt 1 -or
     $summary.exactBeforeExactRowChecks -lt 1 -or
     $summary.exactBeforeRelationCountChecks -lt 1 -or
     $summary.exactBeforeVersionRelationCountChecks -lt 1) {
-  throw 'v03 输出缺少标准化或 exact-before 检查。'
+  throw 'v03 输出缺少标准化、别名证据或 exact-before 检查。'
 }
 if ($summary.safety.databaseWrite -ne $false -or
     $summary.safety.payloadWrite -ne $false -or
@@ -95,10 +106,14 @@ $standardizationRows = @(
     Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
     ForEach-Object { $_ | ConvertFrom-Json -Depth 100 }
 )
+$validAliasActions = @(
+  'add_merge_out_title_as_canonical_alias',
+  'merge_out_title_already_present_on_canonical'
+)
 if (-not ($standardizationRows | Where-Object {
-  $_.action -eq 'add_merge_out_title_as_canonical_alias' -and $_.value -eq 'Soukou no Strain'
+  $_.action -in $validAliasActions -and $_.value -eq 'Soukou no Strain'
 })) {
-  throw 'v03 未保护 Soukou no Strain 英文别名。'
+  throw 'v03 未证明 Soukou no Strain 已存在或已列入新增别名计划。'
 }
 if (-not ($standardizationRows | Where-Object {
   $_.action -eq 'merge_clean_search_text_lines' -and
@@ -106,6 +121,21 @@ if (-not ($standardizationRows | Where-Object {
   $_.after -match 'anilist:1602'
 })) {
   throw 'v03 未生成 Strain 搜索词合并计划。'
+}
+
+$aliasEvidenceRows = @(
+  Get-Content `
+    -LiteralPath (Join-Path $outDir 'alias-protection-evidence.jsonl') `
+    -Encoding UTF8 |
+    Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+    ForEach-Object { $_ | ConvertFrom-Json -Depth 100 }
+)
+if (-not ($aliasEvidenceRows | Where-Object {
+  $_.value -eq 'Soukou no Strain' -and
+  $_.protected -eq $true -and
+  $_.protectionMode -in @('already_present', 'planned_add')
+})) {
+  throw 'v03 缺少 Soukou no Strain 的可核验标题保护证据。'
 }
 
 $exactBefore = Get-Content `
@@ -175,6 +205,9 @@ Write-Host "OutputDirectory          : $outDir"
 Write-Host "Bundle                   : $bundlePath"
 Write-Host "SHA256                   : $($bundleHash.Hash)"
 Write-Host "StandardizationPlanRows  : $($summary.standardizationPlanRows)"
+Write-Host "AliasProtectionRows      : $($summary.mergeOutTitleAliasProtectionRows)"
+Write-Host "AliasAlreadyPresentRows  : $($summary.mergeOutTitleAliasAlreadyPresentRows)"
+Write-Host "AliasPlannedAddRows       : $($summary.mergeOutTitleAliasPlannedAddRows)"
 Write-Host "ExactRowChecks           : $($summary.exactBeforeExactRowChecks)"
 Write-Host "RelationCountChecks      : $($summary.exactBeforeRelationCountChecks)"
 Write-Host "VersionRelationChecks    : $($summary.exactBeforeVersionRelationCountChecks)"
