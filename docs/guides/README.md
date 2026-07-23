@@ -122,6 +122,13 @@
   - 保留业务审计和 migration DDL，仅取代旧 ready JSONL 与数据计划
   - 为新的隔离演练和 production gate 提供 storage-ready 不可变输入
 
+- [Radar 公共结论 storage-normalized 隔离演练与 production gate v0.1](./radar-public-storage-lab-and-production-gate-v01.md)
+  - 绑定 storage-normalization replacement 包与保留的 migration DDL
+  - fresh backup → 无网络恢复 → 9,000 行 apply → acceptance → exact rollback
+  - lab ZIP 排除完整 dump，并把最终 lab SHA 回填到 production gate
+  - gate 只含禁用态 apply/rollback SQL 与证据链，不含生产执行 wrapper
+  - apply 与 rollback 继续使用互不替代的精确授权短语
+
 ### 审计产物完整性
 
 - [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
