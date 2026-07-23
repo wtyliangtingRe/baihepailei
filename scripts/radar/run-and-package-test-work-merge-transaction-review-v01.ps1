@@ -87,14 +87,19 @@ if ($review.execution.repositoryExecutionWrapperExists -ne $false -or
 }
 
 if ($review.operationCounts.workUpdates -ne 4 -or
+    $review.operationCounts.factualChildReparents -ne 3 -or
+    $review.operationCounts.testAssessmentChildDeletes -ne 17 -or
     $review.operationCounts.feedbackArchives -ne 3 -or
+    $review.operationCounts.semanticDuplicateSkips -ne 1 -or
+    $review.operationCounts.preservedRelationRows -ne 17 -or
+    $review.operationCounts.versionRowsGuardedExactly -ne 1118 -or
     $review.operationCounts.versionGroupsPreserved -ne 2 -or
+    $review.operationCounts.standardizationRefinements -ne 2 -or
+    $review.operationCounts.exactBeforeRows -ne 1146 -or
     $review.operationCounts.exactBeforeRelationCounts -ne 19 -or
     $review.operationCounts.exactBeforeVersionCounts -ne 11) {
-  throw 'transaction review 核心操作数量与已审阅计划不一致。'
-}
-if ($review.operationCounts.exactBeforeRows -lt 45) {
-  throw "transaction review exact-before 行覆盖不足：$($review.operationCounts.exactBeforeRows)"
+  $review.operationCounts | ConvertTo-Json -Depth 20
+  throw 'transaction review 核心操作数量与完整版本覆盖不一致。'
 }
 
 $applyPath = Join-Path $outDir 'merge-transaction.sql.disabled'
@@ -185,6 +190,7 @@ Write-Host "TestChildDeletes          : $($review.operationCounts.testAssessment
 Write-Host "FeedbackArchives          : $($review.operationCounts.feedbackArchives)"
 Write-Host "SemanticDuplicateSkips    : $($review.operationCounts.semanticDuplicateSkips)"
 Write-Host "PreservedRelationRows     : $($review.operationCounts.preservedRelationRows)"
+Write-Host "VersionRowsGuardedExactly : $($review.operationCounts.versionRowsGuardedExactly)"
 Write-Host "StandardizationRefinements: $($review.operationCounts.standardizationRefinements)"
 Write-Host "ExactBeforeRows           : $($review.operationCounts.exactBeforeRows)"
 Write-Host "RelationCountGuards       : $($review.operationCounts.exactBeforeRelationCounts)"
