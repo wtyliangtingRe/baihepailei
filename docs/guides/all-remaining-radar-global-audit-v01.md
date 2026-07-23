@@ -27,7 +27,8 @@ publicationGuardRows               698
 
 审计要求：
 
-- 当前 Works 总数为 35,615；
+- 当前 Works draft/latest 快照总数为 35,615；
+- 当前 Works published/live 快照总数为 35,613；
 - Test Work production apply receipt 已证明：
   - `10097 → 32186`；
   - `25561 → 32094`；
@@ -42,6 +43,18 @@ blocked_discarded_test_assessment
 ```
 
 不会 remap 后重新写入 canonical Work，也不会公开。它们只能在新的研究结果产生后重新进入评级流程。
+
+## 双快照原则
+
+私有 AI 与公共生命周期不能使用同一套 Payload 快照：
+
+```text
+draft=true   → 最新 Work 快照，用于私有 radarAssessment 对比
+
+draft=false  → published/live Work 快照，用于公共生命周期与公开标题
+```
+
+原因是最新 draft 可能包含已经写入的私有 AI 数据，同时其 `_status`、lite/full visibility 不能代表当前公开页面。公共 AI 结论只允许依据 published/live Work 判断是否可展示。
 
 ## 私有 AI 轨道
 
@@ -63,9 +76,10 @@ blocked_discarded_test_assessment
 - 私有 assessment 身份与规则有效；
 - `needsPublicationGuard !== true`；
 - 等级为 `S/A/B/C/D/E/F`；
-- `catalogStatus = active`；
-- Payload `_status = published`；
-- lite/full 均未隐藏；
+- published/live Work 存在；
+- published/live `catalogStatus = active`；
+- published/live Payload `_status = published`；
+- published/live lite/full 均未隐藏；
 - 不是已作废的测试 assessment。
 
 分类：
@@ -95,10 +109,11 @@ runner 会：
 2. 校验最终 Test Work production receipt manifest；
 3. 只读查询 `public.radar_public` 是否存在；
 4. 以 `PAYLOAD_DB_PUSH=false` 启动独立端口的临时 Next/Payload 读取服务器；
-5. 读取当前 35,615 条 Works；
-6. 逐条生成私有与公共分类；
-7. 关闭临时读取服务器；
-8. 生成 manifest 和 ZIP。
+5. 读取 35,615 条 draft/latest Works；
+6. 独立读取 35,613 条 published/live Works；
+7. 逐条生成私有与公共分类；
+8. 关闭临时读取服务器；
+9. 生成 manifest 和 ZIP。
 
 临时读取服务器默认使用端口 3101，不会替代站点当前运行端口。
 
@@ -152,6 +167,7 @@ manifest.json
 ```text
 SourceRows                       10805
 ProductionWorksRead              35615
+PublishedWorksRead               35613
 GlobalBlockers                   0
 ReadyForSingleExecutionPlanning  true
 PayloadWrite                     false
