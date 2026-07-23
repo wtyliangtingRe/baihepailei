@@ -45,7 +45,14 @@
   - 事实字段、来源与外部 ID 合并规则
   - 人工与 AI 测试评级清空规则
   - 测试反馈归档、软归档与版本原地保留
-  - 非执行 merge dry-run 入口
+  - v03 exact-before 只读执行门槛
+
+- [临时测试 Work PostgreSQL 备份恢复验证 v0.1](./test-work-backup-verification-v01.md)
+  - 生产库只读 `pg_dump` 一致性备份
+  - 备份前后 37 项 exact-before 复核
+  - 一次性隔离 PostgreSQL 容器完整恢复
+  - 全部非系统表行数一致性比较
+  - 本地备份与小型上传证据包分离
 
 ### 审计产物完整性
 
