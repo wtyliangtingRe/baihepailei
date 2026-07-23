@@ -60,6 +60,12 @@
   - 审计约束、索引、trigger、RLS、policy、enum 与 sequence
   - 在事务 SQL 生成前保持 PostgreSQL 只读
 
+- [Test Work 合并事务审阅包 v0.1](./test-work-merge-transaction-review-v01.md)
+  - 生成 serializable apply、精确 rollback 与两份只读 acceptance SQL
+  - 事实子行原 ID reparent、测试 assessment 子行删除与反馈归档
+  - canonical 搜索文本旧 merge 日志清理 refinement
+  - `.sql.disabled` 与无执行 wrapper 的安全边界
+
 ### 审计产物完整性
 
 - [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
