@@ -108,14 +108,25 @@ function main() {
 
   const backupSummary = readJson(path.join(backupDir, 'backup-verification-summary.json'))
   if (backupSummary.backupRestoreVerified !== true
+    || backupSummary.restoreCompleted !== true
+    || backupSummary.restoreListValidated !== true
     || backupSummary.productionPreMatchedChecks !== 37
     || backupSummary.productionPostMatchedChecks !== 37
     || backupSummary.restoredMatchedChecks !== 37
     || backupSummary.productionCountsStableDuringBackup !== true
     || backupSummary.restoredCountsMatchProduction !== true
     || backupSummary.safety?.productionDatabaseWrite !== false
+    || backupSummary.safety?.productionContainerTempFilesRemoved !== true
+    || backupSummary.safety?.ephemeralVerificationContainerRemoved !== true
     || backupSummary.safety?.mergePerformed !== false) {
-    throw new Error('Backup evidence does not prove a stable, restorable, non-writing production backup.')
+    throw new Error('Backup evidence does not prove a stable, restorable, cleaned-up, non-writing production backup.')
+  }
+
+  const dryRunSqlPath = path.join(dryRunDir, 'exact-before-readonly.sql')
+  const dryRunExpectationsPath = path.join(dryRunDir, 'exact-before-expectations.json')
+  if (sha256File(dryRunSqlPath) !== text(backupSummary.sourceSqlSha256).toLowerCase()
+    || sha256File(dryRunExpectationsPath) !== text(backupSummary.sourceExpectationsSha256).toLowerCase()) {
+    throw new Error('Backup verification is not bound to the current v03 exact-before SQL and expectations.')
   }
 
   const backupPath = path.join(backupDir, 'database-backup.dump')
@@ -197,11 +208,15 @@ function main() {
     sourceBackupVerificationDirectory: backupDir,
     sourceDryRunManifestSha256: sha256File(path.join(dryRunDir, 'manifest.json')),
     sourceBackupEvidenceManifestSha256: sha256File(path.join(backupDir, 'evidence-manifest.json')),
+    sourceExactBeforeSqlSha256: sha256File(dryRunSqlPath),
+    sourceExactBeforeExpectationsSha256: sha256File(dryRunExpectationsPath),
     localBackup: {
       file: backupPath,
       bytes: fs.statSync(backupPath).size,
       sha256: sha256File(backupPath),
       restoreVerified: true,
+      productionContainerTempFilesRemoved: true,
+      verificationContainerRemoved: true,
     },
     identityGroups: decisions.length,
     targetWorkIds: decisions.flatMap((row) => [row.canonicalWorkId, row.mergeOutWorkId]),
@@ -236,7 +251,9 @@ function main() {
   console.log('Test Work write-schema target derivation complete')
   console.log(`WriteTargetTables: ${output.writeTargets.length}`)
   console.log(`TargetWorkIds: ${output.targetWorkIds.join(', ')}`)
+  console.log('ExactBeforePlanHashMatched: True')
   console.log('LocalBackupHashMatched: True')
+  console.log('BackupCleanupVerified: True')
   console.log('DatabaseWrite: False')
   console.log('ExecutableTransactionSqlGenerated: False')
 }
