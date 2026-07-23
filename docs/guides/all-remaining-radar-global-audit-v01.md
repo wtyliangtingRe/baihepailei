@@ -102,6 +102,30 @@ runner 会：
 
 临时读取服务器默认使用端口 3101，不会替代站点当前运行端口。
 
+### Payload 审计登录凭据
+
+活动入口为：
+
+```text
+run-and-package-all-remaining-radar-global-audit-v02.ps1
+```
+
+它按以下顺序寻找管理员登录：
+
+```text
+RADAR_PAYLOAD_EMAIL / RADAR_PAYLOAD_PASSWORD
+PAYLOAD_EXPORT_EMAIL / PAYLOAD_EXPORT_PASSWORD
+PAYLOAD_SEED_EMAIL / PAYLOAD_SEED_PASSWORD
+```
+
+同时读取本地 `.env` 与 `.env.local`。若仍缺失：
+
+- 邮箱通过普通 `Read-Host` 输入；
+- 密码通过 `Read-Host -AsSecureString` 输入，终端不显示；
+- 只在当前审计进程中临时设置 `RADAR_PAYLOAD_*`；
+- 无论成功或失败都恢复原环境变量；
+- 不把密码写入 `.env`、命令历史、输出目录、日志、manifest 或 ZIP。
+
 ## 输出
 
 ```text
