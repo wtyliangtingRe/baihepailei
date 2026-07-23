@@ -109,6 +109,16 @@ test('builder is bound to accepted evidence and supersedes only the old data pla
   assert.match(builder, /ready_public_ai_storage_normalized/u)
 })
 
+test('summary and supersession metadata bind the defined storage plan hash', () => {
+  const bindings = builder.match(/storageWritePlanSha256:\s*storagePlanSha256/gu) || []
+  assert.equal(bindings.length, 2)
+  assert.doesNotMatch(
+    builder,
+    /replacementDataArtifacts\s*:\s*\{[^}]*\bstorageWritePlanSha256\s*,/su,
+  )
+  assert.match(builder, /const storagePlanSha256 = sha256File\(storagePlanPath\)/u)
+})
+
 test('package runner binds the failed lab and emits a manifest-protected replacement package', () => {
   assert.match(runner, /FailedLabDirectory/u)
   assert.match(runner, /RADAR-PUBLIC-STORAGE-NORMALIZATION-/u)
