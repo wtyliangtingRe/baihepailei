@@ -120,6 +120,8 @@ $backupDir = Resolve-RepoDirectory $BackupVerificationDirectory '备份恢复验
 Test-ArtifactManifest $transactionDir
 Test-ArtifactManifest $backupDir 'evidence-manifest.json'
 
+$transactionManifestPath = Join-Path $transactionDir 'manifest.json'
+$backupEvidenceManifestPath = Join-Path $backupDir 'evidence-manifest.json'
 $reviewPath = Join-Path $transactionDir 'transaction-review.json'
 $operationsPath = Join-Path $transactionDir 'transaction-operations.json'
 $applyPath = Join-Path $transactionDir 'merge-transaction.sql.disabled'
@@ -130,6 +132,8 @@ $backupSummaryPath = Join-Path $backupDir 'backup-verification-summary.json'
 $backupPath = Join-Path $backupDir 'database-backup.dump'
 
 foreach ($file in @(
+  $transactionManifestPath,
+  $backupEvidenceManifestPath,
   $reviewPath,
   $operationsPath,
   $applyPath,
@@ -173,17 +177,25 @@ if ($review.operationCounts.workUpdates -ne 4 -or
   throw '事务审阅输入核心操作数量发生漂移。'
 }
 if ($backupSummary.backupRestoreVerified -ne $true -or
+    $backupSummary.businessTableCountChecks -ne 83 -or
     $backupSummary.productionPreMatchedChecks -ne 37 -or
     $backupSummary.productionPostMatchedChecks -ne 37 -or
     $backupSummary.restoredMatchedChecks -ne 37 -or
     $backupSummary.safety.productionDatabaseWrite -ne $false -or
+    $backupSummary.safety.productionContainerTempFilesRemoved -ne $true -or
     $backupSummary.safety.ephemeralVerificationContainerRemoved -ne $true) {
   throw '备份恢复验证证据不完整。'
+}
+
+$backupEvidenceManifestHash = Get-FileHash -LiteralPath $backupEvidenceManifestPath -Algorithm SHA256
+if ($backupEvidenceManifestHash.Hash.ToLowerInvariant() -ne ([string]$review.sources.backupEvidenceManifestSha256).ToLowerInvariant()) {
+  throw '事务审阅包未绑定当前备份恢复证据 manifest。'
 }
 
 $backupBytes = (Get-Item -LiteralPath $backupPath).Length
 $backupHash = Get-FileHash -LiteralPath $backupPath -Algorithm SHA256
 if ($backupBytes -ne [long]$backupSummary.backupBytes -or
+    $backupBytes -ne [long]$review.backup.bytes -or
     $backupHash.Hash.ToLowerInvariant() -ne ([string]$backupSummary.backupSha256).ToLowerInvariant() -or
     $backupHash.Hash.ToLowerInvariant() -ne ([string]$review.backup.sha256).ToLowerInvariant()) {
   throw '本地 database-backup.dump 与事务审阅或恢复验证证据不一致。'
@@ -193,19 +205,21 @@ $apply = Get-Content -LiteralPath $applyPath -Raw -Encoding UTF8
 $rollback = Get-Content -LiteralPath $rollbackPath -Raw -Encoding UTF8
 $acceptance = Get-Content -LiteralPath $acceptancePath -Raw -Encoding UTF8
 $rollbackAcceptance = Get-Content -LiteralPath $rollbackAcceptancePath -Raw -Encoding UTF8
+$backupHashPattern = [regex]::Escape($backupHash.Hash.ToLowerInvariant())
 foreach ($sql in @($apply, $rollback)) {
   if ($sql -notmatch 'BEGIN ISOLATION LEVEL SERIALIZABLE;' -or
       $sql -notmatch 'COMMIT;\s*$' -or
       $sql -notmatch 'FOR UPDATE' -or
-      $sql -notmatch 'Verified backup SHA-256') {
-    throw 'apply / rollback SQL 不满足隔离演练入口要求。'
+      $sql.ToLowerInvariant() -notmatch $backupHashPattern) {
+    throw 'apply / rollback SQL 不满足隔离演练入口或备份绑定要求。'
   }
 }
 foreach ($sql in @($acceptance, $rollbackAcceptance)) {
   if ($sql -notmatch 'BEGIN TRANSACTION READ ONLY;' -or
       $sql -notmatch 'ROLLBACK;\s*$' -or
+      $sql.ToLowerInvariant() -notmatch $backupHashPattern -or
       $sql -match '(?im)^\s*(UPDATE|INSERT|DELETE|ALTER|DROP|TRUNCATE|CREATE)\b') {
-    throw 'acceptance SQL 不是纯只读 SQL。'
+    throw 'acceptance SQL 不是受备份绑定的纯只读 SQL。'
   }
 }
 
@@ -252,14 +266,16 @@ $stageStatus = [ordered]@{
 Save-StageStatus
 
 $sourceBindings = [ordered]@{
-  transactionManifestSha256 = (Get-FileHash -LiteralPath (Join-Path $transactionDir 'manifest.json') -Algorithm SHA256).Hash.ToLowerInvariant()
+  transactionManifestSha256 = (Get-FileHash -LiteralPath $transactionManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
   transactionReviewSha256 = (Get-FileHash -LiteralPath $reviewPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  backupEvidenceManifestSha256 = $backupEvidenceManifestHash.Hash.ToLowerInvariant()
   applySqlSha256 = (Get-FileHash -LiteralPath $applyPath -Algorithm SHA256).Hash.ToLowerInvariant()
   rollbackSqlSha256 = (Get-FileHash -LiteralPath $rollbackPath -Algorithm SHA256).Hash.ToLowerInvariant()
   acceptanceSqlSha256 = (Get-FileHash -LiteralPath $acceptancePath -Algorithm SHA256).Hash.ToLowerInvariant()
   rollbackAcceptanceSqlSha256 = (Get-FileHash -LiteralPath $rollbackAcceptancePath -Algorithm SHA256).Hash.ToLowerInvariant()
   backupBytes = $backupBytes
   backupSha256 = $backupHash.Hash.ToLowerInvariant()
+  expectedBusinessTableCountChecks = 83
   postgresImage = $postgresImage
   sourceContainer = $SourcePostgresContainer
   sourceContainerAccess = 'docker inspect only'
@@ -330,17 +346,18 @@ try {
     throw '隔离 PostgreSQL 演练容器未在限时内就绪。'
   }
 
-  foreach ($copy in @(
-    @($backupPath, $containerDumpPath),
-    @($applyPath, $containerApplyPath),
-    @($rollbackPath, $containerRollbackPath),
-    @($acceptancePath, $containerAcceptancePath),
-    @($rollbackAcceptancePath, $containerRollbackAcceptancePath),
-    @($tableCountSqlPath, $containerTableCountPath)
-  )) {
-    & docker cp ([string]$copy[0]) "${labContainer}:$([string]$copy[1])"
+  $copyPlan = @(
+    [pscustomobject]@{ Source = $backupPath; Destination = $containerDumpPath },
+    [pscustomobject]@{ Source = $applyPath; Destination = $containerApplyPath },
+    [pscustomobject]@{ Source = $rollbackPath; Destination = $containerRollbackPath },
+    [pscustomobject]@{ Source = $acceptancePath; Destination = $containerAcceptancePath },
+    [pscustomobject]@{ Source = $rollbackAcceptancePath; Destination = $containerRollbackAcceptancePath },
+    [pscustomobject]@{ Source = $tableCountSqlPath; Destination = $containerTableCountPath }
+  )
+  foreach ($copy in $copyPlan) {
+    & docker cp ([string]$copy.Source) "${labContainer}:$([string]$copy.Destination)"
     if ($LASTEXITCODE -ne 0) {
-      throw "复制隔离演练输入失败：$([string]$copy[0])"
+      throw "复制隔离演练输入失败：$([string]$copy.Source)"
     }
   }
 
@@ -417,6 +434,7 @@ $validation = [ordered]@{
   sourceContainerInspectOnly = $true
   sourceContainer = $SourcePostgresContainer
   sourceImage = $postgresImage
+  expectedBusinessTableCountChecks = 83
   labContainer = $labContainer
   labNetworkDisabled = $true
   labContainerRemoved = $labContainerRemoved
@@ -460,6 +478,7 @@ $summary = Get-Content `
   -Encoding UTF8 |
   ConvertFrom-Json -Depth 100
 if ($summary.labRoundTripVerified -ne $true -or
+    $summary.businessTableCountChecks -ne 83 -or
     $summary.readyForProductionExecutionPlanning -ne $true -or
     $summary.safety.productionDatabaseWrite -ne $false -or
     $summary.safety.labDatabaseWrite -ne $true -or
