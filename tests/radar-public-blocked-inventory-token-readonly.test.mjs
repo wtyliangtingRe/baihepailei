@@ -59,19 +59,22 @@ test('local helper is GET-only, token-gated, paginated, and bypasses access with
   assert.doesNotMatch(helper, /payload\.(?:create|update|delete|login)|INSERT|UPDATE|DELETE FROM/iu)
 })
 
-test('specific routes preserve normal Payload behavior when the audit token is absent or unmatched', () => {
+test('specific routes preserve standard Payload behavior with exact fallback slugs', () => {
   assert.match(login, /REST_POST\(config\)/u)
-  assert.match(login, /return standardPOST\(\.\.\.args\)/u)
+  assert.match(login, /slug: \['users', 'login'\]/u)
   assert.match(works, /REST_GET\(config\)/u)
-  assert.match(works, /return standardGET\(\.\.\.args\)/u)
+  assert.match(works, /slug: \['works'\]/u)
   assert.match(conclusions, /REST_GET\(config\)/u)
-  assert.match(conclusions, /return standardGET\(\.\.\.args\)/u)
+  assert.match(conclusions, /slug: \['radar-public-conclusions'\]/u)
+  for (const route of [login, works, conclusions]) {
+    assert.match(route, /params: Promise\.resolve/u)
+  }
 })
 
 test('audit routes expose only the required read surface', () => {
   assert.match(works, /radarReadonlyFind\(request, 'works'\)/u)
   assert.match(conclusions, /radarReadonlyFind\(request, 'radar-public-conclusions'\)/u)
-  assert.doesNotMatch(works + conclusions, /REST_(?:POST|PATCH|PUT|DELETE)|export const (?:POST|PATCH|PUT|DELETE)/u)
+  assert.doesNotMatch(works + conclusions, /REST_(?:POST|PATCH|PUT|DELETE)|export (?:async function|const) (?:POST|PATCH|PUT|DELETE)/u)
   assert.match(login, /isRadarReadonlyLogin/u)
   assert.match(login, /radarReadonlyLoginResponse/u)
 })
