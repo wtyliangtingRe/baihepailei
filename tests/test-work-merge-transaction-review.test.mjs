@@ -43,6 +43,10 @@ test('transaction review generators parse and the v02 fail-closed patch reaches 
   assert.deepEqual(after, before)
 })
 
+test('v02 normalizes Windows line endings before applying exact fail-closed patches', () => {
+  assert.match(v02, /\.replace\(\/\\r\\n\?\/gu, '\\n'\)/u)
+})
+
 test('v02 fixes PL/pgSQL diagnostics and guards skipped, version, and version-child rows exactly', () => {
   assert.match(v02, /fileURLToPath\(import\.meta\.url\)/u)
   assert.match(v02, /count_mismatch actual_count=%/u)
