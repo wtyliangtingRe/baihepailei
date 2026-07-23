@@ -20,29 +20,40 @@ if (-not (Test-Path -LiteralPath $innerRunner -PathType Leaf)) {
   throw "找不到 v01 全量审计 runner：$innerRunner"
 }
 
-function Import-DotEnvFile([string]$Path) {
-  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return }
-  foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
-    $trimmed = ([string]$line).Trim()
-    if (-not $trimmed -or $trimmed.StartsWith('#')) { continue }
-    if ($trimmed.StartsWith('export ')) { $trimmed = $trimmed.Substring(7).Trim() }
-    $separator = $trimmed.IndexOf('=')
-    if ($separator -le 0) { continue }
-    $name = $trimmed.Substring(0, $separator).Trim()
-    if ($name -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') { continue }
-    if (Test-Path "Env:$name") { continue }
-    $value = $trimmed.Substring($separator + 1).Trim()
-    if (($value.StartsWith('"') -and $value.EndsWith('"')) -or ($value.StartsWith("'") -and $value.EndsWith("'"))) {
-      $value = $value.Substring(1, $value.Length - 2)
-    }
-    [Environment]::SetEnvironmentVariable($name, $value, 'Process')
-  }
-}
-
-function Get-PayloadCredential([string[]]$Names) {
+function Get-ProcessCredential([string[]]$Names) {
   foreach ($name in $Names) {
     $value = [Environment]::GetEnvironmentVariable($name, 'Process')
     if (-not [string]::IsNullOrWhiteSpace($value)) { return $value }
+  }
+  return $null
+}
+
+function Get-DotEnvCredential(
+  [string[]]$Paths,
+  [string[]]$Names
+) {
+  foreach ($path in $Paths) {
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+    $values = @{}
+    foreach ($line in Get-Content -LiteralPath $path -Encoding UTF8) {
+      $trimmed = ([string]$line).Trim()
+      if (-not $trimmed -or $trimmed.StartsWith('#')) { continue }
+      if ($trimmed.StartsWith('export ')) { $trimmed = $trimmed.Substring(7).Trim() }
+      $separator = $trimmed.IndexOf('=')
+      if ($separator -le 0) { continue }
+      $name = $trimmed.Substring(0, $separator).Trim()
+      if ($name -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') { continue }
+      $value = $trimmed.Substring($separator + 1).Trim()
+      if (($value.StartsWith('"') -and $value.EndsWith('"')) -or ($value.StartsWith("'") -and $value.EndsWith("'"))) {
+        $value = $value.Substring(1, $value.Length - 2)
+      }
+      $values[$name] = $value
+    }
+    foreach ($name in $Names) {
+      if ($values.ContainsKey($name) -and -not [string]::IsNullOrWhiteSpace([string]$values[$name])) {
+        return [string]$values[$name]
+      }
+    }
   }
   return $null
 }
@@ -64,13 +75,23 @@ function Restore-ProcessEnvironment([object]$Saved) {
 }
 
 Set-Location -LiteralPath $repoRoot
-Import-DotEnvFile (Join-Path $repoRoot '.env')
-Import-DotEnvFile (Join-Path $repoRoot '.env.local')
+$dotenvPaths = @(
+  (Join-Path $repoRoot '.env.local'),
+  (Join-Path $repoRoot '.env')
+)
+$emailNames = @('RADAR_PAYLOAD_EMAIL', 'PAYLOAD_EXPORT_EMAIL', 'PAYLOAD_SEED_EMAIL')
+$passwordNames = @('RADAR_PAYLOAD_PASSWORD', 'PAYLOAD_EXPORT_PASSWORD', 'PAYLOAD_SEED_PASSWORD')
 
 $savedRadarEmail = Save-ProcessEnvironment 'RADAR_PAYLOAD_EMAIL'
 $savedRadarPassword = Save-ProcessEnvironment 'RADAR_PAYLOAD_PASSWORD'
-$email = Get-PayloadCredential @('RADAR_PAYLOAD_EMAIL', 'PAYLOAD_EXPORT_EMAIL', 'PAYLOAD_SEED_EMAIL')
-$password = Get-PayloadCredential @('RADAR_PAYLOAD_PASSWORD', 'PAYLOAD_EXPORT_PASSWORD', 'PAYLOAD_SEED_PASSWORD')
+$email = Get-ProcessCredential $emailNames
+if ([string]::IsNullOrWhiteSpace($email)) {
+  $email = Get-DotEnvCredential -Paths $dotenvPaths -Names $emailNames
+}
+$password = Get-ProcessCredential $passwordNames
+if ([string]::IsNullOrWhiteSpace($password)) {
+  $password = Get-DotEnvCredential -Paths $dotenvPaths -Names $passwordNames
+}
 $securePassword = $null
 
 if ([string]::IsNullOrWhiteSpace($email)) {
