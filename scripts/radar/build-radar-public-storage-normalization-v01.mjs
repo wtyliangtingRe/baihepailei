@@ -334,7 +334,7 @@ function main() {
     ],
     replacementDataArtifacts: {
       normalizedReadyFileSha256: normalizedReadySha256,
-      storageWritePlanSha256,
+      storageWritePlanSha256: storagePlanSha256,
       rewriteMapSha256,
     },
   }))
