@@ -144,9 +144,13 @@ test('backup runner dumps production read-only and restores only into a disposab
   assert.doesNotMatch(runnerV1, /^\s*(?:UPDATE|INSERT|DELETE|ALTER|DROP|TRUNCATE|CREATE)\b/imu)
 })
 
-test('parser-safe v02 entry verifies its temporary script before execution and deletes it afterward', () => {
+test('parser-safe v02 pins the original repository script root before running its temporary copy', () => {
   assert.match(runnerV2, /run-and-package-test-work-backup-verification-v01\.ps1/u)
   assert.match(runnerV2, /Parser\]::ParseFile/u)
+  assert.match(runnerV2, /\$originalScriptRoot = \(Resolve-Path -LiteralPath \$PSScriptRoot\)\.Path/u)
+  assert.match(runnerV2, /scriptRootOccurrences -ne 3/u)
+  assert.match(runnerV2, /Replace\('\$PSScriptRoot', '\$originalScriptRoot'\)/u)
+  assert.match(runnerV2, /临时备份验证脚本仍包含 PSScriptRoot/u)
   assert.match(runnerV2, /verificationLogStdout/u)
   assert.match(runnerV2, /verificationLogStderr/u)
   assert.match(runnerV2, /Remove-Item -LiteralPath \$temporary/u)
