@@ -136,6 +136,13 @@
   - 生产 serializable apply、22 项 acceptance、83 张原业务表零变化
   - commit 后失败不自动 rollback，完整 dump 留本地、receipt ZIP 可上传
 
+- [Radar blocked 队列修复与后续增补发布 v0.1](./radar-blocked-rows-remediation-and-incremental-publication-v01.md)
+  - 以首次 9,000 条生产结论为 already-current 基线，不重复全量重写
+  - 按两条可追溯来源、缺少摘要、publication guard 与作废测试拆分队列
+  - 先解锁证据与发布门槛，再生成 private/public 增量计划
+  - 后续通常只做数据级隔离演练，无结构变化时不再生成 migration
+  - 每批只 create / supersede ready 增量，blocked 继续保留明确原因
+
 ### 审计产物完整性
 
 - [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
