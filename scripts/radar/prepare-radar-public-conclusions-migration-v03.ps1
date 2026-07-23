@@ -22,7 +22,7 @@ function Replace-Exact {
 
   $actualCount = ([regex]::Matches($content, [regex]::Escape($Needle))).Count
   if ($actualCount -ne $ExpectedCount) {
-    throw "Expected $ExpectedCount occurrence(s), found $actualCount: $Needle"
+    throw "Expected $ExpectedCount occurrence(s), found ${actualCount}: $Needle"
   }
 
   $script:content = $content.Replace($Needle, $Replacement)
