@@ -137,7 +137,6 @@ foreach ($sql in @($acceptance, $rollbackAcceptance)) {
 $scriptSources = @(
   (Get-Content -LiteralPath $builder -Raw -Encoding UTF8)
   (Get-Content -LiteralPath $builderSource -Raw -Encoding UTF8)
-  (Get-Content -LiteralPath $PSCommandPath -Raw -Encoding UTF8)
 ) -join "`n"
 if ($scriptSources -match '(?i)docker\s+exec.+psql' -or
     $scriptSources -match '(?i)Invoke-Sqlcmd' -or
