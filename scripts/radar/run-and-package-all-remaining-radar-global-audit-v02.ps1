@@ -15,9 +15,9 @@ Set-StrictMode -Version Latest
 
 $originalScriptRoot = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $originalScriptRoot '..\..')).Path
-$innerRunner = Join-Path $originalScriptRoot 'run-and-package-all-remaining-radar-global-audit-v01.ps1'
+$innerRunner = Join-Path $originalScriptRoot 'run-and-package-all-remaining-radar-global-audit-v03.ps1'
 if (-not (Test-Path -LiteralPath $innerRunner -PathType Leaf)) {
-  throw "找不到 v01 全量审计 runner：$innerRunner"
+  throw "找不到 v03 双快照全量审计 runner：$innerRunner"
 }
 
 function Get-ProcessCredential([string[]]$Names) {
@@ -125,7 +125,7 @@ try {
     -ReadyTimeoutSeconds $ReadyTimeoutSeconds
 
   if ($LASTEXITCODE -ne 0) {
-    throw "v01 全量审计 runner 返回失败状态：$LASTEXITCODE"
+    throw "v03 双快照全量审计 runner 返回失败状态：$LASTEXITCODE"
   }
 } finally {
   Restore-ProcessEnvironment $savedRadarEmail
