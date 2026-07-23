@@ -31,7 +31,7 @@ function Get-DirectorySet([string]$Pattern) {
   $set = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
   Get-ChildItem -LiteralPath (Join-Path $repoRoot 'exports') -Directory -Filter $Pattern -ErrorAction SilentlyContinue |
     ForEach-Object { $null = $set.Add($_.FullName) }
-  return $set
+  return ,$set
 }
 
 function Get-NewDirectory([string]$Pattern, [System.Collections.Generic.HashSet[string]]$Before) {
