@@ -130,7 +130,9 @@ test('planner binds explicit canonical decisions, preserves facts, and discards 
 
   const decisions = JSON.parse(fs.readFileSync(path.join(output, 'canonical-merge-decisions.json'), 'utf8'))
   assert.deepEqual(decisions.map((row) => [row.mergeOutWorkId, row.canonicalWorkId]), [[1, 2], [3, 4]])
-  assert.ok(decisions.every((row) => row.assessmentPolicy.includes('discard all current human and AI test assessments')))
+  assert.ok(decisions.every((row) => row.assessmentPolicy.includes('discard_all_current_human_and_ai_test_assessments')))
+  assert.ok(decisions.every((row) => row.assessmentPolicy.includes('reset to pending/unknown')))
+  assert.ok(decisions.every((row) => row.assessmentPolicy.includes('create no public AI conclusion')))
 
   const cleanup = fs.readFileSync(path.join(output, 'test-assessment-cleanup-plan.jsonl'), 'utf8')
     .trim().split(/\r?\n/u).map(JSON.parse)
