@@ -1,6 +1,6 @@
 # Radar 公共结论 schema review v0.1
 
-状态：生成与审阅阶段。该流程绑定已经通过的全量剩余 Radar 唯一审计，为 9,000 条公共 AI 结论生成独立的 Radar-only 加法 migration、禁用态 SQL 和不可变写入清单。它不执行生产 migration，也不写入公共结论。
+状态：schema review 已生成并通过本地门槛，尚未执行生产 migration 或公共结论写入。该流程绑定已经通过的全量剩余 Radar 唯一审计，为 9,000 条公共 AI 结论生成独立的 Radar-only 加法 migration、禁用态 SQL 和不可变写入清单。
 
 ## 固定输入
 
@@ -29,15 +29,26 @@ ready for single execution planning  true
 95111C7A01FC5C56EFD58A9ED03A2C446EC831D1B6FE3CE6822A9BDFAFC1258F
 ```
 
+## 活动入口
+
+当前活动入口是完整、静态、可直接 parser 检查的脚本：
+
+```text
+scripts/radar/prepare-radar-public-conclusions-migration-v05.ps1
+scripts/radar/run-and-package-radar-public-conclusions-schema-review-v05.ps1
+```
+
+旧 v02/v03/v04 wrapper 保留作历史证据，但不得再作为活动入口。活动路径禁止运行时修改旧脚本，也禁止把临时 wrapper 写进 Git 工作区。
+
 ## 本阶段允许的动作
 
 - 使用 `payload migrate:create` 读取当前 schema 并生成 migration；
 - 生成一个空操作的当前 schema baseline migration；
 - 生成唯一的 `radar_public_conclusions_v01` migration；
-- 将 baseline、Radar migration 和 migration index 提交到 PR #311 分支；
 - 抽取 migration 的 exact up/down SQL，并保存为 `.sql.disabled`；
 - 从审计 ZIP 生成 9,000 行不可变写入清单；
-- 生成 SHA-256 manifest 和 schema review ZIP。
+- 生成 SHA-256 manifest 和 schema review ZIP；
+- review ZIP 完整后才把 migration commit 推送到 PR #311 分支。
 
 本阶段禁止：
 
@@ -47,15 +58,28 @@ ready for single execution planning  true
 - 私有 AI 或人工轨道写入；
 - schema push；
 - PR merge；
-- rollback 生成或执行。
+- rollback 执行；
+- 把自然语言“继续”或“可以写入”解释为 production apply 授权。
 
-`migrate:create` 可能连接当前生产数据库做只读 schema introspection。因此证据包会记录：
+## 数据库只读门槛
+
+`migrate:create` 可能连接当前生产数据库做 schema introspection。活动 runner 同时设置：
 
 ```text
-ProductionDatabaseConnect  true
-ProductionDatabaseReadOnly true
-ProductionDatabaseWrite    false
+PAYLOAD_DB_PUSH=false
+PGOPTIONS=-c default_transaction_read_only=on ...
+PostgreSQL pool options=default_transaction_read_only=on
 ```
+
+因此证据包记录：
+
+```text
+ProductionDatabaseConnect       true
+ProductionDatabaseSessionReadOnly true
+ProductionDatabaseWrite         false
+```
+
+这不是仅依赖命令习惯的“逻辑只读”，而是由 PostgreSQL 会话拒绝写入。
 
 ## 结构门槛
 
@@ -81,7 +105,68 @@ ProductionDatabaseWrite    false
 - publication key、Work ID 与 conclusion SHA-256 各自唯一；
 - ready 文件 SHA-256 与审计 manifest 一致。
 
-本阶段只输出轻量写入清单，不复制完整的 46 MB public-ready JSONL。实际执行仍从本地固定审计 ZIP 读取完整记录。
+本阶段只输出轻量写入清单，不复制完整的 public-ready JSONL。实际执行仍从本地固定审计 ZIP 读取完整记录。
+
+## 提交与失败恢复顺序
+
+安全顺序：
+
+```text
+生成 5 个 migration 文件
+→ 本地 commit
+→ 绑定 9,000 行与 exact SQL
+→ 完成 manifest 和 review ZIP
+→ 最后 push migration commit
+```
+
+push 前任一步失败时：
+
+- `git reset --mixed` 回到起始 HEAD；
+- 删除本轮生成的 migration 文件；
+- 删除不完整输出目录和 ZIP；
+- 不在远端留下半成品 commit。
+
+## 本次成功结果
+
+migration commit：
+
+```text
+3ea530cb342bfab5c126e94498d2d94c98413aa0
+```
+
+生成文件：
+
+```text
+src/migrations/20260723_141905_current_schema_baseline_before_radar_public_v01.ts
+src/migrations/20260723_141905_current_schema_baseline_before_radar_public_v01.json
+src/migrations/20260723_141908_radar_public_conclusions_v01.ts
+src/migrations/20260723_141908_radar_public_conclusions_v01.json
+src/migrations/index.ts
+```
+
+schema review 包：
+
+```text
+RADAR-PUBLIC-CONCLUSIONS-SCHEMA-REVIEW-20260723-221852.zip
+SHA-256 297FED9AB54675748E5AE0DD812CFA4AC367966D12E7732541913223D74AC0FB
+```
+
+成功门槛：
+
+```text
+PublicReadyRows           9000
+UniquePublicationKeys     9000
+UniqueWorkIds             9000
+PostgreSQLSessionReadOnly true
+RemotePushAfterReview     true
+SchemaGenerated           true
+SchemaReviewed            false
+LabRehearsed              false
+ProductionMigrationRun    false
+ProductionRowsWritten     0
+ProductionWriteAuthorized false
+RollbackAuthorized        false
+```
 
 ## 输出
 
@@ -123,7 +208,7 @@ rollback 需要另一条完全一致的短语：
 AUTHORIZE-PRODUCTION-RADAR-PUBLIC-CONCLUSIONS-ROLLBACK-V01
 ```
 
-此前 Test Work merge 的授权不适用于本次 9,000 条公共结论写入。
+此前 Test Work merge 的授权不适用于本次 9,000 条公共结论写入。上述 production apply 短语只有在隔离恢复库往返演练和 production gate 包都通过后才会被接受。
 
 ## 后续
 
