@@ -140,7 +140,8 @@ try {
 
   $packRoot = Join-Path $tempRoot 'pack'
   New-Item -ItemType Directory -Path $packRoot -Force | Out-Null
-  Copy-Item -LiteralPath (Join-Path $outDir '*') -Destination $packRoot -Recurse -Force
+  Get-ChildItem -LiteralPath $outDir -Force |
+    Copy-Item -Destination $packRoot -Recurse -Force
   Compress-Archive -Path (Join-Path $packRoot '*') -DestinationPath $bundlePath -CompressionLevel Optimal -Force
   if (-not (Test-Path -LiteralPath $bundlePath -PathType Leaf)) { throw 'blocked ledger ZIP 未生成。' }
   $bundleHash = Get-FileHash -LiteralPath $bundlePath -Algorithm SHA256
