@@ -58,6 +58,8 @@ effectiveGrade = unknown
 effectiveGradeSource = unknown
 ```
 
+v02 会额外确认 `human_reviewed_at`、`human_reviewed_by_id` 等物理旧字段也被纳入清空计划，避免只处理 `human_review_*` 前缀而漏掉时间和人员字段。
+
 ## 反馈测试记录
 
 与这两组 Work 关联、且属于本轮临时测试的反馈记录：
@@ -101,16 +103,18 @@ Payload _status = 保持原值
 明确不做：
 
 - 不物理删除 Work；
-- 不修改或删除历史版本；
+- 不修改、重指向或删除历史版本；
 - 不把旧 `status` 映射到 `_status`；
 - 不恢复历史草稿；
 - 不通过 Payload PATCH 发布整份 Work。
+
+v02 先读取 `_works_v.parent_id` 建立 version ID → Work ID 映射，再统计版本子表；不会把版本子表 `_parent_id` 错当成 Work ID。
 
 ## Dry-run 入口
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass `
-  -File .\scripts\radar\run-and-package-test-work-merge-dryrun-v01.ps1 `
+  -File .\scripts\radar\run-and-package-test-work-merge-dryrun-v02.ps1 `
   -IdentityAuditDirectory .\exports\canonical-work-identity-audit-<timestamp> `
   -Decision @('<merge-out>:<canonical>', '<merge-out>:<canonical>') `
   -DiscardTestAssessments
@@ -119,8 +123,8 @@ pwsh -NoProfile -ExecutionPolicy Bypass `
 输出：
 
 ```text
-exports/test-work-merge-dryrun-<timestamp>/
-exports/TEST-WORK-MERGE-DRYRUN-<timestamp>.zip
+exports/test-work-merge-dryrun-v02-<timestamp>/
+exports/TEST-WORK-MERGE-DRYRUN-V02-<timestamp>.zip
 ```
 
 主要文件：
