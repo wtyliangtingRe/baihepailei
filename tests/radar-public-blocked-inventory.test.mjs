@@ -49,18 +49,18 @@ test('workflow is bound to the accepted 1805 blocked audit and successful 9000-r
   }
 })
 
-test('latest alone never wins over validity, completeness, and identity', () => {
+test('newest structurally valid identity-resolved candidate wins even over an older complete candidate', () => {
   assert.match(builder, /candidateValidity\(candidate, \{ discarded, identityResolved \}\)/u)
   assert.match(builder, /identity_not_resolved/u)
   assert.match(builder, /discarded_test_assessment/u)
-  assert.match(builder, /missing_policy_version/u)
-  assert.match(builder, /missing_assessment_batch/u)
-  assert.match(builder, /missing_decisive_rule/u)
-  assert.match(finalizer, /function completeValid/u)
-  assert.match(finalizer, /snapshot\?\.sourceSummary/u)
-  assert.match(finalizer, /latest_valid_complete/u)
-  assert.match(finalizer, /currentSelection: 'latest_valid_complete_identity_resolved'/u)
-  assert.match(policy, /“最新”不能单独凌驾于有效性、完整性和身份门槛之上/u)
+  assert.match(builder, /invalid_assessed_at/u)
+  assert.match(finalizer, /function selectLatest/u)
+  assert.match(finalizer, /history\.filter\(\(item\) => item\?\.structurallyValid === true\)/u)
+  assert.match(finalizer, /latest_structurally_valid_complete/u)
+  assert.match(finalizer, /latest_structurally_valid_incomplete/u)
+  assert.match(finalizer, /currentSelection: 'latest_structurally_valid_identity_resolved'/u)
+  assert.match(finalizer, /olderCompleteCannotOverrideNewerStructurallyValid: true/u)
+  assert.match(policy, /最新的结构有效快照直接胜出/u)
 })
 
 test('candidate ties use assessedAt, policyVersion, assessmentBatch, and stable hash', () => {
@@ -75,31 +75,37 @@ test('candidate ties use assessedAt, policyVersion, assessmentBatch, and stable 
   assert.match(finalizer, /tieBreakOrder: \['assessedAt', 'policyVersion', 'assessmentBatch', 'candidateSha256'\]/u)
 })
 
-test('history and conflicts are retained instead of field-residual merging', () => {
+test('history and conflicts are retained while the newest whole snapshot replaces older data', () => {
   assert.match(builder, /history,/u)
   assert.match(builder, /conflicts,/u)
   assert.match(builder, /supersessionCandidates/u)
-  assert.match(builder, /retain_both_blocked_pending_resolution/u)
   assert.match(builder, /radar-public-blocked-conflict-ledger\.jsonl/u)
   assert.doesNotMatch(builder, /Object\.assign\([^\n]+radarAssessment|\.\.\.older\.snapshot,\s*\.\.\.newer\.snapshot/u)
   assert.match(finalizer, /wholeSnapshotReplacementRequired: true/u)
   assert.match(finalizer, /explicitNullClearsOldValue: true/u)
   assert.match(finalizer, /fieldResidualMergeForbidden: true/u)
   assert.match(finalizer, /historicalCandidatesPreserved: true/u)
-  assert.match(policy, /新快照整体替换旧 AI 快照/u)
+  assert.match(policy, /新快照整体覆盖旧 AI 快照/u)
   assert.match(policy, /旧值必须清空/u)
 })
 
-test('decisive conflicts remain blocked for research or human adjudication', () => {
+test('decisive AI conflicts no longer block latest selection', () => {
   assert.match(builder, /DECISIVE_FIELDS/u)
-  assert.match(builder, /decisive_conflict_review/u)
-  assert.match(builder, /C_human_adjudication/u)
-  assert.match(builder, /补充来源或人工裁决/u)
-  assert.match(builder, /publication_guard_review/u)
-  assert.match(builder, /identity_review/u)
-  assert.match(finalizer, /blocked_decisive_conflict/u)
-  assert.match(finalizer, /decisiveConflictsRemainBlocked: true/u)
-  assert.match(policy, /不以“时间较新”自动裁决事实真假/u)
+  assert.match(builder, /conflicts,/u)
+  assert.match(finalizer, /decisiveConflictsBlockLatestSelection: false/u)
+  assert.match(finalizer, /decisiveConflictsOverwrittenByLatest: true/u)
+  assert.match(finalizer, /latest_wins_conflict_overwrite/u)
+  assert.match(finalizer, /A_latest_wins_candidate/u)
+  assert.match(policy, /等级、规则和措辞冲突不再阻止最新快照成为 current/u)
+  assert.match(policy, /冲突只进入历史账本/u)
+})
+
+test('hard-invalid, identity-unresolved, and discarded test candidates remain blocked', () => {
+  assert.match(builder, /identity_not_resolved/u)
+  assert.match(builder, /discarded_test_assessment/u)
+  assert.match(builder, /invalid_assessed_at/u)
+  assert.match(finalizer, /hardInvalidCandidatesRemainBlocked: true/u)
+  assert.match(policy, /身份未确定、作废测试、时间无效或结构损坏/u)
 })
 
 test('inventory reads current draft, live, and public snapshots without writing', () => {
