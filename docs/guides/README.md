@@ -28,7 +28,7 @@
   - `status`、`legacy_x_wiki_page` 与 `rank` 的退役前置条件
 
 - [Work 规范化 dry-run v02 语义门槛](./work-normalization-dryrun-v02-gates.md)
-  - 非公开记录优先拦截
+  - 非公开生命周期优先于 AI 分类
   - canonical Work identity gate
   - 同作品分裂记录提示
   - `timestamptz` 类型安全比较
@@ -72,6 +72,12 @@
   - baseline → apply → acceptance → rollback → baseline 完整往返
   - 83 张业务表行数与 1,146 条 exact row 双重验收
   - 演练完成后删除容器，仍不批准 production execution
+
+- [Test Work production execution gate review v0.1](./test-work-production-execution-gate-review-v01.md)
+  - 锁定 transaction、lab、backup 与 SQL SHA-256 证据链
+  - production apply 与 rollback 使用独立授权
+  - 真正执行前要求同窗口 fresh backup 与隔离恢复验证
+  - gate package 只含只读 SQL，不含 apply、rollback 或执行 wrapper
 
 ### 审计产物完整性
 
