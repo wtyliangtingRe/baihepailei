@@ -40,6 +40,13 @@
   - 用户明确指定测试记录时的评级清空与重新标准化规则
   - parser-safe v02 只读审计入口
 
+- [临时测试 Work 合并与标准化 v0.1](./test-work-merge-standardization-v01.md)
+  - 已确认测试污染的 canonical / merge-out 选择
+  - 事实字段、来源与外部 ID 合并规则
+  - 人工与 AI 测试评级清空规则
+  - 测试反馈归档、软归档与版本原地保留
+  - 非执行 merge dry-run 入口
+
 ### 审计产物完整性
 
 - [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
