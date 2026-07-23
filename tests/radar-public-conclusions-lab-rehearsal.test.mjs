@@ -47,6 +47,8 @@ test('lab SQL performs exact isolated apply, acceptance, rollback, and baseline 
   assert.match(builderV01, /radar-public-lab-rollback\.sql\.lab-only/u)
   assert.match(builderV01, /radarTables\.map\(\(name\) => checkLine\(`table_absent_\$\{name\}`/u)
   assert.match(builderV02, /SELECT q\.mismatch_count INTO mismatch_count FROM \(/u)
+  assert.match(builderV02, /SELECT count\(\*\) AS mismatch_count\\nFROM input i/u)
+  assert.match(builderV02, /mainFieldMismatchAggregateAliased = true/u)
   assert.match(builderV02, /generatedSqlNormalization = true/u)
 })
 
