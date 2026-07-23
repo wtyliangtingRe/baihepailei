@@ -29,7 +29,8 @@ publicationGuardRows               698
 
 - 当前 Works draft/latest 快照总数为 35,615；
 - 当前 Works published/live 快照总数为 35,615；
-- published/live 快照中的全部记录必须呈现 `_status = published`；
+- 两套快照必须各自包含 35,615 个唯一 Work ID；
+- 两套快照的 Work ID 集合必须完全一致；
 - Test Work production apply receipt 已证明：
   - `10097 → 32186`；
   - `25561 → 32094`；
@@ -37,7 +38,7 @@ publicationGuardRows               698
   - post-merge acceptance passed；
   - 83 张业务表变化与计划一致。
 
-这里的 35,615 条 live 快照不等于“最新版本中 `_status=published` 的记录数”。当前有两条 Work 存在更新后的草稿，但它们仍保留可公开的旧 published 版本；`draft=false` 会返回这些 live 版本，所以公开快照仍覆盖全部 35,615 条 Work。
+这里的 35,615 条 live 快照不等于“最新版本中 `_status=published` 的记录数”。当前有两条 Work 存在更新后的草稿，但仍保留可公开的旧 published 版本；`draft=false` 会返回它们的 live 内容，同时返回对象上的 `_status` 仍可能呈现最新文档状态。因此 `_status` 统计只作为诊断信息，不能否定一条已经由 `draft=false` 返回的 live 快照。
 
 四个测试 Work 的旧 v0.6 assessment 均被标为：
 
@@ -54,10 +55,10 @@ blocked_discarded_test_assessment
 ```text
 draft=true   → 最新 Work 快照，用于私有 radarAssessment 对比
 
-draft=false  → published/live Work 快照，用于公共生命周期与公开标题
+draft=false  → published/live Work 内容，用于公共生命周期与公开标题
 ```
 
-原因是最新 draft 可能包含已经写入的私有 AI 数据，同时其 `_status`、lite/full visibility 不能代表当前公开页面。公共 AI 结论只允许依据 published/live Work 判断是否可展示。
+公共 live 快照的存在性由 `draft=false` 返回及其 Work ID 覆盖证明。公共生命周期继续检查 live 内容中的 `catalogStatus`、lite visibility 与 full visibility，但不使用响应对象上的 `_status` 作为二次否定条件。
 
 ## 私有 AI 轨道
 
@@ -81,7 +82,6 @@ blocked_discarded_test_assessment
 - 等级为 `S/A/B/C/D/E/F`；
 - published/live Work 存在；
 - published/live `catalogStatus = active`；
-- published/live Payload `_status = published`；
 - published/live lite/full 均未隐藏；
 - 不是已作废的测试 assessment。
 
@@ -113,10 +113,11 @@ runner 会：
 3. 只读查询 `public.radar_public` 是否存在；
 4. 以 `PAYLOAD_DB_PUSH=false` 启动独立端口的临时 Next/Payload 读取服务器；
 5. 读取 35,615 条 draft/latest Works；
-6. 独立读取 35,615 条 published/live Works，并确认全部为 published 快照；
-7. 逐条生成私有与公共分类；
-8. 关闭临时读取服务器；
-9. 生成 manifest 和 ZIP。
+6. 独立读取 35,615 条 published/live Works；
+7. 校验两套快照的唯一 ID 数量和 ID 集合完全一致；
+8. 逐条生成私有与公共分类；
+9. 关闭临时读取服务器；
+10. 生成 manifest 和 ZIP。
 
 临时读取服务器默认使用端口 3101，不会替代站点当前运行端口。
 
@@ -168,18 +169,28 @@ manifest.json
 ## 成功门槛
 
 ```text
-SourceRows                       10805
-ProductionWorksRead              35615
-PublishedWorksRead               35615
-PublishedSnapshotStatusCounts    published = 35615
-GlobalBlockers                   0
-ReadyForSingleExecutionPlanning  true
-PayloadWrite                     false
-PostgreSQLWrite                  false
-MigrationGenerated               false
-SchemaPush                       false
-DedicatedAuditServer             stopped
+SourceRows                         10805
+ProductionWorksRead                35615
+PublishedWorksRead                 35615
+PublishedSnapshotUniqueIds         35615
+PublishedSnapshotIdSetMatchesDraft true
+GlobalBlockers                     0
+ReadyForSingleExecutionPlanning    true
+PayloadWrite                       false
+PostgreSQLWrite                    false
+MigrationGenerated                 false
+SchemaPush                         false
+DedicatedAuditServer               stopped
 ```
+
+`publishedSnapshotStatusCounts` 仅用于记录响应元数据。当前预期可能为：
+
+```text
+published 35613
+draft         2
+```
+
+这两条 draft 状态表示存在尚未发布的新改动，不表示 live 版本不存在。
 
 行级 blocker 可以存在；它们表示该行没有进入写入集，不等于整个审计失败。只有来源、生产基线、receipt、服务器或全集完整性错误会进入 `globalBlockers`。
 
