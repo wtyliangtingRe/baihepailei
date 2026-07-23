@@ -106,25 +106,28 @@ try {
   [Environment]::SetEnvironmentVariable('RADAR_PG_RESTORE_IMAGE', $postgresImage, 'Process')
   [Environment]::SetEnvironmentVariable('PATH', ($shimRoot + [System.IO.Path]::PathSeparator + $oldPath), 'Process')
 
-  $runnerOutput = @(
-    & $innerRunner `
-      -ExpectedBranchHead $ExpectedBranchHead `
-      -StorageBundle $StorageBundle `
-      -SchemaReviewBundle $SchemaReviewBundle `
-      -Confirm $Confirm `
-      -ExpectedStorageSHA256 $ExpectedStorageSHA256 `
-      -ExpectedSchemaReviewSHA256 $ExpectedSchemaReviewSHA256 `
-      -SourcePostgresContainer $SourcePostgresContainer `
-      -SourceDatabase $SourceDatabase `
-      -SourceDatabaseUser $SourceDatabaseUser `
-      -ReadyTimeoutSeconds $ReadyTimeoutSeconds 2>&1 |
-        Tee-Object -Variable displayedOutput
-  )
+  $runnerOutput = [System.Collections.Generic.List[string]]::new()
+  & $innerRunner `
+    -ExpectedBranchHead $ExpectedBranchHead `
+    -StorageBundle $StorageBundle `
+    -SchemaReviewBundle $SchemaReviewBundle `
+    -Confirm $Confirm `
+    -ExpectedStorageSHA256 $ExpectedStorageSHA256 `
+    -ExpectedSchemaReviewSHA256 $ExpectedSchemaReviewSHA256 `
+    -SourcePostgresContainer $SourcePostgresContainer `
+    -SourceDatabase $SourceDatabase `
+    -SourceDatabaseUser $SourceDatabaseUser `
+    -ReadyTimeoutSeconds $ReadyTimeoutSeconds *>&1 |
+      ForEach-Object {
+        $text = [string]$_
+        $runnerOutput.Add($text)
+        Write-Host $text
+      }
   if ($LASTEXITCODE -ne 0) { throw "v01 storage lab/gate runner 失败：$LASTEXITCODE" }
 
-  $outputDirectory = Get-OutputValue $runnerOutput 'OutputDirectory'
-  $labBundle = Get-OutputValue $runnerOutput 'LabEvidenceBundle'
-  $gateBundle = Get-OutputValue $runnerOutput 'ProductionGateBundle'
+  $outputDirectory = Get-OutputValue @($runnerOutput) 'OutputDirectory'
+  $labBundle = Get-OutputValue @($runnerOutput) 'LabEvidenceBundle'
+  $gateBundle = Get-OutputValue @($runnerOutput) 'ProductionGateBundle'
   foreach ($path in @($outputDirectory, $labBundle, $gateBundle)) {
     if (-not (Test-Path -LiteralPath $path)) { throw "v01 输出路径不存在：$path" }
   }
@@ -144,8 +147,8 @@ try {
   $gateSummaryPath = Join-Path $gateDirectory 'radar-public-conclusions-production-gate-summary.json'
   $gateSummary = Get-Content -LiteralPath $gateSummaryPath -Raw -Encoding UTF8 | ConvertFrom-Json -Depth 100
   $gateSummary.labEvidenceBundleSha256 = $labHash.Hash.ToLowerInvariant()
-  $gateSummary.evidenceFinalizedBy = 'run-and-package-radar-public-conclusions-storage-lab-and-gate-v02'
-  $gateSummary.labEvidenceManifestExcludesFullBackup = $true
+  $gateSummary | Add-Member -NotePropertyName evidenceFinalizedBy -NotePropertyValue 'run-and-package-radar-public-conclusions-storage-lab-and-gate-v02' -Force
+  $gateSummary | Add-Member -NotePropertyName labEvidenceManifestExcludesFullBackup -NotePropertyValue $true -Force
   Write-JsonFile $gateSummaryPath $gateSummary
   Write-EvidenceManifest -Directory $gateDirectory
   $gateHash = New-EvidenceZip -SourceDirectory $gateDirectory -DestinationZip $gateBundle
