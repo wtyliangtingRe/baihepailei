@@ -38,12 +38,14 @@ Replace-Exact `
   -Replacement '[Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$After' `
   -ExpectedCount 2
 
-Replace-Exact `
-  -Needle '$PayloadMigrationDirEnvName = ''PAYLOAD_MIGRATION_DIR''' `
-  -Replacement @'
+$payloadEnvReplacement = @'
 $PayloadMigrationDirEnvName = 'PAYLOAD_MIGRATION_DIR'
 $PayloadDbPushEnvName = 'PAYLOAD_DB_PUSH'
-'@.TrimEnd() `
+'@
+$payloadEnvReplacement = $payloadEnvReplacement.TrimEnd()
+Replace-Exact `
+  -Needle '$PayloadMigrationDirEnvName = ''PAYLOAD_MIGRATION_DIR''' `
+  -Replacement $payloadEnvReplacement `
   -ExpectedCount 1
 
 Replace-Exact `
@@ -54,7 +56,8 @@ Replace-Exact `
 $isolatedConfigNeedle = @'
   $isolated = $source.Replace($anchor, $replacement)
   [System.IO.File]::WriteAllText(
-'@.TrimEnd()
+'@
+$isolatedConfigNeedle = $isolatedConfigNeedle.TrimEnd()
 $isolatedConfigReplacement = @'
   $isolated = $source.Replace($anchor, $replacement)
   $poolAnchor = '    pool: {'
@@ -68,7 +71,8 @@ $isolatedConfigReplacement = @'
   ) -join "`n"
   $isolated = $isolated.Replace($poolAnchor, $poolReplacement)
   [System.IO.File]::WriteAllText(
-'@.TrimEnd()
+'@
+$isolatedConfigReplacement = $isolatedConfigReplacement.TrimEnd()
 Replace-Exact `
   -Needle $isolatedConfigNeedle `
   -Replacement $isolatedConfigReplacement `
@@ -78,7 +82,8 @@ $configValidationNeedle = @'
   if ($written -notmatch [regex]::Escape($PayloadMigrationDirEnvName)) {
     throw '隔离 Payload 配置没有写入临时 migrationDir。'
   }
-'@.TrimEnd()
+'@
+$configValidationNeedle = $configValidationNeedle.TrimEnd()
 $configValidationReplacement = @'
   if ($written -notmatch [regex]::Escape($PayloadMigrationDirEnvName)) {
     throw '隔离 Payload 配置没有写入临时 migrationDir。'
@@ -86,7 +91,8 @@ $configValidationReplacement = @'
   if ($written -notmatch 'default_transaction_read_only=on') {
     throw '隔离 Payload 配置没有强制 PostgreSQL 只读会话。'
   }
-'@.TrimEnd()
+'@
+$configValidationReplacement = $configValidationReplacement.TrimEnd()
 Replace-Exact `
   -Needle $configValidationNeedle `
   -Replacement $configValidationReplacement `
@@ -97,14 +103,16 @@ $baselineEnvironmentNeedle = @'
     $PayloadConfigEnvName = $temporaryConfigPath
     $PayloadMigrationDirEnvName = $temporaryMigrationDirectory
     $RadarSchemaEnvName = 'false'
-'@.TrimEnd()
+'@
+$baselineEnvironmentNeedle = $baselineEnvironmentNeedle.TrimEnd()
 $baselineEnvironmentReplacement = @'
   Invoke-WithProcessEnvironment -Variables @{
     $PayloadConfigEnvName = $temporaryConfigPath
     $PayloadMigrationDirEnvName = $temporaryMigrationDirectory
     $PayloadDbPushEnvName = 'false'
     $RadarSchemaEnvName = 'false'
-'@.TrimEnd()
+'@
+$baselineEnvironmentReplacement = $baselineEnvironmentReplacement.TrimEnd()
 Replace-Exact `
   -Needle $baselineEnvironmentNeedle `
   -Replacement $baselineEnvironmentReplacement `
@@ -118,14 +126,16 @@ $radarEnvironmentNeedle = @'
   Invoke-WithProcessEnvironment -Variables @{
     $PayloadConfigEnvName = $payloadConfigPath
     $RadarSchemaEnvName = 'true'
-'@.TrimEnd()
+'@
+$radarEnvironmentNeedle = $radarEnvironmentNeedle.TrimEnd()
 $radarEnvironmentReplacement = @'
   Invoke-WithProcessEnvironment -Variables @{
     $PayloadConfigEnvName = $temporaryConfigPath
     $PayloadMigrationDirEnvName = $repositoryMigrationPath
     $PayloadDbPushEnvName = 'false'
     $RadarSchemaEnvName = 'true'
-'@.TrimEnd()
+'@
+$radarEnvironmentReplacement = $radarEnvironmentReplacement.TrimEnd()
 Replace-Exact `
   -Needle $radarEnvironmentNeedle `
   -Replacement $radarEnvironmentReplacement `
@@ -135,7 +145,8 @@ $afterRadarNeedle = @'
   }
 
   $afterMigrationRepositoryArtifacts = @(Get-MigrationArtifacts -Directory $repositoryMigrationPath)
-'@.TrimEnd()
+'@
+$afterRadarNeedle = $afterRadarNeedle.TrimEnd()
 $afterRadarReplacement = @'
   }
 
@@ -144,7 +155,8 @@ $afterRadarReplacement = @'
   }
 
   $afterMigrationRepositoryArtifacts = @(Get-MigrationArtifacts -Directory $repositoryMigrationPath)
-'@.TrimEnd()
+'@
+$afterRadarReplacement = $afterRadarReplacement.TrimEnd()
 Replace-Exact `
   -Needle $afterRadarNeedle `
   -Replacement $afterRadarReplacement `
