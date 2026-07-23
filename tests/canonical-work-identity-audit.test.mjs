@@ -26,7 +26,7 @@ test('canonical identity database audit is UTF-8 safe and database-read-only', (
   assert.match(audit, /canonical-identity-review-alerts\.jsonl/u)
   assert.match(audit, /sourceDryRunManifestValidated = \$true/u)
   assert.doesNotMatch(audit, /\bpayload\s+migrate\b/iu)
-  assert.doesNotMatch(audit, /(?m)^\s*(?:UPDATE|INSERT|DELETE|ALTER|DROP|TRUNCATE)\b/iu)
+  assert.doesNotMatch(audit, /^\s*(?:UPDATE|INSERT|DELETE|ALTER|DROP|TRUNCATE)\b/imu)
 })
 
 test('identity summary never chooses or applies a canonical Work automatically', () => {
