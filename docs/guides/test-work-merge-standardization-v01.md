@@ -1,6 +1,6 @@
 # 临时测试 Work 合并与标准化 v0.1
 
-状态：canonical 决定已形成，仅生成 merge dry-run。尚未执行数据库写入、Payload 写入、合并、硬删除、迁移或版本改写。
+状态：canonical 决定和 v03 merge dry-run 已形成。尚未执行数据库写入、Payload 写入、合并、硬删除、迁移、版本改写或备份。
 
 ## 适用范围
 
@@ -26,7 +26,7 @@
 - 保留 Bangumi 基准、事实数据、子表、引用和版本均明显更完整的 Work；
 - 另一条 AniList 基准 Work 软归档并隐藏；
 - 把 AniList ID、MAL ID 和 canonical 缺失的事实来源资料补入；
-- `Soukou no Strain` 作为 canonical 别名保存；
+- `Soukou no Strain` 已存在于 canonical 本地化标题中，不重复新增；
 - canonical 搜索文本合并 AniList ID、AniList URL、英文标题及日文标题，但排除旧 merge 操作标记；
 - 中文简介继续作为 canonical 当前简介；英文简介继续保存在软归档来源记录及其版本中，不用旧测试评级决定覆盖关系；
 - 保留旧记录和版本历史。
@@ -124,11 +124,11 @@ pwsh -NoProfile -ExecutionPolicy Bypass `
   -DiscardTestAssessments
 ```
 
-## v03 执行前只读门槛
+## v03 执行前计划
 
 v03 读取已验证的 identity audit 与 v02 dry-run，补齐：
 
-- merge-out 标题别名保护；
+- merge-out 标题保护证据；
 - 清洗后的搜索文本合并；
 - 四条 Work 完整 JSONB exact-before 比较；
 - 所有计划关系行与反馈行的完整 JSONB 比较；
@@ -152,6 +152,7 @@ exports/TEST-WORK-MERGE-DRYRUN-V03-<timestamp>.zip
 v03 新增：
 
 - `work-standardization-plan.jsonl`
+- `alias-protection-evidence.jsonl`
 - `exact-before-expectations.json`
 
 `exact-before-readonly.sql` 中每个结果都必须返回：
@@ -162,7 +163,48 @@ matches = true
 
 只要一个结果为 `false`，或行数与预期不一致，就必须停止，重新审计和生成计划。
 
-其他主要文件继续包括：
+## 实际运行 exact-before
+
+通过下面的入口执行 v03 中的只读 SQL：
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass `
+  -File .\scripts\radar\run-and-package-test-work-exact-before-v01.ps1 `
+  -DryRunV03Directory .\exports\test-work-merge-dryrun-v03-<timestamp>
+```
+
+执行器会：
+
+1. 再次验证 v03 manifest；
+2. 拒绝包含写入或 DDL 的 SQL；
+3. 把 SQL 临时复制到 PostgreSQL 容器的 `/tmp`；
+4. 通过 `psql -X -qAt -v ON_ERROR_STOP=1` 执行；
+5. 要求所有命名检查完整出现且全部 `matches=true`；
+6. 删除容器临时 SQL；
+7. 打包原始 TSV、解析后的 JSONL、摘要与 manifest。
+
+容器 `/tmp` 临时文件是唯一文件写入，运行结束后删除；数据库事务始终为只读，不创建备份、不合并 Work。
+
+输出：
+
+```text
+exports/test-work-exact-before-<timestamp>/
+exports/TEST-WORK-EXACT-BEFORE-<timestamp>.zip
+```
+
+只有当：
+
+```text
+ExpectedChecks = 37
+ObservedChecks = 37
+MatchedChecks = 37
+FailedChecks = 0
+AllChecksMatched = true
+```
+
+才允许进入备份准备阶段。
+
+## 其他 dry-run 文件
 
 - `canonical-merge-decisions.json`
 - `field-merge-plan.jsonl`
@@ -179,7 +221,7 @@ matches = true
 ## 写入前仍需满足
 
 1. 审阅 v03 的逐字段、逐关系和搜索标准化决定；
-2. 实际运行 v03 exact-before，所有结果均为 `matches = true`；
+2. 实际运行 v03 exact-before，37 项全部为 `matches = true`；
 3. 建立并验证新的可恢复 PostgreSQL 备份；
 4. 确认反馈表、别名表、来源表的枚举和唯一约束；
 5. 生成精确事务 SQL、回滚 SQL和验收 SQL；
