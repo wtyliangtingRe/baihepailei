@@ -21,7 +21,7 @@ function replaceExact(needle, replacement, expected = 1) {
 
 replaceExact(
   `const EXPECTED_WORKS = 35615`,
-  `const EXPECTED_DRAFT_WORKS = 35615\nconst EXPECTED_PUBLISHED_WORKS = 35613`,
+  `const EXPECTED_DRAFT_WORKS = 35615\nconst EXPECTED_PUBLISHED_WORKS = 35615`,
 )
 
 replaceExact(
@@ -36,7 +36,7 @@ replaceExact(
 
 replaceExact(
   `  const works = await fetchCollection(baseUrl, token, 'works', { draft: 'true' })\n  if (works.length !== EXPECTED_WORKS) globalBlockers.push(\`payload_works_expected_\${EXPECTED_WORKS}_received_\${works.length}\`)\n  const publicConclusions = publicSchemaReady\n    ? await fetchCollection(baseUrl, token, 'radar-public-conclusions')\n    : []\n  const publicByKey = new Map(publicConclusions.map((row) => [val(row.publicationKey), row]))\n  const indexes = buildWorkIndexes(works)\n  const sourcePackageSha256 = val(sourceSummary.packageManifestSha256) || sha256File(sourceFile)`,
-  `  const draftWorks = await fetchCollection(baseUrl, token, 'works', { draft: 'true' })\n  const publishedWorks = await fetchCollection(baseUrl, token, 'works', { draft: 'false' })\n  if (draftWorks.length !== EXPECTED_DRAFT_WORKS) globalBlockers.push(\`payload_draft_works_expected_\${EXPECTED_DRAFT_WORKS}_received_\${draftWorks.length}\`)\n  if (publishedWorks.length !== EXPECTED_PUBLISHED_WORKS) globalBlockers.push(\`payload_published_works_expected_\${EXPECTED_PUBLISHED_WORKS}_received_\${publishedWorks.length}\`)\n  const publicConclusions = publicSchemaReady\n    ? await fetchCollection(baseUrl, token, 'radar-public-conclusions')\n    : []\n  const publicByKey = new Map(publicConclusions.map((row) => [val(row.publicationKey), row]))\n  const indexes = buildWorkIndexes(draftWorks)\n  const draftWorkById = new Map(draftWorks.map((work) => [val(work.id), work]))\n  const publishedWorkById = new Map(publishedWorks.map((work) => [val(work.id), work]))\n  const sourcePackageSha256 = val(sourceSummary.packageManifestSha256) || sha256File(sourceFile)`,
+  `  const draftWorks = await fetchCollection(baseUrl, token, 'works', { draft: 'true' })\n  const publishedWorks = await fetchCollection(baseUrl, token, 'works', { draft: 'false' })\n  if (draftWorks.length !== EXPECTED_DRAFT_WORKS) globalBlockers.push(\`payload_draft_works_expected_\${EXPECTED_DRAFT_WORKS}_received_\${draftWorks.length}\`)\n  if (publishedWorks.length !== EXPECTED_PUBLISHED_WORKS) globalBlockers.push(\`payload_published_works_expected_\${EXPECTED_PUBLISHED_WORKS}_received_\${publishedWorks.length}\`)\n  const nonPublishedLiveRows = publishedWorks.filter((work) => val(work?._status) !== 'published')\n  if (nonPublishedLiveRows.length) globalBlockers.push(\`payload_live_snapshot_nonpublished_rows_\${nonPublishedLiveRows.length}\`)\n  const publicConclusions = publicSchemaReady\n    ? await fetchCollection(baseUrl, token, 'radar-public-conclusions')\n    : []\n  const publicByKey = new Map(publicConclusions.map((row) => [val(row.publicationKey), row]))\n  const indexes = buildWorkIndexes(draftWorks)\n  const draftWorkById = new Map(draftWorks.map((work) => [val(work.id), work]))\n  const publishedWorkById = new Map(publishedWorks.map((work) => [val(work.id), work]))\n  const sourcePackageSha256 = val(sourceSummary.packageManifestSha256) || sha256File(sourceFile)`,
 )
 
 replaceExact(
@@ -76,7 +76,7 @@ replaceExact(
 
 replaceExact(
   `      worksRead: works.length,`,
-  `      worksRead: draftWorks.length,\n      draftWorksRead: draftWorks.length,\n      publishedWorksRead: publishedWorks.length,`,
+  `      worksRead: draftWorks.length,\n      draftWorksRead: draftWorks.length,\n      publishedWorksRead: publishedWorks.length,\n      publishedSnapshotStatusCounts: countBy(publishedWorks, (work) => work?._status),`,
 )
 
 replaceExact(
