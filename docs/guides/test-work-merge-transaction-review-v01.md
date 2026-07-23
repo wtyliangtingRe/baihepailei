@@ -26,7 +26,8 @@
 - 四条 Work 的当前人工与 AI 测试 assessment 全部清空；
 - 人工状态回到 pending，兼容 grade 回到 unknown；
 - 不创建公共 AI 结论；
-- 所有 Payload Work versions 和版本子行原地保留。
+- 所有 Payload Work versions 和版本子行原地保留；
+- 48 条 `_works_v` 与 1,070 条版本子行，共 1,118 条历史记录做逐行 JSONB exact guard，而不只比较数量。
 
 ## 事务策略
 
@@ -96,12 +97,28 @@ rollback 使用原始完整 JSONB 行恢复，不凭应用类型或默认值重�
 - `updated_at` 使用事务时间；
 - rollback 恢复原状态和原 timestamp。
 
+### 版本保护
+
+事务不会 UPDATE、INSERT、DELETE 或 reparent 任一版本行。
+
+为防止“数量没变但历史内容被改写”，以下行同时参与 apply exact-before、事务内 acceptance、rollback guard 和 baseline acceptance：
+
+```text
+_works_v rows                 48
+version child rows          1070
+exact version rows total    1118
+```
+
+此外，11 个版本关系定位器仍保留 count guard，形成“逐行内容 + 关系数量”双重校验。
+
 ## SQL 文件
 
 - `merge-transaction.sql.disabled`
   - serializable transaction；
   - lock/statement/idle timeout；
-  - exact-before；
+  - 1,146 条 exact-before 行校验；
+  - 19 个 Work 关系计数 guard；
+  - 11 个版本关系计数 guard；
   - apply；
   - 事务内 acceptance；
   - commit。
