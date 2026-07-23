@@ -6,22 +6,26 @@ import assert from 'node:assert/strict'
 
 const root = process.cwd()
 const builderPath = path.join(root, 'scripts/radar/build-radar-public-blocked-inventory-v01.mjs')
-const runnerPath = path.join(root, 'scripts/radar/run-and-package-radar-public-blocked-inventory-v01.ps1')
+const runnerV01Path = path.join(root, 'scripts/radar/run-and-package-radar-public-blocked-inventory-v01.ps1')
+const runnerV02Path = path.join(root, 'scripts/radar/run-and-package-radar-public-blocked-inventory-v02.ps1')
 const builder = fs.readFileSync(builderPath, 'utf8')
-const runner = fs.readFileSync(runnerPath, 'utf8')
+const runnerV01 = fs.readFileSync(runnerV01Path, 'utf8')
+const runnerV02 = fs.readFileSync(runnerV02Path, 'utf8')
 
-test('blocked inventory builder and runner pass their real parsers', () => {
+test('blocked inventory builder and both runners pass their real parsers', () => {
   const nodeResult = spawnSync(process.execPath, ['--check', builderPath], { cwd: root, encoding: 'utf8' })
   assert.equal(nodeResult.status, 0, nodeResult.stderr || nodeResult.stdout)
-  const escaped = runnerPath.replaceAll("'", "''")
-  const command = [
-    '$tokens = $null;',
-    '$errors = $null;',
-    `[System.Management.Automation.Language.Parser]::ParseFile('${escaped}', [ref]$tokens, [ref]$errors) | Out-Null;`,
-    'if (@($errors).Count -gt 0) { $errors | Format-List | Out-String | Write-Error; exit 1 }',
-  ].join(' ')
-  const psResult = spawnSync('pwsh', ['-NoProfile', '-Command', command], { cwd: root, encoding: 'utf8' })
-  assert.equal(psResult.status, 0, psResult.stderr || psResult.stdout)
+  for (const runnerPath of [runnerV01Path, runnerV02Path]) {
+    const escaped = runnerPath.replaceAll("'", "''")
+    const command = [
+      '$tokens = $null;',
+      '$errors = $null;',
+      `[System.Management.Automation.Language.Parser]::ParseFile('${escaped}', [ref]$tokens, [ref]$errors) | Out-Null;`,
+      'if (@($errors).Count -gt 0) { $errors | Format-List | Out-String | Write-Error; exit 1 }',
+    ].join(' ')
+    const psResult = spawnSync('pwsh', ['-NoProfile', '-Command', command], { cwd: root, encoding: 'utf8' })
+    assert.equal(psResult.status, 0, psResult.stderr || psResult.stdout)
+  }
 })
 
 test('workflow is bound to the accepted 1805 blocked audit and successful 9000-row receipt', () => {
@@ -29,8 +33,10 @@ test('workflow is bound to the accepted 1805 blocked audit and successful 9000-r
   assert.match(builder, /EXPECTED_PUBLIC_BLOCKED = 1805/u)
   assert.match(builder, /EXPECTED_PRIVATE_BLOCKED = 1444/u)
   assert.match(builder, /EXPECTED_PUBLIC_CURRENT = 9000/u)
-  assert.match(runner, /7877020D0314352531290BE0D4E334D2B17E18E6F552591DD14E30431F7837BA/u)
-  assert.match(runner, /D1E8114371926C1CDA07D91DD2DB730180D5830ACF691D7CCC6F65DE84CBE6CA/u)
+  for (const runner of [runnerV01, runnerV02]) {
+    assert.match(runner, /7877020D0314352531290BE0D4E334D2B17E18E6F552591DD14E30431F7837BA/u)
+    assert.match(runner, /D1E8114371926C1CDA07D91DD2DB730180D5830ACF691D7CCC6F65DE84CBE6CA/u)
+  }
 })
 
 test('latest alone never wins over validity and identity', () => {
@@ -67,10 +73,10 @@ test('inventory reads current draft, live, and public snapshots without writing'
   assert.match(builder, /fetchCollection\(baseUrl, token, 'works', \{ draft: 'false' \}\)/u)
   assert.match(builder, /fetchCollection\(baseUrl, token, 'radar-public-conclusions'\)/u)
   assert.match(builder, /Blocked inventory is read-only/u)
-  assert.match(runner, /default_transaction_read_only=on/u)
-  assert.match(runner, /PAYLOAD_DB_PUSH = 'false'/u)
+  assert.match(runnerV01, /default_transaction_read_only=on/u)
+  assert.match(runnerV01, /PAYLOAD_DB_PUSH = 'false'/u)
   assert.doesNotMatch(builder, /method:\s*['"](?:PATCH|PUT|DELETE)['"]/u)
-  assert.doesNotMatch(runner, /payload\s+migrate|payload\s+update|production-apply\.sql/iu)
+  assert.doesNotMatch(runnerV01, /payload\s+migrate|payload\s+update|production-apply\.sql/iu)
 })
 
 test('inventory emits machine, human-readable, lane, conflict, and manifest outputs', () => {
@@ -85,14 +91,23 @@ test('inventory emits machine, human-readable, lane, conflict, and manifest outp
     'radar-public-blocked-inventory-summary.json',
     'manifest.json',
   ]) assert.match(builder, new RegExp(expected.replaceAll('.', '\\.')))
-  assert.match(runner, /RADAR-PUBLIC-BLOCKED-INVENTORY-/u)
+  assert.match(runnerV01, /RADAR-PUBLIC-BLOCKED-INVENTORY-/u)
+})
+
+test('v02 runs the real regression suite before the read-only inventory runner', () => {
+  const testIndex = runnerV02.indexOf('& node --test $testPath')
+  const runIndex = runnerV02.indexOf('& $innerRunner @PSBoundParameters')
+  assert.ok(testIndex >= 0)
+  assert.ok(runIndex > testIndex)
+  assert.match(runnerV02, /build-radar-public-blocked-inventory-v01\.mjs/u)
+  assert.match(runnerV02, /run-and-package-radar-public-blocked-inventory-v01\.ps1/u)
 })
 
 test('runner validates cardinality and stops the dedicated audit server', () => {
-  assert.match(runner, /summary\.inventory\.rows -ne 1805/u)
-  assert.match(runner, /summary\.inventory\.uniqueWorkIds -ne 1805/u)
-  assert.match(runner, /currentPublicConclusionsRead -ne 9000/u)
-  assert.match(runner, /Stop-ProcessTree/u)
-  assert.match(runner, /DedicatedAuditServer\s+: Stopped/u)
-  assert.match(runner, /ProductionApplyAuthorized\s+: False/u)
+  assert.match(runnerV01, /summary\.inventory\.rows -ne 1805/u)
+  assert.match(runnerV01, /summary\.inventory\.uniqueWorkIds -ne 1805/u)
+  assert.match(runnerV01, /currentPublicConclusionsRead -ne 9000/u)
+  assert.match(runnerV01, /Stop-ProcessTree/u)
+  assert.match(runnerV01, /DedicatedAuditServer\s+: Stopped/u)
+  assert.match(runnerV01, /ProductionApplyAuthorized\s+: False/u)
 })
