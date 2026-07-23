@@ -79,6 +79,13 @@
   - 真正执行前要求同窗口 fresh backup 与隔离恢复验证
   - gate package 只含只读 SQL，不含 apply、rollback 或执行 wrapper
 
+- [Test Work production apply-once v0.1](./test-work-production-apply-once-v01.md)
+  - 精确 apply 授权只覆盖两组已审阅测试重复记录
+  - 自动暂停 Compose writer，并拒绝本地 Node/Python writer
+  - 同窗口 fresh backup、隔离恢复和 schema fingerprint
+  - serializable apply、独立 acceptance、83 表差异与不可变 receipt
+  - commit 后失败不自动 rollback，并保持 writer 暂停
+
 ### 审计产物完整性
 
 - [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
