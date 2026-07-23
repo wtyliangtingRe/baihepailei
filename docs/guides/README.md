@@ -115,6 +115,13 @@
   - 非 Radar 表行数往返一致，完整 dump 留本地、仅上传证据 ZIP
   - 演练通过后仍需 production execution gate 与独立精确授权
 
+- [Radar 公共结论存储规范化 v0.1](./radar-public-storage-normalization-v01.md)
+  - 在业务审计与物理数据库之间建立可复用的 storage normalization 边界
+  - 将六位微秒时间按 PostgreSQL `timestamp(3)` 规则舍入为 UTC 毫秒
+  - 只修改 `assessedAt` 与由实际存储内容重算的 `conclusionSha256`
+  - 保留业务审计和 migration DDL，仅取代旧 ready JSONL 与数据计划
+  - 为新的隔离演练和 production gate 提供 storage-ready 不可变输入
+
 ### 审计产物完整性
 
 - [审计产物完整性与字符编码指南 v0.1](./audit-artifact-integrity-v01.md)
