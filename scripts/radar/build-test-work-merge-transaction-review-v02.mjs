@@ -53,12 +53,34 @@ replaceExact(
     }`,
 )
 replaceExact(
+  `  const targetVersionIds = relatedRows
+    .filter((entry) => entry.tableName === '_works_v' && targetIds.map(String).includes(String(parentId(entry))))
+    .map((entry) => entry.row.id)`,
+  `  const targetVersionEntries = relatedRows
+    .filter((entry) => entry.tableName === '_works_v' && targetIds.map(String).includes(String(parentId(entry))))
+  const targetVersionIds = targetVersionEntries.map((entry) => entry.row.id)
+  const versionPreservationExactRows = [
+    ...targetVersionEntries.map((entry) => ({
+      tableSchema: entry.tableSchema || 'public',
+      tableName: entry.tableName,
+      row: entry.row,
+    })),
+    ...versionRows
+      .filter((entry) => targetVersionIds.map(String).includes(String(parentId(entry))))
+      .map((entry) => ({
+        tableSchema: entry.tableSchema || 'public',
+        tableName: entry.tableName,
+        row: entry.row,
+      })),
+  ].filter((entry) => entry.row?.id !== null && entry.row?.id !== undefined)`,
+)
+replaceExact(
   `    ...deletedRows.map((row) => ({ tableSchema: row.tableSchema, tableName: row.tableName, row: row.beforeRow })),
     ...feedbackRows.map((row) => ({ tableSchema: row.tableSchema, tableName: row.tableName, row: row.beforeRow })),`,
   `    ...deletedRows.map((row) => ({ tableSchema: row.tableSchema, tableName: row.tableName, row: row.beforeRow })),
     ...feedbackRows.map((row) => ({ tableSchema: row.tableSchema, tableName: row.tableName, row: row.beforeRow })),
     ...skippedRows.map((row) => ({ tableSchema: row.tableSchema, tableName: row.tableName, row: row.baselineRow })),
-    ...preservedRows.map((row) => ({ tableSchema: row.tableSchema, tableName: row.tableName, row: row.baselineRow })),`,
+    ...versionPreservationExactRows,`,
 )
 replaceExact(
   `    ...feedbackRows.map((row) => plpgsqlExactRowCheck({
@@ -82,11 +104,11 @@ replaceExact(
       row: row.baselineRow,
       label: \`acceptance_unchanged:\${row.tableSchema}.\${row.tableName}:\${row.rowId}\`,
     })),
-    ...preservedRows.map((row) => plpgsqlExactRowCheck({
+    ...versionPreservationExactRows.map((row) => plpgsqlExactRowCheck({
       tableSchema: row.tableSchema,
       tableName: row.tableName,
-      row: row.baselineRow,
-      label: \`acceptance_preserved:\${row.tableSchema}.\${row.tableName}:\${row.rowId}\`,
+      row: row.row,
+      label: \`acceptance_version_preserved:\${row.tableSchema}.\${row.tableName}:\${row.row.id}\`,
     })),
     ...afterRelationCounts.map((row) => plpgsqlRelationCountCheck({`,
 )
@@ -115,11 +137,11 @@ replaceExact(
       label: \`rollback_guard_unchanged:\${row.tableSchema}.\${row.tableName}:\${row.rowId}\`,
       lock: true,
     })),
-    ...preservedRows.map((row) => plpgsqlExactRowCheck({
+    ...versionPreservationExactRows.map((row) => plpgsqlExactRowCheck({
       tableSchema: row.tableSchema,
       tableName: row.tableName,
-      row: row.baselineRow,
-      label: \`rollback_guard_preserved:\${row.tableSchema}.\${row.tableName}:\${row.rowId}\`,
+      row: row.row,
+      label: \`rollback_guard_version_preserved:\${row.tableSchema}.\${row.tableName}:\${row.row.id}\`,
       lock: true,
     })),
     ...afterRelationCounts.map((row) => plpgsqlRelationCountCheck({`,
@@ -129,6 +151,7 @@ replaceExact(
     versionPolicy: versionPlan,`,
   `    semanticDuplicateSkips: skippedRows,
     preservedRelationRows: preservedRows,
+    versionPreservationExactRows,
     versionPolicy: versionPlan,`,
 )
 replaceExact(
@@ -136,15 +159,16 @@ replaceExact(
       versionGroupsPreserved: versionPlan.length,`,
   `      semanticDuplicateSkips: skippedRows.length,
       preservedRelationRows: preservedRows.length,
+      versionRowsGuardedExactly: versionPreservationExactRows.length,
       versionGroupsPreserved: versionPlan.length,`,
 )
 replaceExact(
   "    `- Semantic duplicate skips: ${review.operationCounts.semanticDuplicateSkips}`,\n    `- Versions preserved in place: ${review.operationCounts.versionGroupsPreserved}`,",
-  "    `- Semantic duplicate skips: ${review.operationCounts.semanticDuplicateSkips}`,\n    `- Preserved relation rows guarded exactly: ${review.operationCounts.preservedRelationRows}`,\n    `- Versions preserved in place: ${review.operationCounts.versionGroupsPreserved}`,",
+  "    `- Semantic duplicate skips: ${review.operationCounts.semanticDuplicateSkips}`,\n    `- Preserved relation rows represented by the plan: ${review.operationCounts.preservedRelationRows}`,\n    `- Version and version-child rows guarded exactly: ${review.operationCounts.versionRowsGuardedExactly}`,\n    `- Versions preserved in place: ${review.operationCounts.versionGroupsPreserved}`,",
 )
 replaceExact(
   "  console.log(`FeedbackArchives: ${review.operationCounts.feedbackArchives}`)\n  console.log(`StandardizationRefinements: ${review.operationCounts.standardizationRefinements}`)",
-  "  console.log(`FeedbackArchives: ${review.operationCounts.feedbackArchives}`)\n  console.log(`PreservedRelationRows: ${review.operationCounts.preservedRelationRows}`)\n  console.log(`StandardizationRefinements: ${review.operationCounts.standardizationRefinements}`)",
+  "  console.log(`FeedbackArchives: ${review.operationCounts.feedbackArchives}`)\n  console.log(`PreservedRelationRows: ${review.operationCounts.preservedRelationRows}`)\n  console.log(`VersionRowsGuardedExactly: ${review.operationCounts.versionRowsGuardedExactly}`)\n  console.log(`StandardizationRefinements: ${review.operationCounts.standardizationRefinements}`)",
 )
 
 const temporary = path.join(os.tmpdir(), `build-test-work-merge-transaction-review-v02-${crypto.randomUUID()}.mjs`)
