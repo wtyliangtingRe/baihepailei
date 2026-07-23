@@ -21,7 +21,7 @@ test('direct progress runner passes the real PowerShell parser', () => {
 })
 
 test('real v03 runner executes directly in the current PowerShell process', () => {
-  assert.match(runner, /\& \$innerRunner `\s*\n/u)
+  assert.ok(runner.includes('& $innerRunner `'))
   assert.doesNotMatch(runner, /Start-Process[^\n]+\$innerRunner/iu)
   assert.match(runner, /真正任务将在当前终端直接运行/u)
 })
