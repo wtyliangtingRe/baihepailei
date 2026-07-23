@@ -31,14 +31,20 @@ function Replace-Exact([string]$Needle, [string]$Replacement, [int]$Expected = 1
 $summaryValidationReplacement = @'
 $summary.production.worksRead -ne 35615 -or
     $summary.production.publishedWorksRead -ne 35615 -or
+    $summary.production.publishedSnapshotUniqueIds -ne 35615 -or
+    $summary.production.publishedSnapshotIdSetMatchesDraft -ne $true -or
 '@
 $validationMetadataReplacement = @'
 productionWorksRead = 35615
   publishedWorksRead = 35615
+  publishedSnapshotUniqueIds = 35615
+  publishedSnapshotIdSetMatchesDraft = $true
 '@
 $outputReplacement = @'
 Write-Host "ProductionWorksRead            : $($summary.production.worksRead)"
 Write-Host "PublishedWorksRead             : $($summary.production.publishedWorksRead)"
+Write-Host "PublishedSnapshotUniqueIds     : $($summary.production.publishedSnapshotUniqueIds)"
+Write-Host "PublishedSnapshotIdSetMatchesDraft: $($summary.production.publishedSnapshotIdSetMatchesDraft)"
 '@
 
 Replace-Exact `
