@@ -31,5 +31,5 @@ test('v02 identity wrapper remains read-only and packages only validated evidenc
   assert.match(wrapper, /mergePerformed -ne \$false/u)
   assert.match(wrapper, /DatabaseWrite\s+: False/u)
   assert.match(wrapper, /MergePerformed\s+: False/u)
-  assert.doesNotMatch(wrapper, /(?m)^\s*(?:UPDATE|INSERT|DELETE|ALTER|DROP|TRUNCATE)\b/iu)
+  assert.doesNotMatch(wrapper, /^\s*(?:UPDATE|INSERT|DELETE|ALTER|DROP|TRUNCATE)\b/imu)
 })
