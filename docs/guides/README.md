@@ -149,11 +149,11 @@
   - 最终统一生成 ready-create / ready-update / still-blocked 结果包
   - 现有 9,000 条作为 already-current 基线逐哈希保持不变
 
-- [Radar blocked 最新有效记录与冲突保留策略 v0.1](./radar-blocked-latest-valid-conflict-policy-v01.md)
-  - current 选择最新、有效、完整且身份确定的同轨道记录
-  - 新完整快照整体替换旧 AI 快照，明确为空时清除旧值
-  - 所有旧记录、来源、哈希和冲突保存在 history / conflict ledger
-  - 影响等级、规则或身份的冲突继续 blocked，不按时间戳强行裁决
+- [Radar blocked 最新快照覆盖与历史保留策略 v0.2](./radar-blocked-latest-valid-conflict-policy-v01.md)
+  - current 选择身份确定且结构有效的最新同轨道记录
+  - 新快照整体覆盖旧 AI 快照，明确为空时清除旧值
+  - 等级、规则和措辞冲突不再阻塞，旧值与冲突只保存在 history
+  - 身份未定、作废测试、时间无效或结构损坏仍保持 blocked
   - live inventory 与 250 条波次入口：`run-and-package-radar-public-blocked-inventory-v03.ps1`
 
 ### 审计产物完整性
