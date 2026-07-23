@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import crypto from 'node:crypto'
 import fs from 'node:fs'
-import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
@@ -30,7 +29,7 @@ replaceExact(
   `    const targetWork = privatePlan?.target?.id\n      ? workById.get(val(privatePlan.target.id)) || null\n      : null`,
 )
 
-const temporary = path.join(os.tmpdir(), `build-all-remaining-radar-global-audit-v02-${crypto.randomUUID()}.mjs`)
+const temporary = path.join(root, `.build-all-remaining-radar-global-audit-v02-${crypto.randomUUID()}.mjs`)
 fs.writeFileSync(temporary, content, 'utf8')
 try {
   const check = spawnSync(process.execPath, ['--check', temporary], { encoding: 'utf8' })
