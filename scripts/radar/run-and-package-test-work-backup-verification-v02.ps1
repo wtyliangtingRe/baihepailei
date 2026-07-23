@@ -10,12 +10,37 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$source = Join-Path $PSScriptRoot 'run-and-package-test-work-backup-verification-v01.ps1'
+$originalScriptRoot = (Resolve-Path -LiteralPath $PSScriptRoot).Path
+$source = Join-Path $originalScriptRoot 'run-and-package-test-work-backup-verification-v01.ps1'
 if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
   throw "找不到备份恢复验证 v01 源脚本：$source"
 }
 
 $content = Get-Content -LiteralPath $source -Raw -Encoding UTF8
+
+$scriptRootOccurrences = ([regex]::Matches(
+  $content,
+  [regex]::Escape('$PSScriptRoot')
+)).Count
+if ($scriptRootOccurrences -ne 3) {
+  throw "预期在 v01 中找到三处 PSScriptRoot，实际为：$scriptRootOccurrences"
+}
+$escapedOriginalScriptRoot = $originalScriptRoot.Replace("'", "''")
+$strictNeedle = 'Set-StrictMode -Version Latest'
+$strictReplacement = @"
+Set-StrictMode -Version Latest
+`$originalScriptRoot = '$escapedOriginalScriptRoot'
+"@
+$strictOccurrences = ([regex]::Matches($content, [regex]::Escape($strictNeedle))).Count
+if ($strictOccurrences -ne 1) {
+  throw "预期找到一处 StrictMode 插入点，实际为：$strictOccurrences"
+}
+$content = $content.Replace($strictNeedle, $strictReplacement.TrimEnd())
+$content = $content.Replace('$PSScriptRoot', '$originalScriptRoot')
+if ($content.Contains('$PSScriptRoot')) {
+  throw '临时备份验证脚本仍包含 PSScriptRoot；拒绝执行。'
+}
+
 $insertNeedle = '$operationError = $null'
 $insertReplacement = @'
 $operationError = $null
