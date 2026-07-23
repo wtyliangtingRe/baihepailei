@@ -26,7 +26,7 @@ replaceExact(
 
 replaceExact(
   `function publicAssessmentFor(source, privatePlan) {`,
-  `function publicAssessmentFor(source, privatePlan, publishedWork) {`,
+  `function publicLifecycleBlockers(work) {\n  if (!work) return ['missing_published_snapshot']\n  return unique([\n    val(work.catalogStatus) !== 'active' ? \`catalog_status_\${val(work.catalogStatus) || 'missing'}\` : '',\n    work.isLiteVisible === false ? 'lite_hidden' : '',\n    work.isFullVisible === false ? 'full_hidden' : '',\n  ])\n}\n\nfunction publicAssessmentFor(source, privatePlan, publishedWork) {`,
 )
 
 replaceExact(
@@ -36,7 +36,7 @@ replaceExact(
 
 replaceExact(
   `  const works = await fetchCollection(baseUrl, token, 'works', { draft: 'true' })\n  if (works.length !== EXPECTED_WORKS) globalBlockers.push(\`payload_works_expected_\${EXPECTED_WORKS}_received_\${works.length}\`)\n  const publicConclusions = publicSchemaReady\n    ? await fetchCollection(baseUrl, token, 'radar-public-conclusions')\n    : []\n  const publicByKey = new Map(publicConclusions.map((row) => [val(row.publicationKey), row]))\n  const indexes = buildWorkIndexes(works)\n  const sourcePackageSha256 = val(sourceSummary.packageManifestSha256) || sha256File(sourceFile)`,
-  `  const draftWorks = await fetchCollection(baseUrl, token, 'works', { draft: 'true' })\n  const publishedWorks = await fetchCollection(baseUrl, token, 'works', { draft: 'false' })\n  if (draftWorks.length !== EXPECTED_DRAFT_WORKS) globalBlockers.push(\`payload_draft_works_expected_\${EXPECTED_DRAFT_WORKS}_received_\${draftWorks.length}\`)\n  if (publishedWorks.length !== EXPECTED_PUBLISHED_WORKS) globalBlockers.push(\`payload_published_works_expected_\${EXPECTED_PUBLISHED_WORKS}_received_\${publishedWorks.length}\`)\n  const nonPublishedLiveRows = publishedWorks.filter((work) => val(work?._status) !== 'published')\n  if (nonPublishedLiveRows.length) globalBlockers.push(\`payload_live_snapshot_nonpublished_rows_\${nonPublishedLiveRows.length}\`)\n  const publicConclusions = publicSchemaReady\n    ? await fetchCollection(baseUrl, token, 'radar-public-conclusions')\n    : []\n  const publicByKey = new Map(publicConclusions.map((row) => [val(row.publicationKey), row]))\n  const indexes = buildWorkIndexes(draftWorks)\n  const draftWorkById = new Map(draftWorks.map((work) => [val(work.id), work]))\n  const publishedWorkById = new Map(publishedWorks.map((work) => [val(work.id), work]))\n  const sourcePackageSha256 = val(sourceSummary.packageManifestSha256) || sha256File(sourceFile)`,
+  `  const draftWorks = await fetchCollection(baseUrl, token, 'works', { draft: 'true' })\n  const publishedWorks = await fetchCollection(baseUrl, token, 'works', { draft: 'false' })\n  if (draftWorks.length !== EXPECTED_DRAFT_WORKS) globalBlockers.push(\`payload_draft_works_expected_\${EXPECTED_DRAFT_WORKS}_received_\${draftWorks.length}\`)\n  if (publishedWorks.length !== EXPECTED_PUBLISHED_WORKS) globalBlockers.push(\`payload_published_works_expected_\${EXPECTED_PUBLISHED_WORKS}_received_\${publishedWorks.length}\`)\n  const draftWorkIds = draftWorks.map((work) => val(work.id)).filter(Boolean)\n  const publishedWorkIds = publishedWorks.map((work) => val(work.id)).filter(Boolean)\n  const draftWorkIdSet = new Set(draftWorkIds)\n  const publishedWorkIdSet = new Set(publishedWorkIds)\n  const duplicateDraftIds = draftWorkIds.filter((id, index) => draftWorkIds.indexOf(id) !== index)\n  const duplicatePublishedIds = publishedWorkIds.filter((id, index) => publishedWorkIds.indexOf(id) !== index)\n  const missingPublishedIds = [...draftWorkIdSet].filter((id) => !publishedWorkIdSet.has(id))\n  const unexpectedPublishedIds = [...publishedWorkIdSet].filter((id) => !draftWorkIdSet.has(id))\n  if (duplicateDraftIds.length) globalBlockers.push(\`payload_draft_snapshot_duplicate_ids_\${unique(duplicateDraftIds).length}\`)\n  if (duplicatePublishedIds.length) globalBlockers.push(\`payload_live_snapshot_duplicate_ids_\${unique(duplicatePublishedIds).length}\`)\n  if (missingPublishedIds.length) globalBlockers.push(\`payload_live_snapshot_missing_ids_\${missingPublishedIds.length}\`)\n  if (unexpectedPublishedIds.length) globalBlockers.push(\`payload_live_snapshot_unexpected_ids_\${unexpectedPublishedIds.length}\`)\n  const publicConclusions = publicSchemaReady\n    ? await fetchCollection(baseUrl, token, 'radar-public-conclusions')\n    : []\n  const publicByKey = new Map(publicConclusions.map((row) => [val(row.publicationKey), row]))\n  const indexes = buildWorkIndexes(draftWorks)\n  const draftWorkById = new Map(draftWorks.map((work) => [val(work.id), work]))\n  const publishedWorkById = new Map(publishedWorks.map((work) => [val(work.id), work]))\n  const sourcePackageSha256 = val(sourceSummary.packageManifestSha256) || sha256File(sourceFile)`,
 )
 
 replaceExact(
@@ -46,7 +46,7 @@ replaceExact(
 
 replaceExact(
   `      ...lifecycleBlockers(targetWork),`,
-  `      ...lifecycleBlockers(publishedWork),`,
+  `      ...publicLifecycleBlockers(publishedWork),`,
 )
 
 replaceExact(
@@ -76,12 +76,12 @@ replaceExact(
 
 replaceExact(
   `      worksRead: works.length,`,
-  `      worksRead: draftWorks.length,\n      draftWorksRead: draftWorks.length,\n      publishedWorksRead: publishedWorks.length,\n      publishedSnapshotStatusCounts: countBy(publishedWorks, (work) => work?._status),`,
+  `      worksRead: draftWorks.length,\n      draftWorksRead: draftWorks.length,\n      publishedWorksRead: publishedWorks.length,\n      publishedSnapshotStatusCounts: countBy(publishedWorks, (work) => work?._status),\n      publishedSnapshotUniqueIds: publishedWorkIdSet.size,\n      publishedSnapshotIdSetMatchesDraft: missingPublishedIds.length === 0 && unexpectedPublishedIds.length === 0,`,
 )
 
 replaceExact(
   `  console.log(\`ProductionWorksRead: \${works.length}\`)`,
-  `  console.log(\`ProductionWorksRead: \${draftWorks.length}\`)\n  console.log(\`PublishedWorksRead: \${publishedWorks.length}\`)`,
+  `  console.log(\`ProductionWorksRead: \${draftWorks.length}\`)\n  console.log(\`PublishedWorksRead: \${publishedWorks.length}\`)\n  console.log(\`PublishedSnapshotUniqueIds: \${publishedWorkIdSet.size}\`)\n  console.log(\`PublishedSnapshotIdSetMatchesDraft: \${missingPublishedIds.length === 0 && unexpectedPublishedIds.length === 0}\`)`,
 )
 
 const temporary = path.join(root, `.build-all-remaining-radar-global-audit-v03-${crypto.randomUUID()}.mjs`)
