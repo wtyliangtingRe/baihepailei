@@ -7,13 +7,21 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..')
-Set-Location $repoRoot
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+Set-Location -LiteralPath $repoRoot
 
-$sourceDir = [System.IO.Path]::GetFullPath($IdentityAuditDirectory)
-if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
-  throw "找不到 canonical identity 审计目录：$sourceDir"
+if ([System.IO.Path]::IsPathRooted($IdentityAuditDirectory)) {
+  $candidateSourceDir = [System.IO.Path]::GetFullPath($IdentityAuditDirectory)
+} else {
+  $candidateSourceDir = [System.IO.Path]::GetFullPath(
+    (Join-Path $repoRoot $IdentityAuditDirectory)
+  )
 }
+if (-not (Test-Path -LiteralPath $candidateSourceDir -PathType Container)) {
+  throw "找不到 canonical identity 审计目录：$candidateSourceDir"
+}
+$sourceDir = (Resolve-Path -LiteralPath $candidateSourceDir).Path
+
 if (-not $DiscardTestAssessments.IsPresent) {
   throw '必须显式传入 -DiscardTestAssessments 才能生成测试评级清理计划。'
 }
