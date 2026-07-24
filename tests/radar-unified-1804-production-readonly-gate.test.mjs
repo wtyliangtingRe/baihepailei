@@ -8,6 +8,7 @@ const guidePath =
   'docs/guides/radar-unified-1804-production-readonly-gate-v01.md'
 
 const runner = fs.readFileSync(runnerPath, 'utf8')
+const normalizedRunner = runner.replace(/\r\n/g, '\n')
 const guide = fs.readFileSync(guidePath, 'utf8')
 
 test('gate is bound to exact accepted artifacts and cardinality', () => {
@@ -74,9 +75,12 @@ test('gate cannot authorize or execute production apply', () => {
 
 
 test('gate cleans source-container temporary files before packaging evidence', () => {
-  const cleanup = runner.indexOf('清理源容器临时文件后封装证据')
-  const copyStatus = runner.indexOf('Copy-Item `\n    -LiteralPath $stageStatusPath')
+  const cleanup = normalizedRunner.indexOf('清理源容器临时文件后封装证据')
+  const copyStatus = normalizedRunner.indexOf(
+    'Copy-Item `\n    -LiteralPath $stageStatusPath',
+  )
   assert.ok(cleanup >= 0)
+  assert.ok(copyStatus >= 0)
   assert.ok(copyStatus > cleanup)
   assert.match(runner, /sourceContainerTempFilesRemoved = \$true/u)
   assert.match(runner, /evidencePackageCompleted = \$true/u)
