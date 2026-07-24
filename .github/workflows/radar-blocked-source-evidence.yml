@@ -8,6 +8,13 @@ on:
       - .github/workflows/radar-blocked-source-evidence.yml
       - scripts/radar/fetch-radar-blocked-source-evidence.mjs
       - data/radar-blocked-research/source-ids.json.gz.b64
+  pull_request:
+    branches:
+      - agent/radar-public-conclusions-v01
+    paths:
+      - .github/workflows/radar-blocked-source-evidence.yml
+      - scripts/radar/fetch-radar-blocked-source-evidence.mjs
+      - data/radar-blocked-research/source-ids.json.gz.b64
 
 permissions:
   contents: read
