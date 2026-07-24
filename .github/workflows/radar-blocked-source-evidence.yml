@@ -1,0 +1,40 @@
+name: Radar blocked source evidence
+
+on:
+  push:
+    branches:
+      - agent/radar-blocked-research-all-v01
+    paths:
+      - .github/workflows/radar-blocked-source-evidence.yml
+      - scripts/radar/fetch-radar-blocked-source-evidence.mjs
+      - data/radar-blocked-research/source-ids.json.gz.b64
+
+permissions:
+  contents: read
+
+jobs:
+  fetch-source-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out private research branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate fetcher syntax
+        run: node --check scripts/radar/fetch-radar-blocked-source-evidence.mjs
+
+      - name: Fetch public structured evidence
+        run: node scripts/radar/fetch-radar-blocked-source-evidence.mjs
+
+      - name: Upload evidence cache
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-blocked-source-evidence
+          path: exports/radar-blocked-source-evidence/
+          if-no-files-found: error
+          retention-days: 7
