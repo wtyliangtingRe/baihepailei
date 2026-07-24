@@ -35,13 +35,23 @@ jobs:
       - name: Validate fetcher syntax
         run: node --check scripts/radar/fetch-radar-blocked-source-evidence.mjs
 
-      - name: Fetch public structured evidence
-        run: node scripts/radar/fetch-radar-blocked-source-evidence.mjs
+      - name: Prepare diagnostic output
+        run: mkdir -p exports/radar-blocked-source-evidence
 
-      - name: Upload evidence cache
+      - name: Fetch public structured evidence
+        id: fetch
+        continue-on-error: true
+        run: node scripts/radar/fetch-radar-blocked-source-evidence.mjs 2>&1 | tee exports/radar-blocked-source-evidence/actions-run.log
+
+      - name: Upload evidence cache and diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: radar-blocked-source-evidence
           path: exports/radar-blocked-source-evidence/
           if-no-files-found: error
           retention-days: 7
+
+      - name: Preserve failure status after artifact upload
+        if: steps.fetch.outcome != 'success'
+        run: exit 1
