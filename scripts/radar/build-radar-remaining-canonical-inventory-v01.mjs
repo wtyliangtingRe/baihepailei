@@ -241,9 +241,6 @@ export function buildInventory({
     if (published && val(published.catalogStatus) !== 'active') {
       reasons.push(`catalog_status_${val(published.catalogStatus) || 'missing'}`)
     }
-    if (published && val(published._status) !== 'published') {
-      reasons.push(`payload_status_${val(published._status) || 'missing'}`)
-    }
 
     if (reasons.length) {
       const row = canonical({
