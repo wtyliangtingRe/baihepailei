@@ -54,7 +54,7 @@ function conclusion(id, workId, overrides = {}) {
 
 test('inventory separates already-current, missing, supersede, and excluded rows', () => {
   const draftWorks = [work(1), work(2), work(3), work(4, { catalogStatus: 'archived' }), work(5), work(6)]
-  const publishedWorks = [work(1), work(2), work(3), work(4, { catalogStatus: 'archived' }), work(6)]
+  const publishedWorks = [work(1), work(2, { _status: undefined }), work(3), work(4, { catalogStatus: 'archived' }), work(6)]
   const publicConclusions = [
     conclusion(101, 1),
     conclusion(103, 3, { title: 'Stale title' }),
@@ -137,6 +137,7 @@ test('write-like flags are rejected and the builder contains no content mutation
   assert.match(builderSource, /directPostgresqlWrite: false/u)
   assert.doesNotMatch(builderSource, /method:\s*'(?:PUT|PATCH|DELETE)'/u)
   assert.doesNotMatch(builderSource, /\/api\/(?:works|radar-public-conclusions).*method:\s*'POST'/su)
+  assert.doesNotMatch(builderSource, /payload_status_/u)
 })
 
 test('runner binds the accepted main baseline and keeps the user worktree untouched', () => {
