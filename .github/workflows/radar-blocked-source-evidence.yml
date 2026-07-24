@@ -6,15 +6,17 @@ on:
       - agent/radar-blocked-research-all-v01
     paths:
       - .github/workflows/radar-blocked-source-evidence.yml
+      - scripts/radar/assemble-radar-blocked-source-ids.mjs
       - scripts/radar/fetch-radar-blocked-source-evidence.mjs
-      - data/radar-blocked-research/source-ids.json.gz.b64
+      - data/radar-blocked-research/source-ids.*.part
   pull_request:
     branches:
       - agent/radar-public-conclusions-v01
     paths:
       - .github/workflows/radar-blocked-source-evidence.yml
+      - scripts/radar/assemble-radar-blocked-source-ids.mjs
       - scripts/radar/fetch-radar-blocked-source-evidence.mjs
-      - data/radar-blocked-research/source-ids.json.gz.b64
+      - data/radar-blocked-research/source-ids.*.part
 
 permissions:
   contents: read
@@ -32,8 +34,13 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Validate fetcher syntax
-        run: node --check scripts/radar/fetch-radar-blocked-source-evidence.mjs
+      - name: Validate scripts
+        run: |
+          node --check scripts/radar/assemble-radar-blocked-source-ids.mjs
+          node --check scripts/radar/fetch-radar-blocked-source-evidence.mjs
+
+      - name: Assemble and verify source IDs
+        run: node scripts/radar/assemble-radar-blocked-source-ids.mjs
 
       - name: Fetch public structured evidence
         run: |
