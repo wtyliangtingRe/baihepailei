@@ -1,0 +1,65 @@
+name: Radar blocked VNDB evidence
+
+on:
+  push:
+    branches:
+      - agent/radar-blocked-research-all-v01
+    paths:
+      - .github/workflows/radar-blocked-vndb-evidence.yml
+      - scripts/radar/assemble-radar-blocked-source-ids.mjs
+      - scripts/radar/fetch-radar-blocked-vndb-evidence.mjs
+      - data/radar-blocked-research/source-ids.*.part
+  pull_request:
+    branches:
+      - agent/radar-public-conclusions-v01
+    paths:
+      - .github/workflows/radar-blocked-vndb-evidence.yml
+      - scripts/radar/assemble-radar-blocked-source-ids.mjs
+      - scripts/radar/fetch-radar-blocked-vndb-evidence.mjs
+      - data/radar-blocked-research/source-ids.*.part
+
+permissions:
+  contents: read
+
+jobs:
+  fetch-vndb-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out private research branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate scripts
+        run: |
+          node --check scripts/radar/assemble-radar-blocked-source-ids.mjs
+          node --check scripts/radar/fetch-radar-blocked-vndb-evidence.mjs
+
+      - name: Assemble and verify source IDs
+        run: node scripts/radar/assemble-radar-blocked-source-ids.mjs
+
+      - name: Fetch batched VNDB evidence
+        run: |
+          mkdir -p exports
+          node scripts/radar/fetch-radar-blocked-vndb-evidence.mjs 2>&1 | tee exports/radar-blocked-vndb-evidence-actions.log
+
+      - name: Pack VNDB evidence cache
+        run: |
+          tar -czf radar-blocked-vndb-evidence.tar.gz \
+            -C exports \
+            radar-blocked-vndb-evidence \
+            radar-blocked-vndb-evidence-actions.log
+          sha256sum radar-blocked-vndb-evidence.tar.gz
+
+      - name: Upload packed VNDB evidence cache
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-blocked-vndb-evidence-packed
+          path: radar-blocked-vndb-evidence.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
