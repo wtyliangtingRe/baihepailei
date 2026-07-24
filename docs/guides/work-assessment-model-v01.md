@@ -19,12 +19,14 @@ The legacy business `status` column is retired. It must not be read, written, ex
 
 ### Assessment tracks
 
-A Work can expose two independent reference tracks:
+A Work exposes two fully independent reference tracks:
 
 1. Human assessment track
 2. Public AI Radar assessment track
 
 Neither track is presented as an absolute verdict. Both retain evidence, uncertainty, source coverage, contradictions, and assessment provenance when available.
+
+Every canonical Work must converge to exactly one current public AI Radar conclusion. A human grade, human verification state, low source count, low confidence, lifecycle state, or visibility state must not suppress, delete, overwrite, or prevent the AI track. The AI track likewise must not mutate the human track.
 
 The public presentation shape is identical for both tracks:
 
@@ -55,17 +57,19 @@ The public presentation shape is identical for both tracks:
 
 A missing value remains empty. Missing fields are not converted into zero, false, or a fabricated conclusion.
 
-### Effective grade
+### Display and search grade
 
-The effective public grade is derived in this order:
+The primary grade shown in Work windows and search results is derived in this order:
 
 1. A valid human assessment grade whose state is assessed or disputed.
 2. Otherwise, a current public AI Radar grade.
 3. Otherwise, `unknown`.
 
-The stored legacy `rank` field is not an assessment source. During transition, public exports may continue emitting `rank`, but it is recomputed from the rule above and marked compatibility-only.
+This precedence is a presentation and search rule only. It may drive cards, filters, sorting, aggregation, and compatibility output, but it does not control whether either track is stored, published, updated, or considered current.
 
-A pending human grade remains visible as reference material but does not override a current public AI grade.
+The stored legacy `rank` field is not an assessment source. During transition, public exports may continue emitting `rank`, but it is recomputed from the display rule above and marked compatibility-only.
+
+A pending human grade remains visible as reference material but does not replace the current public AI grade. When valid human and AI grades disagree, both tracks remain visible and independently auditable; only the primary display grade prefers human.
 
 ### Historical rank preservation
 
@@ -85,6 +89,10 @@ Every non-`unknown` historical `rank` must first be classified:
 Public AI conclusions remain in `radar-public-conclusions` and never publish, patch, or restore Works drafts.
 
 A private or stale `works.radarAssessment` value is not a public AI conclusion. Only the current record in `radar-public-conclusions` may become the public AI track.
+
+Evidence shortage changes uncertainty metadata, not AI-track existence. A single-source or low-confidence conclusion must retain its true source count, lower confidence and coverage, warnings, and `requiresHumanReview`, while still producing the required current AI conclusion for the canonical Work. Noncanonical merge-out records are covered by their explicit canonical Work rather than receiving duplicate current records.
+
+Every canonical Work must receive at least one standardized multilingual external research scan. The scan attempts Chinese, Japanese, and English queries across official material, structured databases, walkthroughs, Wikis, long reviews, and community discussion. A bootstrap AI conclusion may exist before that scan is complete, but it must expose explicit uncertainty and remain queued for research supersession; `no discussion found` must never be confused with `not searched`.
 
 ## Human assessment normalization
 

@@ -11,7 +11,9 @@
 - 人工结论保存在 canonical `humanAssessment` 轨道；
 - 私有 AI 研究结果保存在 Work 的 `radarAssessment` 轨道；
 - 公共 AI 结论保存在独立、versionless 的 `radar_public` 集合；
-- 公共有效等级优先级固定为：
+- 每个 canonical Work 必须收敛到恰好一条 current 公共 AI 结论；
+- human 与 AI 在存储、更新和审计上互不覆盖、互不阻塞；
+- 窗口与搜索的主显示等级优先级固定为：
 
 ```text
 valid human assessment
@@ -19,16 +21,17 @@ valid human assessment
 → unknown
 ```
 
-AI 写入不得覆盖人工字段，也不得通过发布 Works 草稿来公开 AI 结论。
+该顺序只决定窗口与搜索的主显示等级，不决定 AI 轨道是否存在。AI 写入不得覆盖人工字段，也不得通过发布 Works 草稿来公开 AI 结论；human track 的存在或冲突也不得阻止 AI 结论生成或更新。
 
 ### 1.2 增补，不是每轮全量重写
 
 每一轮可以输入一份新增或更新研究包，但执行计划必须重新对照当前生产状态：
 
 ```text
-新增结论      → ready
-内容已一致    → already_current
-证据或身份不足 → blocked
+新增结论          → ready
+内容已一致        → already_current
+证据不足          → ready_with_explicit_uncertainty
+canonical 身份不足 → blocked_identity
 ```
 
 已经完成且 `conclusionSha256`、来源包、规则版本和目标 Work 身份均未变化的作品不重新写入。只有以下情况进入新一轮更新：
@@ -38,7 +41,9 @@ AI 写入不得覆盖人工字段，也不得通过发布 Works 草稿来公开 
 - 规则版本改变并影响结论；
 - canonical Work 身份发生修正；
 - 旧公共结论需要被新 AI 结论 supersede；
-- 人工审核要求重新研究。
+- 人工审核要求重新研究；
+- 标准化多语言扫描或深挖找到新事实；
+- 旧结论的研究账本仍标记为未扫描或扫描不完整。
 
 首轮建表后，后续增补通常不再生成 schema migration，只生成数据 upsert/supersede 计划。
 
@@ -101,17 +106,40 @@ AI 写入不得覆盖人工字段，也不得通过发布 Works 草稿来公开 
 
 ### 3.2 来源与证据门槛
 
-以下情况保持 blocked：
+只有以下情况可以暂缓绑定公共 AI 结论：
 
-- Work 身份无法唯一确认；
-- 来源冲突尚未处理；
-- X/未知等级不满足公共发布条件；
-- publication guard 生效；
-- 规则命中为空或证据强度不足；
-- 已确认作废的测试 assessment；
-- 人工锁定或明确要求重新研究。
+- canonical Work 身份无法唯一确认；
+- 记录是明确的 noncanonical merge-out，且已有 canonical target；
+- 已确认作废的测试 assessment 尚未产生新的 canonical 研究结果。
+
+单来源、低覆盖度、规则冲突或仍需人工复核时，必须生成带显式不确定性的 AI 结论，而不是保持 AI 轨道为空。此类结论保留真实 sourceCount、较低 confidence / coverage、warnings 与 `requiresHumanReview = true`。
+
+publication guard、human track、`catalogStatus` 与 visibility 进入展示和审计元数据，不得单独阻止 AI 结论存在。
 
 旧测试记录不能通过 ID remap 重新成为 canonical Work 的结论，必须产生新的研究结果。
+
+### 3.3 每部作品的标准化多语言扫描
+
+每个 canonical Work 至少执行一次中文、日文、英文标准扫描，使用原名、译名、英文名、罗马字、别名、系列名和重要角色名，尝试以下来源类别：
+
+- 官方资料；
+- 结构化数据库；
+- 攻略、路线和全结局资料；
+- Wiki、章节或逐话摘要；
+- 长评、通关报告和完结分析；
+- 社区讨论与排雷线索。
+
+所有作品都执行标准扫描；拟评 S/A、拟评 E/F、多路线游戏、男性风险、版本冲突、单来源和身份不稳定作品必须进入更深的作品级调查。
+
+社区材料不得整段直接成为自动结论。先拆成具体剧情事实，核对媒介、版本、路线、章节和时间点；严重雷点通常需要直接证据或至少两份独立、具体且一致的二手来源。
+
+研究必须同时执行支持证据搜索、反证搜索和冲突搜索。搜不到讨论时记录 `searched_no_public_discussion_found`，不得记成 `not_searched`。标准扫描尚未完成的 AI snapshot 可以作为 bootstrap 结论存在，但必须降低置信度、标记仍需研究，并在扫描完成后被新 snapshot supersede。
+
+详细规则与研究账本字段见：
+
+```text
+docs/guides/radar-work-level-multilingual-research-policy-v01.md
+```
 
 ## 4. 阶段 B：私有 AI 轨道
 
@@ -159,18 +187,19 @@ draft=false
 
 ### 5.2 公共候选门槛
 
-公共 AI ready 必须同时满足：
+公共 AI create/update 必须同时满足：
 
-- 私有 assessment 身份、规则和证据有效；
-- `needsPublicationGuard !== true`；
+- canonical Work 身份唯一且可绑定；
 - compatibility grade 为 `S/A/B/C/D/E/F`；
-- `catalogStatus = active`；
-- live snapshot 可公开；
-- lite/full 均未隐藏；
-- 不是已作废测试 assessment；
+- 规则、sourceSummary、assessedAt 与完整 snapshot 结构有效；
+- 不是未重建的作废测试 assessment；
 - `publicationKey = work:<canonical Work ID>`；
 - `work = workIdSnapshot`；
 - `conclusionSha256` 有效且唯一。
+
+单来源、低 confidence、human 冲突、`catalogStatus`、Payload `_status` 与 lite/full visibility 不阻止 AI 存储。它们必须被准确记录，并在展示层决定是否以及如何向用户呈现。生命周期与 visibility 决定界面是否展示 Work，不决定独立 AI 记录是否存在。
+
+标准化多语言扫描状态属于研究完整性元数据。扫描尚未完成时允许生成 bootstrap AI conclusion，但必须明确较低 confidence / coverage、真实 sourceCount、`requiresHumanReview` 和待 supersede 状态，不能把 bootstrap 误称为完成深挖。
 
 公共分类：
 
@@ -178,12 +207,13 @@ draft=false
 ready_public_ai_after_schema
 ready_public_ai_create
 ready_public_ai_update
+ready_public_ai_low_evidence
 already_current_public_ai
-blocked_public_ai
+blocked_identity_public_ai
 blocked_discarded_test_assessment
 ```
 
-审计输出必须区分 `privateBlockers` 和 `publicBlockers`，不得把生命周期 blocker 污染私有统计。
+审计输出必须区分 canonical identity blockers、AI evidence warnings、research scan status 与 display/lifecycle state。不得把 human、证据强度或生命周期展示状态误写成 AI 轨道缺失原因。
 
 ## 6. 阶段 D：公共 schema review
 

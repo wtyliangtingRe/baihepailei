@@ -8,14 +8,30 @@
 
 - [Work 评级与结构规范模型 v0.1](./work-assessment-model-v01.md)
   - 人工审核轨道与公共 AI Radar 轨道
-  - 有效等级优先级
+  - 双轨存储完全独立，human 优先仅用于窗口与搜索展示
+  - 每个 canonical Work 的公共 AI 全覆盖要求
   - 生命周期字段与废止字段
   - 人工审核新旧字段统一原则
   - 历史 `rank` 来源保护
 
+- [Radar human/AI 双轨与 AI 全覆盖规则 v0.1](./radar-dual-track-ai-coverage-policy-v01.md)
+  - human 与 AI 互不覆盖、互不阻塞
+  - 每个 canonical Work 恰好一条 current AI 结论
+  - 单来源与低置信度使用显式不确定性，而不是缺失 AI 结论
+  - lifecycle/visibility 只控制界面展示，不控制 AI 存储
+
+- [Radar 作品级多语言研究与深挖规则 v0.1](./radar-work-level-multilingual-research-policy-v01.md)
+  - 每部作品至少一次中文、日文、英文标准扫描
+  - 官方、结构化数据库、攻略、Wiki、长评和社区六类来源
+  - S/A、E/F、多路线、男性风险、冲突与单来源的深挖触发条件
+  - 支持证据、反证与冲突并行搜索
+  - 搜不到讨论与尚未搜索严格分离
+  - 每个 canonical Work 的可追溯研究账本
+
 - [Radar AI 增补与公共发布运行手册 v0.1](./radar-ai-incremental-publication-runbook-v01.md)
   - 新研究包、私有 AI 与公共 AI 的双轨增补路线
   - 已完成结论保持 `already_current`，只写新增或变化记录
+  - 每部作品标准扫描与高影响作品深挖
   - 双快照全局审计、publication guard 与 canonical Work 身份门槛
   - 首次 schema、隔离往返演练、生产 apply-once 与独立 rollback 授权
   - 大波次内部可恢复子批次、证据包与不可变 receipt
