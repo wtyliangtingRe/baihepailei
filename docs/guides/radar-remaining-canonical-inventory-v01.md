@@ -39,10 +39,9 @@ wave count                  10
 以发布快照为公共身份基准。一个 Work 进入 canonical inventory 必须同时满足：
 
 - draft 与 published 双快照均存在；
-- `catalogStatus === active`；
-- published `_status === published`。
+- published `catalogStatus === active`。
 
-`isLiteVisible` 与 `isFullVisible` 不决定 AI 记录是否存在，因此不会导致排除。归档 merge-out、未发布记录以及快照身份缺失记录进入 `excluded-works.jsonl`。
+`draft=false` 的 live snapshot 是否存在本身就是发布身份门槛；不再依赖响应中可能省略的 `_status` 字段二次判断。`isLiteVisible` 与 `isFullVisible` 也不决定 AI 记录是否存在，因此不会导致排除。归档 merge-out、未进入 live snapshot 的记录以及快照身份缺失记录进入 `excluded-works.jsonl`。
 
 不根据标题包含“测试”等模糊文本自动排除，避免误伤真实作品。测试污染必须通过已经固化的 canonical/archived 状态解决。
 
