@@ -11,6 +11,7 @@ import { Evidence } from './src/collections/Evidence'
 import { FeedbackSubmissions } from './src/collections/FeedbackSubmissions'
 import { Media } from './src/collections/Media'
 import { Organizations } from './src/collections/Organizations'
+import { RadarPublicConclusions } from './src/collections/RadarPublicConclusions'
 import { RadarResearchRecords } from './src/collections/RadarResearchRecords'
 import { Rules } from './src/collections/Rules'
 import { StewardshipNotices } from './src/collections/StewardshipNotices'
@@ -33,6 +34,12 @@ import { syncWorkToPublicIndexes } from './src/lib/publicIndexSync'
  */
 const payloadSchemaPush = String(process.env['PAYLOAD_DB_PUSH'] || 'false').toLowerCase() === 'true'
 const stewardshipSchemaReady = String(process.env['STEWARDSHIP_NOTICES_SCHEMA_READY'] || 'true').toLowerCase() !== 'false'
+/**
+ * Radar public conclusions are enabled by default. The migration preparer sets
+ * this to false only while taking a no-SQL snapshot of the already-deployed
+ * schema, then restores it before generating the additive Radar migration.
+ */
+const radarPublicConclusionsSchemaReady = String(process.env['RADAR_PUBLIC_CONCLUSIONS_SCHEMA_READY'] || 'true').toLowerCase() !== 'false'
 
 const WorksWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Works) : Works
 const CreatorsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Creators) : Creators
@@ -202,6 +209,7 @@ const CreatorsWithAudit = withContentAudit(CreatorsWithOptionalStewardship, 'cre
 const OrganizationsWithAudit = withContentAudit(OrganizationsWithOptionalStewardship, 'organizations')
 
 const EvidenceWithAudit = withContentAudit(Evidence, 'evidence')
+const RadarPublicConclusionsWithAudit = withContentAudit(RadarPublicConclusions, 'radar-public-conclusions')
 const RadarResearchRecordsWithAudit = withContentAudit(RadarResearchRecords, 'radar-research-records')
 const TermsWithAudit = withContentAudit(Terms, 'terms')
 const WarningsWithAudit = withContentAudit(Warnings, 'warnings')
@@ -256,6 +264,7 @@ export default buildConfig({
     AuditEvents,
     Media,
     WorksWithSafeLifecycleStatus,
+    ...(radarPublicConclusionsSchemaReady ? [RadarPublicConclusionsWithAudit] : []),
     CreatorsWithAudit,
     OrganizationsWithAudit,
     EvidenceWithAudit,
