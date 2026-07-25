@@ -48,7 +48,7 @@ test('v02 runner switches only the builder and exposes preserved diagnostics', (
   assert.match(runner, /build-radar-remaining-canonical-inventory-v02\.mjs/u)
   assert.match(runner, /Replace-Exact/u)
   assert.match(runner, /inventory V02 已完成/u)
-  assert.match(runner, /\.Replace\('\/', '\\\\'\)/u)
+  assert.ok(runner.includes("$_.Replace('/', '\\')"))
   assert.match(runner, /D:\\binv\\\*/u)
   assert.match(runner, /inventory-server-stderr\.log/u)
   assert.match(runner, /部分输出目录/u)
