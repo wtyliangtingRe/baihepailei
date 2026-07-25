@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process'
 import {
   ASSESSMENT_INPUT_OWNED_FIELDS,
   ASSESSMENT_OUTCOME_FIELDS,
+  GRADE_ORDER,
   VERSION,
   archiveInventory,
   assertConfined,
@@ -88,15 +89,52 @@ function assembledOutcome(row) {
   return Object.fromEntries(ASSESSMENT_OUTCOME_FIELDS.map((key) => [key, row?.assessment?.[key] ?? null]))
 }
 
-function containsAutomaticX(row) {
+function ruleAssessments(row) {
+  if (Array.isArray(row?.outcome?.ruleAssessments)) return row.outcome.ruleAssessments
+  if (Array.isArray(row?.assessment?.ruleAssessments)) return row.assessment.ruleAssessments
+  return Array.isArray(row?.ruleAssessments) ? row.ruleAssessments : []
+}
+
+function matchedRule(rule) {
+  return rule?.matched !== false
+}
+
+function ruleCodePrefix(rule) {
+  return /^([XEF])-/iu.exec(val(rule?.code))?.[1]?.toUpperCase() || null
+}
+
+export function ruleCodeGradeWarnings(row) {
+  const workId = val(row?.workId) || '<unknown>'
+  const warnings = []
+  for (const rule of ruleAssessments(row).filter(matchedRule)) {
+    const prefix = ruleCodePrefix(rule)
+    const grade = val(rule?.grade).toUpperCase()
+    if (prefix && grade !== prefix) warnings.push(`rule_code_grade_conflict:${workId}:${val(rule?.code)}:${grade || 'missing'}`)
+  }
+  return warnings
+}
+
+function automaticXFinding(row) {
   const values = [
     row?.assessmentMode === 'exact' ? row?.exactGradeSuggestion : null,
     row?.gradeRange?.best,
     row?.gradeRange?.likely,
     row?.gradeRange?.worst,
-    ...((row?.ruleAssessments || []).filter((rule) => rule?.matched !== false).map((rule) => rule?.grade)),
+    row?.outcome?.type === 'exact' ? row?.outcome?.provisionalExactSuggestion : null,
+    row?.outcome?.boundedRange?.best,
+    row?.outcome?.boundedRange?.likely,
+    row?.outcome?.boundedRange?.worst,
   ]
-  return values.some((value) => val(value).toUpperCase() === 'X')
+  if (values.some((value) => val(value).toUpperCase() === 'X')) return `automatic_x_grade:${val(row?.workId) || '<unknown>'}`
+  for (const rule of ruleAssessments(row)) {
+    const grade = val(rule?.grade).toUpperCase()
+    const prefix = ruleCodePrefix(rule)
+    if (grade === 'X' || (matchedRule(rule) && prefix === 'X')) {
+      const conflict = prefix === 'X' && grade !== 'X' ? `:code_grade_conflict:${grade || 'missing'}` : ''
+      return `automatic_x_rule:${val(row?.workId) || '<unknown>'}:${val(rule?.code) || '<missing-code>'}:${grade || 'missing'}${conflict}`
+    }
+  }
+  return null
 }
 
 function assertRowReleaseState(input, response, assembled) {
@@ -210,6 +248,7 @@ export function validateAssessmentPackageRoot(root, acceptance = {}, outerSha256
   let inputOwnedRewriteMismatches = 0
   let outcomeMismatches = 0
   let automaticXGrades = 0
+  const automaticXFindings = []
   const seenWaves = new Set()
 
   for (let waveIndex = 0; waveIndex < manifest.waves.length; waveIndex += 1) {
@@ -278,7 +317,11 @@ export function validateAssessmentPackageRoot(root, acceptance = {}, outerSha256
       }
       validateOutcome(response, input.researchDisposition)
       if (!sameJson(responseOutcome(response), assembledOutcome(assembled)) || !sameJson(response.riskLabels, assembled.assessment?.riskLabels)) outcomeMismatches += 1
-      if (containsAutomaticX(response)) automaticXGrades += 1
+      const automaticX = automaticXFinding(response)
+      if (automaticX) {
+        automaticXGrades += 1
+        automaticXFindings.push(automaticX)
+      }
       assertRowReleaseState(input, response, assembled)
     }
     allInputs.push(...waveInputRows)
@@ -299,7 +342,7 @@ export function validateAssessmentPackageRoot(root, acceptance = {}, outerSha256
   if (identityOrderMismatches !== 0) throw new Error(`Input-response-assembled identity/order mismatches: ${identityOrderMismatches}`)
   if (inputOwnedRewriteMismatches !== 0) throw new Error(`Input-owned field rewrite mismatches: ${inputOwnedRewriteMismatches}`)
   if (outcomeMismatches !== 0) throw new Error(`Response-assembled outcome mismatches: ${outcomeMismatches}`)
-  if (automaticXGrades !== 0) throw new Error(`Automatic X grades forbidden: ${automaticXGrades}`)
+  if (automaticXGrades !== 0) throw new Error(`Automatic X grades forbidden: ${automaticXGrades}; ${automaticXFindings[0]}`)
 
   const outcomeCounts = countBy(allResponses, 'assessmentMode')
   const laneCounts = countBy(allInputs, 'researchDisposition')
@@ -364,11 +407,13 @@ export function normalizeImportRow(assembled, trace = {}) {
     `human_review_required:${assembled.workId}`,
     ...(assembled.reviewOrReleaseBlockers || []),
   ]
+  const reviewWarnings = ruleCodeGradeWarnings(assembled)
   return {
     ...inputOwned,
     importTrace: clone(trace),
     outcome,
     reviewOrReleaseBlockers: unique(releaseBlockers),
+    reviewWarnings,
     requiresHumanReview: true,
     publicationEligible: false,
     releaseEligible: false,
@@ -383,7 +428,9 @@ function isMaterialRisk(value) {
 }
 
 function severeRule(row) {
-  return row.outcome.ruleAssessments.some((rule) => rule?.matched !== false && ['E', 'F'].includes(val(rule?.grade).toUpperCase()))
+  return ruleAssessments(row).some((rule) => matchedRule(rule) && (
+    ['E', 'F'].includes(val(rule?.grade).toUpperCase()) || ['E', 'F'].includes(ruleCodePrefix(rule))
+  ))
 }
 
 function csv(value) {
@@ -443,6 +490,7 @@ export function writeImportReviewOutputs(validated, outputRoot, dataLocalRoot = 
 
   const waveSummaries = validated.waves.map((wave) => {
     const selected = rows.filter((row) => row.importTrace.wave === wave.wave)
+    const waveWarnings = selected.flatMap((row) => row.reviewWarnings)
     const summary = {
       version: IMPORT_VERSION,
       wave: wave.wave,
@@ -453,6 +501,7 @@ export function writeImportReviewOutputs(validated, outputRoot, dataLocalRoot = 
       identityOrderMismatches: 0,
       inputOwnedRewriteMismatches: 0,
       structuralBlockers: [],
+      warnings: waveWarnings,
       reviewOrReleaseBlockerCounts: {
         humanReviewRequired: selected.length,
         needsMoreResearchReviewRequired: selected.filter((row) => row.researchDisposition === 'needs_more_research').length,
@@ -472,7 +521,7 @@ export function writeImportReviewOutputs(validated, outputRoot, dataLocalRoot = 
       ...(lanes.needs_more_research.length ? [`needs_more_research_review_required:${lanes.needs_more_research.length}`] : []),
       ...(lanes.identity_review.length ? [`identity_resolution_required:${lanes.identity_review.length}`] : []),
     ],
-    warnings: validated.verification.warnings,
+    warnings: unique([...validated.verification.warnings, ...rows.flatMap((row) => row.reviewWarnings)]),
   }
   writeJson(path.join(root, 'aggregate/blocker-warning-index-v02.json'), blockerWarningIndex)
   const summary = {
@@ -501,6 +550,7 @@ export function writeImportReviewOutputs(validated, outputRoot, dataLocalRoot = 
     publicationEligible: false,
     releaseEligible: false,
     normalPublicationGatePass: false,
+    dryRunOnly: true,
     pageNotice: PAGE_NOTICE,
     safety: IMPORT_SAFETY,
   }
@@ -521,7 +571,95 @@ export function writeImportReviewOutputs(validated, outputRoot, dataLocalRoot = 
   return { root, rows, outcomes, lanes, risks, waveSummaries, summary }
 }
 
+export function validatePlannerRow(row, index = 0) {
+  const label = val(row?.workId) || `row-${index + 1}`
+  if (!row || typeof row !== 'object' || Array.isArray(row)) throw new Error(`Invalid planner row: ${label}`)
+  if (row.requiresHumanReview !== true || row.publicationEligible !== false || row.releaseEligible !== false || row.normalPublicationGatePass !== false) {
+    throw new Error(`Planner row release/publication gate opened: ${label}`)
+  }
+  if (row.pageNotice !== PAGE_NOTICE) throw new Error(`Planner row page wording mismatch: ${label}`)
+  const type = val(row?.outcome?.type)
+  if (!['exact', 'bounded_range', 'labels_only'].includes(type)) throw new Error(`Invalid planner outcome type: ${label}:${type || 'missing'}`)
+  if (!Array.isArray(row.outcome.riskLabels) || !Array.isArray(row.outcome.ruleAssessments)) throw new Error(`Invalid planner outcome evidence: ${label}`)
+  const automaticX = automaticXFinding(row)
+  if (automaticX) throw new Error(`Automatic X grades forbidden in planner row: ${automaticX}`)
+  const hasFinalGrade = Object.prototype.hasOwnProperty.call(row, 'finalGrade') || Object.prototype.hasOwnProperty.call(row.outcome, 'finalGrade')
+  if (type === 'exact') {
+    const exact = val(row.outcome.provisionalExactSuggestion).toUpperCase()
+    if (!GRADE_ORDER.includes(exact) || exact === 'X' || row.outcome.boundedRange != null) throw new Error(`Invalid exact planner outcome: ${label}`)
+  } else if (type === 'bounded_range') {
+    const range = row.outcome.boundedRange
+    const grades = range && [val(range.best).toUpperCase(), val(range.likely).toUpperCase(), val(range.worst).toUpperCase()]
+    const indexes = grades?.map((grade) => GRADE_ORDER.indexOf(grade))
+    if (hasFinalGrade || row.outcome.provisionalExactSuggestion != null || !grades || grades.some((grade) => !GRADE_ORDER.includes(grade) || grade === 'X') || indexes[0] > indexes[1] || indexes[1] > indexes[2]) {
+      throw new Error(`Invalid bounded-range planner outcome: ${label}`)
+    }
+  } else if (hasFinalGrade || row.outcome.provisionalExactSuggestion != null || row.outcome.boundedRange != null || row.outcome.insufficientCertainty !== true) {
+    throw new Error(`Invalid labels-only planner outcome: ${label}`)
+  }
+  return ruleCodeGradeWarnings(row)
+}
+
+function checksumEntries(root) {
+  const receiptFile = path.join(root, 'SHA256SUMS')
+  if (!fs.existsSync(receiptFile)) throw new Error('Importer SHA256SUMS missing')
+  const entries = new Map()
+  const lines = fs.readFileSync(receiptFile, 'utf8').trim().split(/\r?\n/u).filter(Boolean)
+  if (lines.length === 0) throw new Error('Importer SHA256SUMS is empty')
+  for (const line of lines) {
+    const match = /^([0-9a-f]{64})  (.+)$/iu.exec(line)
+    if (!match) throw new Error(`Invalid importer SHA256SUMS entry: ${line}`)
+    const relative = match[2].replace(/\\/gu, '/')
+    const file = assertConfined(root, relative, 'import checksum path')
+    if (entries.has(relative)) throw new Error(`Duplicate importer SHA256SUMS entry: ${relative}`)
+    entries.set(relative, { file, sha256: match[1].toLowerCase() })
+  }
+  return entries
+}
+
+function verifyChecksumEntry(entries, relative, label) {
+  const entry = entries.get(relative)
+  if (!entry) throw new Error(`${label} is not listed in importer SHA256SUMS: ${relative}`)
+  if (!fs.existsSync(entry.file) || sha256File(entry.file) !== entry.sha256) throw new Error(`${label} SHA-256 mismatch: ${relative}`)
+  return entry.file
+}
+
+export function loadValidatedPlannerInput(outputRoot, rowsFile, dataLocalRoot = path.resolve('data_local')) {
+  const root = assertImportOutputPath(outputRoot, dataLocalRoot)
+  const canonicalRowsRelative = 'rows/all-imported-review-v02.jsonl'
+  const canonicalRowsFile = path.join(root, canonicalRowsRelative)
+  const requestedRowsFile = assertImportOutputPath(rowsFile, dataLocalRoot)
+  if (path.resolve(requestedRowsFile) !== path.resolve(canonicalRowsFile)) throw new Error('Planner rows must be the canonical completed importer output')
+  const entries = checksumEntries(root)
+  const verifiedRowsFile = verifyChecksumEntry(entries, canonicalRowsRelative, 'Importer rows file')
+  const summaryRelative = 'aggregate/import-summary-v02.json'
+  const summaryFile = verifyChecksumEntry(entries, summaryRelative, 'Importer aggregate summary')
+  const summary = readJson(summaryFile, 'import aggregate summary')
+  const rows = readJsonl(verifiedRowsFile)
+  if (Number(summary.importedRows) !== rows.length) throw new Error(`Importer summary row count mismatch: ${summary.importedRows}/${rows.length}`)
+  if (!Array.isArray(summary.structuralBlockers) || summary.structuralBlockers.length !== 0) throw new Error('Importer summary has structural blockers')
+  for (const key of ['identityOrderMismatches', 'inputOwnedRewriteMismatches', 'outcomeMismatches', 'automaticXGrades']) {
+    if (Number(summary[key]) !== 0) throw new Error(`Importer summary ${key} must be zero`)
+  }
+  if (summary.releaseEligible !== false || summary.normalPublicationGatePass !== false || summary.dryRunOnly !== true || summary.safety?.dryRunOnly !== true) {
+    throw new Error('Importer summary release or dry-run safety state invalid')
+  }
+  const rowWarnings = rows.flatMap((row, index) => validatePlannerRow(row, index))
+  return {
+    root,
+    rows,
+    summary,
+    rowWarnings,
+    integrity: {
+      rowsRelative: canonicalRowsRelative,
+      rowsSha256: entries.get(canonicalRowsRelative).sha256,
+      summarySha256: entries.get(summaryRelative).sha256,
+    },
+  }
+}
+
 export function buildWebsiteRepresentationPlan(rows) {
+  const rowWarnings = rows.flatMap((row, index) => validatePlannerRow(row, index))
   const records = rows.map((row) => {
     const common = {
       representationKind: row.researchDisposition === 'identity_review' ? 'identity_unresolved' : row.outcome.type,
@@ -565,6 +703,7 @@ export function buildWebsiteRepresentationPlan(rows) {
         ...(counts.needsMoreResearch ? [`needs_more_research_review_required:${counts.needsMoreResearch}`] : []),
         ...(counts.identityUnresolved ? [`identity_resolution_required:${counts.identityUnresolved}`] : []),
       ],
+      warnings: unique(rowWarnings),
       releaseEligible: false,
       normalPublicationGatePass: false,
       safety: IMPORT_SAFETY,

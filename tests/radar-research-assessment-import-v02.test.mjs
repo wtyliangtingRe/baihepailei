@@ -23,6 +23,7 @@ import {
   validateAssessmentPackageRoot,
   writeImportReviewOutputs,
 } from '../scripts/radar/lib/research-assessment-import-v02.mjs'
+import { runPlan } from '../scripts/radar/plan-radar-research-assessment-v02-dryrun.mjs'
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const testRuns = path.join(repo, 'data_local/test-runs/radar-research-assessment-import-v02')
@@ -278,6 +279,36 @@ function updateResponseHashes(fixture) {
   writeJson(fixture.waveSummaryFile, wave)
 }
 
+function setWaveOneRules(fixture, index, rules) {
+  const responses = fs.readFileSync(fixture.responseFile, 'utf8').trim().split(/\r?\n/u).map(JSON.parse)
+  responses[index].ruleAssessments = structuredClone(rules)
+  writeRows(fixture.responseFile, responses)
+  const assembled = fs.readFileSync(fixture.assembledFile, 'utf8').trim().split(/\r?\n/u).map(JSON.parse)
+  assembled[index].assessment.ruleAssessments = structuredClone(rules)
+  writeRows(fixture.assembledFile, assembled)
+  const aggregate = fs.readFileSync(fixture.aggregateAssembledFile, 'utf8').trim().split(/\r?\n/u).map(JSON.parse)
+  aggregate[index].assessment.ruleAssessments = structuredClone(rules)
+  writeRows(fixture.aggregateAssembledFile, aggregate)
+  updateResponseHashes(fixture)
+}
+
+function plannerOutput() {
+  const fixture = packageFixture()
+  const output = path.join(temporary('planner-output-'), 'review')
+  const written = writeImportReviewOutputs(fixture.validate(), output, path.resolve(repo, 'data_local'))
+  return { fixture, output, written, rowsFile: path.join(output, 'rows/all-imported-review-v02.jsonl'), checksums: path.join(output, 'SHA256SUMS') }
+}
+
+function updateOutputChecksum(output, relative) {
+  const checksumFile = path.join(output, 'SHA256SUMS')
+  const lines = fs.readFileSync(checksumFile, 'utf8').trim().split(/\r?\n/u)
+  const replacement = `${sha256File(path.join(output, relative))}  ${relative}`
+  const index = lines.findIndex((line) => line.endsWith(`  ${relative}`))
+  assert.notEqual(index, -1, relative)
+  lines[index] = replacement
+  fs.writeFileSync(checksumFile, `${lines.join('\n')}\n`)
+}
+
 test('all three outcome shapes remain distinct', () => {
   const fixture = packageFixture()
   const validated = fixture.validate()
@@ -311,6 +342,35 @@ test('automatic X is rejected', () => {
   writeRows(fixture.responseFile, responses)
   updateResponseHashes(fixture)
   assert.throws(() => fixture.validate(), /non-X|Automatic X/u)
+})
+
+test('rule grade X is rejected even when the rule is marked unmatched', () => {
+  const fixture = packageFixture()
+  setWaveOneRules(fixture, 0, [{ code: 'A-UNMATCHED', grade: 'X', matched: false }])
+  assert.throws(() => fixture.validate(), /Automatic X grades forbidden.*automatic_x_rule/u)
+})
+
+test('matched X-prefixed rule codes are rejected with missing or non-X grades', () => {
+  for (const grade of [undefined, 'A']) {
+    const fixture = packageFixture()
+    const rule = { code: 'X-BLOCK', matched: true }
+    if (grade) rule.grade = grade
+    setWaveOneRules(fixture, 0, [rule])
+    assert.throws(() => fixture.validate(), /Automatic X grades forbidden.*automatic_x_rule.*code_grade_conflict/u)
+  }
+})
+
+test('matched E/F-prefixed rules without grades enter the severe review index with warnings', () => {
+  const fixture = packageFixture()
+  setWaveOneRules(fixture, 0, [{ code: 'E-REVIEW', matched: true }])
+  setWaveOneRules(fixture, 1, [{ code: 'F-REVIEW', matched: true }])
+  const output = path.join(temporary('outputs-'), 'review')
+  const written = writeImportReviewOutputs(fixture.validate(), output, path.resolve(repo, 'data_local'))
+  const severeWorkIds = new Set(written.risks.severe_e_f_rule.map((row) => row.workId))
+  assert.equal(severeWorkIds.has('1001'), true)
+  assert.equal(severeWorkIds.has('1002'), true)
+  assert.match(written.summary.warnings.join('\n'), /rule_code_grade_conflict:1001:E-REVIEW:missing/u)
+  assert.match(written.summary.warnings.join('\n'), /rule_code_grade_conflict:1002:F-REVIEW:missing/u)
 })
 
 test('immutable receipt and package manifest tampering are rejected', () => {
@@ -395,6 +455,36 @@ test('website representation plan has four review views and zero mutation action
   assert.equal(plan.records.every((record) => record.releaseEligible === false && record.normalPublicationGatePass === false), true)
 })
 
+test('standalone planner rejects a tampered imported rows JSONL', () => {
+  const prepared = plannerOutput()
+  fs.appendFileSync(prepared.rowsFile, '{}\n')
+  assert.throws(() => runPlan(['--out-dir', prepared.output]), /Importer rows file SHA-256 mismatch/u)
+})
+
+test('standalone planner rejects rows absent from the importer checksum manifest', () => {
+  const prepared = plannerOutput()
+  const lines = fs.readFileSync(prepared.checksums, 'utf8').trim().split(/\r?\n/u).filter((line) => !line.endsWith('  rows/all-imported-review-v02.jsonl'))
+  fs.writeFileSync(prepared.checksums, `${lines.join('\n')}\n`)
+  assert.throws(() => runPlan(['--out-dir', prepared.output]), /not listed in importer SHA256SUMS/u)
+})
+
+test('standalone planner rejects imported rows with an opened release or publication gate', () => {
+  for (const [key, value] of [['releaseEligible', true], ['publicationEligible', true], ['normalPublicationGatePass', true]]) {
+    const prepared = plannerOutput()
+    const rows = fs.readFileSync(prepared.rowsFile, 'utf8').trim().split(/\r?\n/u).map(JSON.parse)
+    rows[0][key] = value
+    writeRows(prepared.rowsFile, rows)
+    updateOutputChecksum(prepared.output, 'rows/all-imported-review-v02.jsonl')
+    assert.throws(() => runPlan(['--out-dir', prepared.output]), /release\/publication gate opened/u)
+  }
+})
+
+test('standalone planner rejects unrelated JSONL even when it is under data_local', () => {
+  const prepared = plannerOutput()
+  const unrelated = path.join(prepared.output, 'outcomes/exact-v02.jsonl')
+  assert.throws(() => runPlan(['--out-dir', prepared.output, '--rows', unrelated]), /canonical completed importer output/u)
+})
+
 test('output paths are confined to data_local', () => {
   const dataLocal = path.resolve(repo, 'data_local')
   assert.equal(assertImportOutputPath(path.join(dataLocal, 'outputs/ok'), dataLocal), path.join(dataLocal, 'outputs/ok'))
@@ -462,13 +552,14 @@ test('real 2,500-row assembled ZIP validates and rehearses locally', { skip: !pr
   const acceptance = JSON.parse(fs.readFileSync(path.join(repo, 'scripts/radar/fixtures/radar-research-assessment-import-accepted-0001-v02.json'), 'utf8'))
   assert.equal(sha256File(zip).toUpperCase(), expectedSha256.toUpperCase())
   const staging = path.join(testRuns, 'real-package')
+  const output = path.join(testRuns, 'real-output')
   const result = spawnSync(process.execPath, [
     path.join(repo, 'scripts/radar/import-radar-research-assessment-v02.mjs'),
     '--input', zip,
     '--expected-sha256', expectedSha256,
     '--acceptance', path.join(repo, 'scripts/radar/fixtures/radar-research-assessment-import-accepted-0001-v02.json'),
     '--staging-dir', staging,
-    '--out-dir', path.join(testRuns, 'real-output'),
+    '--out-dir', output,
   ], { cwd: repo, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 })
   assert.equal(result.status, 0, result.stderr)
   const summary = JSON.parse(result.stdout)
@@ -477,5 +568,16 @@ test('real 2,500-row assembled ZIP validates and rehearses locally', { skip: !pr
   assert.deepEqual(summary.researchLaneCounts, acceptance.laneCounts)
   assert.equal(summary.identityOrderMismatches, 0)
   assert.equal(summary.inputOwnedRewriteMismatches, 0)
+  assert.equal(summary.automaticXGrades, 0)
   assert.deepEqual(summary.structuralBlockers, [])
+  const plan = runPlan(['--out-dir', output])
+  assert.equal(plan.counts.records, 2500)
+  assert.equal(plan.counts.provisionalExact, 22)
+  assert.equal(plan.counts.boundedRange, 941)
+  assert.equal(plan.counts.labelsOnly, 1537)
+  assert.equal(plan.counts.payloadPatchRequests, 0)
+  assert.equal(plan.counts.postgresqlStatements, 0)
+  assert.equal(plan.counts.worksMutations, 0)
+  assert.equal(plan.counts.publicationActions, 0)
+  assert.match(plan.importerIntegrity.rowsSha256, /^[0-9a-f]{64}$/u)
 })

@@ -74,6 +74,8 @@ Generate the website-representation dry-run from the imported rows:
 node scripts/radar/plan-radar-research-assessment-v02-dryrun.mjs
 ```
 
+The standalone planner accepts only `rows/all-imported-review-v02.jsonl` from the selected importer output directory. Before planning, it verifies that both this rows file and `aggregate/import-summary-v02.json` are listed in `SHA256SUMS` with matching current hashes. It then requires the importer summary to report matching row counts, zero structural or verification mismatches, closed release/publication gates, and `dryRunOnly=true`, and revalidates every row's outcome and review-only state. Stale, tampered, unlisted, or unrelated JSONL input is rejected.
+
 Run both steps and create an optional review ZIP under `exports`:
 
 ```powershell
@@ -84,6 +86,8 @@ powershell -NoProfile -ExecutionPolicy Bypass `
 ```
 
 The scripts reject `--execute`, `--apply`, `--write`, `--patch`, `--confirm`, `--gate`, `--approval-token`, `--production-apply`, and `--publish`.
+
+Matched rule codes beginning with `X-` are treated as automatic X even when `rule.grade` is missing or non-X. Matched `E-` and `F-` codes enter the severe E/F review index even when the grade is missing. Code/grade conflicts are retained as explicit review warnings; X signals remain fatal validation errors.
 
 ## Outputs
 
