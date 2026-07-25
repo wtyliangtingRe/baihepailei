@@ -1,0 +1,9 @@
+{
+  "packageId": "RADAR-REMAINING-CANONICAL-RESEARCH-0001",
+  "outerSha256": "E8D952F143A44FDC983E8D8FF76768DCEEF03FF4CBD8DA19D8FC45F9C3B0CE2F",
+  "waveCount": 10,
+  "rowsPerWave": 250,
+  "rowCount": 2500,
+  "chunkSize": 25,
+  "laneCounts": { "ready_for_ai_assessment": 962, "needs_more_research": 1311, "identity_review": 227 }
+}

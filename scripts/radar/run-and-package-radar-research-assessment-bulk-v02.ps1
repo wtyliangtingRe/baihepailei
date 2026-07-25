@@ -1,11 +1,24 @@
-param([Parameter(Mandatory=$true)][string]$ResearchInput,[string]$ExpectedSha256,[string]$OutDir='data_local/outputs/ai-radar/research-assessment-v02',[string]$ZipPath='exports/RADAR-REMAINING-CANONICAL-ASSESSMENT-0001-input-v02-review.zip')
+param(
+  [Parameter(Mandatory=$true)][string]$ResearchInput,
+  [Parameter(Mandatory=$true)][string]$ExpectedSha256,
+  [string]$Acceptance='scripts/radar/fixtures/radar-research-assessment-accepted-0001-v02.json',
+  [string]$OutDir='data_local/outputs/ai-radar/research-assessment-v02',
+  [string]$PreparedZip='exports/RADAR-REMAINING-CANONICAL-ASSESSMENT-0001-input-v02-review.zip',
+  [switch]$Assemble,
+  [string]$AssembledZip='exports/RADAR-REMAINING-CANONICAL-ASSESSMENT-0001-assembled-v02-review.zip'
+)
 $ErrorActionPreference='Stop'
-if ($args.Count -gt 0) { throw 'This review-only wrapper accepts no apply, write, or production flags.' }
-$nodeArgs = @('scripts/radar/prepare-radar-research-assessment-bulk-v02.mjs', '--input', $ResearchInput, '--out-dir', $OutDir)
-if ($ExpectedSha256) { $nodeArgs += @('--expected-sha256', $ExpectedSha256) }
-& node @nodeArgs
-if ($LASTEXITCODE -ne 0) { throw 'Preparation failed; review ZIP was not created.' }
-if (Test-Path -LiteralPath $ZipPath) { Remove-Item -LiteralPath $ZipPath -Force }
-Compress-Archive -Path (Join-Path $OutDir '*') -DestinationPath $ZipPath -Force
-$hash=(Get-FileHash -Algorithm SHA256 -LiteralPath $ZipPath).Hash
-[pscustomobject]@{ zipPath=$ZipPath; sha256=$hash; payloadRead=$false; payloadWrite=$false; directPostgresqlWrite=$false; modifiesWorks=$false; publishesRatings=$false; productionApplyAuthorized=$false } | ConvertTo-Json
+if ($args.Count -gt 0) { throw 'Unknown arguments are rejected; no apply/write/publish flags are supported.' }
+& node scripts/radar/prepare-radar-research-assessment-bulk-v02.mjs --input $ResearchInput --expected-sha256 $ExpectedSha256 --acceptance $Acceptance --out-dir $OutDir
+if ($LASTEXITCODE -ne 0) { throw 'Preparation failed.' }
+if (Test-Path -LiteralPath $PreparedZip) { Remove-Item -LiteralPath $PreparedZip -Force }
+Compress-Archive -Path (Join-Path $OutDir '*') -DestinationPath $PreparedZip -Force
+$result=[ordered]@{ preparedZip=$PreparedZip; preparedSha256=(Get-FileHash -Algorithm SHA256 -LiteralPath $PreparedZip).Hash; assembledZip=$null; assembledSha256=$null; genuineAssessmentComplete=$false; payloadRead=$false; payloadWrite=$false; directPostgresqlRead=$false; directPostgresqlWrite=$false; modifiesWorks=$false; publishesRatings=$false; productionApplyAuthorized=$false; createsProductionApplyPackage=$false; migrationOrSchemaPush=$false }
+if ($Assemble) {
+  & node scripts/radar/assemble-radar-research-assessment-bulk-v02.mjs --package-dir $OutDir
+  if ($LASTEXITCODE -ne 0) { throw 'Assembly is incomplete or invalid; no assembled review ZIP was created.' }
+  if (Test-Path -LiteralPath $AssembledZip) { Remove-Item -LiteralPath $AssembledZip -Force }
+  Compress-Archive -Path (Join-Path $OutDir '*') -DestinationPath $AssembledZip -Force
+  $result.assembledZip=$AssembledZip; $result.assembledSha256=(Get-FileHash -Algorithm SHA256 -LiteralPath $AssembledZip).Hash; $result.genuineAssessmentComplete=$true
+}
+$result | ConvertTo-Json
