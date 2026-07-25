@@ -19,13 +19,22 @@ if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
 }
 
 $content = (Get-Content -LiteralPath $sourcePath -Raw -Encoding UTF8).Replace("`r`n", "`n").Replace("`r", "`n")
-$needle = 'build-radar-remaining-canonical-inventory-v01.mjs'
-$replacement = 'build-radar-remaining-canonical-inventory-v02.mjs'
-$count = ([regex]::Matches($content, [regex]::Escape($needle))).Count
-if ($count -ne 1) {
-  throw "无法精确切换到 V02 builder；预期 1 处，实际 $count 处。"
+
+function Replace-Exact([string]$Needle, [string]$Replacement, [int]$Expected = 1) {
+  $count = ([regex]::Matches($script:content, [regex]::Escape($Needle))).Count
+  if ($count -ne $Expected) {
+    throw "inventory V02 精确补丁出现次数不正确；预期 $Expected，实际 $count：$Needle"
+  }
+  $script:content = $script:content.Replace($Needle, $Replacement)
 }
-$content = $content.Replace($needle, $replacement)
+
+Replace-Exact `
+  'build-radar-remaining-canonical-inventory-v01.mjs' `
+  'build-radar-remaining-canonical-inventory-v02.mjs'
+
+Replace-Exact `
+  '剩余 canonical Works inventory V01 已完成～' `
+  '剩余 canonical Works inventory V02 已完成～'
 
 $temporaryPath = Join-Path $PSScriptRoot ('.run-and-package-radar-remaining-canonical-inventory-v02-' + [guid]::NewGuid().ToString('N') + '.ps1')
 [System.IO.File]::WriteAllText($temporaryPath, $content, [System.Text.UTF8Encoding]::new($false))
@@ -38,7 +47,9 @@ function Show-FailureDiagnostics {
     git -C $repoRoot worktree list --porcelain |
       Where-Object { $_.StartsWith('worktree ') } |
       ForEach-Object { $_.Substring('worktree '.Length) } |
-      Where-Object { $_ -like 'D:\binv\*' }
+      Where-Object {
+        $_.Replace('/', '\') -like 'D:\binv\*'
+      }
   )
   if ($worktrees.Count -gt 0) {
     Write-Host '保留的短路径 worktree：' -ForegroundColor Yellow
