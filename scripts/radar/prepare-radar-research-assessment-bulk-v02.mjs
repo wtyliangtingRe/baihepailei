@@ -1,0 +1,12 @@
+#!/usr/bin/env node
+import fs from 'node:fs'; import path from 'node:path'
+import { VERSION, inputRow, jsonl, loadResearchPackage, parseArgs, rejectWriteFlags, sha256Text, val } from './lib/research-assessment-handoff-v02.mjs'
+const args = parseArgs(process.argv.slice(2)); rejectWriteFlags(args)
+const out = path.resolve(val(args['out-dir']) || 'data_local/outputs/ai-radar/research-assessment-v02'); if (!out.includes(`${path.sep}data_local${path.sep}`)) throw new Error('Output must remain under data_local')
+const pack = loadResearchPackage(val(args.input), val(args['expected-sha256']), path.join(out, '.verified-research-input'))
+fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out, { recursive: true })
+const rows = pack.rows.map(inputRow); const manifest = { version: VERSION, generatedAt: new Date().toISOString(), inputRows: rows.length, subwaves: 10, chunkSize: 25, expectedChunks: 100, dispositionCounts: pack.counts, safety: { payloadRead:false, payloadWrite:false, directPostgresqlWrite:false, modifiesWorks:false, publishesRatings:false, productionApplyAuthorized:false } }
+for (let i=0;i<10;i+=1) { const dir=path.join(out,'handoffs',`wave-${String(i+1).padStart(2,'0')}`,'chunks'); fs.mkdirSync(dir,{recursive:true}); const wave=rows.slice(i*250,(i+1)*250); for(let j=0;j<10;j+=1) fs.writeFileSync(path.join(dir,`chunk-${String(j+1).padStart(2,'0')}.input.jsonl`),jsonl(wave.slice(j*25,(j+1)*25))) }
+fs.mkdirSync(path.join(out,'instructions'),{recursive:true}); fs.mkdirSync(path.join(out,'aggregate'),{recursive:true}); fs.mkdirSync(path.join(out,'review-lanes'),{recursive:true})
+fs.writeFileSync(path.join(out,'aggregate','all-inputs.jsonl'),jsonl(rows)); fs.writeFileSync(path.join(out,'package-manifest.json'),JSON.stringify(manifest,null,2)+'\n'); fs.writeFileSync(path.join(out,'instructions','README.md'),'# AI 综合，待复核\n\nThis package is review-only. Do not rewrite input-owned research, identity, protection, or content-profile fields.\n')
+const files=[]; const walk=(d)=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):[path.join(d,e.name)]); for(const file of walk(out).filter(f=>!f.endsWith('SHA256SUMS'))) files.push(`${sha256Text(fs.readFileSync(file))}  ${path.relative(out,file).replace(/\\/g,'/')}`); fs.writeFileSync(path.join(out,'SHA256SUMS'),files.join('\n')+'\n'); console.log(JSON.stringify({ok:true,out,manifest},null,2))
