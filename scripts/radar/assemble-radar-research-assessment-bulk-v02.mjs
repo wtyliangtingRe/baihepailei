@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import {
-  VERSION, assertConfined, filesUnder, jsonl, parseArgs, readJsonl, rejectWriteFlags, sameJson,
+  ASSESSMENT_INPUT_OWNED_FIELDS, VERSION, assertConfined, filesUnder, jsonl, parseArgs, readJsonl, rejectWriteFlags, sameJson,
   sha256File, validateOutcome, val, verifyImmutableRootReceipt,
 } from './lib/research-assessment-handoff-v02.mjs'
 
@@ -17,6 +17,7 @@ const writeJson = (file, value) => {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`)
 }
 const unique = (values) => [...new Set(values)]
+const identityOrderFields = new Set(['workId', 'siteId', 'title', 'researchDisposition'])
 const integrity = verifyImmutableRootReceipt(root)
 const manifestFile = path.join(root, 'package-manifest.json')
 const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'))
@@ -66,6 +67,7 @@ for (const context of waveContexts) {
   const { waveEntry, waveManifest } = context
   const structuralBlockers = context.blockers
   const rows = []
+  let waveIdentityOrderMismatches = 0
   const waveReviewCounts = { humanReviewRequired: 0, needsMoreResearchReviewRequired: 0, identityResolutionRequired: 0 }
   const immutableFile = confined(waveManifest.immutableInputFile)
   if (!integrity.files.has(waveManifest.immutableInputFile)) throw new Error(`Immutable Wave input absent from root: ${waveEntry.wave}`)
@@ -104,14 +106,14 @@ for (const context of waveContexts) {
       const responseKey = `${val(response.workId)}|${val(response.siteId)}`
       if (seenResponseIdentities.has(responseKey)) structuralBlockers.push(`duplicate_response_identity:${responseKey}`)
       seenResponseIdentities.add(responseKey)
-      for (const key of ['workId', 'siteId', 'title', 'researchDisposition']) {
-        if (val(response[key]) !== val(input[key])) {
-          identityOrderMismatches += 1
-          structuralBlockers.push(`${key}_or_order_mismatch:${chunk.chunkId}:${index + 1}`)
-        }
-      }
-      for (const key of ['identity', 'writeProtection', 'research', 'contentProfile', 'riskLabels', 'allowedAssessmentModes', 'requiresHumanReview', 'publicationEligible', 'pageNotice']) {
-        if (!sameJson(response[key], input[key])) structuralBlockers.push(`input_owned_${key}_rewrite:${input.workId}`)
+      for (const key of ASSESSMENT_INPUT_OWNED_FIELDS) {
+        if (identityOrderFields.has(key)) {
+          if (val(response[key]) !== val(input[key])) {
+            identityOrderMismatches += 1
+            waveIdentityOrderMismatches += 1
+            structuralBlockers.push(`${key}_or_order_mismatch:${chunk.chunkId}:${index + 1}`)
+          }
+        } else if (!sameJson(response[key], input[key])) structuralBlockers.push(`input_owned_${key}_rewrite:${input.workId}`)
       }
       try { validateOutcome(response, input.researchDisposition) } catch (error) { structuralBlockers.push(`invalid_outcome:${input.workId}:${error.message}`) }
       const synthetic = response.syntheticRehearsal === true
@@ -155,7 +157,7 @@ for (const context of waveContexts) {
   const waveResult = {
     wave: waveEntry.wave, status, inputRows: waveManifest.rowCount, responseRows: rows.length,
     technicallyAssembledRows: technicallyAssembled ? rows.length : 0, rows, structuralBlockers: uniqueStructuralBlockers,
-    reviewOrReleaseBlockers, releaseEligible: false, waveReviewCounts, technicallyAssembled,
+    reviewOrReleaseBlockers, releaseEligible: false, waveReviewCounts, technicallyAssembled, identityOrderMismatches: waveIdentityOrderMismatches,
   }
   waveResults.push(waveResult)
   writeJson(path.join(outputRoot, 'assembly-summary-v02.json'), {
@@ -165,7 +167,7 @@ for (const context of waveContexts) {
     technicallyAssembledRows: technicallyAssembled ? rows.length : 0,
     genuineAssessmentComplete: !syntheticMode && technicallyAssembled,
     syntheticValidationComplete: syntheticMode && technicallyAssembled,
-    identityOrderMismatches, structuralBlockers: uniqueStructuralBlockers, reviewOrReleaseBlockers,
+    identityOrderMismatches: waveIdentityOrderMismatches, structuralBlockers: uniqueStructuralBlockers, reviewOrReleaseBlockers,
     releaseEligible: false, normalPublicationGatePass: false, warnings: syntheticMode ? ['synthetic_rehearsal_outputs_are_test_only'] : [], safety: manifest.safety,
   })
 }

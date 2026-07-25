@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 import path from 'node:path'
-import { IMMUTABLE_RECEIPT_FILE, IMMUTABLE_ROOT_FILE, VERSION, assertConfined, inputRow, jsonl, loadResearchPackage, parseArgs, rejectWriteFlags, sha256File, sha256Text, val, writeImmutableRootReceipt } from './lib/research-assessment-handoff-v02.mjs'
+import { IMMUTABLE_RECEIPT_FILE, IMMUTABLE_ROOT_FILE, VERSION, assessmentResponseSchema, assertConfined, inputRow, jsonl, loadResearchPackage, parseArgs, rejectWriteFlags, sha256File, sha256Text, val, writeImmutableRootReceipt } from './lib/research-assessment-handoff-v02.mjs'
 const args = parseArgs(process.argv.slice(2)); rejectWriteFlags(args)
 const outputRoot = path.resolve(val(args['out-dir']) || 'data_local/outputs/ai-radar/research-assessment-v02')
 const dataLocal = path.resolve('data_local'); if (outputRoot !== dataLocal && !outputRoot.startsWith(`${dataLocal}${path.sep}`)) throw new Error('Output must remain under data_local')
@@ -11,7 +11,7 @@ const scratch = path.resolve('data_local/staging/ai-radar/research-assessment-v0
 fs.rmSync(outputRoot, { recursive: true, force: true }); fs.mkdirSync(outputRoot, { recursive: true })
 const rows = pack.rows.map((row) => inputRow(row, acceptance)); const chunkSize = Number(acceptance.chunkSize); const rowsPerWave = Number(acceptance.rowsPerWave); if (!Number.isInteger(chunkSize) || rowsPerWave % chunkSize) throw new Error('Acceptance chunkSize must evenly divide rowsPerWave')
 const relative = (file) => path.relative(outputRoot, file).replace(/\\/gu, '/'); const write = (file, value) => { assertConfined(outputRoot, relative(file)); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, value) }
-const responseSchema = { version: VERSION, note: 'Copy every input-owned field exactly. Add only the assessment fields shown.', requiredInputOwnedFields: ['workId','siteId','title','researchDisposition','identity','writeProtection','research','contentProfile','riskLabels'], requiredAssessmentFields: ['assessmentMode','exactGradeSuggestion','gradeRange','ruleAssessments','requiresHumanReview','publicationEligible'], publicationEligible: false }
+const responseSchema = assessmentResponseSchema()
 write(path.join(outputRoot, 'instructions', 'response-schema-v02.json'), `${JSON.stringify(responseSchema, null, 2)}\n`)
 write(path.join(outputRoot, 'instructions', 'README.md'), '# AI 综合，待复核\n\nResponses are external inputs. Copy all input-owned fields exactly and add a valid assessment outcome. Do not create an X grade. This package does not publish ratings or modify Works.\n')
 const waves = []

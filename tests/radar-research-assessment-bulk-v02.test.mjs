@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { execFileSync, spawnSync } from 'node:child_process'
 import {
-  archiveInventory, assertRelative, filesUnder, jsonl, loadResearchPackage, normalizeContentProfile,
+  ASSESSMENT_INPUT_OWNED_FIELDS, ASSESSMENT_OUTCOME_FIELDS, archiveInventory, assessmentResponseSchema, assertRelative, filesUnder, jsonl, loadResearchPackage, normalizeContentProfile,
   sha256File, validateOutcome, validateResearchCompleteness, writeImmutableRootReceipt,
 } from '../scripts/radar/lib/research-assessment-handoff-v02.mjs'
 
@@ -124,6 +124,16 @@ test('mode contract, range order, and automatic X rejection', () => {
   assert.doesNotThrow(() => validateOutcome({ assessmentMode: 'labels_only', exactGradeSuggestion: null, gradeRange: null, riskLabels: [], ruleAssessments: [], requiresHumanReview: true, publicationEligible: false }, 'identity_review'))
   assert.throws(() => validateOutcome({ assessmentMode: 'bounded_range', exactGradeSuggestion: null, gradeRange: { best: 'D', likely: 'A', worst: 'F' }, riskLabels: [], ruleAssessments: [], requiresHumanReview: true, publicationEligible: false }, 'needs_more_research'))
   assert.throws(() => validateOutcome({ assessmentMode: 'exact', exactGradeSuggestion: 'X', gradeRange: null, riskLabels: [], ruleAssessments: [], requiresHumanReview: true, publicationEligible: false }, 'ready_for_ai_assessment'))
+})
+
+test('generated response schema exactly matches the assembler input-owned validation contract', () => {
+  const schema = assessmentResponseSchema()
+  assert.deepEqual(schema.requiredInputOwnedFields, ['workId', 'siteId', 'title', 'researchDisposition', 'identity', 'writeProtection', 'research', 'contentProfile', 'riskLabels', 'allowedAssessmentModes', 'requiresHumanReview', 'publicationEligible', 'pageNotice'])
+  assert.deepEqual(schema.requiredInputOwnedFields, [...ASSESSMENT_INPUT_OWNED_FIELDS])
+  assert.deepEqual(schema.requiredAssessmentFields, ['assessmentMode', 'exactGradeSuggestion', 'gradeRange', 'ruleAssessments'])
+  assert.deepEqual(schema.requiredAssessmentFields, [...ASSESSMENT_OUTCOME_FIELDS])
+  const assemblerSource = fs.readFileSync(assembler, 'utf8')
+  assert.match(assemblerSource, /for \(const key of ASSESSMENT_INPUT_OWNED_FIELDS\)/u)
 })
 
 test('content normalization keeps factual dimensions separate and participants unknown', () => {
@@ -279,6 +289,21 @@ test('one invalid Wave does not suppress another valid Wave output', () => {
   assert.equal(fs.existsSync(path.join(fixture.root, 'handoffs/wave-01/synthetic-assembled/assessment-results-v02.jsonl')), true)
   assert.equal(fs.existsSync(path.join(fixture.root, 'handoffs/wave-02/synthetic-assembled/assessment-results-v02.jsonl')), false)
   assert.equal(fs.existsSync(path.join(fixture.root, 'aggregate/synthetic-rehearsal/assembled-results-v02.jsonl')), false)
+})
+
+test('identity and order mismatch counts are Wave-local and package-aggregate', () => {
+  const fixture = assessmentFixture([['ready_for_ai_assessment'], ['ready_for_ai_assessment']])
+  const mismatched = structuredClone(fixture.responsesByWave[0].responses)
+  mismatched[0].title = 'mismatched-title'
+  fs.writeFileSync(fixture.responsesByWave[0].response, jsonl(mismatched))
+  const result = run(fixture.root, true)
+  assert.equal(result.status, 2)
+  const rootSummary = JSON.parse(result.stdout)
+  const waveOne = JSON.parse(fs.readFileSync(path.join(fixture.root, 'handoffs/wave-01/synthetic-assembled/assembly-summary-v02.json')))
+  const waveTwo = JSON.parse(fs.readFileSync(path.join(fixture.root, 'handoffs/wave-02/synthetic-assembled/assembly-summary-v02.json')))
+  assert.equal(waveOne.identityOrderMismatches, 1)
+  assert.equal(waveTwo.identityOrderMismatches, 0)
+  assert.equal(rootSummary.identityOrderMismatches, 1)
 })
 
 test('closed-world response inventory rejects unexpected and misplaced files', () => {

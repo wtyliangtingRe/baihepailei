@@ -22,6 +22,8 @@ Preparation writes immutable inputs, ten Wave manifests, 100 assessment chunk/re
 
 For every manifest `responseFile`, supply one ordered JSONL response per ordered input row. Each response must copy `workId`, `siteId`, `title`, `researchDisposition`, `identity`, `writeProtection`, `research`, `contentProfile`, `riskLabels`, `allowedAssessmentModes`, `requiresHumanReview`, `publicationEligible`, and `pageNotice` exactly. It then adds `assessmentMode`, `exactGradeSuggestion`, `gradeRange`, and `ruleAssessments`.
 
+The generated `response-schema-v02.json` exposes those same 13 input-owned fields and only those four assessment-outcome fields as required contract lists.
+
 The disposition contract is:
 
 - `ready_for_ai_assessment`: `exact` or `bounded_range`;
@@ -40,6 +42,8 @@ node scripts/radar/assemble-radar-research-assessment-bulk-v02.mjs `
 Assembly is a pure validator and merger. It verifies the immutable root receipt before trusting `package-manifest.json`, then enforces a closed-world external response inventory: only the exact paths declared by the Wave manifests may exist. Missing, extra, duplicate, misplaced, reordered, tampered, rewritten, unsafe, or invalid responses are structural blockers.
 
 Each Wave is structurally evaluated and recovered independently. A blocker-free Wave writes its own assembled JSONL and summary even when another Wave is incomplete or invalid. The root aggregate and aggregate review lanes are written only when all Waves are structurally complete. Root summaries report completed, incomplete, and invalid Wave counts plus `technicallyAssembledRows`.
+
+Each Wave summary reports only that Wave's `identityOrderMismatches`; the root summary retains the package-wide aggregate.
 
 Technical assembly and release review are separate. `structuralBlockers` control technical completeness. `reviewOrReleaseBlockers` retain human/release requirements without suppressing technically valid results. Every `identity_review` assembled row carries `identity_resolution_required:<workId>`; `needs_more_research` rows carry their corresponding review blocker. All rows and summaries keep `releaseEligible=false` and `normalPublicationGatePass=false`.
 

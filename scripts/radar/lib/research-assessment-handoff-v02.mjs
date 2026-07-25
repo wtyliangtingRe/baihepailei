@@ -15,6 +15,8 @@ const VIOLENCE = new Set(['none_found', 'present', 'severe', 'unknown'])
 const RISK = new Set(['none_found', 'possible', 'confirmed', 'unknown'])
 const WRITE_FLAGS = ['execute', 'apply', 'write', 'patch', 'confirm', 'gate', 'approval-token', 'production-apply', 'publish']
 const IDENTITY_KEYS = ['workId', 'siteId', 'title']
+export const ASSESSMENT_INPUT_OWNED_FIELDS = Object.freeze(['workId', 'siteId', 'title', 'researchDisposition', 'identity', 'writeProtection', 'research', 'contentProfile', 'riskLabels', 'allowedAssessmentModes', 'requiresHumanReview', 'publicationEligible', 'pageNotice'])
+export const ASSESSMENT_OUTCOME_FIELDS = Object.freeze(['assessmentMode', 'exactGradeSuggestion', 'gradeRange', 'ruleAssessments'])
 
 export const val = (value) => String(value ?? '').trim()
 export const list = (value) => Array.isArray(value) ? value : []
@@ -30,6 +32,16 @@ export function assertConfined(root, relative, label = 'path') { const safe = as
 export function stable(value) { if (Array.isArray(value)) return value.map(stable); if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stable(value[key])])); return value }
 export const sameJson = (a, b) => JSON.stringify(stable(a)) === JSON.stringify(stable(b))
 export const hasOwn = (value, key) => value != null && Object.prototype.hasOwnProperty.call(value, key)
+
+export function assessmentResponseSchema() {
+  return {
+    version: VERSION,
+    note: 'Copy every input-owned field exactly. Add only the assessment fields shown.',
+    requiredInputOwnedFields: [...ASSESSMENT_INPUT_OWNED_FIELDS],
+    requiredAssessmentFields: [...ASSESSMENT_OUTCOME_FIELDS],
+    publicationEligible: false,
+  }
+}
 
 export function allowedModes(disposition) { if (disposition === 'ready_for_ai_assessment') return ['exact', 'bounded_range']; if (disposition === 'needs_more_research') return ['bounded_range', 'labels_only']; if (disposition === 'identity_review') return ['labels_only']; return [] }
 export function validateOutcome(outcome, disposition) {
