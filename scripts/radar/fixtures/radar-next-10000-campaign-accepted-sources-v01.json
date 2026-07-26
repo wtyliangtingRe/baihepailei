@@ -1,0 +1,44 @@
+{
+  "version": "radar-next-10000-campaign-accepted-sources-v0.1",
+  "inventory": {
+    "packageId": "RADAR-REMAINING-CANONICAL-INVENTORY-20260725-133820",
+    "sourceDirectory": "exports/radar-remaining-canonical-inventory-20260725-133820",
+    "reviewDirectory": "exports/radar-remaining-canonical-inventory-20260725-133820-review",
+    "sourceBundle": "exports/RADAR-REMAINING-CANONICAL-INVENTORY-20260725-133820.zip",
+    "reviewBundle": "exports/RADAR-REMAINING-CANONICAL-INVENTORY-20260725-133820-REVIEW.zip",
+    "sourceBundleSha256": "EC1F49A54CD0B6314F97A20DB1E0D3681247CB4FA61B5F89C9A4C1F465C62E5B",
+    "reviewBundleSha256": "58265B1009AE1D82091555D658279A8F797308B6008FC9D23B8591A6D8330E2A",
+    "sourceManifestSha256": "3AF70C68105D2F75FFB5750C887DCCE6BA3BCDA9B49B3EDC0C7DBDF84F1775C8",
+    "reviewManifestSha256": "C65C3906A2500DB06D34C50B818DC3CC379B56915F053BD2DF85C14BB8FEA455",
+    "canonicalRows": 35610
+  },
+  "earlierCampaign": {
+    "packageId": "RADAR-REMAINING-CANONICAL-RESEARCH-0001",
+    "rowCount": 2500,
+    "manifestSource": "exports/radar-remaining-canonical-inventory-20260725-133820-review/research-batch-0001.jsonl",
+    "sha256": "6427ED881387BBEBE63D38BA87D9DBBEABB6FA5B605AD39BE0A5673F18EBF50A"
+  },
+  "additionalAcceptedCoverage": [
+    {
+      "packageId": "RADAR-REMAINING-CANONICAL-ASSESSMENT-0001-input-v02",
+      "coverageType": "accepted_assessment_input",
+      "root": "data_local/outputs/ai-radar/research-assessment-v02",
+      "file": "aggregate/immutable-input-v02.jsonl",
+      "rowCount": 2500,
+      "sha256": "CEEC49FE412F766D7F75E6CDD8F3C8446E0D41C8AD3A4D2ED466A71C0A5EFF2C",
+      "integrity": "immutable-root"
+    },
+    {
+      "packageId": "RADAR-REMAINING-CANONICAL-ASSESSMENT-0001-import-v02-review",
+      "coverageType": "completed_local_import_review",
+      "root": "data_local/outputs/ai-radar/research-assessment-import-v02",
+      "file": "rows/all-imported-review-v02.jsonl",
+      "rowCount": 2500,
+      "sha256": "242D1A7F75C06AA23969CA429DD752F76F2CDA40D6F23F128DD3A9028BC46A3E",
+      "integrity": "sha256sums"
+    }
+  ],
+  "researchOnly": true,
+  "genuineResponsesIncluded": false,
+  "assessmentResponsesIncluded": false
+}
