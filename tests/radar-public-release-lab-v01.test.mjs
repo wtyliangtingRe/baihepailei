@@ -4,11 +4,13 @@ import { readFileSync } from 'node:fs'
 
 import {
   assertIsolatedLabUrl,
+  assertPlanForMode,
   summarizePlans,
 } from '../scripts/radar/run-public-release-lab-import-v01.mjs'
 
 const importer = readFileSync('scripts/radar/run-public-release-lab-import-v01.mjs', 'utf8')
 const marker = readFileSync('src/app/(payload)/api/radar-public-release-lab-marker/route.ts', 'utf8')
+const wrapper = readFileSync('scripts/radar/run-radar-public-release-lab-v01.ps1', 'utf8')
 const preparer = readFileSync('scripts/radar/prepare-radar-public-release-lab-database-v01.ps1', 'utf8')
 const executor = readFileSync('scripts/radar/execute-radar-public-release-lab-v01.ps1', 'utf8')
 
@@ -38,7 +40,41 @@ test('plan summary closes create and already-current partitions', () => {
   )
 })
 
-test('importer requires the isolated marker and has no update/delete path', () => {
+test('initial mode requires an exact empty-collection create', () => {
+  assert.doesNotThrow(() => assertPlanForMode({
+    byPlanStatus: { ready_create: 3 },
+    readyCreate: 3,
+    readyUpdate: 0,
+    alreadyCurrent: 0,
+    blocked: 0,
+  }, 3, 'initial'))
+  assert.throws(() => assertPlanForMode({
+    byPlanStatus: { already_current: 1, ready_create: 2 },
+    readyCreate: 2,
+    readyUpdate: 0,
+    alreadyCurrent: 1,
+    blocked: 0,
+  }, 3, 'initial'), /empty-collection create/u)
+})
+
+test('incremental mode accepts create update and current but rejects blockers', () => {
+  assert.doesNotThrow(() => assertPlanForMode({
+    byPlanStatus: { already_current: 5, ready_create: 2, ready_update: 1 },
+    readyCreate: 2,
+    readyUpdate: 1,
+    alreadyCurrent: 5,
+    blocked: 0,
+  }, 8, 'incremental'))
+  assert.throws(() => assertPlanForMode({
+    byPlanStatus: { blocked_identity_conflict: 1, ready_create: 1 },
+    readyCreate: 1,
+    readyUpdate: 0,
+    alreadyCurrent: 0,
+    blocked: 1,
+  }, 2, 'incremental'), /blockers/u)
+})
+
+test('importer requires the isolated marker and supports guarded idempotent upserts only', () => {
   assert.match(importer, /RUN-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01/u)
   assert.match(importer, /radar-public-release-lab-marker/u)
   assert.match(importer, /RADAR_PUBLIC_RELEASE_LAB_NONCE/u)
@@ -46,11 +82,26 @@ test('importer requires the isolated marker and has no update/delete path', () =
   assert.match(importer, /expected-research-head/u)
   assert.match(importer, /expected-release-source-commit/u)
   assert.match(importer, /expected-database/u)
+  assert.match(importer, /--mode must be initial or incremental/u)
   assert.match(importer, /method: 'POST'/u)
-  assert.doesNotMatch(importer, /method: 'PATCH'|method: 'DELETE'|method: 'PUT'/u)
-  assert.match(importer, /readyCreate !== rows/u)
-  assert.match(importer, /alreadyCurrent !== rows/u)
+  assert.match(importer, /method: 'PATCH'/u)
+  assert.doesNotMatch(importer, /method: 'DELETE'|method: 'PUT'/u)
+  assert.match(importer, /already_current_skipped/u)
+  assert.match(importer, /omissionMeansDelete: false/u)
+  assert.match(importer, /explicitWithdrawalRequired: true/u)
   assert.match(importer, /productionWrite: false/u)
+})
+
+test('one-command wrapper reuses an existing source container safely', () => {
+  assert.match(wrapper, /RUN-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01/u)
+  assert.match(wrapper, /docker ps -aq --filter "name=\^\/\$\{Name\}\$"/u)
+  assert.match(wrapper, /docker inspect -f '\{\{\.State\.Running\}\}'/u)
+  assert.match(wrapper, /docker start \$Name/u)
+  assert.match(wrapper, /docker compose up -d postgres/u)
+  assert.match(wrapper, /复用正在运行的源容器/u)
+  assert.match(wrapper, /prepare-radar-public-release-lab-database-v01\.ps1/u)
+  assert.match(wrapper, /execute-radar-public-release-lab-v01\.ps1/u)
+  assert.doesNotMatch(wrapper, /docker rm.*baihepailei-postgres/u)
 })
 
 test('lab marker is disabled by default and binds nonce plus all commit identities', () => {
