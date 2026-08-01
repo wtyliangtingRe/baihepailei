@@ -21,6 +21,18 @@ function normalizeRelationship(value) {
   return val(value)
 }
 
+export function numericRelationshipId(value) {
+  const normalized = val(value)
+  if (!/^[1-9][0-9]*$/u.test(normalized)) {
+    throw new Error(`Payload relationship ID must be a positive integer: ${normalized || '<empty>'}`)
+  }
+  const numeric = Number(normalized)
+  if (!Number.isSafeInteger(numeric) || numeric <= 0) {
+    throw new Error(`Payload relationship ID is outside the safe integer range: ${normalized}`)
+  }
+  return numeric
+}
+
 export function buildWorkIndexes(works) {
   const byId = new Map()
   const bySiteId = new Map()
@@ -86,7 +98,7 @@ export function matchExactWork(record, indexes) {
 export function buildDesiredPublicRecord(record, work, release, importedAt) {
   const desired = {
     publicationKey: `work:${val(work.id)}`,
-    work: val(work.id),
+    work: numericRelationshipId(work.id),
     identityKey: val(record.identityKey),
     workIdSnapshot: val(record.workId),
     workSiteId: val(record.siteId),
@@ -160,7 +172,10 @@ function comparableCurrentRecord(record) {
 
 function comparableDesiredRecord(record) {
   const { importedAt, ...rest } = record
-  return rest
+  return {
+    ...rest,
+    work: val(rest.work),
+  }
 }
 
 export function buildPlanRow(record, workIndexes, currentIndexes, release, importedAt) {
