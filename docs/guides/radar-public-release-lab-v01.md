@@ -133,9 +133,9 @@ The write-capable Node importer still rejects:
 
 The first release uses strict `initial` mode. Later releases may use guarded `incremental` mode as documented in `radar-public-release-incremental-upsert-v01.md`.
 
-## Current validation head
+## Current validation baseline
 
-The current rehearsal candidate is:
+The REST compatibility implementation and automated validation baseline are bound to code head:
 
 `c946507e2a57cfc2e37a7dd91418c6b32def01db`
 
@@ -145,7 +145,9 @@ Automated validation:
 - Public Records Migration run `30705978661`: success;
 - Public Release Lab run `30705978659`: success.
 
-The latest real local run successfully completed fresh clone verification, historical schema reconciliation, the formal migration and isolated application startup. It stopped on the first API create because the relationship ID was serialized as text and primitive JSON facts used Payload's default object-oriented validation. No source write occurred, and bounded cleanup removed the disposable database, dump and environment file. The current candidate contains the type-preserving fixes and regressions for both inputs.
+The latest real local run successfully completed fresh clone verification, historical schema reconciliation, the formal migration and isolated application startup. It stopped on the first API create because the relationship ID was serialized as text and primitive JSON facts used Payload's default object-oriented validation. No source write occurred, and bounded cleanup removed the disposable database, dump and environment file. The branch contains the type-preserving fixes and regressions for both inputs.
+
+The operator must always substitute the current PR head shown by `git rev-parse HEAD`; documentation-only commits may advance the PR head without changing this validated runtime implementation.
 
 ## Local execution
 
@@ -161,7 +163,7 @@ pwsh `
   -NoProfile `
   -ExecutionPolicy Bypass `
   -File ".\scripts\radar\run-radar-public-release-lab-v01.ps1" `
-  -ExpectedWebsiteHead "c946507e2a57cfc2e37a7dd91418c6b32def01db" `
+  -ExpectedWebsiteHead "<CURRENT_PR_HEAD_SHA>" `
   -Confirm "RUN-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01"
 ```
 
