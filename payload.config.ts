@@ -12,6 +12,7 @@ import { FeedbackSubmissions } from './src/collections/FeedbackSubmissions'
 import { Media } from './src/collections/Media'
 import { Organizations } from './src/collections/Organizations'
 import { RadarPublicConclusions } from './src/collections/RadarPublicConclusions'
+import { RadarPublicRecords } from './src/collections/RadarPublicRecords'
 import { RadarResearchRecords } from './src/collections/RadarResearchRecords'
 import { Rules } from './src/collections/Rules'
 import { StewardshipNotices } from './src/collections/StewardshipNotices'
@@ -40,6 +41,8 @@ const stewardshipSchemaReady = String(process.env['STEWARDSHIP_NOTICES_SCHEMA_RE
  * schema, then restores it before generating the additive Radar migration.
  */
 const radarPublicConclusionsSchemaReady = String(process.env['RADAR_PUBLIC_CONCLUSIONS_SCHEMA_READY'] || 'true').toLowerCase() !== 'false'
+/** Radar public records stay optional only during isolated migration snapshot generation. */
+const radarPublicRecordsSchemaReady = String(process.env['RADAR_PUBLIC_RECORDS_SCHEMA_READY'] || 'true').toLowerCase() !== 'false'
 
 const WorksWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Works) : Works
 const CreatorsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Creators) : Creators
@@ -210,6 +213,7 @@ const OrganizationsWithAudit = withContentAudit(OrganizationsWithOptionalSteward
 
 const EvidenceWithAudit = withContentAudit(Evidence, 'evidence')
 const RadarPublicConclusionsWithAudit = withContentAudit(RadarPublicConclusions, 'radar-public-conclusions')
+const RadarPublicRecordsWithAudit = withContentAudit(RadarPublicRecords, 'radar-public-records')
 const RadarResearchRecordsWithAudit = withContentAudit(RadarResearchRecords, 'radar-research-records')
 const TermsWithAudit = withContentAudit(Terms, 'terms')
 const WarningsWithAudit = withContentAudit(Warnings, 'warnings')
@@ -265,6 +269,7 @@ export default buildConfig({
     Media,
     WorksWithSafeLifecycleStatus,
     ...(radarPublicConclusionsSchemaReady ? [RadarPublicConclusionsWithAudit] : []),
+    ...(radarPublicRecordsSchemaReady ? [RadarPublicRecordsWithAudit] : []),
     CreatorsWithAudit,
     OrganizationsWithAudit,
     EvidenceWithAudit,
