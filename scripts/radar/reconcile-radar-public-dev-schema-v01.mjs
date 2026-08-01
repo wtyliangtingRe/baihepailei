@@ -184,7 +184,7 @@ SELECT concat_ws(E'\\t',
   label: '核对旧 Radar 与新记录表边界',
   stdoutPath: join(outDir, 'pre-reconciliation-object-gate.tsv'),
   stderrPath: join(outDir, 'pre-reconciliation-object-gate-stderr.txt'),
-}).trim()
+}).replace(/\r?\n$/u, '')
 if (objectGate !== 'radar_public\tradar_public_review_reasons\tradar_public_radar_assessment_matched_rules\tradar_public_radar_assessment_contradictions\t') {
   fail(`旧 Radar schema 或新记录表边界不符合预期：${objectGate}`)
 }

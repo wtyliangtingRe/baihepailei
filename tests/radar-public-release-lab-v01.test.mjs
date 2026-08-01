@@ -217,3 +217,19 @@ test('executor cannot read the source database and verifies the exact allowed de
   assert.match(executor, /productionAuthorization = \$false/u)
   assert.doesNotMatch(executor, /SourcePostgresContainer|SourceDatabaseUser|pg_dump/u)
 })
+test('historical schema object gate preserves the trailing empty field', () => {
+  const objectGateStart = reconciler.indexOf('const objectGate = psql')
+  const signatureStart = reconciler.indexOf('const signatureSql')
+  assert.ok(objectGateStart >= 0 && signatureStart > objectGateStart)
+
+  const objectGateBlock = reconciler.slice(
+    objectGateStart,
+    signatureStart,
+  )
+
+  assert.match(
+    objectGateBlock,
+    /\.replace\(\/\\r\?\\n\$\/u, ''\)/u,
+  )
+  assert.doesNotMatch(objectGateBlock, /\.trim\(\)/u)
+})
