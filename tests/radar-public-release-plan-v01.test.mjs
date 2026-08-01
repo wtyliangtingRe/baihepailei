@@ -5,6 +5,7 @@ import {
   buildCurrentRecordIndexes,
   buildPlanRow,
   buildWorkIndexes,
+  numericRelationshipId,
 } from '../scripts/radar/lib/public-release-plan-v01.mjs'
 
 const release = {
@@ -42,12 +43,39 @@ test('plans an exact work create without touching Works', () => {
   assert.equal(row.planStatus, 'ready_create')
   assert.equal(row.target.id, '10')
   assert.equal(row.desired.publicationKey, 'work:10')
-  assert.equal(row.desired.work, '10')
+  assert.equal(row.desired.work, 10)
+  assert.equal(typeof row.desired.work, 'number')
   assert.equal(row.desired.facts[0].factType, 'source_page_title')
+  assert.equal(row.desired.facts[0].value, 'Example')
   assert.deepEqual(row.desired.facts[0].sourceRefs, [{ value: 'src-1' }])
   assert.equal(row.desired.recordStatus, 'current')
   assert.equal('humanAssessment' in row.desired, false)
   assert.equal('radarAssessment' in row.desired, false)
+})
+
+test('preserves structured and primitive fact values exactly', () => {
+  const inputFacts = [
+    { factId: 'fact-string', type: 'title', value: '原始字符串', sourceRefs: ['src-1'] },
+    { factId: 'fact-object', type: 'retrieved', value: { httpStatus: 200, finalUrl: 'https://example.com' }, sourceRefs: ['src-1'] },
+    { factId: 'fact-array', type: 'labels', value: ['A', 'B'], sourceRefs: ['src-1'] },
+    { factId: 'fact-bool', type: 'flag', value: false, sourceRefs: ['src-1'] },
+    { factId: 'fact-number', type: 'count', value: 0, sourceRefs: ['src-1'] },
+  ]
+  const row = buildPlanRow(
+    record({ facts: inputFacts }),
+    buildWorkIndexes(works),
+    buildCurrentRecordIndexes([]),
+    release,
+    importedAt,
+  )
+  assert.deepEqual(row.desired.facts.map((fact) => fact.value), inputFacts.map((fact) => fact.value))
+})
+
+test('requires a positive safe integer relationship id before any write', () => {
+  assert.equal(numericRelationshipId('4987'), 4987)
+  assert.throws(() => numericRelationshipId('4987 0'), /positive integer/u)
+  assert.throws(() => numericRelationshipId('0'), /positive integer/u)
+  assert.throws(() => numericRelationshipId('9007199254740992'), /safe integer range/u)
 })
 
 test('blocks title matches when exact identifiers are absent', () => {
