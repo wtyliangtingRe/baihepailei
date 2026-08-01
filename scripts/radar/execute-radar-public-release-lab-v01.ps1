@@ -17,13 +17,23 @@ function Write-JsonFile([string]$Path, [object]$Value) {
   [System.IO.File]::WriteAllText($Path, ($json.TrimEnd() + [Environment]::NewLine), [System.Text.UTF8Encoding]::new($false))
 }
 
-function Get-DotEnvValue([string[]]$Names) {
+function Get-ConfiguredValue([string[]]$Names) {
   foreach ($name in $Names) {
-    $escaped = [regex]::Escape($name)
-    $line = Get-Content -LiteralPath '.env' -Encoding UTF8 |
-      Where-Object { $_ -match "^\s*$escaped\s*=" } |
-      Select-Object -First 1
-    if ($line) { return (($line -split '=', 2)[1].Trim()).Trim('"').Trim("'") }
+    $value = [Environment]::GetEnvironmentVariable($name, 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($value)) { return $value.Trim() }
+  }
+
+  foreach ($envFile in @('.env.development.local', '.env.local', '.env.development', '.env')) {
+    if (-not (Test-Path -LiteralPath $envFile -PathType Leaf)) { continue }
+    $lines = @(Microsoft.PowerShell.Management\Get-Content -LiteralPath $envFile -Encoding UTF8)
+    foreach ($name in $Names) {
+      $escaped = [regex]::Escape($name)
+      $line = $lines | Where-Object { $_ -match "^\s*$escaped\s*=" } | Select-Object -First 1
+      if ($line) {
+        $value = (($line -split '=', 2)[1].Trim()).Trim('"').Trim("'")
+        if (-not [string]::IsNullOrWhiteSpace($value)) { return $value }
+      }
+    }
   }
   return $null
 }
@@ -184,9 +194,11 @@ try {
   }
 } finally { Pop-Location }
 
-$email = Get-DotEnvValue @('RADAR_PAYLOAD_EMAIL', 'PAYLOAD_EXPORT_EMAIL', 'PAYLOAD_SEED_EMAIL')
-$password = Get-DotEnvValue @('RADAR_PAYLOAD_PASSWORD', 'PAYLOAD_EXPORT_PASSWORD', 'PAYLOAD_SEED_PASSWORD')
-if (-not $email -or -not $password) { throw '无法从 .env 读取 Payload 管理员账号。' }
+$email = Get-ConfiguredValue @('RADAR_PAYLOAD_EMAIL', 'PAYLOAD_EXPORT_EMAIL', 'PAYLOAD_SEED_EMAIL', 'SITE_OWNER_EMAIL')
+$password = Get-ConfiguredValue @('RADAR_PAYLOAD_PASSWORD', 'PAYLOAD_EXPORT_PASSWORD', 'PAYLOAD_SEED_PASSWORD')
+if (-not $email -or -not $password) {
+  throw '无法解析 Payload 管理员凭据；请通过一键入口安全预检并以内存环境变量传入。'
+}
 
 node --check '.\scripts\radar\run-public-release-lab-import-v01.mjs'
 node --test '.\tests\radar-public-release-lab-v01.test.mjs' '.\tests\radar-public-release-plan-v01.test.mjs'
