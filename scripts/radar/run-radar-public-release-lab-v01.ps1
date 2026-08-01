@@ -19,6 +19,104 @@ function Invoke-Checked([string]$Label, [scriptblock]$Action) {
   if ($LASTEXITCODE -ne 0) { throw "$Label 失败（退出码 $LASTEXITCODE）。" }
 }
 
+function Invoke-WithEnvironment([hashtable]$Variables, [scriptblock]$Action) {
+  $saved = @{}
+  foreach ($name in $Variables.Keys) {
+    $saved[$name] = [pscustomobject]@{
+      Exists = Test-Path "Env:$name"
+      Value = [Environment]::GetEnvironmentVariable([string]$name, 'Process')
+    }
+    [Environment]::SetEnvironmentVariable([string]$name, [string]$Variables[$name], 'Process')
+  }
+  try {
+    & $Action
+  } finally {
+    foreach ($name in $Variables.Keys) {
+      if ($saved[$name].Exists) {
+        [Environment]::SetEnvironmentVariable([string]$name, [string]$saved[$name].Value, 'Process')
+      } else {
+        [Environment]::SetEnvironmentVariable([string]$name, $null, 'Process')
+      }
+    }
+  }
+}
+
+function Get-ConfiguredValue([string[]]$Names) {
+  foreach ($name in $Names) {
+    $value = [Environment]::GetEnvironmentVariable($name, 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($value)) {
+      return [pscustomobject]@{ Value = $value.Trim(); Source = "process:$name" }
+    }
+  }
+
+  foreach ($envFile in @('.env.development.local', '.env.local', '.env.development', '.env')) {
+    if (-not (Test-Path -LiteralPath $envFile -PathType Leaf)) { continue }
+    $lines = @(Microsoft.PowerShell.Management\Get-Content -LiteralPath $envFile -Encoding UTF8)
+    foreach ($name in $Names) {
+      $escaped = [regex]::Escape($name)
+      $line = $lines | Where-Object { $_ -match "^\s*$escaped\s*=" } | Select-Object -First 1
+      if ($line) {
+        $value = (($line -split '=', 2)[1].Trim()).Trim('"').Trim("'")
+        if (-not [string]::IsNullOrWhiteSpace($value)) {
+          return [pscustomobject]@{ Value = $value; Source = "$envFile`:$name" }
+        }
+      }
+    }
+  }
+  return $null
+}
+
+function ConvertFrom-SecureStringInMemory([Security.SecureString]$SecureValue) {
+  $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureValue)
+  try {
+    return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
+  } finally {
+    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer)
+  }
+}
+
+function Get-LabAdministratorCredentials {
+  $emailResult = Get-ConfiguredValue @(
+    'RADAR_PAYLOAD_EMAIL',
+    'PAYLOAD_EXPORT_EMAIL',
+    'PAYLOAD_SEED_EMAIL',
+    'SITE_OWNER_EMAIL'
+  )
+  $passwordResult = Get-ConfiguredValue @(
+    'RADAR_PAYLOAD_PASSWORD',
+    'PAYLOAD_EXPORT_PASSWORD',
+    'PAYLOAD_SEED_PASSWORD'
+  )
+
+  if ($emailResult) {
+    $email = [string]$emailResult.Value
+    $emailSource = [string]$emailResult.Source
+  } else {
+    $email = (Read-Host '请输入已存在的 Payload owner/admin 邮箱').Trim()
+    $emailSource = 'interactive-email-prompt'
+  }
+  if ([string]::IsNullOrWhiteSpace($email)) { throw 'Payload 管理员邮箱不能为空。' }
+  try { [void][System.Net.Mail.MailAddress]::new($email) } catch { throw 'Payload 管理员邮箱格式无效。' }
+
+  if ($passwordResult) {
+    $password = [string]$passwordResult.Value
+    $passwordSource = [string]$passwordResult.Source
+  } else {
+    $securePassword = Read-Host '请输入该 Payload 账号密码（输入不会显示）' -AsSecureString
+    $password = ConvertFrom-SecureStringInMemory $securePassword
+    $securePassword = $null
+    $passwordSource = 'interactive-secure-prompt'
+  }
+  if ([string]::IsNullOrWhiteSpace($password)) { throw 'Payload 管理员密码不能为空。' }
+
+  return [pscustomobject]@{
+    Email = $email
+    Password = $password
+    EmailSource = $emailSource
+    PasswordSource = $passwordSource
+  }
+}
+
 function Get-ExactContainerIds([string]$Name) {
   return @(
     docker ps -aq --filter "name=^/${Name}$" |
@@ -134,43 +232,64 @@ if ($localHead -ne $ExpectedWebsiteHead -or $remoteHead -ne $ExpectedWebsiteHead
   throw "实验室提交不符合预期：local=$localHead remote=$remoteHead expected=$ExpectedWebsiteHead"
 }
 
-Ensure-SourcePostgres $SourcePostgresContainer
-$runStartedAt = Get-Date
-
-Invoke-Checked 'Phase 1：准备隔离数据库克隆' {
-  & pwsh -NoProfile -ExecutionPolicy Bypass `
-    -File '.\scripts\radar\prepare-radar-public-release-lab-database-v01.ps1' `
-    -ExpectedWebsiteHead $ExpectedWebsiteHead `
-    -ResearchRepo $ResearchRepo `
-    -SourcePostgresContainer $SourcePostgresContainer `
-    -Confirm 'PREPARE-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01'
-}
-
-$environmentFile = Get-ChildItem `
-    -LiteralPath '.\data_local\outputs\radar-public-release-v01' `
-    -Filter 'radar-public-release-lab-environment-v01.json' `
-    -File `
-    -Recurse |
-  Where-Object { $_.LastWriteTime -ge $runStartedAt.AddMinutes(-1) } |
-  Sort-Object LastWriteTime -Descending |
-  Select-Object -First 1
-if (-not $environmentFile) { throw '没有找到本轮生成的隔离环境文件。' }
-
 Write-Host ''
-Write-Host "隔离环境：$($environmentFile.FullName)" -ForegroundColor Green
+Write-Host '==> 预检 Payload 管理员凭据' -ForegroundColor Cyan
+$credentials = Get-LabAdministratorCredentials
+Write-Host "管理员邮箱来源：$($credentials.EmailSource)" -ForegroundColor Green
+Write-Host "管理员密码来源：$($credentials.PasswordSource)" -ForegroundColor Green
+Write-Host '凭据仅保留在当前进程内存中，不写入文件或命令参数。' -ForegroundColor Green
 
+$environmentFile = $null
 try {
-  Convert-LabCreatedAtForExecutor $environmentFile.FullName
-  Invoke-Checked 'Phase 2：临时数据库迁移与 520 条导入' {
+  Ensure-SourcePostgres $SourcePostgresContainer
+  $runStartedAt = Get-Date
+
+  Invoke-Checked 'Phase 1：准备隔离数据库克隆' {
     & pwsh -NoProfile -ExecutionPolicy Bypass `
-      -File '.\scripts\radar\execute-radar-public-release-lab-v01.ps1' `
-      -EnvironmentFile $environmentFile.FullName `
+      -File '.\scripts\radar\prepare-radar-public-release-lab-database-v01.ps1' `
       -ExpectedWebsiteHead $ExpectedWebsiteHead `
-      -Confirm 'EXECUTE-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01'
+      -ResearchRepo $ResearchRepo `
+      -SourcePostgresContainer $SourcePostgresContainer `
+      -Confirm 'PREPARE-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01'
   }
-} catch {
-  Remove-RunLabResources $environmentFile.FullName
-  throw
+
+  $environmentFile = Get-ChildItem `
+      -LiteralPath '.\data_local\outputs\radar-public-release-v01' `
+      -Filter 'radar-public-release-lab-environment-v01.json' `
+      -File `
+      -Recurse |
+    Where-Object { $_.LastWriteTime -ge $runStartedAt.AddMinutes(-1) } |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
+  if (-not $environmentFile) { throw '没有找到本轮生成的隔离环境文件。' }
+
+  Write-Host ''
+  Write-Host "隔离环境：$($environmentFile.FullName)" -ForegroundColor Green
+
+  try {
+    Convert-LabCreatedAtForExecutor $environmentFile.FullName
+    Invoke-WithEnvironment -Variables @{
+      RADAR_PAYLOAD_EMAIL = [string]$credentials.Email
+      RADAR_PAYLOAD_PASSWORD = [string]$credentials.Password
+    } -Action {
+      Invoke-Checked 'Phase 2：临时数据库迁移与 520 条导入' {
+        & pwsh -NoProfile -ExecutionPolicy Bypass `
+          -File '.\scripts\radar\execute-radar-public-release-lab-v01.ps1' `
+          -EnvironmentFile $environmentFile.FullName `
+          -ExpectedWebsiteHead $ExpectedWebsiteHead `
+          -Confirm 'EXECUTE-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01'
+      }
+    }
+  } catch {
+    Remove-RunLabResources $environmentFile.FullName
+    throw
+  }
+} finally {
+  if ($credentials) {
+    $credentials.Password = $null
+    $credentials.Email = $null
+  }
+  $credentials = $null
 }
 
 Write-Host ''
