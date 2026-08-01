@@ -28,9 +28,26 @@ The package must remain:
 - `src/app/(payload)/api/radar-public-release-lab-marker/route.ts`
 - `tests/radar-public-release-lab-v01.test.mjs`
 
-The one-command runner is the normal operator entrypoint. It safely reuses an already running `baihepailei-postgres` container, starts that exact container if it exists but is stopped, and calls Docker Compose only when the named container does not exist. It never removes or recreates an existing source container.
+The one-command runner is the canonical operator entrypoint. The two lower-level PowerShell stages remain deliberately separate: the database preparer may read the source container but cannot migrate or import, while the executor may migrate and import the disposable clone but has no source-container parameters or source-database commands.
 
-The two internal PowerShell stages remain deliberately separate. The database preparer may read the source container but cannot migrate or import. The executor may migrate and import the disposable clone but has no source-container parameters or source-database commands.
+## One-command source-container behavior
+
+The runner:
+
+1. reuses `baihepailei-postgres` when it is already running;
+2. starts that exact container when it exists but is stopped;
+3. invokes `docker compose up -d postgres` only when no exact-name source container exists;
+4. never removes or recreates the source container.
+
+It also normalizes the generated environment timestamp before Phase 2. PowerShell 7.5 and later may deserialize an ISO JSON timestamp into a `DateTime`; converting that object through a culture-specific string can apply the local timezone offset twice. The runner parses the original ISO value as `DateTimeOffset`, preserves the four-hour freshness boundary, rejects future timestamps, and rewrites only `createdAt` as an RFC 1123 UTC string that remains a JSON string across PowerShell versions.
+
+If Phase 2 fails before the executor reaches its own cleanup block, the runner performs an idempotent fallback cleanup limited to:
+
+- the exact current-run container name matching `baihepailei-radar-public-release-lab-YYYYMMDD-HHMMSS`;
+- the current-run dump only when its resolved path is under `data_local/backups/radar-public-release-lab-v01`;
+- the current-run credentials-bearing environment file.
+
+The source PostgreSQL container and `.env` are never cleanup targets.
 
 ## Safety model
 
@@ -61,7 +78,7 @@ The executor:
 4. applies the two accepted migration entries only to the disposable clone;
 5. starts Next/Payload on a random loopback port from 32000 through 39999;
 6. requires a nonce-protected marker that reports the expected temporary database and all three commit identities;
-7. runs the importer in strict `initial` mode and requires 520 `ready_create`, zero updates, zero current rows and zero blockers;
+7. requires the initial planner result to be 520 `ready_create`, zero updates, zero current rows and zero blockers;
 8. creates records sequentially through the authenticated Payload API;
 9. re-reads all records and requires 520 `already_current`;
 10. requires exactly four new `radar_public_records*` tables;
@@ -81,19 +98,20 @@ The write-capable Node importer rejects:
 - a missing or incorrect confirmation string;
 - a missing nonce-protected lab marker;
 - commit or database mismatches;
-- identity, duplicate or schema blockers;
-- `PUT`, `DELETE`, rollback or withdrawal behavior.
+- blockers in either mode;
+- PUT or DELETE behavior.
 
-The importer also contains a guarded `incremental` mode for later releases. That mode permits only exact-identity `ready_create`, `ready_update` and `already_current` rows, performs POST/PATCH/skip respectively, and requires the whole package to converge to `already_current`. PR #325 still invokes strict initial mode. See `docs/guides/radar-public-release-incremental-upsert-v01.md`.
+The first release uses strict `initial` mode. Later releases may use guarded `incremental` mode as documented in `radar-public-release-incremental-upsert-v01.md`.
 
 ## Local execution
 
 Keep the normal `pnpm dev` process stopped before running the lab.
 
-Use the final PR head in this single command:
-
 ```powershell
 Set-Location "D:\0GitHubtest\Baihepailei"
+
+git switch "agent/radar-public-release-lab-v01"
+git pull --ff-only origin "agent/radar-public-release-lab-v01"
 
 pwsh `
   -NoProfile `
@@ -102,8 +120,6 @@ pwsh `
   -ExpectedWebsiteHead "<FINAL_PR_HEAD_SHA>" `
   -Confirm "RUN-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01"
 ```
-
-The runner handles branch synchronization, source-container reuse/start/create, clone preparation, environment-file selection and isolated execution. Do not precede it with an unconditional `docker compose up -d postgres`, because an existing container with the canonical name may belong to an older Compose project while still being the correct source database.
 
 Expected terminal receipt:
 
@@ -124,16 +140,12 @@ The evidence archive is written under `exports/RADAR-PUBLIC-RELEASE-LAB-<timesta
 
 Phase 1 removes the disposable container, local dump and temporary environment file if clone preparation fails.
 
-Phase 2 always attempts to stop the isolated website, remove the disposable database container, delete the database dump and delete the credentials-bearing environment file. Non-secret logs under `data_local` are retained for diagnosis.
+Phase 2 always attempts to stop the isolated website, remove the disposable database container, delete the database dump and delete the credentials-bearing environment file. The one-command runner adds the same bounded cleanup when validation fails before the executor enters its normal cleanup scope. Non-secret logs under `data_local` are retained for diagnosis.
 
 A failed lab must be restarted from Phase 1. It must never be resumed against a partially imported clone.
-
-The canonical source container is never deleted by the runner or either phase.
 
 ## Acceptance boundary
 
 A successful lab proves that the accepted additive migration and the 520-row release can be applied together without changing Works, human assessments, AI assessment fields, the old public conclusion track or research records.
 
 It still does not authorize production. The next stage must independently prepare a one-shot production candidate with a fresh backup, exact production preflight, apply-once lock, post-apply 520 `already_current` verification, rollback instructions and an explicit human execution gate.
-
-After initial launch, recurring releases use the separate incremental upsert policy: immutable release package, read-only plan, disposable cloned-database rehearsal, exact create/update/current partition, zero blockers, full post-apply convergence, then a separately armed production candidate.
