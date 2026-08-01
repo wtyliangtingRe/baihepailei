@@ -36,9 +36,18 @@ jobs:
             tests/radar-public-records-schema.test.mjs \
             tests/radar-public-release-plan-v01.test.mjs \
             tests/radar-public-release-v01.test.mjs
-      - name: Confirm migration remains separate
+      - name: Confirm locked migration remains separate from planning changes
         run: |
-          ! grep -q "RadarPublicRecords" payload.config.ts
-          ! find src/migrations -maxdepth 1 -type f -iname '*radar_public_records*' | grep -q .
+          grep -q "RadarPublicRecords" payload.config.ts
+          test -f src/migrations/20260801_101546_current_schema_baseline_before_radar_public_records_v01.ts
+          test -f src/migrations/20260801_101551_radar_public_records_v01.ts
+          git diff --exit-code origin/${{ github.base_ref }}...HEAD -- \
+            payload.config.ts \
+            src/migrations/20260801_101546_current_schema_baseline_before_radar_public_records_v01.ts \
+            src/migrations/20260801_101546_current_schema_baseline_before_radar_public_records_v01.json \
+            src/migrations/20260801_101551_radar_public_records_v01.ts \
+            src/migrations/20260801_101551_radar_public_records_v01.json \
+            src/migrations/index.ts
+          ! grep -E "method: '(POST|PATCH|PUT|DELETE)'|payload migrate" scripts/radar/plan-public-release-v01.mjs
       - name: Check diff whitespace
         run: git diff --check origin/${{ github.base_ref }}...HEAD
