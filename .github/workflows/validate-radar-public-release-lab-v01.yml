@@ -1,0 +1,68 @@
+name: Validate Radar Public Release Lab v01
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-radar-public-release-lab-v01.yml'
+      - 'src/app/(payload)/api/radar-public-release-lab-marker/route.ts'
+      - 'scripts/radar/run-public-release-lab-import-v01.mjs'
+      - 'scripts/radar/prepare-radar-public-release-lab-database-v01.ps1'
+      - 'scripts/radar/execute-radar-public-release-lab-v01.ps1'
+      - 'tests/radar-public-release-lab-v01.test.mjs'
+      - 'scripts/radar/lib/public-release-v01.mjs'
+      - 'scripts/radar/lib/public-release-plan-v01.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-isolated-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Parse PowerShell lab entrypoints
+        shell: pwsh
+        run: |
+          $allErrors = @()
+          foreach ($path in @(
+            'scripts/radar/prepare-radar-public-release-lab-database-v01.ps1',
+            'scripts/radar/execute-radar-public-release-lab-v01.ps1'
+          )) {
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $path),
+              [ref]$null,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              $allErrors += @($errors | ForEach-Object { "$path`: $($_.Message)" })
+            }
+          }
+          if ($allErrors.Count -gt 0) {
+            $allErrors -join "`n" | Write-Error
+          }
+      - name: Check importer syntax
+        run: node --check scripts/radar/run-public-release-lab-import-v01.mjs
+      - name: Run isolated lab and planner tests
+        run: |
+          node --test \
+            tests/radar-public-release-lab-v01.test.mjs \
+            tests/radar-public-release-plan-v01.test.mjs \
+            tests/radar-public-records-schema.test.mjs \
+            tests/radar-public-release-v01.test.mjs
+      - name: Confirm lab-only write surface
+        run: |
+          grep -q 'RUN-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01' scripts/radar/run-public-release-lab-import-v01.mjs
+          grep -q 'RADAR_PUBLIC_RELEASE_LAB_NONCE' src/app/\(payload\)/api/radar-public-release-lab-marker/route.ts
+          ! grep -E "method: '(PATCH|PUT|DELETE)'" scripts/radar/run-public-release-lab-import-v01.mjs
+          ! grep -E 'SourcePostgresContainer|SourceDatabaseUser|pg_dump' scripts/radar/execute-radar-public-release-lab-v01.ps1
+      - name: Check diff whitespace
+        run: git diff --check origin/main...HEAD
