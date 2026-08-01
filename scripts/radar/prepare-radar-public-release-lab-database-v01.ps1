@@ -3,6 +3,7 @@ param(
   [Parameter(Mandatory = $true)][ValidateSet('PREPARE-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01')][string]$Confirm,
   [string]$ResearchRepo = 'D:\0GitHubtest\baihepailei-research-data',
   [string]$ExpectedResearchHead = '6ee4051effa95e19370bb0a2f26500293177212a',
+  [string]$ExpectedReleaseSourceCommit = '1555eb3e66cd2f8bb7d5048db1afab969ff819dd',
   [string]$SourcePostgresContainer = 'baihepailei-postgres',
   [string]$SourceDatabase = 'baihepailei',
   [string]$SourceDatabaseUser = 'baihe',
@@ -89,7 +90,8 @@ if ($websiteHead -ne $ExpectedWebsiteHead -or $websiteRemoteHead -ne $ExpectedWe
   throw "网站提交不符合预期：local=$websiteHead remote=$websiteRemoteHead"
 }
 
-Push-Location $ResearchRepo
+$resolvedResearchRepo = (Resolve-Path $ResearchRepo).Path
+Push-Location $resolvedResearchRepo
 try {
   git fetch origin
   git switch main
@@ -98,6 +100,16 @@ try {
   $researchHead = (git rev-parse HEAD).Trim()
   if ($researchHead -ne $ExpectedResearchHead) { throw "研究提交不符合预期：$researchHead" }
 } finally { Pop-Location }
+
+$releaseDirectory = Join-Path $resolvedResearchRepo 'releases\public\radar-public-release-0001\v01'
+$releaseManifestPath = Join-Path $releaseDirectory 'manifest.json'
+if (-not (Test-Path -LiteralPath $releaseManifestPath -PathType Leaf)) { throw 'Public Release manifest 不存在。' }
+$releaseManifest = Get-Content -LiteralPath $releaseManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json -Depth 100
+$releaseSourceCommit = [string]$releaseManifest.source.commitSha
+if ($releaseSourceCommit -ne $ExpectedReleaseSourceCommit) {
+  throw "Public Release 来源提交不符合预期：$releaseSourceCommit"
+}
+if ([int]$releaseManifest.files.records.rowCount -ne 520) { throw 'Public Release manifest 不是 520 条。' }
 
 & docker version | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Docker 不可用。' }
@@ -194,9 +206,10 @@ try {
     schemaVersion = 'radar-public-release-lab-environment-v01'
     createdAt = [DateTime]::UtcNow.ToString('o')
     websiteCommit = $ExpectedWebsiteHead
-    researchCommit = $ExpectedResearchHead
-    researchRepo = (Resolve-Path $ResearchRepo).Path
-    releaseDirectory = (Join-Path (Resolve-Path $ResearchRepo).Path 'releases\public\radar-public-release-0001\v01')
+    researchHead = $ExpectedResearchHead
+    releaseSourceCommit = $releaseSourceCommit
+    researchRepo = $resolvedResearchRepo
+    releaseDirectory = $releaseDirectory
     sourceContainer = $SourcePostgresContainer
     sourceDatabase = $SourceDatabase
     sourceDatabaseWrite = $false
@@ -225,12 +238,14 @@ try {
 
   Write-Host ''
   Write-Host '隔离数据库已从 fresh 只读 dump 恢复，并通过源库前后不变与克隆一致性核对。' -ForegroundColor Green
-  Write-Host "Environment : $environmentPath"
-  Write-Host "LabContainer: $labContainer"
-  Write-Host "LabPort     : $dbPort"
-  Write-Host 'SourceWrite : False'
-  Write-Host 'Migration   : False'
-  Write-Host 'ImportRows  : 0'
+  Write-Host "Environment        : $environmentPath"
+  Write-Host "ResearchHead       : $ExpectedResearchHead"
+  Write-Host "ReleaseSourceCommit: $releaseSourceCommit"
+  Write-Host "LabContainer       : $labContainer"
+  Write-Host "LabPort            : $dbPort"
+  Write-Host 'SourceWrite        : False'
+  Write-Host 'Migration          : False'
+  Write-Host 'ImportRows         : 0'
 } catch {
   if ($containerStarted) { & docker rm -f $labContainer 2>$null | Out-Null }
   Remove-Item -LiteralPath $backupPath, $environmentPath -Force -ErrorAction SilentlyContinue
