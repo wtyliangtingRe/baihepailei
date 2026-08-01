@@ -28,8 +28,11 @@ test('migration preparer registers the collection without touching rating tracks
 test('generated migration, when present, is additive and isolated', () => {
   const migrationDir = 'src/migrations'
   const names = readdirSync(migrationDir)
-  const migrationTs = names.find((name) => name.endsWith('_radar_public_records_v01.ts'))
-  const migrationJson = names.find((name) => name.endsWith('_radar_public_records_v01.json'))
+  const isRecordsMigration = (name) =>
+    name.includes('_radar_public_records_v01.') &&
+    !name.includes('_current_schema_baseline_before_radar_public_records_v01.')
+  const migrationTs = names.find((name) => isRecordsMigration(name) && name.endsWith('.ts'))
+  const migrationJson = names.find((name) => isRecordsMigration(name) && name.endsWith('.json'))
   const baselineTs = names.find((name) => name.endsWith('_current_schema_baseline_before_radar_public_records_v01.ts'))
   const baselineJson = names.find((name) => name.endsWith('_current_schema_baseline_before_radar_public_records_v01.json'))
 
@@ -52,6 +55,7 @@ test('generated migration, when present, is additive and isolated', () => {
   assert.match(config, /RadarPublicRecordsWithAudit/u)
   assert.ok(existsSync('.env.example'))
 })
+
 test('temporary Payload config is removed before workspace validation', () => {
   const cleanupMarker = 'does not classify its own temporary file as an external workspace change'
   const cleanupIndex = script.indexOf(cleanupMarker)
