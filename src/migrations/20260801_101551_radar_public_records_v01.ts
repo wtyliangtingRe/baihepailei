@@ -8,57 +8,57 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum_radar_public_records_research_status" AS ENUM('ready_for_publication', 'partially_verified', 'needs_more_research');
   CREATE TYPE "public"."enum_radar_public_records_record_status" AS ENUM('current', 'withdrawn');
   CREATE TABLE "radar_public_records_facts_source_refs" (
-  	"_order" integer NOT NULL,
-  	"_parent_id" varchar NOT NULL,
-  	"id" varchar PRIMARY KEY NOT NULL,
-  	"value" varchar NOT NULL
+    "_order" integer NOT NULL,
+    "_parent_id" varchar NOT NULL,
+    "id" varchar PRIMARY KEY NOT NULL,
+    "value" varchar NOT NULL
   );
-  
+
   CREATE TABLE "radar_public_records_facts" (
-  	"_order" integer NOT NULL,
-  	"_parent_id" integer NOT NULL,
-  	"id" varchar PRIMARY KEY NOT NULL,
-  	"fact_id" varchar NOT NULL,
-  	"fact_type" varchar NOT NULL,
-  	"value" jsonb NOT NULL
+    "_order" integer NOT NULL,
+    "_parent_id" integer NOT NULL,
+    "id" varchar PRIMARY KEY NOT NULL,
+    "fact_id" varchar NOT NULL,
+    "fact_type" varchar NOT NULL,
+    "value" jsonb NOT NULL
   );
-  
+
   CREATE TABLE "radar_public_records_evidence" (
-  	"_order" integer NOT NULL,
-  	"_parent_id" integer NOT NULL,
-  	"id" varchar PRIMARY KEY NOT NULL,
-  	"source_ref" varchar NOT NULL,
-  	"tier" "enum_radar_public_records_evidence_tier" NOT NULL,
-  	"role" "enum_radar_public_records_evidence_role" NOT NULL,
-  	"url" varchar NOT NULL,
-  	"title" varchar NOT NULL,
-  	"exact_identity_bound" boolean DEFAULT false NOT NULL
+    "_order" integer NOT NULL,
+    "_parent_id" integer NOT NULL,
+    "id" varchar PRIMARY KEY NOT NULL,
+    "source_ref" varchar NOT NULL,
+    "tier" "enum_radar_public_records_evidence_tier" NOT NULL,
+    "role" "enum_radar_public_records_evidence_role" NOT NULL,
+    "url" varchar NOT NULL,
+    "title" varchar NOT NULL,
+    "exact_identity_bound" boolean DEFAULT false NOT NULL
   );
-  
+
   CREATE TABLE "radar_public_records" (
-  	"id" serial PRIMARY KEY NOT NULL,
-  	"publication_key" varchar NOT NULL,
-  	"work_id" integer NOT NULL,
-  	"identity_key" varchar NOT NULL,
-  	"work_id_snapshot" varchar NOT NULL,
-  	"work_site_id" varchar NOT NULL,
-  	"title" varchar NOT NULL,
-  	"public_state" "enum_radar_public_records_public_state" NOT NULL,
-  	"research_status" "enum_radar_public_records_research_status" NOT NULL,
-  	"page_notice" varchar NOT NULL,
-  	"source_release_id" varchar NOT NULL,
-  	"source_commit_sha" varchar NOT NULL,
-  	"source_policy_version" varchar NOT NULL,
-  	"research_snapshot_id" varchar NOT NULL,
-  	"record_sha256" varchar NOT NULL,
-  	"release_records_sha256" varchar NOT NULL,
-  	"source_reviewed_at" timestamp(3) with time zone NOT NULL,
-  	"imported_at" timestamp(3) with time zone NOT NULL,
-  	"record_status" "enum_radar_public_records_record_status" DEFAULT 'current' NOT NULL,
-  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+    "id" serial PRIMARY KEY NOT NULL,
+    "publication_key" varchar NOT NULL,
+    "work_id" integer NOT NULL,
+    "identity_key" varchar NOT NULL,
+    "work_id_snapshot" varchar NOT NULL,
+    "work_site_id" varchar NOT NULL,
+    "title" varchar NOT NULL,
+    "public_state" "enum_radar_public_records_public_state" NOT NULL,
+    "research_status" "enum_radar_public_records_research_status" NOT NULL,
+    "page_notice" varchar NOT NULL,
+    "source_release_id" varchar NOT NULL,
+    "source_commit_sha" varchar NOT NULL,
+    "source_policy_version" varchar NOT NULL,
+    "research_snapshot_id" varchar NOT NULL,
+    "record_sha256" varchar NOT NULL,
+    "release_records_sha256" varchar NOT NULL,
+    "source_reviewed_at" timestamp(3) with time zone NOT NULL,
+    "imported_at" timestamp(3) with time zone NOT NULL,
+    "record_status" "enum_radar_public_records_record_status" DEFAULT 'current' NOT NULL,
+    "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+    "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
-  
+
   ALTER TABLE "radar_public_records_facts_source_refs" ADD CONSTRAINT "radar_public_records_facts_source_refs_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."radar_public_records_facts"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "radar_public_records_facts" ADD CONSTRAINT "radar_public_records_facts_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."radar_public_records"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "radar_public_records_evidence" ADD CONSTRAINT "radar_public_records_evidence_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."radar_public_records"("id") ON DELETE cascade ON UPDATE no action;
