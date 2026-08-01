@@ -31,6 +31,72 @@ function Get-DirtyPaths {
   return @($paths)
 }
 
+function Normalize-Text {
+  param([Parameter(Mandatory = $true)][AllowEmptyString()][string]$Text)
+
+  return $Text.Replace("`r`n", "`n").Replace("`r", "`n")
+}
+
+function Get-HeadFileText {
+  param([Parameter(Mandatory = $true)][string]$Path)
+
+  $temporaryFile = Join-Path ([System.IO.Path]::GetTempPath()) (
+    'baihepailei-head-file-' + [guid]::NewGuid().ToString('N') + '.tmp'
+  )
+
+  try {
+    cmd /d /c "git show HEAD:$Path > `"$temporaryFile`""
+    if ($LASTEXITCODE -ne 0) {
+      throw "无法读取 HEAD 中的文件：$Path"
+    }
+    return Normalize-Text -Text (Get-Content -LiteralPath $temporaryFile -Raw -Encoding UTF8)
+  }
+  finally {
+    Remove-Item -LiteralPath $temporaryFile -Force -ErrorAction SilentlyContinue
+  }
+}
+
+function Test-RecoverableGeneratedFile {
+  param([Parameter(Mandatory = $true)][string]$Path)
+
+  $workingText = Normalize-Text -Text (Get-Content -LiteralPath $Path -Raw -Encoding UTF8)
+  $headText = Get-HeadFileText -Path $Path
+
+  if ($workingText -ceq $headText) {
+    Write-Host "$Path 仅有行尾或编码形式差异，可安全恢复。" -ForegroundColor Green
+    return $true
+  }
+
+  if ($Path -eq 'payload.config.ts') {
+    $requiredMarkers = @(
+      'RadarPublicRecords',
+      'RADAR_PUBLIC_RECORDS_SCHEMA_READY',
+      'RadarPublicRecordsWithAudit',
+      'radarPublicRecordsSchemaReady ? [RadarPublicRecordsWithAudit]'
+    )
+    $missing = @($requiredMarkers | Where-Object { -not $workingText.Contains($_) })
+    if ($missing.Count -eq 0) {
+      Write-Host 'payload.config.ts 包含完整的已知迁移生成配置，可备份后恢复。' -ForegroundColor Green
+      return $true
+    }
+
+    $missing | ForEach-Object {
+      Write-Host "missing generated marker: $_" -ForegroundColor Yellow
+    }
+    return $false
+  }
+
+  if ($Path -eq '.env.example') {
+    if ($workingText.Contains('RADAR_PUBLIC_RECORDS_SCHEMA_READY=true')) {
+      Write-Host '.env.example 包含已知迁移环境说明，可备份后恢复。' -ForegroundColor Green
+      return $true
+    }
+    return $false
+  }
+
+  return $false
+}
+
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 Set-Location -LiteralPath $repositoryRoot
 
@@ -64,26 +130,10 @@ $generatedDirty = @(
   $dirty | Where-Object { $RecoverableGeneratedFiles -contains $_ }
 )
 if ($generatedDirty.Count -gt 0) {
-  $payloadDiff = @((git diff -- 'payload.config.ts')) -join "`n"
-  $envDiff = @((git diff -- '.env.example')) -join "`n"
-
-  if ($generatedDirty -contains 'payload.config.ts') {
-    foreach ($marker in @(
-      'RadarPublicRecords',
-      'RADAR_PUBLIC_RECORDS_SCHEMA_READY',
-      'RadarPublicRecordsWithAudit'
-    )) {
-      if (-not $payloadDiff.Contains($marker)) {
-        throw "payload.config.ts 差异缺少已知迁移遗留标记：$marker"
-      }
+  foreach ($path in $generatedDirty) {
+    if (-not (Test-RecoverableGeneratedFile -Path $path)) {
+      throw "$path 含有无法归因于迁移失败的语义改动；未自动恢复。"
     }
-  }
-
-  if (
-    $generatedDirty -contains '.env.example' -and
-    -not $envDiff.Contains('RADAR_PUBLIC_RECORDS_SCHEMA_READY')
-  ) {
-    throw '.env.example 差异不像已知迁移遗留；未自动恢复。'
   }
 
   $backupRoot = Join-Path `
@@ -96,7 +146,7 @@ if ($generatedDirty.Count -gt 0) {
     $patchPath = Join-Path $backupRoot ($safeName + '.patch')
     $contentPath = Join-Path $backupRoot ($safeName + '.working-copy')
 
-    git diff -- $path | Set-Content -LiteralPath $patchPath -Encoding UTF8
+    git diff --binary -- $path | Set-Content -LiteralPath $patchPath -Encoding UTF8
     Copy-Item -LiteralPath $path -Destination $contentPath -Force
     Write-Host "backup: $path -> $backupRoot" -ForegroundColor Yellow
   }
