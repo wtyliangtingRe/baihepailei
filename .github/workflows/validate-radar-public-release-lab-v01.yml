@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/validate-radar-public-release-lab-v01.yml'
       - 'src/app/(payload)/api/radar-public-release-lab-marker/route.ts'
+      - 'scripts/radar/run-radar-public-release-lab-v01.ps1'
       - 'scripts/radar/run-public-release-lab-import-v01.mjs'
       - 'scripts/radar/prepare-radar-public-release-lab-database-v01.ps1'
       - 'scripts/radar/execute-radar-public-release-lab-v01.ps1'
@@ -33,6 +34,7 @@ jobs:
         run: |
           $allErrors = @()
           foreach ($path in @(
+            'scripts/radar/run-radar-public-release-lab-v01.ps1',
             'scripts/radar/prepare-radar-public-release-lab-database-v01.ps1',
             'scripts/radar/execute-radar-public-release-lab-v01.ps1'
           )) {
@@ -62,7 +64,12 @@ jobs:
         run: |
           grep -q 'RUN-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01' scripts/radar/run-public-release-lab-import-v01.mjs
           grep -q 'RADAR_PUBLIC_RELEASE_LAB_NONCE' src/app/\(payload\)/api/radar-public-release-lab-marker/route.ts
-          ! grep -E "method: '(PATCH|PUT|DELETE)'" scripts/radar/run-public-release-lab-import-v01.mjs
+          grep -q "method: 'POST'" scripts/radar/run-public-release-lab-import-v01.mjs
+          grep -q "method: 'PATCH'" scripts/radar/run-public-release-lab-import-v01.mjs
+          ! grep -E "method: '(PUT|DELETE)'" scripts/radar/run-public-release-lab-import-v01.mjs
+          grep -q 'omissionMeansDelete: false' scripts/radar/run-public-release-lab-import-v01.mjs
+          grep -q 'docker ps -aq --filter' scripts/radar/run-radar-public-release-lab-v01.ps1
+          ! grep -E 'docker rm.*baihepailei-postgres' scripts/radar/run-radar-public-release-lab-v01.ps1
           ! grep -E 'SourcePostgresContainer|SourceDatabaseUser|pg_dump' scripts/radar/execute-radar-public-release-lab-v01.ps1
       - name: Check diff whitespace
         run: git diff --check origin/main...HEAD
