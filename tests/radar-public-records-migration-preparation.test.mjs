@@ -48,6 +48,8 @@ test('generated migration, when present, is additive and isolated', () => {
   assert.doesNotMatch(migration, /ALTER TABLE\s+"works"/u)
   assert.doesNotMatch(migration, /ALTER TABLE\s+"radar_public"(?:\s|`)/u)
   assert.doesNotMatch(migration, /CREATE TABLE\s+"radar_public"(?:\s|`)/u)
+  assert.doesNotMatch(migration, /^ +\t/mu)
+  assert.doesNotMatch(migration, /[ \t]+$/mu)
   assert.doesNotMatch(baseline, /db\.execute|CREATE TABLE|ALTER TABLE|DROP TABLE/u)
   assert.match(snapshot, /public\.radar_public_records/u)
   assert.match(snapshot, /public\.radar_public/u)
@@ -65,4 +67,12 @@ test('temporary Payload config is removed before workspace validation', () => {
   assert.ok(cleanupIndex >= 0, 'missing pre-validation temporary config cleanup')
   assert.ok(workspaceCheckIndex > cleanupIndex, 'workspace validation runs before temporary config cleanup')
   assert.ok(finallyIndex > workspaceCheckIndex, 'fallback finally cleanup must remain after validation')
+})
+
+test('only the canonical Radar public records migration entrypoint is retained', () => {
+  const entrypoints = readdirSync('scripts/radar')
+    .filter((name) => name.includes('radar-public-records-migration') && name.endsWith('.ps1'))
+    .sort()
+
+  assert.deepEqual(entrypoints, ['prepare-radar-public-records-migration-v01.ps1'])
 })
