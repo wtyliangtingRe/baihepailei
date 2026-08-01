@@ -56,6 +56,65 @@ function Ensure-SourcePostgres([string]$Name) {
   if ($LASTEXITCODE -ne 0 -or $finalRunning -ne 'true') { throw "源容器未处于运行状态：$Name" }
 }
 
+function Convert-LabCreatedAtForExecutor([string]$Path) {
+  $raw = [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)
+  $createdAtPattern = '"createdAt"\s*:\s*"(?<value>[^"]+)"'
+  $createdAtRegex = [regex]::new($createdAtPattern)
+  $match = $createdAtRegex.Match($raw)
+  if (-not $match.Success) { throw '实验环境缺少 createdAt。' }
+
+  $createdAt = [DateTimeOffset]::ParseExact(
+    $match.Groups['value'].Value,
+    'o',
+    [System.Globalization.CultureInfo]::InvariantCulture,
+    [System.Globalization.DateTimeStyles]::RoundtripKind
+  ).UtcDateTime
+  $now = [DateTime]::UtcNow
+  if ($createdAt -gt $now.AddMinutes(5)) { throw '实验环境 createdAt 位于未来，拒绝继续。' }
+  if ($createdAt -lt $now.AddHours(-4)) { throw '实验环境已超过 4 小时，必须重新从 fresh dump 准备。' }
+
+  # PowerShell 7.5+ may deserialize ISO JSON dates into DateTime. The executor then
+  # casts that value to a culture-specific string and can subtract the local UTC
+  # offset a second time. RFC 1123 remains a JSON string while preserving UTC.
+  $portableCreatedAt = $createdAt.ToString('r', [System.Globalization.CultureInfo]::InvariantCulture)
+  $replacement = '"createdAt": "' + $portableCreatedAt + '"'
+  $updated = $createdAtRegex.Replace($raw, $replacement, 1)
+  [System.IO.File]::WriteAllText($Path, $updated, [System.Text.UTF8Encoding]::new($false))
+
+  Write-Host "实验环境 UTC 时间已标准化：$portableCreatedAt" -ForegroundColor Green
+}
+
+function Remove-RunLabResources([string]$EnvironmentPath) {
+  if (-not (Test-Path -LiteralPath $EnvironmentPath -PathType Leaf)) { return }
+
+  try {
+    $lab = Get-Content -LiteralPath $EnvironmentPath -Raw -Encoding UTF8 | ConvertFrom-Json -Depth 100
+    $labContainer = [string]$lab.labContainer
+    if ($labContainer -match '^baihepailei-radar-public-release-lab-[0-9]{8}-[0-9]{6}$') {
+      $ids = @(Get-ExactContainerIds $labContainer)
+      if ($ids.Count -eq 1) {
+        & docker rm -f $labContainer 2>$null | Out-Null
+      }
+    }
+
+    $backupRoot = [System.IO.Path]::GetFullPath(
+      (Join-Path $repoRoot 'data_local\backups\radar-public-release-lab-v01')
+    )
+    $backupPathValue = [string]$lab.backupPath
+    if ($backupPathValue) {
+      $backupPath = [System.IO.Path]::GetFullPath($backupPathValue)
+      $backupPrefix = $backupRoot.TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+      if ($backupPath.StartsWith($backupPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Remove-Item -LiteralPath $backupPath -Force -ErrorAction SilentlyContinue
+      }
+    }
+  } catch {
+    Write-Host "本轮实验资源兜底清理出现警告：$($_.Exception.Message)" -ForegroundColor Yellow
+  } finally {
+    Remove-Item -LiteralPath $EnvironmentPath -Force -ErrorAction SilentlyContinue
+  }
+}
+
 if ($Confirm -ne 'RUN-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01') { throw '确认字符串不匹配。' }
 
 $unexpected = @(
@@ -100,12 +159,18 @@ if (-not $environmentFile) { throw '没有找到本轮生成的隔离环境文�
 Write-Host ''
 Write-Host "隔离环境：$($environmentFile.FullName)" -ForegroundColor Green
 
-Invoke-Checked 'Phase 2：临时数据库迁移与 520 条导入' {
-  & pwsh -NoProfile -ExecutionPolicy Bypass `
-    -File '.\scripts\radar\execute-radar-public-release-lab-v01.ps1' `
-    -EnvironmentFile $environmentFile.FullName `
-    -ExpectedWebsiteHead $ExpectedWebsiteHead `
-    -Confirm 'EXECUTE-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01'
+try {
+  Convert-LabCreatedAtForExecutor $environmentFile.FullName
+  Invoke-Checked 'Phase 2：临时数据库迁移与 520 条导入' {
+    & pwsh -NoProfile -ExecutionPolicy Bypass `
+      -File '.\scripts\radar\execute-radar-public-release-lab-v01.ps1' `
+      -EnvironmentFile $environmentFile.FullName `
+      -ExpectedWebsiteHead $ExpectedWebsiteHead `
+      -Confirm 'EXECUTE-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01'
+  }
+} catch {
+  Remove-RunLabResources $environmentFile.FullName
+  throw
 }
 
 Write-Host ''
