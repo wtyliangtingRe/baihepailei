@@ -1,0 +1,67 @@
+name: Temporary patch Radar object gate v01
+
+on:
+  push:
+    branches:
+      - agent/radar-public-release-lab-v01
+    paths:
+      - '.github/workflows/temporary-patch-radar-object-gate-v01.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-object-gate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/radar-public-release-lab-v01
+          fetch-depth: 0
+      - name: Patch exact trailing-field handling and regression
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          script_path = Path('scripts/radar/reconcile-radar-public-dev-schema-v01.mjs')
+          script = script_path.read_text(encoding='utf-8')
+          old = """  stderrPath: join(outDir, 'pre-reconciliation-object-gate-stderr.txt'),
+          }).trim()
+          if (objectGate !== 'radar_public\\tradar_public_review_reasons\\tradar_public_radar_assessment_matched_rules\\tradar_public_radar_assessment_contradictions\\t') {"""
+          new = """  stderrPath: join(outDir, 'pre-reconciliation-object-gate-stderr.txt'),
+          }).replace(/\\r?\\n$/u, '')
+          if (objectGate !== 'radar_public\\tradar_public_review_reasons\\tradar_public_radar_assessment_matched_rules\\tradar_public_radar_assessment_contradictions\\t') {"""
+          if script.count(old) != 1:
+              raise SystemExit(f'object gate patch anchor count was {script.count(old)}, expected 1')
+          script_path.write_text(script.replace(old, new), encoding='utf-8', newline='\n')
+
+          test_path = Path('tests/radar-public-release-lab-v01.test.mjs')
+          tests = test_path.read_text(encoding='utf-8')
+          title = "historical schema object gate preserves the trailing empty field"
+          if title in tests:
+              raise SystemExit('regression test already exists')
+          addition = r'''
+
+test('historical schema object gate preserves the trailing empty field', () => {
+  const objectGateStart = reconciler.indexOf('const objectGate = psql')
+  const signatureStart = reconciler.indexOf('const signatureSql')
+  assert.ok(objectGateStart >= 0 && signatureStart > objectGateStart)
+  const objectGateBlock = reconciler.slice(objectGateStart, signatureStart)
+  assert.match(objectGateBlock, /\.replace\(\/\\r\?\\n\$\/u, ''\)/u)
+  assert.doesNotMatch(objectGateBlock, /\.trim\(\)/u)
+})
+'''
+          test_path.write_text(tests.rstrip() + addition, encoding='utf-8', newline='\n')
+          PY
+
+          node --check scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
+          node --test tests/radar-public-release-lab-v01.test.mjs
+          git diff --check
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add scripts/radar/reconcile-radar-public-dev-schema-v01.mjs tests/radar-public-release-lab-v01.test.mjs
+          git commit -m "Fix trailing empty schema gate field"
+          git push origin HEAD:agent/radar-public-release-lab-v01
