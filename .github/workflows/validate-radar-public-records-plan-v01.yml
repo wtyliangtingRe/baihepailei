@@ -48,6 +48,11 @@ jobs:
             src/migrations/20260801_101551_radar_public_records_v01.ts \
             src/migrations/20260801_101551_radar_public_records_v01.json \
             src/migrations/index.ts
-          ! grep -E "method: '(POST|PATCH|PUT|DELETE)'|payload migrate" scripts/radar/plan-public-release-v01.mjs
+          test "$(grep -Ec "method: '(POST|PATCH|PUT|DELETE)'" scripts/radar/plan-public-release-v01.mjs)" -eq 1
+          grep -q '/api/users/login' scripts/radar/plan-public-release-v01.mjs
+          grep -q "method: 'POST'" scripts/radar/plan-public-release-v01.mjs
+          ! grep -E "method: '(PATCH|PUT|DELETE)'|payload migrate" scripts/radar/plan-public-release-v01.mjs
+          grep -q 'publicRecordMutation: false' scripts/radar/plan-public-release-v01.mjs
+          grep -q 'worksMutation: false' scripts/radar/plan-public-release-v01.mjs
       - name: Check diff whitespace
         run: git diff --check origin/${{ github.base_ref }}...HEAD
