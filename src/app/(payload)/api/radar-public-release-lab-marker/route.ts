@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
     isolatedLab: true,
     database: actualDatabase,
     websiteCommit: normalized(process.env.RADAR_PUBLIC_RELEASE_LAB_WEBSITE_COMMIT),
-    researchCommit: normalized(process.env.RADAR_PUBLIC_RELEASE_LAB_RESEARCH_COMMIT),
+    researchHead: normalized(process.env.RADAR_PUBLIC_RELEASE_LAB_RESEARCH_HEAD),
+    releaseSourceCommit: normalized(process.env.RADAR_PUBLIC_RELEASE_LAB_RELEASE_SOURCE_COMMIT),
   })
 }
