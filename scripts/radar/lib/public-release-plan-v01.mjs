@@ -21,6 +21,14 @@ function normalizeRelationship(value) {
   return val(value)
 }
 
+function normalizeDate(value) {
+  const normalized = val(value)
+  if (!normalized) return ''
+  const timestamp = Date.parse(normalized)
+  if (Number.isNaN(timestamp)) return normalized
+  return new Date(timestamp).toISOString()
+}
+
 export function numericRelationshipId(value) {
   const normalized = val(value)
   if (!/^[1-9][0-9]*$/u.test(normalized)) {
@@ -165,7 +173,7 @@ function comparableCurrentRecord(record) {
     researchSnapshotId: val(record.researchSnapshotId),
     recordSha256: val(record.recordSha256),
     releaseRecordsSha256: val(record.releaseRecordsSha256),
-    sourceReviewedAt: val(record.sourceReviewedAt),
+    sourceReviewedAt: normalizeDate(record.sourceReviewedAt),
     recordStatus: val(record.recordStatus || 'current'),
   }
 }
@@ -175,6 +183,7 @@ function comparableDesiredRecord(record) {
   return {
     ...rest,
     work: val(rest.work),
+    sourceReviewedAt: normalizeDate(rest.sourceReviewedAt),
   }
 }
 
