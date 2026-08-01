@@ -344,6 +344,8 @@ try {
       if ($after -ne $before + 520) { throw "audit_events 增量不是 520：$before -> $after" }
     } elseif ($key -eq 'public.payload_migrations') {
       if ($after -ne $before + 3) { throw "payload_migrations 净增量不是 3：$before -> $after" }
+    } elseif ($key -eq 'public.users_sessions') {
+      if ($after -ne $before + 1) { throw "users_sessions 增量不是 1：$before -> $after" }
     } elseif ($after -ne $before) {
       throw "预期外表行数发生变化：$key $before -> $after"
     }
@@ -374,6 +376,7 @@ try {
     evidence = [long]$receipt.expectedEvidence
     sourceRefs = [long]$receipt.expectedSourceRefs
     auditEventsAdded = 520
+    authenticationSessionsAdded = 1
     formalMigrationsAdded = 4
     developmentMigrationMarkersRemoved = 1
     payloadMigrationsNetAdded = 3
@@ -422,6 +425,7 @@ try {
   Write-Host 'HistoricalSchemaReconciled: True'
   Write-Host 'PublicRecordsCreated     : 520'
   Write-Host 'PostImportAlreadyCurrent : 520'
+  Write-Host 'AuthenticationSessionsAdded: 1'
   Write-Host 'WorksMutation            : False'
   Write-Host 'HumanAssessmentMutation  : False'
   Write-Host 'RadarAssessmentMutation  : False'
