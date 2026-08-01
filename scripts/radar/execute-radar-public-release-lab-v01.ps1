@@ -201,6 +201,7 @@ if (-not $email -or -not $password) {
 }
 
 node --check '.\scripts\radar\run-public-release-lab-import-v01.mjs'
+node --check '.\scripts\radar\reconcile-radar-public-dev-schema-v01.mjs'
 node --test '.\tests\radar-public-release-lab-v01.test.mjs' '.\tests\radar-public-release-plan-v01.test.mjs'
 if ($LASTEXITCODE -ne 0) { throw '实验室回归测试失败。' }
 pnpm exec tsc --noEmit
@@ -221,6 +222,28 @@ $success = $false
 
 try {
   Write-Host ''
+  Write-Host '==> 对齐临时克隆中的历史 Radar migration 登记' -ForegroundColor Green
+  node '.\scripts\radar\reconcile-radar-public-dev-schema-v01.mjs' `
+    --environment-file $environmentPath `
+    --expected-website-head $ExpectedWebsiteHead `
+    --out-dir $outDir `
+    --confirm 'RECONCILE-ISOLATED-RADAR-PUBLIC-DEV-SCHEMA-V01'
+  if ($LASTEXITCODE -ne 0) { throw '历史 Radar schema 对齐失败。' }
+
+  $reconciliationPath = Join-Path $outDir 'radar-public-dev-schema-reconciliation-v01.json'
+  $reconciliation = Get-Content -LiteralPath $reconciliationPath -Raw -Encoding UTF8 | ConvertFrom-Json -Depth 100
+  if (
+    $reconciliation.accepted -ne $true -or
+    $reconciliation.schemaSignatureMatched -ne $true -or
+    [int]$reconciliation.developmentMigrationMarkersRemoved -ne 1 -or
+    [int]$reconciliation.historicalMigrationRowsRegistered -ne 2 -or
+    $reconciliation.sourceDatabaseWrite -ne $false -or
+    $reconciliation.productionAuthorization -ne $false
+  ) {
+    throw '历史 Radar schema 对齐回执不符合预期。'
+  }
+
+  Write-Host ''
   Write-Host '==> 只在临时 PostgreSQL 执行正式迁移' -ForegroundColor Green
   Invoke-WithEnvironment -Variables @{
     DATABASE_URL = [string]$lab.databaseUrl
@@ -236,11 +259,17 @@ try {
   $migrationNames = Join-Path $outDir 'migration-names.txt'
   & docker exec -e "PGPASSWORD=$($lab.labPassword)" ([string]$lab.labContainer) psql -X -qAt -v ON_ERROR_STOP=1 `
     -U ([string]$lab.labUser) -d ([string]$lab.labDatabase) `
-    -c "SELECT name FROM payload_migrations WHERE name LIKE '%radar_public_records_v01%' ORDER BY name;" `
+    -c "SELECT name FROM payload_migrations WHERE name IN ('20260723_141905_current_schema_baseline_before_radar_public_v01', '20260723_141908_radar_public_conclusions_v01', '20260801_101546_current_schema_baseline_before_radar_public_records_v01', '20260801_101551_radar_public_records_v01') ORDER BY name;" `
     1> $migrationNames 2> (Join-Path $outDir 'migration-names-stderr.txt')
   if ($LASTEXITCODE -ne 0) { throw '读取迁移登记失败。' }
   $names = @(Get-Content -LiteralPath $migrationNames -Encoding UTF8 | Where-Object { $_ })
-  if ($names.Count -ne 2 -or $names[0] -notmatch 'current_schema_baseline' -or $names[1] -notmatch 'radar_public_records_v01') {
+  $expectedNames = @(
+    '20260723_141905_current_schema_baseline_before_radar_public_v01',
+    '20260723_141908_radar_public_conclusions_v01',
+    '20260801_101546_current_schema_baseline_before_radar_public_records_v01',
+    '20260801_101551_radar_public_records_v01'
+  )
+  if (($names -join "`n") -ne ($expectedNames -join "`n")) {
     throw "迁移登记不符合预期：$($names -join ', ')"
   }
 
@@ -314,7 +343,7 @@ try {
     if ($key -eq 'public.audit_events') {
       if ($after -ne $before + 520) { throw "audit_events 增量不是 520：$before -> $after" }
     } elseif ($key -eq 'public.payload_migrations') {
-      if ($after -ne $before + 2) { throw "payload_migrations 增量不是 2：$before -> $after" }
+      if ($after -ne $before + 3) { throw "payload_migrations 净增量不是 3：$before -> $after" }
     } elseif ($after -ne $before) {
       throw "预期外表行数发生变化：$key $before -> $after"
     }
@@ -345,7 +374,11 @@ try {
     evidence = [long]$receipt.expectedEvidence
     sourceRefs = [long]$receipt.expectedSourceRefs
     auditEventsAdded = 520
-    payloadMigrationsAdded = 2
+    formalMigrationsAdded = 4
+    developmentMigrationMarkersRemoved = 1
+    payloadMigrationsNetAdded = 3
+    historicalSchemaReconciled = $true
+    historicalSchemaSignatureSha256 = [string]$reconciliation.actualSchemaSignatureSha256
     postImportAlreadyCurrent = 520
     protectedFingerprintsUnchanged = $true
     worksMutation = $false
@@ -386,6 +419,7 @@ try {
   Write-Host "ReleaseSourceCommit      : $($lab.releaseSourceCommit)"
   Write-Host 'SourceDatabaseWrite      : False'
   Write-Host 'MigrationTarget          : IsolatedTemporaryContainer'
+  Write-Host 'HistoricalSchemaReconciled: True'
   Write-Host 'PublicRecordsCreated     : 520'
   Write-Host 'PostImportAlreadyCurrent : 520'
   Write-Host 'WorksMutation            : False'
