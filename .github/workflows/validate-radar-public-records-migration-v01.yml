@@ -1,0 +1,57 @@
+name: Validate Radar Public Records Migration v01
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-radar-public-records-migration-v01.yml'
+      - 'scripts/radar/prepare-radar-public-records-migration-v01.ps1'
+      - 'tests/radar-public-records-migration-preparation.test.mjs'
+      - 'src/collections/RadarPublicRecords.ts'
+      - 'payload.config.ts'
+      - '.env.example'
+      - 'src/migrations/**'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-migration-preparation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Parse PowerShell preparer
+        shell: pwsh
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'scripts/radar/prepare-radar-public-records-migration-v01.ps1'),
+            [ref]$null,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | Format-List | Out-String | Write-Error
+          }
+      - name: Run schema, planner and migration preparation tests
+        run: |
+          node --test \
+            tests/radar-public-release-v01.test.mjs \
+            tests/radar-public-records-schema.test.mjs \
+            tests/radar-public-release-plan-v01.test.mjs \
+            tests/radar-public-records-migration-preparation.test.mjs
+      - name: Confirm no generated migration is required before local preparation
+        run: |
+          if find src/migrations -maxdepth 1 -type f -name '*_radar_public_records_v01.ts' | grep -q .; then
+            grep -R 'CREATE TABLE "radar_public_records"' src/migrations/*_radar_public_records_v01.ts
+            grep -q 'RADAR_PUBLIC_RECORDS_SCHEMA_READY' payload.config.ts
+            grep -q 'RadarPublicRecordsWithAudit' payload.config.ts
+          fi
+      - name: Check diff whitespace
+        run: git diff --check origin/main...HEAD
