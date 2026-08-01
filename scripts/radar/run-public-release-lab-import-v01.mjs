@@ -177,18 +177,19 @@ export async function run(argv = process.argv.slice(2)) {
   if (val(args.confirm) !== CONFIRM) throw new Error(`--confirm must equal ${CONFIRM}`)
 
   const baseUrl = assertIsolatedLabUrl(val(args.url))
-  const input = path.resolve(val(args.input))
   if (!val(args.input)) throw new Error('--input is required.')
+  const input = path.resolve(val(args.input))
   const outDir = ensureDataLocalOutput(val(args['out-dir']))
   const nonce = val(process.env.RADAR_PUBLIC_RELEASE_LAB_NONCE)
   const email = val(process.env.RADAR_PAYLOAD_EMAIL || process.env.PAYLOAD_EXPORT_EMAIL || process.env.PAYLOAD_SEED_EMAIL)
   const password = val(process.env.RADAR_PAYLOAD_PASSWORD || process.env.PAYLOAD_EXPORT_PASSWORD || process.env.PAYLOAD_SEED_PASSWORD)
   const expectedWebsiteCommit = val(args['expected-website-commit'])
-  const expectedResearchCommit = val(args['expected-research-commit'])
+  const expectedResearchHead = val(args['expected-research-head'])
+  const expectedReleaseSourceCommit = val(args['expected-release-source-commit'])
   const expectedDatabase = val(args['expected-database'])
   if (!nonce || !email || !password) throw new Error('Missing lab nonce or Payload administrator credentials.')
-  if (!expectedWebsiteCommit || !expectedResearchCommit || !expectedDatabase) {
-    throw new Error('--expected-website-commit, --expected-research-commit and --expected-database are required.')
+  if (!expectedWebsiteCommit || !expectedResearchHead || !expectedReleaseSourceCommit || !expectedDatabase) {
+    throw new Error('--expected-website-commit, --expected-research-head, --expected-release-source-commit and --expected-database are required.')
   }
 
   fs.rmSync(outDir, { recursive: true, force: true })
@@ -200,8 +201,8 @@ export async function run(argv = process.argv.slice(2)) {
   const prePlanPath = path.join(outDir, 'pre-import-plan.jsonl')
   const postPlanPath = path.join(outDir, 'post-import-plan.jsonl')
   const releaseData = loadRelease(input)
-  if (val(releaseData.manifest.source.commitSha) !== expectedResearchCommit) {
-    throw new Error(`Release source commit mismatch: ${releaseData.manifest.source.commitSha} != ${expectedResearchCommit}`)
+  if (val(releaseData.manifest.source.commitSha) !== expectedReleaseSourceCommit) {
+    throw new Error(`Release source commit mismatch: ${releaseData.manifest.source.commitSha} != ${expectedReleaseSourceCommit}`)
   }
 
   const marker = await requestJson(`${baseUrl}/api/radar-public-release-lab-marker`, {
@@ -212,7 +213,8 @@ export async function run(argv = process.argv.slice(2)) {
     val(marker.schemaVersion) !== 'radar-public-release-lab-marker-v01' ||
     val(marker.database) !== expectedDatabase ||
     val(marker.websiteCommit) !== expectedWebsiteCommit ||
-    val(marker.researchCommit) !== expectedResearchCommit
+    val(marker.researchHead) !== expectedResearchHead ||
+    val(marker.releaseSourceCommit) !== expectedReleaseSourceCommit
   ) {
     throw new Error(`Isolated lab marker mismatch: ${JSON.stringify(marker)}`)
   }
@@ -285,7 +287,8 @@ export async function run(argv = process.argv.slice(2)) {
     baseUrl,
     database: expectedDatabase,
     websiteCommit: expectedWebsiteCommit,
-    researchCommit: expectedResearchCommit,
+    researchHead: expectedResearchHead,
+    releaseSourceCommit: expectedReleaseSourceCommit,
     releaseId: releaseData.manifest.releaseId,
     releaseRecordsSha256: releaseData.manifest.files.records.sha256,
     releaseValidationDecision: releaseData.validation.decision,
