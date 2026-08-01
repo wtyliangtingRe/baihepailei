@@ -104,6 +104,26 @@ test('one-command wrapper reuses an existing source container safely', () => {
   assert.doesNotMatch(wrapper, /docker rm.*baihepailei-postgres/u)
 })
 
+test('one-command wrapper neutralizes PowerShell JSON date coercion', () => {
+  assert.match(wrapper, /Convert-LabCreatedAtForExecutor/u)
+  assert.match(wrapper, /DateTimeOffset\]::ParseExact/u)
+  assert.match(wrapper, /DateTimeStyles\]::RoundtripKind/u)
+  assert.match(wrapper, /ToString\('r'/u)
+  assert.match(wrapper, /RFC 1123 remains a JSON string while preserving UTC/u)
+  assert.match(wrapper, /createdAt 位于未来/u)
+  assert.match(wrapper, /已超过 4 小时/u)
+})
+
+test('one-command wrapper cleans only current-run disposable resources on early failure', () => {
+  assert.match(wrapper, /Remove-RunLabResources/u)
+  assert.match(wrapper, /baihepailei-radar-public-release-lab-\[0-9\]/u)
+  assert.match(wrapper, /data_local\\backups\\radar-public-release-lab-v01/u)
+  assert.match(wrapper, /StartsWith\(\$backupPrefix/u)
+  assert.match(wrapper, /catch \{\s*Remove-RunLabResources/u)
+  assert.match(wrapper, /Remove-Item -LiteralPath \$EnvironmentPath/u)
+  assert.doesNotMatch(wrapper, /Remove-Item.*\.env/u)
+})
+
 test('lab marker is disabled by default and binds nonce plus all commit identities', () => {
   assert.match(marker, /RADAR_PUBLIC_RELEASE_LAB_MODE/u)
   assert.match(marker, /invalid_lab_nonce/u)
