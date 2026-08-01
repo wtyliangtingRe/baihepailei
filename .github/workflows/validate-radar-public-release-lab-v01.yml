@@ -9,6 +9,7 @@ on:
       - 'src/app/(payload)/api/radar-public-release-lab-marker/route.ts'
       - 'scripts/radar/run-radar-public-release-lab-v01.ps1'
       - 'scripts/radar/run-public-release-lab-import-v01.mjs'
+      - 'scripts/radar/reconcile-radar-public-dev-schema-v01.mjs'
       - 'scripts/radar/prepare-radar-public-release-lab-database-v01.ps1'
       - 'scripts/radar/execute-radar-public-release-lab-v01.ps1'
       - 'tests/radar-public-release-lab-v01.test.mjs'
@@ -51,8 +52,10 @@ jobs:
           if ($allErrors.Count -gt 0) {
             $allErrors -join "`n" | Write-Error
           }
-      - name: Check importer syntax
-        run: node --check scripts/radar/run-public-release-lab-import-v01.mjs
+      - name: Check Node lab scripts syntax
+        run: |
+          node --check scripts/radar/run-public-release-lab-import-v01.mjs
+          node --check scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
       - name: Run isolated lab and planner tests
         run: |
           node --test \
@@ -68,6 +71,10 @@ jobs:
           grep -q "method: 'PATCH'" scripts/radar/run-public-release-lab-import-v01.mjs
           ! grep -E "method: '(PUT|DELETE)'" scripts/radar/run-public-release-lab-import-v01.mjs
           grep -q 'omissionMeansDelete: false' scripts/radar/run-public-release-lab-import-v01.mjs
+          grep -q 'RECONCILE-ISOLATED-RADAR-PUBLIC-DEV-SCHEMA-V01' scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
+          grep -q 'actualBuffer.equals(referenceBuffer)' scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
+          grep -q 'developmentMigrationMarkersRemoved: 1' scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
+          ! grep -E 'baihepailei-postgres|SourcePostgresContainer|pg_dump' scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
           grep -q 'docker ps -aq --filter' scripts/radar/run-radar-public-release-lab-v01.ps1
           ! grep -E 'docker rm.*baihepailei-postgres' scripts/radar/run-radar-public-release-lab-v01.ps1
           ! grep -E 'SourcePostgresContainer|SourceDatabaseUser|pg_dump' scripts/radar/execute-radar-public-release-lab-v01.ps1
