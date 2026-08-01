@@ -12,6 +12,7 @@ const importer = readFileSync('scripts/radar/run-public-release-lab-import-v01.m
 const marker = readFileSync('src/app/(payload)/api/radar-public-release-lab-marker/route.ts', 'utf8')
 const wrapper = readFileSync('scripts/radar/run-radar-public-release-lab-v01.ps1', 'utf8')
 const preparer = readFileSync('scripts/radar/prepare-radar-public-release-lab-database-v01.ps1', 'utf8')
+const reconciler = readFileSync('scripts/radar/reconcile-radar-public-dev-schema-v01.mjs', 'utf8')
 const executor = readFileSync('scripts/radar/execute-radar-public-release-lab-v01.ps1', 'utf8')
 
 test('write-capable importer accepts only loopback high ports', () => {
@@ -171,10 +172,35 @@ test('database preparer only clones the source and performs no migration or impo
   assert.doesNotMatch(preparer, /run-public-release-lab-import-v01/u)
 })
 
+test('historical Radar schema reconciler proves exact equivalence in a disposable reference database', () => {
+  assert.match(reconciler, /RECONCILE-ISOLATED-RADAR-PUBLIC-DEV-SCHEMA-V01/u)
+  assert.match(reconciler, /createdb/u)
+  assert.match(reconciler, /-T', String\(lab\.labDatabase\)/u)
+  assert.match(reconciler, /dropdb/u)
+  assert.match(reconciler, /20260723_141905_current_schema_baseline_before_radar_public_v01/u)
+  assert.match(reconciler, /20260723_141908_radar_public_conclusions_v01/u)
+  assert.match(reconciler, /20260801_101546_current_schema_baseline_before_radar_public_records_v01/u)
+  assert.match(reconciler, /20260801_101551_radar_public_records_v01/u)
+  for (const kind of ['relation', 'column', 'constraint', 'index', 'enum', 'sequence', 'trigger', 'policy', 'grant']) {
+    assert.match(reconciler, new RegExp(`'${kind}'`, 'u'))
+  }
+  assert.match(reconciler, /actualBuffer\.equals\(referenceBuffer\)/u)
+  assert.match(reconciler, /WHERE name = 'dev' AND batch = -1/u)
+  assert.match(reconciler, /historicalMigrationRowsRegistered: 2/u)
+  assert.match(reconciler, /developmentMigrationMarkersRemoved: 1/u)
+  assert.match(reconciler, /sourceDatabaseWrite: false/u)
+  assert.match(reconciler, /productionAuthorization: false/u)
+  assert.doesNotMatch(reconciler, /baihepailei-postgres|SourcePostgresContainer|pg_dump/u)
+})
+
 test('executor cannot read the source database and verifies the exact allowed deltas', () => {
   assert.match(executor, /EXECUTE-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01/u)
   assert.match(executor, /baihepailei-radar-public-release-lab-/u)
   assert.match(executor, /31000-31999/u)
+  assert.match(executor, /reconcile-radar-public-dev-schema-v01\.mjs/u)
+  assert.match(executor, /schemaSignatureMatched/u)
+  assert.match(executor, /developmentMigrationMarkersRemoved -ne 1/u)
+  assert.match(executor, /historicalMigrationRowsRegistered -ne 2/u)
   assert.match(executor, /pnpm payload migrate/u)
   assert.match(executor, /radar-public-release-lab-marker/u)
   assert.match(executor, /expected-research-head/u)
@@ -183,7 +209,9 @@ test('executor cannot read the source database and verifies the exact allowed de
   assert.match(executor, /createdRows -ne 520/u)
   assert.match(executor, /alreadyCurrent -ne 520/u)
   assert.match(executor, /audit_events/u)
-  assert.match(executor, /payload_migrations/u)
+  assert.match(executor, /payload_migrations 净增量不是 3/u)
+  assert.match(executor, /formalMigrationsAdded = 4/u)
+  assert.match(executor, /payloadMigrationsNetAdded = 3/u)
   assert.match(executor, /protectedFingerprintsUnchanged = \$true/u)
   assert.match(executor, /sourceDatabaseWrite = \$false/u)
   assert.match(executor, /productionAuthorization = \$false/u)
