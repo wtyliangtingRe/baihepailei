@@ -11,6 +11,16 @@ const currentPublicOrStaff: Access = ({ req }) => {
   }
 }
 
+function validateFactValue(value: unknown): true | string {
+  if (value === undefined) return '事实值不能为空。'
+  if (typeof value === 'number' && !Number.isFinite(value)) return '事实值必须是有限 JSON 数字。'
+  try {
+    return JSON.stringify(value) === undefined ? '事实值必须是可序列化 JSON。' : true
+  } catch {
+    return '事实值必须是可序列化 JSON。'
+  }
+}
+
 export const RadarPublicRecords: CollectionConfig = {
   slug: 'radar-public-records',
   dbName: 'radar_public_records',
@@ -129,7 +139,13 @@ export const RadarPublicRecords: CollectionConfig = {
       fields: [
         { name: 'factId', type: 'text', label: '事实 ID', required: true },
         { name: 'factType', type: 'text', label: '事实类型', required: true },
-        { name: 'value', type: 'json', label: '事实值', required: true },
+        {
+          name: 'value',
+          type: 'json',
+          label: '事实值',
+          required: true,
+          validate: validateFactValue,
+        },
         {
           name: 'sourceRefs',
           type: 'array',
