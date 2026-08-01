@@ -94,9 +94,13 @@ test('blocks work ID and site ID split across different works', () => {
   assert.match(row.blockers[0], /work_id_site_id_mismatch/u)
 })
 
-test('recognizes an already current public projection', () => {
+test('recognizes a Payload-normalized date as already current', () => {
   const first = buildPlanRow(record(), buildWorkIndexes(works), buildCurrentRecordIndexes([]), release, importedAt)
-  const current = { id: 77, ...first.desired }
+  const current = {
+    id: 77,
+    ...first.desired,
+    sourceReviewedAt: '2026-08-01T00:00:00.000Z',
+  }
   const second = buildPlanRow(record(), buildWorkIndexes(works), buildCurrentRecordIndexes([current]), release, '2026-08-02T00:00:00Z')
   assert.equal(second.planStatus, 'already_current')
   assert.equal(second.currentRecordId, '77')
