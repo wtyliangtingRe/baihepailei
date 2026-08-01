@@ -1,0 +1,32 @@
+name: Validate Radar Public Release v01
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-radar-public-release-v01.yml'
+      - 'docs/radar-public-release-v01.md'
+      - 'scripts/radar/lib/public-release-v01.mjs'
+      - 'scripts/radar/validate-public-release-v01.mjs'
+      - 'tests/radar-public-release-v01.test.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse scripts
+        run: |
+          node --check scripts/radar/lib/public-release-v01.mjs
+          node --check scripts/radar/validate-public-release-v01.mjs
+      - name: Run contract tests
+        run: node --test tests/radar-public-release-v01.test.mjs
+      - name: Check diff whitespace
+        run: git diff --check origin/${{ github.base_ref }}...HEAD
