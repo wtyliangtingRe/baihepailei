@@ -15,6 +15,7 @@ const CONFIRM = 'RUN-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01'
 const DEFAULT_OUT_DIR = 'data_local/outputs/radar-public-release-v01/isolated-lab-import'
 const LAB_PORT_MIN = 31000
 const LAB_PORT_MAX = 39999
+const APPLY_MODES = new Set(['initial', 'incremental'])
 
 function writeJson(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true })
@@ -131,15 +132,27 @@ export function summarizePlans(plans) {
   }
 }
 
-function assertInitialPlan(summary, rows) {
-  if (
+export function assertPlanForMode(summary, rows, mode) {
+  if (!APPLY_MODES.has(mode)) throw new Error(`Unsupported lab apply mode: ${mode}`)
+  const allowedStatuses = new Set(['ready_create', 'ready_update', 'already_current'])
+  const unexpectedStatuses = Object.keys(summary.byPlanStatus).filter(
+    (status) => !allowedStatuses.has(status) && !status.startsWith('blocked_'),
+  )
+  const partitionTotal = summary.readyCreate + summary.readyUpdate + summary.alreadyCurrent + summary.blocked
+  if (partitionTotal !== rows || unexpectedStatuses.length) {
+    throw new Error(`Lab plan partition is not closed: ${JSON.stringify({ summary, rows, unexpectedStatuses })}`)
+  }
+  if (summary.blocked !== 0) {
+    throw new Error(`Lab plan contains identity or schema blockers: ${JSON.stringify(summary)}`)
+  }
+  if (mode === 'initial' && (
     summary.readyCreate !== rows ||
     summary.readyUpdate !== 0 ||
-    summary.alreadyCurrent !== 0 ||
-    summary.blocked !== 0
-  ) {
+    summary.alreadyCurrent !== 0
+  )) {
     throw new Error(`Initial lab plan is not an exact empty-collection create: ${JSON.stringify(summary)}`)
   }
+  return summary
 }
 
 function assertFinalPlan(summary, rows) {
@@ -153,21 +166,21 @@ function assertFinalPlan(summary, rows) {
   }
 }
 
-function assertCreatedDocument(created, desired) {
-  const doc = created?.doc || created
-  if (!doc?.id) throw new Error('Created public record response is missing id.')
+function assertWrittenDocument(written, desired) {
+  const doc = written?.doc || written
+  if (!doc?.id) throw new Error('Written public record response is missing id.')
   for (const field of ['publicationKey', 'identityKey', 'workIdSnapshot', 'workSiteId', 'recordSha256', 'recordStatus']) {
     if (val(doc[field]) !== val(desired[field])) {
-      throw new Error(`Created public record field mismatch for ${field}: ${val(doc[field])} != ${val(desired[field])}`)
+      throw new Error(`Written public record field mismatch for ${field}: ${val(doc[field])} != ${val(desired[field])}`)
     }
   }
   const workId = val(doc.work?.id ?? doc.work)
-  if (workId !== val(desired.work)) throw new Error(`Created public record work mismatch: ${workId} != ${desired.work}`)
+  if (workId !== val(desired.work)) throw new Error(`Written public record work mismatch: ${workId} != ${desired.work}`)
   return val(doc.id)
 }
 
 function rejectUnsafeArguments(args) {
-  const forbidden = Object.keys(args).filter((key) => /production|prod|remote|force|update-existing|delete|rollback/u.test(key))
+  const forbidden = Object.keys(args).filter((key) => /production|prod|remote|force|delete|rollback|withdraw/u.test(key))
   if (forbidden.length) throw new Error(`Forbidden lab importer flags: ${forbidden.join(', ')}`)
 }
 
@@ -176,6 +189,8 @@ export async function run(argv = process.argv.slice(2)) {
   rejectUnsafeArguments(args)
   if (val(args.confirm) !== CONFIRM) throw new Error(`--confirm must equal ${CONFIRM}`)
 
+  const mode = val(args.mode || 'initial').toLowerCase()
+  if (!APPLY_MODES.has(mode)) throw new Error('--mode must be initial or incremental.')
   const baseUrl = assertIsolatedLabUrl(val(args.url))
   if (!val(args.input)) throw new Error('--input is required.')
   const input = path.resolve(val(args.input))
@@ -226,10 +241,12 @@ export async function run(argv = process.argv.slice(2)) {
   const prePlans = buildPlans(releaseData.records, works, existingRecords, releaseData.release, importedAt)
   const preSummary = summarizePlans(prePlans)
   writeJsonl(prePlanPath, prePlans)
-  assertInitialPlan(preSummary, releaseData.records.length)
+  assertPlanForMode(preSummary, releaseData.records.length, mode)
 
   const ledger = []
   const createdIds = []
+  const updatedIds = []
+  let skippedAlreadyCurrent = 0
   const expectedFacts = prePlans.reduce((sum, row) => sum + (row.desired?.facts?.length || 0), 0)
   const expectedEvidence = prePlans.reduce((sum, row) => sum + (row.desired?.evidence?.length || 0), 0)
   const expectedSourceRefs = prePlans.reduce(
@@ -240,20 +257,54 @@ export async function run(argv = process.argv.slice(2)) {
   try {
     for (let index = 0; index < prePlans.length; index += 1) {
       const plan = prePlans[index]
-      const created = await requestJson(`${baseUrl}/api/radar-public-records`, {
-        method: 'POST',
-        headers: { Authorization: `JWT ${token}` },
-        body: JSON.stringify(plan.desired),
-      })
-      const createdId = assertCreatedDocument(created, plan.desired)
-      createdIds.push(createdId)
+      if (plan.planStatus === 'already_current') {
+        skippedAlreadyCurrent += 1
+        ledger.push({
+          ordinal: index + 1,
+          publicationKey: plan.desired?.publicationKey || `work:${plan.workId}`,
+          identityKey: plan.identityKey,
+          workId: plan.workId,
+          existingId: plan.currentRecordId,
+          status: 'already_current_skipped',
+          completedAt: new Date().toISOString(),
+        })
+        writeJsonl(ledgerPath, ledger)
+        continue
+      }
+
+      let written
+      let action
+      if (plan.planStatus === 'ready_create') {
+        action = 'create'
+        written = await requestJson(`${baseUrl}/api/radar-public-records`, {
+          method: 'POST',
+          headers: { Authorization: `JWT ${token}` },
+          body: JSON.stringify(plan.desired),
+        })
+      } else if (plan.planStatus === 'ready_update') {
+        if (!val(plan.currentRecordId)) throw new Error(`Update plan is missing currentRecordId: ${plan.identityKey}`)
+        action = 'update'
+        written = await requestJson(`${baseUrl}/api/radar-public-records/${encodeURIComponent(plan.currentRecordId)}`, {
+          method: 'PATCH',
+          headers: { Authorization: `JWT ${token}` },
+          body: JSON.stringify(plan.desired),
+        })
+      } else {
+        throw new Error(`Unexpected executable plan status: ${plan.planStatus}`)
+      }
+
+      const writtenId = assertWrittenDocument(written, plan.desired)
+      if (action === 'create') createdIds.push(writtenId)
+      else updatedIds.push(writtenId)
       ledger.push({
         ordinal: index + 1,
         publicationKey: plan.desired.publicationKey,
         identityKey: plan.desired.identityKey,
         workId: plan.desired.work,
-        createdId,
-        status: 'created_and_verified',
+        previousId: plan.currentRecordId,
+        writtenId,
+        action,
+        status: `${action}d_and_verified`,
         completedAt: new Date().toISOString(),
       })
       writeJsonl(ledgerPath, ledger)
@@ -261,11 +312,15 @@ export async function run(argv = process.argv.slice(2)) {
   } catch (error) {
     writeJson(receiptPath, {
       schemaVersion: 'radar-public-release-lab-import-receipt-v01',
+      mode,
       startedAt,
       failedAt: new Date().toISOString(),
       releaseId: releaseData.manifest.releaseId,
       requestedRows: releaseData.records.length,
-      completedRows: createdIds.length,
+      createdRows: createdIds.length,
+      updatedRows: updatedIds.length,
+      skippedAlreadyCurrentRows: skippedAlreadyCurrent,
+      completedMutations: createdIds.length + updatedIds.length,
       error: error?.stack || error?.message || String(error),
       isolatedLabOnly: true,
       productionWrite: false,
@@ -282,6 +337,7 @@ export async function run(argv = process.argv.slice(2)) {
 
   const receipt = {
     schemaVersion: 'radar-public-release-lab-import-receipt-v01',
+    mode,
     startedAt,
     completedAt: new Date().toISOString(),
     baseUrl,
@@ -300,6 +356,9 @@ export async function run(argv = process.argv.slice(2)) {
     expectedEvidence,
     expectedSourceRefs,
     createdRows: createdIds.length,
+    updatedRows: updatedIds.length,
+    skippedAlreadyCurrentRows: skippedAlreadyCurrent,
+    mutatedRows: createdIds.length + updatedIds.length,
     initialPlan: preSummary,
     finalPlan: postSummary,
     artifacts: {
@@ -317,17 +376,21 @@ export async function run(argv = process.argv.slice(2)) {
       port3000Rejected: true,
       exactIdentityOnly: true,
       titleOnlyMatching: false,
+      omissionMeansDelete: false,
+      explicitWithdrawalRequired: true,
       workCreation: false,
       worksMutation: false,
       humanAssessmentMutation: false,
       radarAssessmentMutation: false,
       publicRecordCreates: createdIds.length,
-      publicRecordUpdates: 0,
+      publicRecordUpdates: updatedIds.length,
       publicRecordDeletes: 0,
       productionWrite: false,
     },
     accepted: true,
-    decision: 'accept_isolated_public_release_lab_import',
+    decision: mode === 'initial'
+      ? 'accept_isolated_public_release_lab_import'
+      : 'accept_isolated_incremental_public_release_lab_upsert',
   }
   writeJson(receiptPath, receipt)
   return receipt
