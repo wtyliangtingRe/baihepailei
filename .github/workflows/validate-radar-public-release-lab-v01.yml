@@ -73,6 +73,8 @@ jobs:
           grep -q 'omissionMeansDelete: false' scripts/radar/run-public-release-lab-import-v01.mjs
           grep -q 'RECONCILE-ISOLATED-RADAR-PUBLIC-DEV-SCHEMA-V01' scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
           grep -q 'actualBuffer.equals(referenceBuffer)' scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
+          grep -q "process.env.ComSpec || 'cmd.exe'" scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
+          grep -q 'pnpm.cmd payload migrate' scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
           grep -q 'developmentMigrationMarkersRemoved: 1' scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
           ! grep -E 'baihepailei-postgres|SourcePostgresContainer|pg_dump' scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
           grep -q 'docker ps -aq --filter' scripts/radar/run-radar-public-release-lab-v01.ps1
