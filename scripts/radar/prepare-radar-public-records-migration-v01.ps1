@@ -411,6 +411,13 @@ try {
     }
   }
 
+  # The isolated config lives inside the repository only because Payload needs a
+  # loadable config path. Remove it before inspecting git status so the script
+  # does not classify its own temporary file as an external workspace change.
+  Remove-Item -LiteralPath $temporaryConfigPath -Force -ErrorAction SilentlyContinue
+  if (Test-Path -LiteralPath $temporaryConfigPath) {
+    throw '临时 Payload 配置未能在工作区检查前清理。'
+  }
   $afterMigrationRepositoryArtifacts = @(Get-MigrationArtifacts -Directory $repositoryMigrationPath)
   $recordsMigration = Get-GeneratedPair `
     -Label 'Radar public records 迁移' `

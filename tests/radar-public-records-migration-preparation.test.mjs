@@ -52,3 +52,13 @@ test('generated migration, when present, is additive and isolated', () => {
   assert.match(config, /RadarPublicRecordsWithAudit/u)
   assert.ok(existsSync('.env.example'))
 })
+test('temporary Payload config is removed before workspace validation', () => {
+  const cleanupMarker = 'does not classify its own temporary file as an external workspace change'
+  const cleanupIndex = script.indexOf(cleanupMarker)
+  const workspaceCheckIndex = script.indexOf('$unexpectedAfter =')
+  const finallyIndex = script.indexOf('} finally {', workspaceCheckIndex)
+
+  assert.ok(cleanupIndex >= 0, 'missing pre-validation temporary config cleanup')
+  assert.ok(workspaceCheckIndex > cleanupIndex, 'workspace validation runs before temporary config cleanup')
+  assert.ok(finallyIndex > workspaceCheckIndex, 'fallback finally cleanup must remain after validation')
+})
