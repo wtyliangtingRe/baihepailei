@@ -326,8 +326,10 @@ COMMIT;
 
   const referenceUrl = new URL(String(lab.databaseUrl))
   referenceUrl.pathname = `/${referenceDatabase}`
-  const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-  run(pnpm, ['payload', 'migrate'], {
+  const migrateCommand = process.platform === 'win32'
+    ? { command: process.env.ComSpec || 'cmd.exe', args: ['/d', '/s', '/c', 'pnpm.cmd payload migrate'] }
+    : { command: 'pnpm', args: ['payload', 'migrate'] }
+  run(migrateCommand.command, migrateCommand.args, {
     cwd: repoRoot,
     label: '在参考数据库执行历史 Radar migration',
     env: {
