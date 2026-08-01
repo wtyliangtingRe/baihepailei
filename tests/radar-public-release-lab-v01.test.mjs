@@ -9,6 +9,8 @@ import {
 
 const importer = readFileSync('scripts/radar/run-public-release-lab-import-v01.mjs', 'utf8')
 const marker = readFileSync('src/app/(payload)/api/radar-public-release-lab-marker/route.ts', 'utf8')
+const preparer = readFileSync('scripts/radar/prepare-radar-public-release-lab-database-v01.ps1', 'utf8')
+const executor = readFileSync('scripts/radar/execute-radar-public-release-lab-v01.ps1', 'utf8')
 
 test('write-capable importer accepts only loopback high ports', () => {
   assert.equal(assertIsolatedLabUrl('http://127.0.0.1:32001'), 'http://127.0.0.1:32001')
@@ -59,4 +61,36 @@ test('lab marker is disabled by default and binds nonce plus database', () => {
   assert.match(marker, /RADAR_PUBLIC_RELEASE_LAB_RESEARCH_COMMIT/u)
   assert.match(marker, /status: 404/u)
   assert.match(marker, /status: 403/u)
+})
+
+test('database preparer only clones the source and performs no migration or import', () => {
+  assert.match(preparer, /PREPARE-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01/u)
+  assert.match(preparer, /SELECT COALESCE\(to_regclass\('public\.radar_public_records'\)/u)
+  assert.match(preparer, /ExpectedWorks = 35615/u)
+  assert.match(preparer, /pg_dump -Fc --no-owner --no-privileges/u)
+  assert.match(preparer, /pg_restore --no-owner --no-privileges/u)
+  assert.match(preparer, /127\.0\.0\.1:\$\{dbPort\}:5432/u)
+  assert.match(preparer, /sourcePostcheckPassed = \$true/u)
+  assert.match(preparer, /sourceDatabaseWrite = \$false/u)
+  assert.match(preparer, /migrationApplied = \$false/u)
+  assert.match(preparer, /publicRecordsWritten = 0/u)
+  assert.doesNotMatch(preparer, /pnpm payload migrate/u)
+  assert.doesNotMatch(preparer, /run-public-release-lab-import-v01/u)
+})
+
+test('executor cannot read the source database and verifies the exact allowed deltas', () => {
+  assert.match(executor, /EXECUTE-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01/u)
+  assert.match(executor, /baihepailei-radar-public-release-lab-/u)
+  assert.match(executor, /31000-31999/u)
+  assert.match(executor, /pnpm payload migrate/u)
+  assert.match(executor, /radar-public-release-lab-marker/u)
+  assert.match(executor, /run-public-release-lab-import-v01/u)
+  assert.match(executor, /createdRows -ne 520/u)
+  assert.match(executor, /alreadyCurrent -ne 520/u)
+  assert.match(executor, /audit_events/u)
+  assert.match(executor, /payload_migrations/u)
+  assert.match(executor, /protectedFingerprintsUnchanged = \$true/u)
+  assert.match(executor, /sourceDatabaseWrite = \$false/u)
+  assert.match(executor, /productionAuthorization = \$false/u)
+  assert.doesNotMatch(executor, /SourcePostgresContainer|SourceDatabaseUser|pg_dump/u)
 })
