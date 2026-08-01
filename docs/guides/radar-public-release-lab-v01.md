@@ -21,13 +21,16 @@ The package must remain:
 
 ## Permanent entrypoints
 
+- `scripts/radar/run-radar-public-release-lab-v01.ps1`
 - `scripts/radar/prepare-radar-public-release-lab-database-v01.ps1`
 - `scripts/radar/execute-radar-public-release-lab-v01.ps1`
 - `scripts/radar/run-public-release-lab-import-v01.mjs`
 - `src/app/(payload)/api/radar-public-release-lab-marker/route.ts`
 - `tests/radar-public-release-lab-v01.test.mjs`
 
-The two PowerShell stages are deliberately separate. The database preparer may read the source container but cannot migrate or import. The executor may migrate and import the disposable clone but has no source-container parameters or source-database commands.
+The one-command runner is the normal operator entrypoint. It safely reuses an already running `baihepailei-postgres` container, starts that exact container if it exists but is stopped, and calls Docker Compose only when the named container does not exist. It never removes or recreates an existing source container.
+
+The two internal PowerShell stages remain deliberately separate. The database preparer may read the source container but cannot migrate or import. The executor may migrate and import the disposable clone but has no source-container parameters or source-database commands.
 
 ## Safety model
 
@@ -58,7 +61,7 @@ The executor:
 4. applies the two accepted migration entries only to the disposable clone;
 5. starts Next/Payload on a random loopback port from 32000 through 39999;
 6. requires a nonce-protected marker that reports the expected temporary database and all three commit identities;
-7. requires the initial planner result to be 520 `ready_create`, zero updates, zero current rows and zero blockers;
+7. runs the importer in strict `initial` mode and requires 520 `ready_create`, zero updates, zero current rows and zero blockers;
 8. creates records sequentially through the authenticated Payload API;
 9. re-reads all records and requires 520 `already_current`;
 10. requires exactly four new `radar_public_records*` tables;
@@ -78,49 +81,29 @@ The write-capable Node importer rejects:
 - a missing or incorrect confirmation string;
 - a missing nonce-protected lab marker;
 - commit or database mismatches;
-- any initial update, current-row or identity-blocker plan;
-- PATCH, PUT or DELETE behavior.
+- identity, duplicate or schema blockers;
+- `PUT`, `DELETE`, rollback or withdrawal behavior.
+
+The importer also contains a guarded `incremental` mode for later releases. That mode permits only exact-identity `ready_create`, `ready_update` and `already_current` rows, performs POST/PATCH/skip respectively, and requires the whole package to converge to `already_current`. PR #325 still invokes strict initial mode. See `docs/guides/radar-public-release-incremental-upsert-v01.md`.
 
 ## Local execution
 
 Keep the normal `pnpm dev` process stopped before running the lab.
 
-Update the final branch first:
+Use the final PR head in this single command:
 
 ```powershell
 Set-Location "D:\0GitHubtest\Baihepailei"
 
-git switch "agent/radar-public-release-lab-v01"
-git pull --ff-only origin "agent/radar-public-release-lab-v01"
-git log -1 --oneline
-```
-
-Use the final PR head SHA for both phases.
-
-### 1. Prepare the disposable database clone
-
-```powershell
 pwsh `
   -NoProfile `
   -ExecutionPolicy Bypass `
-  -File ".\scripts\radar\prepare-radar-public-release-lab-database-v01.ps1" `
+  -File ".\scripts\radar\run-radar-public-release-lab-v01.ps1" `
   -ExpectedWebsiteHead "<FINAL_PR_HEAD_SHA>" `
-  -Confirm "PREPARE-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01"
+  -Confirm "RUN-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01"
 ```
 
-The successful output prints an `Environment` path. No migration or Public Release record has been written at this point.
-
-### 2. Execute migration and import in the disposable clone
-
-```powershell
-pwsh `
-  -NoProfile `
-  -ExecutionPolicy Bypass `
-  -File ".\scripts\radar\execute-radar-public-release-lab-v01.ps1" `
-  -EnvironmentFile "<ENVIRONMENT_PATH_FROM_PHASE_1>" `
-  -ExpectedWebsiteHead "<FINAL_PR_HEAD_SHA>" `
-  -Confirm "EXECUTE-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01"
-```
+The runner handles branch synchronization, source-container reuse/start/create, clone preparation, environment-file selection and isolated execution. Do not precede it with an unconditional `docker compose up -d postgres`, because an existing container with the canonical name may belong to an older Compose project while still being the correct source database.
 
 Expected terminal receipt:
 
@@ -145,8 +128,12 @@ Phase 2 always attempts to stop the isolated website, remove the disposable data
 
 A failed lab must be restarted from Phase 1. It must never be resumed against a partially imported clone.
 
+The canonical source container is never deleted by the runner or either phase.
+
 ## Acceptance boundary
 
 A successful lab proves that the accepted additive migration and the 520-row release can be applied together without changing Works, human assessments, AI assessment fields, the old public conclusion track or research records.
 
 It still does not authorize production. The next stage must independently prepare a one-shot production candidate with a fresh backup, exact production preflight, apply-once lock, post-apply 520 `already_current` verification, rollback instructions and an explicit human execution gate.
+
+After initial launch, recurring releases use the separate incremental upsert policy: immutable release package, read-only plan, disposable cloned-database rehearsal, exact create/update/current partition, zero blockers, full post-apply convergence, then a separately armed production candidate.
