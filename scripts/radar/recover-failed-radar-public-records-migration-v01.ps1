@@ -64,8 +64,8 @@ $generatedDirty = @(
   $dirty | Where-Object { $RecoverableGeneratedFiles -contains $_ }
 )
 if ($generatedDirty.Count -gt 0) {
-  $payloadDiff = [string](git diff -- 'payload.config.ts')
-  $envDiff = [string](git diff -- '.env.example')
+  $payloadDiff = @((git diff -- 'payload.config.ts')) -join "`n"
+  $envDiff = @((git diff -- '.env.example')) -join "`n"
 
   if ($generatedDirty -contains 'payload.config.ts') {
     foreach ($marker in @(
