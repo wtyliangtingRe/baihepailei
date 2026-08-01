@@ -24,11 +24,12 @@ The package must remain:
 - `scripts/radar/run-radar-public-release-lab-v01.ps1`
 - `scripts/radar/prepare-radar-public-release-lab-database-v01.ps1`
 - `scripts/radar/execute-radar-public-release-lab-v01.ps1`
+- `scripts/radar/reconcile-radar-public-dev-schema-v01.mjs`
 - `scripts/radar/run-public-release-lab-import-v01.mjs`
 - `src/app/(payload)/api/radar-public-release-lab-marker/route.ts`
 - `tests/radar-public-release-lab-v01.test.mjs`
 
-The one-command runner is the canonical operator entrypoint. The two lower-level PowerShell stages remain deliberately separate: the database preparer may read the source container but cannot migrate or import, while the executor may migrate and import the disposable clone but has no source-container parameters or source-database commands.
+The one-command runner is the canonical operator entrypoint. The lower-level stages remain deliberately separate: the database preparer may read the source container but cannot migrate or import, while the executor and reconciler may change only the disposable clone and have no source-container parameters or source-database commands.
 
 ## One-command source-container behavior
 
@@ -68,6 +69,22 @@ The preparer:
 
 It does not run `payload migrate`, start the website, call the Public Release importer, or write any database rows.
 
+### Historical schema reconciliation
+
+The restored clone contains an old `radar_public*` schema created by an earlier development push while `payload_migrations` contains a single `dev / -1` marker instead of the two accepted July Radar migration rows.
+
+The reconciler:
+
+1. requires that exact known migration state and table boundary;
+2. creates a second disposable reference database from the restored clone;
+3. removes the old Radar schema only from the reference database;
+4. executes the locked historical migrations only in the reference database;
+5. compares exact normalized signatures for relations, columns, defaults, enums, constraints, indexes, sequences, triggers, policies and grants;
+6. only after byte-exact equality, removes one `dev / -1` marker and registers the two equivalent historical migrations in the main disposable clone;
+7. destroys the reference database in all paths.
+
+The historical migration is not weakened with `IF NOT EXISTS`, and any structural difference blocks the rehearsal.
+
 ### Phase 2: disposable clone only
 
 The executor:
@@ -75,21 +92,34 @@ The executor:
 1. accepts only a lab environment less than four hours old;
 2. accepts only the generated container prefix, database name, loopback connection and port range;
 3. verifies the website head, research head and manifest source commit again;
-4. applies the two accepted migration entries only to the disposable clone;
-5. starts Next/Payload on a random loopback port from 32000 through 39999;
-6. requires a nonce-protected marker that reports the expected temporary database and all three commit identities;
-7. requires the initial planner result to be 520 `ready_create`, zero updates, zero current rows and zero blockers;
-8. creates records sequentially through the authenticated Payload API;
-9. re-reads all records and requires 520 `already_current`;
-10. requires exactly four new `radar_public_records*` tables;
-11. requires exactly two new migration rows and 520 audit events;
-12. requires every other pre-existing table row count to remain unchanged;
-13. requires protected Works and old Radar table fingerprints to remain unchanged;
-14. destroys the temporary website process and PostgreSQL container;
-15. deletes the temporary database credentials file and local database dump;
-16. produces a checksum-bound evidence ZIP that excludes the database dump and credentials.
+4. reconciles the historical development-push schema only inside the disposable container;
+5. applies the two accepted August migration entries only to the disposable clone;
+6. starts Next/Payload on a random loopback port from 32000 through 39999;
+7. requires a nonce-protected marker that reports the expected temporary database and all three commit identities;
+8. requires the initial planner result to be 520 `ready_create`, zero updates, zero current rows and zero blockers;
+9. creates records sequentially through the authenticated Payload API;
+10. re-reads all records and requires 520 `already_current`;
+11. requires exactly four new `radar_public_records*` tables;
+12. requires four formal migration rows added, one development marker removed, a net migration increase of three and 520 audit events;
+13. requires every other pre-existing table row count to remain unchanged;
+14. requires protected Works and old Radar table fingerprints to remain unchanged;
+15. destroys the temporary website process and PostgreSQL container;
+16. deletes the temporary database credentials file and local database dump;
+17. produces a checksum-bound evidence ZIP that excludes the database dump and credentials.
 
-The write-capable Node importer rejects:
+## REST payload compatibility
+
+The migration stores `radar_public_records.work_id` as an integer foreign key and fact values as `jsonb`.
+
+The importer therefore:
+
+- sends the exact matched Works primary key as a positive safe integer;
+- rejects malformed or unsafe relationship IDs before any write request;
+- preserves source fact values exactly, including strings, objects, arrays, booleans and numbers;
+- uses an explicit JSON-safe field validator so primitive fact values are accepted without wrapping or rewriting;
+- keeps source record hashes and release hashes unchanged.
+
+The write-capable Node importer still rejects:
 
 - non-loopback hosts;
 - HTTPS or remote URLs;
@@ -102,6 +132,20 @@ The write-capable Node importer rejects:
 - PUT or DELETE behavior.
 
 The first release uses strict `initial` mode. Later releases may use guarded `incremental` mode as documented in `radar-public-release-incremental-upsert-v01.md`.
+
+## Current validation head
+
+The current rehearsal candidate is:
+
+`c946507e2a57cfc2e37a7dd91418c6b32def01db`
+
+Automated validation:
+
+- Public Records Plan run `30705978662`: success;
+- Public Records Migration run `30705978661`: success;
+- Public Release Lab run `30705978659`: success.
+
+The latest real local run successfully completed fresh clone verification, historical schema reconciliation, the formal migration and isolated application startup. It stopped on the first API create because the relationship ID was serialized as text and primitive JSON facts used Payload's default object-oriented validation. No source write occurred, and bounded cleanup removed the disposable database, dump and environment file. The current candidate contains the type-preserving fixes and regressions for both inputs.
 
 ## Local execution
 
@@ -117,7 +161,7 @@ pwsh `
   -NoProfile `
   -ExecutionPolicy Bypass `
   -File ".\scripts\radar\run-radar-public-release-lab-v01.ps1" `
-  -ExpectedWebsiteHead "<FINAL_PR_HEAD_SHA>" `
+  -ExpectedWebsiteHead "c946507e2a57cfc2e37a7dd91418c6b32def01db" `
   -Confirm "RUN-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01"
 ```
 
