@@ -84,8 +84,9 @@ git switch $ExpectedBranch
 git pull --ff-only origin $ExpectedBranch
 if ($LASTEXITCODE -ne 0) { throw '更新网站实验室分支失败。' }
 $websiteHead = (git rev-parse HEAD).Trim()
-if ($websiteHead -ne $ExpectedWebsiteHead -or (git rev-parse "origin/$ExpectedBranch").Trim() -ne $ExpectedWebsiteHead) {
-  throw "网站提交不符合预期：$websiteHead"
+$websiteRemoteHead = (git rev-parse "origin/$ExpectedBranch").Trim()
+if ($websiteHead -ne $ExpectedWebsiteHead -or $websiteRemoteHead -ne $ExpectedWebsiteHead) {
+  throw "网站提交不符合预期：local=$websiteHead remote=$websiteRemoteHead"
 }
 
 Push-Location $ResearchRepo
@@ -103,6 +104,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Docker 不可用。' }
 $sourceRunning = ([string](& docker inspect -f '{{.State.Running}}' $SourcePostgresContainer)).Trim()
 if ($LASTEXITCODE -ne 0 -or $sourceRunning -ne 'true') { throw '源 PostgreSQL 容器未运行。' }
 $postgresImage = ([string](& docker inspect -f '{{.Config.Image}}' $SourcePostgresContainer)).Trim()
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($postgresImage)) { throw '无法读取源 PostgreSQL 镜像。' }
 $recordsTable = ([string](& docker exec $SourcePostgresContainer psql -X -qAt -v ON_ERROR_STOP=1 -U $SourceDatabaseUser -d $SourceDatabase -c "SELECT COALESCE(to_regclass('public.radar_public_records')::text, '');")).Trim()
 if ($LASTEXITCODE -ne 0 -or $recordsTable) { throw '源数据库已经存在 radar_public_records，首次演练输入失效。' }
 $works = ([string](& docker exec $SourcePostgresContainer psql -X -qAt -v ON_ERROR_STOP=1 -U $SourceDatabaseUser -d $SourceDatabase -c 'SELECT count(*) FROM public.works;')).Trim()
@@ -114,14 +116,14 @@ $backupDir = Join-Path $repoRoot 'data_local\backups\radar-public-release-lab-v0
 New-Item -ItemType Directory -Path $outDir, $backupDir -Force | Out-Null
 $countSql = Join-Path $outDir 'table-counts.sql'
 $fingerprintSql = Join-Path $outDir 'protected-fingerprints.sql'
-[System.IO.File]::WriteAllText($countSql, @'
+$countSqlContent = @'
 \pset tuples_only on
 \pset format unaligned
 SELECT format('SELECT %L || E''\t'' || count(*)::text FROM %I.%I;', schemaname || '.' || tablename, schemaname, tablename)
 FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename
 \gexec
-'@.TrimStart(), [System.Text.UTF8Encoding]::new($false))
-[System.IO.File]::WriteAllText($fingerprintSql, @'
+'@
+$fingerprintSqlContent = @'
 \pset tuples_only on
 \pset format unaligned
 SELECT format('SELECT %L || E''\t'' || count(*)::text || E''\t'' || COALESCE(md5(string_agg(row_hash, '''' ORDER BY row_hash)), md5('''')) FROM (SELECT md5(row_to_json(t)::text) AS row_hash FROM %I.%I AS t) AS rows;', schemaname || '.' || tablename, schemaname, tablename)
@@ -131,7 +133,9 @@ WHERE schemaname = 'public'
   AND tablename NOT LIKE 'radar_public_records%'
 ORDER BY tablename
 \gexec
-'@.TrimStart(), [System.Text.UTF8Encoding]::new($false))
+'@
+[System.IO.File]::WriteAllText($countSql, $countSqlContent.TrimStart(), [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText($fingerprintSql, $fingerprintSqlContent.TrimStart(), [System.Text.UTF8Encoding]::new($false))
 
 $sourceCounts = Join-Path $outDir 'source-table-counts.tsv'
 $sourceFingerprints = Join-Path $outDir 'source-protected-fingerprints.tsv'
@@ -146,12 +150,14 @@ $labUser = 'radar_lab'
 $labPassword = [Guid]::NewGuid().ToString('N')
 $dbPort = Get-FreePort 31000 31999
 $containerStarted = $false
+$environmentPath = Join-Path $outDir 'radar-public-release-lab-environment-v01.json'
 
 try {
   & docker exec $SourcePostgresContainer pg_dump -Fc --no-owner --no-privileges -U $SourceDatabaseUser -d $SourceDatabase -f $sourceDump
   if ($LASTEXITCODE -ne 0) { throw '创建源数据库只读 dump 失败。' }
   & docker cp "${SourcePostgresContainer}:$sourceDump" $backupPath | Out-Null
-  if ($LASTEXITCODE -ne 0) { throw '复制源数据库 dump 失败。' }
+  if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $backupPath -PathType Leaf)) { throw '复制源数据库 dump 失败。' }
+  if ((Get-Item -LiteralPath $backupPath).Length -le 0) { throw '源数据库 dump 为空。' }
   $backupHash = (Get-FileHash -LiteralPath $backupPath -Algorithm SHA256).Hash.ToLowerInvariant()
 
   & docker run -d --name $labContainer -e "POSTGRES_USER=$labUser" -e "POSTGRES_PASSWORD=$labPassword" -e "POSTGRES_DB=$labDatabase" -p "127.0.0.1:${dbPort}:5432" $postgresImage | Out-Null
@@ -166,6 +172,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw '临时 PostgreSQL 未就绪。' }
 
   & docker cp $backupPath "${labContainer}:/tmp/source.dump" | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw '复制 dump 到临时 PostgreSQL 失败。' }
   & docker exec -e "PGPASSWORD=$labPassword" $labContainer pg_restore --no-owner --no-privileges -U $labUser -d $labDatabase /tmp/source.dump 1> (Join-Path $outDir 'restore-stdout.txt') 2> (Join-Path $outDir 'restore-stderr.txt')
   if ($LASTEXITCODE -ne 0) { throw '恢复临时 PostgreSQL 失败。' }
 
@@ -176,7 +183,13 @@ try {
   Assert-MapsEqual (Read-Map $sourceCounts) (Read-Map $labCounts) '源库与隔离 restore 行数'
   Assert-MapsEqual (Read-Map $sourceFingerprints) (Read-Map $labFingerprints) '源库与隔离 restore 指纹'
 
-  $environmentPath = Join-Path $outDir 'radar-public-release-lab-environment-v01.json'
+  $sourcePostCounts = Join-Path $outDir 'source-post-table-counts.tsv'
+  $sourcePostFingerprints = Join-Path $outDir 'source-post-protected-fingerprints.tsv'
+  Invoke-SqlFile $SourcePostgresContainer $SourceDatabase $SourceDatabaseUser '' $countSql '/tmp/radar-public-release-counts-post.sql' $sourcePostCounts (Join-Path $outDir 'source-post-counts-stderr.txt')
+  Invoke-SqlFile $SourcePostgresContainer $SourceDatabase $SourceDatabaseUser '' $fingerprintSql '/tmp/radar-public-release-fingerprints-post.sql' $sourcePostFingerprints (Join-Path $outDir 'source-post-fingerprints-stderr.txt')
+  Assert-MapsEqual (Read-Map $sourceCounts) (Read-Map $sourcePostCounts) '源数据库准备前后行数'
+  Assert-MapsEqual (Read-Map $sourceFingerprints) (Read-Map $sourcePostFingerprints) '源数据库准备前后指纹'
+
   Write-JsonFile $environmentPath ([ordered]@{
     schemaVersion = 'radar-public-release-lab-environment-v01'
     createdAt = [DateTime]::UtcNow.ToString('o')
@@ -187,8 +200,11 @@ try {
     sourceContainer = $SourcePostgresContainer
     sourceDatabase = $SourceDatabase
     sourceDatabaseWrite = $false
+    sourcePostcheckPassed = $true
     sourceTableCounts = $sourceCounts
     sourceProtectedFingerprints = $sourceFingerprints
+    sourcePostTableCounts = $sourcePostCounts
+    sourcePostProtectedFingerprints = $sourcePostFingerprints
     backupPath = $backupPath
     backupSha256 = $backupHash
     labContainer = $labContainer
@@ -204,11 +220,11 @@ try {
     publicRecordsWritten = 0
   })
 
-  & docker exec $SourcePostgresContainer rm -f $sourceDump '/tmp/radar-public-release-counts.sql' '/tmp/radar-public-release-fingerprints.sql' | Out-Null
+  & docker exec $SourcePostgresContainer rm -f $sourceDump '/tmp/radar-public-release-counts.sql' '/tmp/radar-public-release-fingerprints.sql' '/tmp/radar-public-release-counts-post.sql' '/tmp/radar-public-release-fingerprints-post.sql' | Out-Null
   if ($LASTEXITCODE -ne 0) { throw '清理源容器临时文件失败。' }
 
   Write-Host ''
-  Write-Host '隔离数据库已从 fresh 只读 dump 恢复并通过行数与关键表指纹核对。' -ForegroundColor Green
+  Write-Host '隔离数据库已从 fresh 只读 dump 恢复，并通过源库前后不变与克隆一致性核对。' -ForegroundColor Green
   Write-Host "Environment : $environmentPath"
   Write-Host "LabContainer: $labContainer"
   Write-Host "LabPort     : $dbPort"
@@ -217,7 +233,7 @@ try {
   Write-Host 'ImportRows  : 0'
 } catch {
   if ($containerStarted) { & docker rm -f $labContainer 2>$null | Out-Null }
-  Remove-Item -LiteralPath $backupPath -Force -ErrorAction SilentlyContinue
-  & docker exec $SourcePostgresContainer rm -f $sourceDump '/tmp/radar-public-release-counts.sql' '/tmp/radar-public-release-fingerprints.sql' 2>$null | Out-Null
+  Remove-Item -LiteralPath $backupPath, $environmentPath -Force -ErrorAction SilentlyContinue
+  & docker exec $SourcePostgresContainer rm -f $sourceDump '/tmp/radar-public-release-counts.sql' '/tmp/radar-public-release-fingerprints.sql' '/tmp/radar-public-release-counts-post.sql' '/tmp/radar-public-release-fingerprints-post.sql' 2>$null | Out-Null
   throw
 }
