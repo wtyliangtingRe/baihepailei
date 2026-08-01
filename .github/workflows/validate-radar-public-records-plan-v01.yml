@@ -1,0 +1,44 @@
+name: Validate Radar Public Records Plan v01
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-radar-public-records-plan-v01.yml'
+      - 'docs/radar-public-records-plan-v01.md'
+      - 'src/collections/RadarPublicRecords.ts'
+      - 'scripts/radar/lib/public-release-plan-v01.mjs'
+      - 'scripts/radar/plan-public-release-v01.mjs'
+      - 'tests/radar-public-records-schema.test.mjs'
+      - 'tests/radar-public-release-plan-v01.test.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse planner
+        run: |
+          node --check scripts/radar/lib/public-release-plan-v01.mjs
+          node --check scripts/radar/plan-public-release-v01.mjs
+      - name: Run schema and planner tests
+        run: |
+          node --test \
+            tests/radar-public-records-schema.test.mjs \
+            tests/radar-public-release-plan-v01.test.mjs \
+            tests/radar-public-release-v01.test.mjs
+      - name: Confirm migration remains separate
+        run: |
+          ! grep -q "RadarPublicRecords" payload.config.ts
+          ! find src/migrations -maxdepth 1 -type f -iname '*radar_public_records*' | grep -q .
+      - name: Check diff whitespace
+        run: git diff --check origin/${{ github.base_ref }}...HEAD
