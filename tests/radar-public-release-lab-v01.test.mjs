@@ -104,6 +104,22 @@ test('one-command wrapper reuses an existing source container safely', () => {
   assert.doesNotMatch(wrapper, /docker rm.*baihepailei-postgres/u)
 })
 
+test('one-command wrapper preflights credentials securely before cloning', () => {
+  assert.match(wrapper, /SITE_OWNER_EMAIL/u)
+  assert.match(wrapper, /Read-Host '请输入该 Payload 账号密码（输入不会显示）' -AsSecureString/u)
+  assert.match(wrapper, /SecureStringToBSTR/u)
+  assert.match(wrapper, /ZeroFreeBSTR/u)
+  assert.match(wrapper, /Invoke-WithEnvironment/u)
+  assert.match(wrapper, /RADAR_PAYLOAD_EMAIL = \[string\]\$credentials\.Email/u)
+  assert.match(wrapper, /RADAR_PAYLOAD_PASSWORD = \[string\]\$credentials\.Password/u)
+  assert.match(wrapper, /凭据仅保留在当前进程内存中/u)
+  assert.ok(wrapper.indexOf('$credentials = Get-LabAdministratorCredentials') < wrapper.indexOf("Invoke-Checked 'Phase 1"))
+  assert.match(executor, /GetEnvironmentVariable\(\$name, 'Process'\)/u)
+  assert.match(executor, /SITE_OWNER_EMAIL/u)
+  assert.doesNotMatch(wrapper, /-PayloadPassword|-Password \$credentials\.Password/u)
+  assert.doesNotMatch(wrapper, /Write-Host[^\n]*\$\(\$credentials\.Password\)/u)
+})
+
 test('one-command wrapper neutralizes PowerShell JSON date coercion', () => {
   assert.match(wrapper, /Convert-LabCreatedAtForExecutor/u)
   assert.match(wrapper, /DateTimeOffset\]::ParseExact/u)
