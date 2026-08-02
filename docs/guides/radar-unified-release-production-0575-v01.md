@@ -16,8 +16,6 @@ The isolated rehearsal and P1 read-only candidate are independently accepted. Ne
 
 ## P1 — read-only candidate
 
-Canonical command:
-
 ```text
 scripts/radar/prepare-radar-unified-release-production-0575-v01.ps1
 ```
@@ -32,9 +30,32 @@ PublicRatingsWritten     0
 ProductionAuthorization  false
 ```
 
-## P2 — merged-main authorization
+## P2 — source-readonly pre-merge rehearsal
 
-Canonical authorizer:
+```text
+scripts/radar/rehearse-radar-unified-release-production-gate-0575-v01.ps1
+```
+
+This is the only pre-merge runtime acceptance command. It runs on the exact PR branch and:
+
+1. verifies the candidate, P1 backup, source counts, protected fingerprints and migration rows;
+2. restores the P1 backup into a disposable PostgreSQL container;
+3. creates the production-style advisory-lock and durable-marker control only in that disposable database;
+4. reconciles migration metadata and runs formal migrations only there;
+5. starts a nonce-bound loopback Payload process;
+6. performs one POST-only importer call, including fresh pre-plan and post-import convergence;
+7. requires 575 records, 575 ratings, 1,150 audit events, one session, 14 projection tables and one control table;
+8. proves the source counts, fingerprints and migration rows remain unchanged;
+9. destroys the temporary database and packages rehearsal evidence.
+
+It contains no source migration, source marker or source importer call.
+
+```text
+SourceDatabaseWrite      false
+ProductionAuthorization  false
+```
+
+## P2 — merged-main authorization
 
 ```text
 scripts/radar/authorize-radar-unified-release-production-0575-v02.ps1
@@ -47,7 +68,7 @@ It runs only after PR #330 is merged and only when local `main`, `origin/main`, 
 - absence of both projection families and the apply-control table;
 - a content-hash manifest covering every production-critical script, test, workflow, route and guide.
 
-It writes a local authorization receipt under `data_local`. The receipt is still non-writing and reports:
+It writes a local authorization receipt under `data_local`. The receipt is still non-writing:
 
 ```text
 ReadyForExplicitApply    true
@@ -57,13 +78,21 @@ ProductionAuthorization  false
 
 ## P2 — apply-once executor
 
-Canonical executor:
+Stable entrypoint:
 
 ```text
 scripts/radar/execute-radar-unified-release-production-0575-v01.ps1
 ```
 
-Before the first source write it:
+The entrypoint verifies the exact Git blob identity of the corrected v02 core before delegating to:
+
+```text
+scripts/radar/execute-radar-unified-release-production-0575-v02.ps1
+```
+
+This transitive binding lets the authorization manifest lock the stable v01 entrypoint while preventing an unreviewed v02 core from running.
+
+Before the first source write the executor:
 
 1. requires exact merged `main` and the authorization code manifest;
 2. stops application writer containers while leaving PostgreSQL running;
@@ -73,7 +102,7 @@ Before the first source write it:
 6. reproduces the accepted legacy-schema signature;
 7. creates the apply marker in the disposable database;
 8. reconciles historical migration metadata and runs formal migrations;
-9. runs exact `575 + 575` plan, apply and verify through a nonce-bound loopback Payload process;
+9. runs one importer apply call whose internal pre-plan and post-plan must converge exactly;
 10. verifies all row counts and protected fingerprints;
 11. destroys the disposable database;
 12. proves the source state is still unchanged;
@@ -94,11 +123,12 @@ POST  radar-public-ratings create
 
 It contains no update path and rejects PATCH, PUT, DELETE, incremental mode, remote URLs and non-loopback ports.
 
-Expected importer result:
+Expected result per database apply:
 
 ```text
 record creates                  575
 rating creates                  575
+login sessions                    1
 record updates                    0
 rating updates                    0
 post records already_current    575
@@ -123,7 +153,7 @@ failed     automatic retry forbidden
 completed  second apply forbidden
 ```
 
-A failed production run attempts only to mark the row `failed`. It does not automatically retry or restore.
+The completed/failed transition performs the UPDATE and `FOUND` check inside one PL/pgSQL block. A failed production run attempts only to mark the row `failed`; it does not automatically retry or restore.
 
 ## Expected successful database deltas
 
@@ -145,9 +175,11 @@ old public conclusion mutations             0
 research record mutations                    0
 ```
 
+Post-migration validation binds the exact nine migration names without assuming generated batch numbers. The exact three-row starting state remains name-and-batch bound.
+
 ## Evidence and backup boundary
 
-The production evidence ZIP contains receipts, plans, logs, counts, fingerprints, manifests and hashes. It excludes:
+The evidence ZIP contains receipts, plans, logs, counts, fingerprints, manifests and hashes. It excludes:
 
 - database dump bytes;
 - PostgreSQL URLs;
@@ -174,13 +206,14 @@ Do not manually delete the apply-control table or marker to force a retry.
 ## Current authorization
 
 ```text
-P1 read-only preflight        complete
-P1 independent audit         accepted
-P2 implementation            committed to Draft PR #330
-P2 CI and code review         required
-Production migration         false
-Production import            false
-Production rollback          false
+P1 read-only preflight          complete
+P1 independent audit           accepted
+P2 implementation              committed to Draft PR #330
+P2 static CI                    required
+P2 source-readonly rehearsal   required
+Production migration           false
+Production import              false
+Production rollback            false
 ```
 
-PR #330 must remain Draft until CI, static review and a real local disposable rehearsal of the merged candidate are accepted.
+PR #330 must remain Draft until CI, code review and the source-readonly disposable rehearsal are accepted.
