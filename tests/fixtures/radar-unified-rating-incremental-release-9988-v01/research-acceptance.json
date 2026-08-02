@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "radar-unified-rating-incremental-release-research-acceptance-9988-v01",
+  "accepted": true,
+  "researchRepository": "wtyliangtingRe/baihepailei-research-data",
+  "researchMainHead": "c8790df95d1235d8d1aacabfb7c119fec9e1c642",
+  "releaseId": "RADAR-UNIFIED-RATING-INCREMENTAL-RELEASE-9988-0001",
+  "releasePath": "releases/public/radar-unified-rating-incremental-release-9988-0001/v01",
+  "manifestSha256": "40c8e474c5a6614b259c2ab9402e404fab9bf0c9411c2a3590885f7e619fe896",
+  "sha256SumsBlobSha": "8436c9f3583e7fc4f70773a813ee05c150b750f6",
+  "manifestBlobSha": "c2039b9ff18f7ee546073a5c99c82b024788a05b",
+  "verifiedWorkflowArtifactZipSha256": "c7ce4422d2e2e80f8a325859aebe8ac701e316cd8c238e186461c20858a09400",
+  "criticalResearchWorkflowRuns": {
+    "plan": 30748304276,
+    "buildAndRebuild": 30748304320,
+    "canonicalize": 30748304253
+  },
+  "counts": {
+    "records": 9988,
+    "ratings": 9988,
+    "identityReviewExcluded": 12
+  },
+  "productionAuthorization": false
+}
