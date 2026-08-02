@@ -60,3 +60,17 @@ test('private Research acceptance fixture matches website lock', () => {
   assert.equal(manifest.lowerGradeTriggerPolicy.maleEIdentityCount, 7)
   assert.equal(manifest.lowerGradeTriggerPolicy.ntrEIdentityCount, 3)
 })
+
+test('Windows wrapper explicitly runs planner and requires an accepted receipt', () => {
+  const wrapper = fs.readFileSync(new URL('../scripts/radar/run-unified-rating-incremental-plan-9988-v01.ps1', import.meta.url), 'utf8')
+
+  assert.match(wrapper, /await module\.run\(process\.argv\.slice\(1\)\)/)
+  assert.match(wrapper, /transition-summary\.json/)
+  assert.match(wrapper, /\$summary\.accepted -ne \$true/)
+  assert.match(wrapper, /planner 未生成 transition-summary\.json，禁止判定成功/)
+  assert.match(wrapper, /Get-FileHash -LiteralPath \$file -Algorithm SHA256/)
+  assert.match(wrapper, /\$researchHead -ne \$ExpectedResearchHead/)
+  assert.doesNotMatch(wrapper, /radar-public-records.*(?:POST|PATCH|PUT|DELETE)/s)
+  assert.doesNotMatch(wrapper, /radar-public-ratings.*(?:POST|PATCH|PUT|DELETE)/s)
+  assert.doesNotMatch(wrapper, /git\s+(?:reset\s+--hard|clean\s+-)/)
+})
