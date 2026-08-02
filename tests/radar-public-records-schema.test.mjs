@@ -26,6 +26,19 @@ test('Radar public fact values preserve Release strings as text', () => {
   assert.doesNotMatch(factsBlock, /name: 'value',[\s\S]*type: 'json'/u)
 })
 
+test('Radar public evidence preserves licensed or authorized source semantics', () => {
+  const source = readFileSync('src/collections/RadarPublicRecords.ts', 'utf8')
+  const evidenceStart = source.indexOf("name: 'evidence'")
+  const sourceReleaseStart = source.indexOf("name: 'sourceReleaseId'")
+  assert.ok(evidenceStart >= 0 && sourceReleaseStart > evidenceStart)
+  const evidenceBlock = source.slice(evidenceStart, sourceReleaseStart)
+  assert.match(evidenceBlock, /value: 'primary'/u)
+  assert.match(evidenceBlock, /value: 'licensed_or_authorized'/u)
+  assert.match(evidenceBlock, /value: 'supplemental'/u)
+  assert.match(evidenceBlock, /value: 'lead_only'/u)
+  assert.match(evidenceBlock, /label: '正版或授权来源'/u)
+})
+
 test('Radar public records expose only current records anonymously', () => {
   const source = readFileSync('src/collections/RadarPublicRecords.ts', 'utf8')
   assert.match(source, /recordStatus:[\s\S]*equals: 'current'/u)
