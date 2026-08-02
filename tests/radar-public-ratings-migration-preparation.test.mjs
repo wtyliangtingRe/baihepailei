@@ -42,8 +42,12 @@ test('generated ratings migration, when present, is additive and registered once
 
   assert.ok(existsSync(snapshot), 'generated migration snapshot is missing')
   assert.match(migration, /CREATE TABLE[\s\S]*radar_public_ratings/u)
-  assert.doesNotMatch(migration, /(?:ALTER|DROP|CREATE) TABLE[\s\S]*"radar_public_records/u)
-  assert.doesNotMatch(migration, /(?:ALTER|DROP|CREATE) TABLE[\s\S]*"works"/u)
+
+  // A foreign key may legitimately reference Works. Only direct table DDL on
+  // existing collections is forbidden.
+  assert.doesNotMatch(migration, /(?:ALTER|DROP|CREATE) TABLE\s+(?:"public"\.)?"radar_public_records(?:"|_)/iu)
+  assert.doesNotMatch(migration, /(?:ALTER|DROP|CREATE) TABLE\s+(?:"public"\.)?"works"/iu)
+
   assert.equal((index.match(new RegExp(`name: '${stem}'`, 'gu')) || []).length, 1)
   assert.match(index, new RegExp(`from './${stem}'`, 'u'))
 })
