@@ -231,12 +231,13 @@ try {
     [int]$reconciliation.historicalMigrationRowsRegistered -ne 2 -or
     [int]$reconciliation.recordsMigrationRowsRegistered -ne 0 -or
     [int]$reconciliation.ratingsMigrationRowsRegistered -ne 0 -or
+    [int]$reconciliation.factValueTextMigrationRowsRegistered -ne 0 -or
     $reconciliation.sourceDatabaseWrite -ne $false -or
     $reconciliation.productionAuthorization -ne $false
   ) { throw '历史 Radar schema 对齐回执不符合预期。' }
 
   Write-Host ''
-  Write-Host '==> 只在临时 PostgreSQL 执行 Records 与 Ratings 正式迁移' -ForegroundColor Green
+  Write-Host '==> 只在临时 PostgreSQL 执行 Records、Ratings 与事实文本正式迁移' -ForegroundColor Green
   Invoke-WithEnvironment -Variables @{
     DATABASE_URL = [string]$lab.databaseUrl
     PAYLOAD_DB_PUSH = 'false'
@@ -263,7 +264,8 @@ try {
     '20260723_141908_radar_public_conclusions_v01',
     '20260801_101546_current_schema_baseline_before_radar_public_records_v01',
     '20260801_101551_radar_public_records_v01',
-    '20260802_030535_radar_public_ratings_v01'
+    '20260802_030535_radar_public_ratings_v01',
+    '20260802_045057_radar_public_record_fact_value_text_v01'
   )
   if (($names -join "`n") -ne ($expectedNames -join "`n")) { throw "迁移登记不符合预期：$($names -join ', ')" }
 
@@ -344,7 +346,7 @@ try {
     if ($key -eq 'public.audit_events') {
       if ($after -ne $before + 1150) { throw "audit_events 增量不是 1150：$before -> $after" }
     } elseif ($key -eq 'public.payload_migrations') {
-      if ($after -ne $before + 4) { throw "payload_migrations 净增量不是 4：$before -> $after" }
+      if ($after -ne $before + 5) { throw "payload_migrations 净增量不是 5：$before -> $after" }
     } elseif ($key -eq 'public.users_sessions') {
       if ($after -ne $before + 1) { throw "users_sessions 增量不是 1：$before -> $after" }
     } elseif ($after -ne $before) {
@@ -386,9 +388,9 @@ try {
     expectedStorage = $storage
     auditEventsAdded = 1150
     authenticationSessionsAdded = 1
-    formalMigrationsAdded = 5
+    formalMigrationsAdded = 6
     developmentMigrationMarkersRemoved = 1
-    payloadMigrationsNetAdded = 4
+    payloadMigrationsNetAdded = 5
     historicalSchemaReconciled = $true
     historicalSchemaSignatureSha256 = [string]$reconciliation.actualSchemaSignatureSha256
     postImportFactsAlreadyCurrent = 575
@@ -428,6 +430,7 @@ try {
 
   Write-Host ''
   Write-Host '统一 Release 隔离迁移与导入演练通过。' -ForegroundColor Green
+  Write-Host "WebsiteCommit            : $($lab.websiteCommit)"
   Write-Host "ResearchHead              : $($lab.researchHead)"
   Write-Host "ReleaseId                 : $ReleaseId"
   Write-Host 'SourceDatabaseWrite       : False'
