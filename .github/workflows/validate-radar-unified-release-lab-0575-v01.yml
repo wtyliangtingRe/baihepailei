@@ -7,15 +7,20 @@ on:
     paths:
       - '.github/workflows/validate-radar-unified-release-lab-0575-v01.yml'
       - 'src/app/(payload)/api/radar-unified-release-lab-marker/route.ts'
+      - 'src/collections/RadarPublicRecords.ts'
+      - 'src/migrations/**'
       - 'scripts/radar/run-radar-unified-release-lab-0575-v01.ps1'
       - 'scripts/radar/prepare-radar-unified-release-lab-database-0575-v01.ps1'
       - 'scripts/radar/execute-radar-unified-release-lab-0575-v01.ps1'
       - 'scripts/radar/reconcile-radar-public-dev-schema-v02.mjs'
       - 'scripts/radar/run-unified-release-lab-import-0575-v01.mjs'
       - 'scripts/radar/run-unified-release-lab-import-lib-0575-v01.mjs'
+      - 'scripts/radar/prepare-radar-public-record-fact-value-text-migration-v01.ps1'
       - 'scripts/radar/lib/unified-rating-release-plan-v01.mjs'
       - 'tests/radar-unified-release-lab-0575-v01.test.mjs'
       - 'tests/radar-unified-rating-release-plan-v01.test.mjs'
+      - 'tests/radar-public-records-schema.test.mjs'
+      - 'tests/radar-public-record-fact-value-text-migration-preparation.test.mjs'
       - 'config/radar-unified-rating-release-0575-v01.lock.json'
       - 'docs/guides/radar-unified-rating-release-lab-0575-v01.md'
       - 'docs/guides/radar-unified-release-incremental-upsert-0575-v01.md'
@@ -42,7 +47,8 @@ jobs:
           foreach ($path in @(
             'scripts/radar/run-radar-unified-release-lab-0575-v01.ps1',
             'scripts/radar/prepare-radar-unified-release-lab-database-0575-v01.ps1',
-            'scripts/radar/execute-radar-unified-release-lab-0575-v01.ps1'
+            'scripts/radar/execute-radar-unified-release-lab-0575-v01.ps1',
+            'scripts/radar/prepare-radar-public-record-fact-value-text-migration-v01.ps1'
           )) {
             $errors = $null
             [System.Management.Automation.Language.Parser]::ParseFile(
@@ -66,13 +72,15 @@ jobs:
             tests/radar-unified-release-lab-0575-v01.test.mjs \
             tests/radar-unified-rating-release-plan-v01.test.mjs \
             tests/radar-public-ratings-schema.test.mjs \
-            tests/radar-public-records-schema.test.mjs
+            tests/radar-public-records-schema.test.mjs \
+            tests/radar-public-record-fact-value-text-migration-preparation.test.mjs
       - name: Confirm disposable-only write surface
         shell: bash
         run: |
           set -euo pipefail
           IMPORTER='scripts/radar/run-unified-release-lab-import-lib-0575-v01.mjs'
           CLI='scripts/radar/run-unified-release-lab-import-0575-v01.mjs'
+          FACT_MIGRATION_PREPARER='scripts/radar/prepare-radar-public-record-fact-value-text-migration-v01.ps1'
           grep -q 'RUN-ISOLATED-RADAR-UNIFIED-RELEASE-LAB-0575-V01' scripts/radar/run-radar-unified-release-lab-0575-v01.ps1
           grep -q 'RADAR_UNIFIED_RELEASE_LAB_NONCE' src/app/\(payload\)/api/radar-unified-release-lab-marker/route.ts
           grep -q 'pathToFileURL' "$CLI"
@@ -80,6 +88,11 @@ jobs:
           grep -q "method: 'PATCH'" "$IMPORTER"
           ! grep -E "method: '(PUT|DELETE)'" "$IMPORTER"
           grep -q 'omissionMeansDelete: false' "$IMPORTER"
+          grep -q "name: 'value'" src/collections/RadarPublicRecords.ts
+          grep -q "type: 'textarea'" src/collections/RadarPublicRecords.ts
+          grep -q 'payload migrate:create \$MigrationName --skip-empty' "$FACT_MIGRATION_PREPARER"
+          ! grep -E '(^|[^:])payload migrate([[:space:]|"'"'])' "$FACT_MIGRATION_PREPARER"
+          grep -q 'default_transaction_read_only=on' "$FACT_MIGRATION_PREPARER"
           grep -q 'normalized_pg_dump_schema_only' scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
           grep -q "process.env.ComSpec || 'cmd.exe'" scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
           grep -q 'pnpm.cmd payload migrate' scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
