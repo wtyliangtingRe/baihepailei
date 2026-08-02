@@ -13,6 +13,7 @@ on:
       - 'scripts/radar/run-unified-rating-incremental-plan-9988-v01.ps1'
       - 'scripts/radar/run-unified-rating-incremental-production-import-9988-v01.mjs'
       - 'scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1'
+      - 'scripts/radar/audit-unified-rating-incremental-rehearsal-evidence-9988-v01.ps1'
       - 'scripts/radar/lib/unified-rating-release-plan-v01.mjs'
       - 'scripts/radar/lib/public-release-plan-v01.mjs'
       - 'scripts/radar/lib/radar-unified-release-production-0575-v01.ps1'
@@ -22,6 +23,7 @@ on:
       - 'tests/radar-unified-rating-incremental-release-9988-lock-fixture.test.mjs'
       - 'tests/radar-unified-rating-incremental-rehearsal-9988-v02.test.mjs'
       - 'tests/radar-unified-rating-incremental-process-handle-9988-v01.test.mjs'
+      - 'tests/radar-unified-rating-incremental-evidence-audit-9988-v01.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -44,7 +46,8 @@ jobs:
         run: |
           $paths = @(
             'scripts/radar/run-unified-rating-incremental-plan-9988-v01.ps1',
-            'scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1'
+            'scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1',
+            'scripts/radar/audit-unified-rating-incremental-rehearsal-evidence-9988-v01.ps1'
           )
           foreach ($path in $paths) {
             $tokens = $null
@@ -59,13 +62,14 @@ jobs:
               throw "PowerShell parse failed: $path"
             }
           }
-      - name: Run planner, importer, marker, lock and rehearsal tests
+      - name: Run planner, importer, marker, lock, rehearsal and audit tests
         run: >-
           node --test
           tests/radar-unified-rating-incremental-release-9988-v01.test.mjs
           tests/radar-unified-rating-incremental-release-9988-lock-fixture.test.mjs
           tests/radar-unified-rating-incremental-rehearsal-9988-v02.test.mjs
           tests/radar-unified-rating-incremental-process-handle-9988-v01.test.mjs
+          tests/radar-unified-rating-incremental-evidence-audit-9988-v01.test.mjs
       - name: Validate locked private-Research snapshot
         run: >-
           node scripts/radar/validate-unified-rating-incremental-release-lock-9988-v01.mjs
