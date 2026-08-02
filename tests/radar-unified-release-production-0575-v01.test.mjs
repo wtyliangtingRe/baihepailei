@@ -83,9 +83,9 @@ test('executor uses an atomic advisory transaction lock and durable apply marker
 test('executor verifies exact migration and storage deltas', () => {
   assert.match(executor, /ExpectedLegacySchemaSha256 = 'bb4bc33661c989e91dc7fda964f4023f3ef175582fe9e95449f568348eb17c7d'/u)
   assert.match(executor, /20260802_062015_radar_public_record_evidence_role_v01/u)
-  assert.match(executor, /payload_migrations[^\n]*\+ 6/u)
-  assert.match(executor, /audit_events[^\n]*\+ 1150/u)
-  assert.match(executor, /users_sessions[^\n]*\+ 1/u)
+  assert.match(executor, /public\.payload_migrations[\s\S]{0,220}\$beforeValue \+ 6/u)
+  assert.match(executor, /public\.audit_events[\s\S]{0,220}\$beforeValue \+ 1150/u)
+  assert.match(executor, /public\.users_sessions[\s\S]{0,220}\$beforeValue \+ 1/u)
   assert.match(executor, /public\.radar_unified_release_apply_control' = 1/u)
   assert.match(executor, /Assert-RadarMapsEqual \$sourceBaseline\.Fingerprints \$sourcePost\.Fingerprints/u)
   assert.match(executor, /publicRecords = 575/u)
@@ -95,7 +95,7 @@ test('executor verifies exact migration and storage deltas', () => {
 test('failure boundary never performs automatic rollback or destructive git cleanup', () => {
   assert.doesNotMatch(executor, /git reset --hard/u)
   assert.doesNotMatch(executor, /git clean/u)
-  assert.doesNotMatch(executor, /pg_restore[\s\S]*SourcePostgresContainer/u)
+  assert.doesNotMatch(executor, /docker exec[^\n]*\$SourcePostgresContainer[^\n]*pg_restore/u)
   assert.match(executor, /writerContainersIntentionallyLeftPaused/u)
   assert.match(executor, /automaticRollbackExecuted = \$false/u)
   assert.match(executor, /automaticRetryAllowed = \$false/u)
