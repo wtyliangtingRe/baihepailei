@@ -1,0 +1,110 @@
+name: Repair incremental rehearsal process handle
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-incremental-rehearsal-process-handle.yml'
+      - 'scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repair-incremental-rehearsal-process-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Apply exact process-handle repair
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1')
+          text = path.read_text(encoding='utf-8')
+
+          old_start = """  $process = $null
+          Invoke-RadarWithEnvironment -Variables @{
+          """
+          new_start = """  $script:process = $null
+          $null = Invoke-RadarWithEnvironment -Variables @{
+          """
+
+          old_end = """  }
+          Wait-IncrementalMarker $baseUrl $Nonce $Phase $DatabaseName $CandidateSha256 $process | Out-Null
+          return [pscustomobject]@{ Process = $process; BaseUrl = $baseUrl }
+          """
+          new_end = """  }
+          $process = Get-RadarActiveProcess $null
+          if ($null -eq $process -or -not ($process -is [System.Diagnostics.Process])) {
+            throw '临时 Payload 进程句柄无效。'
+          }
+          Wait-IncrementalMarker $baseUrl $Nonce $Phase $DatabaseName $CandidateSha256 $process | Out-Null
+          return [pscustomobject]@{ Process = $process; BaseUrl = $baseUrl }
+          """
+
+          old_wait = """  $deadline = [DateTime]::UtcNow.AddSeconds($ReadyTimeoutSeconds)
+          do {
+            if ($Process.HasExited) { throw "临时 Payload 进程提前退出：$($Process.ExitCode)" }
+          """
+          new_wait = """  if ($null -eq $Process -or -not ($Process -is [System.Diagnostics.Process])) {
+            throw '临时 Payload 进程句柄无效。'
+          }
+          $deadline = [DateTime]::UtcNow.AddSeconds($ReadyTimeoutSeconds)
+          do {
+            if ($Process.HasExited) { throw "临时 Payload 进程提前退出：$($Process.ExitCode)" }
+          """
+
+          replacements = [(old_start, new_start), (old_end, new_end), (old_wait, new_wait)]
+          changed = False
+          for old, new in replacements:
+            if old in text:
+              if text.count(old) != 1:
+                raise SystemExit(f'Expected exactly one repair target, found {text.count(old)}')
+              text = text.replace(old, new)
+              changed = True
+            elif new not in text:
+              raise SystemExit('Neither original nor repaired process-handle block was found')
+
+          if changed:
+            path.write_text(text, encoding='utf-8', newline='\n')
+          PY
+      - name: Parse repaired PowerShell
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path -LiteralPath 'scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1'),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            throw 'PowerShell parse failed after process-handle repair.'
+          }
+      - name: Commit repair when changed
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          git add -- scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1
+          if git diff --cached --quiet; then
+            echo 'Process-handle repair already present.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Fix incremental rehearsal process handle'
+          git push origin "HEAD:$BRANCH"
