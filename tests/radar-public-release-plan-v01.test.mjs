@@ -45,6 +45,7 @@ test('plans an exact work create without touching Works', () => {
   assert.equal(row.desired.work, '10')
   assert.equal(row.desired.facts[0].factType, 'source_page_title')
   assert.deepEqual(row.desired.facts[0].sourceRefs, [{ value: 'src-1' }])
+  assert.equal(row.desired.sourceReviewedAt, '2026-08-01T00:00:00.000Z')
   assert.equal(row.desired.recordStatus, 'current')
   assert.equal('humanAssessment' in row.desired, false)
   assert.equal('radarAssessment' in row.desired, false)
@@ -72,6 +73,28 @@ test('recognizes an already current public projection', () => {
   const second = buildPlanRow(record(), buildWorkIndexes(works), buildCurrentRecordIndexes([current]), release, '2026-08-02T00:00:00Z')
   assert.equal(second.planStatus, 'already_current')
   assert.equal(second.currentRecordId, '77')
+})
+
+test('recognizes Payload-normalized review dates as the same instant', () => {
+  const first = buildPlanRow(record(), buildWorkIndexes(works), buildCurrentRecordIndexes([]), release, importedAt)
+  const current = {
+    id: 77,
+    ...first.desired,
+    sourceReviewedAt: '2026-08-01T08:00:00.000+08:00',
+  }
+  const second = buildPlanRow(record(), buildWorkIndexes(works), buildCurrentRecordIndexes([current]), release, importedAt)
+  assert.equal(second.planStatus, 'already_current')
+})
+
+test('plans update when the review timestamp instant changes', () => {
+  const first = buildPlanRow(record(), buildWorkIndexes(works), buildCurrentRecordIndexes([]), release, importedAt)
+  const current = {
+    id: 77,
+    ...first.desired,
+    sourceReviewedAt: '2026-08-01T00:00:01.000Z',
+  }
+  const second = buildPlanRow(record(), buildWorkIndexes(works), buildCurrentRecordIndexes([current]), release, importedAt)
+  assert.equal(second.planStatus, 'ready_update')
 })
 
 test('plans update when release-bound content changes', () => {

@@ -7,6 +7,7 @@ on:
       - '.github/workflows/validate-radar-public-records-plan-v01.yml'
       - 'docs/radar-public-records-plan-v01.md'
       - 'src/collections/RadarPublicRecords.ts'
+      - 'src/migrations/**radar_public_record*'
       - 'scripts/radar/lib/public-release-plan-v01.mjs'
       - 'scripts/radar/plan-public-release-v01.mjs'
       - 'tests/radar-public-records-schema.test.mjs'
@@ -36,9 +37,11 @@ jobs:
             tests/radar-public-records-schema.test.mjs \
             tests/radar-public-release-plan-v01.test.mjs \
             tests/radar-public-release-v01.test.mjs
-      - name: Confirm migration remains separate
+      - name: Confirm registered collection remains separate
         run: |
-          ! grep -q "RadarPublicRecords" payload.config.ts
-          ! find src/migrations -maxdepth 1 -type f -iname '*radar_public_records*' | grep -q .
+          grep -q "RadarPublicRecords" payload.config.ts
+          grep -q "RADAR_PUBLIC_RECORDS_SCHEMA_READY" payload.config.ts
+          find src/migrations -maxdepth 1 -type f -iname '*radar_public_records_v01.ts' | grep -q .
+          ! grep -E 'compatibilityGrade|suggestedGrade|humanAssessment|radarAssessment' src/collections/RadarPublicRecords.ts
       - name: Check diff whitespace
         run: git diff --check origin/${{ github.base_ref }}...HEAD
