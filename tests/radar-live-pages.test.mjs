@@ -19,6 +19,7 @@ test('public Radar pages stay live, current-only for visitors, and staff-editabl
   assert.match(detailPage, /isEditor\(auth\.user\)/)
   assert.match(detailPage, /完整编辑研究记录/)
   assert.match(detailPage, /完整编辑评级/)
+  assert.match(detailPage, /url\.protocol === 'https:'/)
 
   assert.match(projection, /recordStatus: \{ equals: 'current' \}/)
   assert.match(projection, /编辑这条 Radar 记录/)
