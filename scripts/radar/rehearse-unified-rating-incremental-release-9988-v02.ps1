@@ -198,6 +198,9 @@ function Wait-IncrementalMarker(
   [string]$CandidateSha256,
   [object]$Process
 ) {
+  if ($null -eq $Process -or -not ($Process -is [System.Diagnostics.Process])) {
+    throw '临时 Payload 进程句柄无效。'
+  }
   $deadline = [DateTime]::UtcNow.AddSeconds($ReadyTimeoutSeconds)
   do {
     if ($Process.HasExited) { throw "临时 Payload 进程提前退出：$($Process.ExitCode)" }
@@ -234,8 +237,8 @@ function Start-TemporaryApp(
   $port = Get-RadarFreePort 32000 39999
   $baseUrl = "http://127.0.0.1:$port"
   $pnpmCommand = if ($IsWindows) { (Get-Command pnpm.cmd -ErrorAction Stop).Source } else { (Get-Command pnpm -ErrorAction Stop).Source }
-  $process = $null
-  Invoke-RadarWithEnvironment -Variables @{
+  $script:process = $null
+  $null = Invoke-RadarWithEnvironment -Variables @{
     DATABASE_URL = $DatabaseUrl
     PAYLOAD_DB_PUSH = 'false'
     STEWARDSHIP_NOTICES_SCHEMA_READY = 'true'
@@ -258,6 +261,10 @@ function Start-TemporaryApp(
       -RedirectStandardOutput (Join-Path $Directory "$Prefix-app-stdout.txt") `
       -RedirectStandardError (Join-Path $Directory "$Prefix-app-stderr.txt") `
       -PassThru -NoNewWindow
+  }
+  $process = Get-RadarActiveProcess $null
+  if ($null -eq $process -or -not ($process -is [System.Diagnostics.Process])) {
+    throw '临时 Payload 进程句柄无效。'
   }
   Wait-IncrementalMarker $baseUrl $Nonce $Phase $DatabaseName $CandidateSha256 $process | Out-Null
   return [pscustomobject]@{ Process = $process; BaseUrl = $baseUrl }
