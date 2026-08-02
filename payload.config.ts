@@ -13,6 +13,7 @@ import { Media } from './src/collections/Media'
 import { Organizations } from './src/collections/Organizations'
 import { RadarPublicConclusions } from './src/collections/RadarPublicConclusions'
 import { RadarPublicRecords } from './src/collections/RadarPublicRecords'
+import { RadarPublicRatings } from './src/collections/RadarPublicRatings'
 import { RadarResearchRecords } from './src/collections/RadarResearchRecords'
 import { Rules } from './src/collections/Rules'
 import { StewardshipNotices } from './src/collections/StewardshipNotices'
@@ -43,6 +44,8 @@ const stewardshipSchemaReady = String(process.env['STEWARDSHIP_NOTICES_SCHEMA_RE
 const radarPublicConclusionsSchemaReady = String(process.env['RADAR_PUBLIC_CONCLUSIONS_SCHEMA_READY'] || 'true').toLowerCase() !== 'false'
 /** Radar public records stay optional only during isolated migration snapshot generation. */
 const radarPublicRecordsSchemaReady = String(process.env['RADAR_PUBLIC_RECORDS_SCHEMA_READY'] || 'true').toLowerCase() !== 'false'
+/** Radar public ratings stay optional only during isolated migration generation. */
+const radarPublicRatingsSchemaReady = String(process.env['RADAR_PUBLIC_RATINGS_SCHEMA_READY'] || 'true').toLowerCase() !== 'false'
 
 const WorksWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Works) : Works
 const CreatorsWithOptionalStewardship = stewardshipSchemaReady ? withStewardshipNotices(Creators) : Creators
@@ -214,6 +217,7 @@ const OrganizationsWithAudit = withContentAudit(OrganizationsWithOptionalSteward
 const EvidenceWithAudit = withContentAudit(Evidence, 'evidence')
 const RadarPublicConclusionsWithAudit = withContentAudit(RadarPublicConclusions, 'radar-public-conclusions')
 const RadarPublicRecordsWithAudit = withContentAudit(RadarPublicRecords, 'radar-public-records')
+const RadarPublicRatingsWithAudit = withContentAudit(RadarPublicRatings, 'radar-public-ratings')
 const RadarResearchRecordsWithAudit = withContentAudit(RadarResearchRecords, 'radar-research-records')
 const TermsWithAudit = withContentAudit(Terms, 'terms')
 const WarningsWithAudit = withContentAudit(Warnings, 'warnings')
@@ -270,6 +274,7 @@ export default buildConfig({
     WorksWithSafeLifecycleStatus,
     ...(radarPublicConclusionsSchemaReady ? [RadarPublicConclusionsWithAudit] : []),
     ...(radarPublicRecordsSchemaReady ? [RadarPublicRecordsWithAudit] : []),
+    ...(radarPublicRatingsSchemaReady ? [RadarPublicRatingsWithAudit] : []),
     CreatorsWithAudit,
     OrganizationsWithAudit,
     EvidenceWithAudit,
