@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "radar-unified-rating-release-lock-v01",
+  "releaseId": "RADAR-UNIFIED-RATING-RELEASE-0575-0001",
+  "researchRepository": "wtyliangtingRe/baihepailei-research-data",
+  "researchCommitSha": "728ad2da5f7d3aba03f652b9fd701157b06793ee",
+  "manifestSha256": "e45673fa881d6b3faea0aab0dbfc00cdee29d7ad536b9ccd5b40dfd01f24317d",
+  "recordsSha256": "4dcf9e6790fa7175f18b7c91ed3b2f6522ec6d87c623183f0369491b06123605",
+  "ratingsSha256": "2847b48eb08c2409c94e0380e6351d778421db13466f17138d2a64b20774eef4",
+  "releaseIndexSha256": "b2363f319233c23c0c9c96a77cb5fec47990b1c9fbf125d847a291baef9835bb",
+  "previousRelease": {
+    "releaseId": "RADAR-PUBLIC-RELEASE-0001",
+    "recordsSha256": "ecb4440e7e102fd69c5a4ebf1f70970d832944f6a50af924cb9437b3c49dc3e0",
+    "recordCount": 520
+  },
+  "counts": {
+    "records": 575,
+    "ratings": 575,
+    "previousRecordsCarriedForward": 520,
+    "newRecords": 55,
+    "facts": 2387,
+    "evidence": 678,
+    "sourceRefs": 2387
+  },
+  "gradeCounts": {
+    "B": 476,
+    "D": 97,
+    "E": 2
+  },
+  "publicTagCounts": {
+    "content-unsuitable": 17,
+    "relationship-needs-radar": 95,
+    "staff-small-work": 476
+  },
+  "policyVersion": "radar-internal-processing-policy-v03+radar-unified-rating-release-v01",
+  "researchSnapshotId": "RADAR-UNIFIED-RATING-RELEASE-0575-0001",
+  "productionAuthorization": false
+}
