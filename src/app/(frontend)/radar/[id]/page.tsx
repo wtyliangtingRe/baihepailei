@@ -123,6 +123,15 @@ function formatDate(value?: string) {
   }
 }
 
+function safeExternalUrl(value?: string) {
+  try {
+    const url = new URL(String(value || ''))
+    return url.protocol === 'https:' ? url.toString() : ''
+  } catch {
+    return ''
+  }
+}
+
 export default async function RadarDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const payload = await getPayload({ config: configPromise })
@@ -170,7 +179,7 @@ export default async function RadarDetailPage({ params }: { params: Promise<{ id
         <h1>{record.title}</h1>
         <p>{record.pageNotice}</p>
         <div className="work-card-badges">
-          <span className="radar-grade-badge">{rating?.coreGrade ? `${rating.coreGrade} 级` : '尚未评级'}</span>
+          <span className="radar-grade-badge">{rating?.coreGrade ? `机器 ${rating.coreGrade} 级` : '尚未评级'}</span>
           <span className="work-type-chip">{stateLabel(record.publicState)}</span>
           <span className="work-type-chip">{researchLabel(record.researchStatus)}</span>
           <span className="work-type-chip">置信度 {confidenceLabel(rating?.confidence)}</span>
@@ -311,7 +320,7 @@ export default async function RadarDetailPage({ params }: { params: Promise<{ id
                   <span>Tier {evidence.tier || '?'} · {roleLabel(evidence.role)}</span>
                 </div>
                 <p><code>{evidence.sourceRef}</code>{evidence.exactIdentityBound ? ' · 已绑定精确身份' : ''}</p>
-                {evidence.url ? <a href={evidence.url} rel="noreferrer noopener" target="_blank">打开来源</a> : null}
+                {safeExternalUrl(evidence.url) ? <a href={safeExternalUrl(evidence.url)} rel="noreferrer noopener" target="_blank">打开来源</a> : null}
               </article>
             ))}
           </div>
