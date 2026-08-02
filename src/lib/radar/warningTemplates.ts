@@ -14,6 +14,8 @@ export type WarningTemplate = {
   severity: 'low' | 'medium' | 'high' | 'critical'
   category: 'content' | 'relationship' | 'creator' | 'operation' | 'other'
   text: string
+  tagGroup?: string
+  tagValue?: string
   relatedRatingClasses?: RadarRatingClass[]
 }
 
@@ -72,8 +74,10 @@ export const warningTemplates: WarningTemplate[] = [
     style: 'note',
     severity: 'low',
     category: 'operation',
+    tagGroup: '排雷协作-站务提示',
+    tagValue: '小作品',
     text: '本页面短得只剩蛆！您可以帮助补充剧情、角色关系、雷点与来源依据，或者说几句垃圾话来改进本页面。',
-    relatedRatingClasses: ['D-UNCLEAR'],
+    relatedRatingClasses: ['B-LIGHT', 'D-UNCLEAR'],
   },
   {
     id: 'external-source-pending-review',
@@ -97,6 +101,8 @@ export const warningTemplates: WarningTemplate[] = [
     style: 'warning',
     severity: 'medium',
     category: 'operation',
+    tagGroup: '加速排雷',
+    tagValue: '匹配冲突',
     text: '鉴于此条目在外部 ID、标题或来源之间存在冲突，我们迫切需要您的帮助来完善本条目中的排雷复核。',
   },
   {
@@ -105,6 +111,8 @@ export const warningTemplates: WarningTemplate[] = [
     style: 'warning',
     severity: 'medium',
     category: 'relationship',
+    tagGroup: '关系提示',
+    tagValue: '需要排雷',
     text: '本页面描述的作品是神必作品，我们对其所知无几。为了更详实地记载资料，成为更揭露事实真相的排雷网站，本站需要您的帮助。',
     relatedRatingClasses: ['D-UNCLEAR'],
   },
@@ -132,6 +140,8 @@ export const warningTemplates: WarningTemplate[] = [
     style: 'warning',
     severity: 'high',
     category: 'content',
+    tagGroup: '内容提示',
+    tagValue: '不适内容',
     text: '本页面可能包含使您感到严重不适的内容，请酌情查阅。原因：可能涉及成人向、性描写或其他不适合所有读者的内容。',
   },
   {
