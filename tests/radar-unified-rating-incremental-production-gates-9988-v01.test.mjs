@@ -32,7 +32,12 @@ test('shared production library locks the exact 575 to 10,563 transition', () =>
   assert.match(library, /candidate-baseline-fingerprints\.sql/)
   assert.match(library, /BaselineFingerprints = Read-RadarMapFile/)
   assert.match(library, /生产 DATABASE_URL 必须使用 loopback/)
+  assert.match(library, /allowedHostIps = @\('127\.0\.0\.1', '0\.0\.0\.0', '::', '::1'\)/)
+  assert.match(library, /\$bindings \| Where-Object/)
+  assert.match(library, /Sort-Object -Unique/)
+  assert.match(library, /5432 bindings 必须映射到唯一 host port/)
   assert.match(library, /DATABASE_URL 端口未指向源 PostgreSQL 容器/)
+  assert.doesNotMatch(library, /@\(\$portProperty\.Value\)\.Count -ne 1/)
 })
 
 test('candidate preparation is source-read-only apart from a fresh pg_dump', () => {

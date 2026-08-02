@@ -283,11 +283,28 @@ function Assert-RadarIncrementalDatabaseUrl(
   $inspect = @(& docker inspect $SourcePostgresContainer) | Out-String | ConvertFrom-Json -Depth 100
   if (@($inspect).Count -ne 1) { throw '无法唯一确认源 PostgreSQL 容器。' }
   $portProperty = $inspect[0].NetworkSettings.Ports.PSObject.Properties['5432/tcp']
-  if ($null -eq $portProperty -or @($portProperty.Value).Count -ne 1) { throw '源 PostgreSQL 必须有唯一的 5432 host port。' }
-  $publishedPort = [string]$portProperty.Value[0].HostPort
-  $hostIp = [string]$portProperty.Value[0].HostIp
-  if ($publishedPort -notmatch '^\d+$') { throw '无法确认源 PostgreSQL host port。' }
-  if ($hostIp -notin @('127.0.0.1', '0.0.0.0', '::')) { throw '源 PostgreSQL host binding 不受支持。' }
+  if ($null -eq $portProperty -or $null -eq $portProperty.Value) {
+    throw '源 PostgreSQL 没有公开 5432 host port。'
+  }
+  $bindings = @($portProperty.Value)
+  if ($bindings.Count -lt 1) { throw '源 PostgreSQL 没有公开 5432 host port。' }
+  $allowedHostIps = @('127.0.0.1', '0.0.0.0', '::', '::1')
+  $invalidBindings = @(
+    $bindings | Where-Object {
+      [string]$_.HostIp -notin $allowedHostIps -or
+      [string]$_.HostPort -notmatch '^\d+$'
+    }
+  )
+  if ($invalidBindings.Count -gt 0) { throw '源 PostgreSQL host binding 不受支持。' }
+  $publishedPorts = @(
+    $bindings |
+      ForEach-Object { [string]$_.HostPort } |
+      Sort-Object -Unique
+  )
+  if ($publishedPorts.Count -ne 1) {
+    throw '源 PostgreSQL 的 5432 bindings 必须映射到唯一 host port。'
+  }
+  $publishedPort = [string]$publishedPorts[0]
   if ([int]$uri.Port -ne [int]$publishedPort) { throw '生产 DATABASE_URL 端口未指向源 PostgreSQL 容器。' }
   return $true
 }
