@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/validate-radar-unified-rating-incremental-release-9988-v01.yml'
       - 'config/radar-unified-rating-incremental-release-9988-v01.lock.json'
+      - 'scripts/radar/validate-unified-rating-incremental-release-lock-9988-v01.mjs'
       - 'scripts/radar/validate-unified-rating-incremental-release-9988-v01.mjs'
       - 'scripts/radar/plan-unified-rating-incremental-release-9988-v01.mjs'
       - 'scripts/radar/run-unified-rating-incremental-plan-9988-v01.ps1'
@@ -14,7 +15,9 @@ on:
       - 'scripts/radar/lib/unified-rating-release-plan-v01.mjs'
       - 'scripts/radar/lib/public-release-plan-v01.mjs'
       - 'src/app/(payload)/api/radar-unified-rating-incremental-production-marker/route.ts'
+      - 'tests/fixtures/radar-unified-rating-incremental-release-9988-v01/**'
       - 'tests/radar-unified-rating-incremental-release-9988-v01.test.mjs'
+      - 'tests/radar-unified-rating-incremental-release-9988-lock-fixture.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -23,37 +26,30 @@ permissions:
 jobs:
   validate-release:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - name: Checkout website repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Checkout exact Research Release
-        uses: actions/checkout@v4
-        with:
-          repository: wtyliangtingRe/baihepailei-research-data
-          ref: c8790df95d1235d8d1aacabfb7c119fec9e1c642
-          path: research-data
-          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Require exact Research commit
-        run: test "$(git -C research-data rev-parse HEAD)" = 'c8790df95d1235d8d1aacabfb7c119fec9e1c642'
-      - name: Run planner and importer safety tests
-        run: node --test tests/radar-unified-rating-incremental-release-9988-v01.test.mjs
-      - name: Validate locked Release
+      - name: Run planner, importer, marker and lock tests
         run: >-
-          node scripts/radar/validate-unified-rating-incremental-release-9988-v01.mjs
-          --input research-data/releases/public/radar-unified-rating-incremental-release-9988-0001/v01
-          --output _artifacts/radar-unified-rating-incremental-release-9988-validation-v01.json
+          node --test
+          tests/radar-unified-rating-incremental-release-9988-v01.test.mjs
+          tests/radar-unified-rating-incremental-release-9988-lock-fixture.test.mjs
+      - name: Validate locked private-Research snapshot
+        run: >-
+          node scripts/radar/validate-unified-rating-incremental-release-lock-9988-v01.mjs
+          --output _artifacts/radar-unified-rating-incremental-release-9988-lock-validation-v01.json
       - name: Check diff whitespace
         run: git diff --check origin/main...HEAD
-      - name: Upload validation receipt
+      - name: Upload lock validation receipt
         uses: actions/upload-artifact@v4
         with:
-          name: radar-unified-rating-incremental-release-9988-validation-v01
-          path: _artifacts/radar-unified-rating-incremental-release-9988-validation-v01.json
+          name: radar-unified-rating-incremental-release-9988-lock-validation-v01
+          path: _artifacts/radar-unified-rating-incremental-release-9988-lock-validation-v01.json
           if-no-files-found: error
           retention-days: 30
