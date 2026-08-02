@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "radar-public-ratings-schema-contract-v01",
+  "collectionSlug": "radar-public-ratings",
+  "dbName": "radar_public_ratings",
+  "publicationKey": "work:<works-id>",
+  "oneCurrentRatingPerWork": true,
+  "workIdentityMatch": "exact_work_id_and_site_id",
+  "fields": {
+    "identity": [
+      "publicationKey",
+      "work",
+      "identityKey",
+      "workIdSnapshot",
+      "workSiteId",
+      "title"
+    ],
+    "rating": [
+      "coreGrade",
+      "bestGrade",
+      "likelyGrade",
+      "worstGrade",
+      "confidence",
+      "matchedClasses",
+      "factRefs",
+      "evidenceRefs",
+      "reasoningSummary",
+      "unresolvedDimensions",
+      "classificationRule",
+      "confirmationBasis",
+      "benefitOfDoubtBaselineApplied"
+    ],
+    "publicPresentation": [
+      "publicTagHints",
+      "publicWarningTemplateIds"
+    ],
+    "humanReview": [
+      "status",
+      "reviewerIdentity",
+      "reviewedAt",
+      "decision",
+      "proposedCoreGrade",
+      "proposedProfileChanges",
+      "reasoning",
+      "additionalEvidenceRefs",
+      "moderationState",
+      "blocksAnalysis",
+      "blocksPublication"
+    ],
+    "provenance": [
+      "sourceReleaseId",
+      "sourceCommitSha",
+      "sourcePolicyVersion",
+      "researchSnapshotId",
+      "sourceRatingCampaignId",
+      "sourceRatingDecisionHash",
+      "releaseRatingHash",
+      "releaseRatingsSha256",
+      "importedAt",
+      "recordStatus"
+    ]
+  },
+  "publicRead": "recordStatus=current",
+  "writeAccess": "editors_and_up",
+  "deleteAccess": "admins_only",
+  "humanReviewDefault": {
+    "status": "unreviewed",
+    "blocksAnalysis": false,
+    "blocksPublication": false
+  },
+  "doesNotOverwrite": [
+    "works.radarAssessment",
+    "works.humanAssessment",
+    "works.rank",
+    "radar-public-conclusions",
+    "radar-public-records facts"
+  ],
+  "productionAuthorization": false
+}
