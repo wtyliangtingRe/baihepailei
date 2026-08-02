@@ -33,7 +33,7 @@ type RadarRating = {
 }
 
 function gradeLabel(value?: string) {
-  return value ? `${value} 级` : '尚未评级'
+  return value ? `机器 ${value} 级` : '尚未评级'
 }
 
 function stateLabel(value?: string) {
@@ -139,7 +139,7 @@ export default async function RadarPublicProjection({ workId }: { workId?: strin
 
       <div className="collection-actions">
         <Link className="result-link" href={`/radar/${record.id}`}>查看完整 Radar 记录</Link>
-        <Link className="back-link" href="/works?assessment=ai">浏览已评估作品</Link>
+        <Link className="back-link" href={`/works?assessment=ai`}>浏览已评估作品</Link>
         {canEdit ? <Link className="review-link" href={`/me/studio/radar/${record.id}`}>编辑这条 Radar 记录</Link> : null}
       </div>
     </section>
