@@ -32,6 +32,8 @@ test('first-party Radar editor is permission-gated and has no delete path', () =
   assert.match(studio, /collection: 'radar-public-ratings'/)
   assert.match(studio, /所有保存仍通过 Payload 集合权限与审计钩子/)
   assert.doesNotMatch(studio, /payload\.delete/)
+  assert.doesNotMatch(studio, /name="coreGrade"/)
+  assert.match(studio, /机器核心等级（只读）/)
 })
 
 test('works, home, and navigation expose the live Radar projection', () => {
