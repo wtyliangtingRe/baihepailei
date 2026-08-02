@@ -50,6 +50,14 @@ jobs:
           node-version: 22
       - name: Apply exact production-gate hardening
         run: node scripts/radar/patch-incremental-production-gates-v02.mjs
+      - name: Show generated production database gate
+        run: |
+          echo '===== database gate ====='
+          grep -n -A45 -B8 'Assert-RadarIncrementalDatabaseUrl' \
+            scripts/radar/lib/radar-unified-rating-incremental-production-9988-v01.ps1 || true
+          echo '===== audit gate boundary ====='
+          grep -n -A8 -B8 'Assert-RadarIncrementalAuditReport' \
+            scripts/radar/lib/radar-unified-rating-incremental-production-9988-v01.ps1 || true
       - name: Parse PowerShell wrappers
         shell: pwsh
         run: |
@@ -70,7 +78,12 @@ jobs:
               [ref]$errors
             ) | Out-Null
             if ($errors.Count -gt 0) {
-              $errors | ForEach-Object { Write-Error $_.Message }
+              foreach ($error in $errors) {
+                $line = $error.Extent.StartLineNumber
+                $column = $error.Extent.StartColumnNumber
+                $text = $error.Extent.Text
+                Write-Host "PARSE_ERROR file=$path line=$line column=$column text=[$text] message=$($error.Message)"
+              }
               throw "PowerShell parse failed: $path"
             }
           }
