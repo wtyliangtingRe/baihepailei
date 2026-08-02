@@ -8,8 +8,10 @@ on:
       - '.github/workflows/validate-radar-unified-rating-incremental-release-9988-v01.yml'
       - 'config/radar-unified-rating-incremental-release-9988-v01.lock.json'
       - 'scripts/radar/validate-unified-rating-incremental-release-9988-v01.mjs'
+      - 'scripts/radar/plan-unified-rating-incremental-release-9988-v01.mjs'
       - 'scripts/radar/lib/unified-rating-release-plan-v01.mjs'
       - 'scripts/radar/lib/public-release-plan-v01.mjs'
+      - 'tests/radar-unified-rating-incremental-release-9988-v01.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -36,6 +38,8 @@ jobs:
           node-version: 22
       - name: Require exact Research commit
         run: test "$(git -C research-data rev-parse HEAD)" = 'c8790df95d1235d8d1aacabfb7c119fec9e1c642'
+      - name: Run planner safety tests
+        run: node --test tests/radar-unified-rating-incremental-release-9988-v01.test.mjs
       - name: Validate locked Release
         run: >-
           node scripts/radar/validate-unified-rating-incremental-release-9988-v01.mjs
