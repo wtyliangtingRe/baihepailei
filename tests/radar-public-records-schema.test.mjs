@@ -39,6 +39,20 @@ test('Radar public evidence preserves licensed or authorized source semantics', 
   assert.match(evidenceBlock, /label: '正版或授权来源'/u)
 })
 
+test('evidence role migration preparation is generate-only and source-readonly', () => {
+  const source = readFileSync(
+    'scripts/radar/prepare-radar-public-record-evidence-role-migration-v01.ps1',
+    'utf8',
+  )
+  assert.match(source, /payload migrate:create \$MigrationName --skip-empty/u)
+  assert.doesNotMatch(source, /(^|[^:])payload migrate(?:\s|$)/mu)
+  assert.match(source, /default_transaction_read_only=on/u)
+  assert.match(source, /enum_radar_public_records_evidence_role/u)
+  assert.match(source, /licensed_or_authorized/u)
+  assert.match(source, /DatabaseMigrate : False/u)
+  assert.match(source, /SourceDatabaseWrite: False/u)
+})
+
 test('Radar public records expose only current records anonymously', () => {
   const source = readFileSync('src/collections/RadarPublicRecords.ts', 'utf8')
   assert.match(source, /recordStatus:[\s\S]*equals: 'current'/u)
