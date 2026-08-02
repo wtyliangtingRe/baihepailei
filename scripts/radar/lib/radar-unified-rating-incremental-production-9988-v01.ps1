@@ -83,6 +83,7 @@ function Assert-RadarIncrementalTrue([bool]$Condition, [string]$Message) {
 function New-RadarIncrementalSnapshotSql([string]$Directory) {
   $countSql = Join-Path $Directory 'table-counts.sql'
   $fingerprintSql = Join-Path $Directory 'protected-fingerprints.sql'
+  $baselineFingerprintSql = Join-Path $Directory 'candidate-baseline-fingerprints.sql'
   $countSqlContent = @'
 \pset tuples_only on
 \pset format unaligned
@@ -102,9 +103,20 @@ WHERE schemaname = 'public'
 ORDER BY tablename
 \gexec
 '@
+  $baselineFingerprintSqlContent = @'
+\pset tuples_only on
+\pset format unaligned
+SELECT format('SELECT %L || E''\t'' || count(*)::text || E''\t'' || COALESCE(md5(string_agg(row_hash, '''' ORDER BY row_hash)), md5('''')) FROM (SELECT md5(row_to_json(t)::text) AS row_hash FROM %I.%I AS t) AS rows;', schemaname || '.' || tablename, schemaname, tablename)
+FROM pg_tables
+WHERE schemaname = 'public'
+  AND (tablename IN ('works', '_works_v') OR tablename LIKE 'radar_public%' OR tablename LIKE 'radar_research_records%')
+ORDER BY tablename
+\gexec
+'@
   [System.IO.File]::WriteAllText($countSql, $countSqlContent.TrimStart(), [System.Text.UTF8Encoding]::new($false))
   [System.IO.File]::WriteAllText($fingerprintSql, $fingerprintSqlContent.TrimStart(), [System.Text.UTF8Encoding]::new($false))
-  return [pscustomobject]@{ Counts = $countSql; Fingerprints = $fingerprintSql }
+  [System.IO.File]::WriteAllText($baselineFingerprintSql, $baselineFingerprintSqlContent.TrimStart(), [System.Text.UTF8Encoding]::new($false))
+  return [pscustomobject]@{ Counts = $countSql; Fingerprints = $fingerprintSql; BaselineFingerprints = $baselineFingerprintSql }
 }
 
 function Get-RadarIncrementalSnapshot(
@@ -118,15 +130,20 @@ function Get-RadarIncrementalSnapshot(
 ) {
   $countsPath = Join-Path $Directory "$Prefix-table-counts.tsv"
   $fingerprintsPath = Join-Path $Directory "$Prefix-protected-fingerprints.tsv"
+  $baselineFingerprintsPath = Join-Path $Directory "$Prefix-candidate-baseline-fingerprints.tsv"
   Invoke-RadarSqlFile $Container $Database $User $Password $SqlFiles.Counts "/tmp/$Prefix-counts.sql" `
     $countsPath (Join-Path $Directory "$Prefix-counts-stderr.txt") -ReadOnly
   Invoke-RadarSqlFile $Container $Database $User $Password $SqlFiles.Fingerprints "/tmp/$Prefix-fingerprints.sql" `
     $fingerprintsPath (Join-Path $Directory "$Prefix-fingerprints-stderr.txt") -ReadOnly
+  Invoke-RadarSqlFile $Container $Database $User $Password $SqlFiles.BaselineFingerprints "/tmp/$Prefix-baseline-fingerprints.sql" `
+    $baselineFingerprintsPath (Join-Path $Directory "$Prefix-baseline-fingerprints-stderr.txt") -ReadOnly
   return [pscustomobject]@{
     CountsPath = $countsPath
     FingerprintsPath = $fingerprintsPath
+    BaselineFingerprintsPath = $baselineFingerprintsPath
     Counts = Read-RadarMapFile $countsPath
     Fingerprints = Read-RadarMapFile $fingerprintsPath
+    BaselineFingerprints = Read-RadarMapFile $baselineFingerprintsPath
   }
 }
 
@@ -252,6 +269,27 @@ function Restart-RadarIncrementalWriters([string[]]$Names) {
     & docker start $name *> $null
     if ($LASTEXITCODE -ne 0) { throw "恢复 writer 容器失败：$name" }
   }
+}
+
+function Assert-RadarIncrementalDatabaseUrl(
+  [string]$DatabaseUrl,
+  [string]$SourcePostgresContainer,
+  [string]$ExpectedDatabase
+) {
+  try { $uri = [Uri]$DatabaseUrl } catch { throw 'DATABASE_URL 无法解析。' }
+  if ($uri.Scheme -notin @('postgres', 'postgresql')) { throw 'DATABASE_URL 必须使用 PostgreSQL。' }
+  if ($uri.Host -notin @('127.0.0.1', 'localhost')) { throw '生产 DATABASE_URL 必须使用 loopback。' }
+  if ($uri.AbsolutePath.Trim('/') -ne $ExpectedDatabase) { throw '生产 DATABASE_URL 数据库名不匹配。' }
+  $inspect = @(& docker inspect $SourcePostgresContainer) | Out-String | ConvertFrom-Json -Depth 100
+  if (@($inspect).Count -ne 1) { throw '无法唯一确认源 PostgreSQL 容器。' }
+  $portProperty = $inspect[0].NetworkSettings.Ports.PSObject.Properties['5432/tcp']
+  if ($null -eq $portProperty -or @($portProperty.Value).Count -ne 1) { throw '源 PostgreSQL 必须有唯一的 5432 host port。' }
+  $publishedPort = [string]$portProperty.Value[0].HostPort
+  $hostIp = [string]$portProperty.Value[0].HostIp
+  if ($publishedPort -notmatch '^\d+$') { throw '无法确认源 PostgreSQL host port。' }
+  if ($hostIp -notin @('127.0.0.1', '0.0.0.0', '::')) { throw '源 PostgreSQL host binding 不受支持。' }
+  if ([int]$uri.Port -ne [int]$publishedPort) { throw '生产 DATABASE_URL 端口未指向源 PostgreSQL 容器。' }
+  return $true
 }
 
 function Assert-RadarIncrementalAuditReport(

@@ -283,6 +283,7 @@ $databaseUrl = [string](Get-RadarConfiguredValue @('DATABASE_URL'))
 if ([string]::IsNullOrWhiteSpace($databaseUrl) -or $databaseUrl -notmatch '^postgres(?:ql)?://') {
   throw '无法读取本地生产 DATABASE_URL。'
 }
+Assert-RadarIncrementalDatabaseUrl $databaseUrl $SourcePostgresContainer ([string]$candidate.source.database) | Out-Null
 $email = $PayloadEmail.Trim()
 if (-not $email) {
   $email = [string](Get-RadarConfiguredValue @('RADAR_PAYLOAD_EMAIL', 'PAYLOAD_EXPORT_EMAIL', 'PAYLOAD_SEED_EMAIL', 'SITE_OWNER_EMAIL'))
@@ -351,6 +352,9 @@ try {
   Assert-RadarMapsEqual `
     (Convert-RadarIncrementalObjectToMap $candidate.source.protectedFingerprints) $sourceBefore.Fingerprints `
     'Production Candidate source protected fingerprints'
+  Assert-RadarMapsEqual `
+    (Convert-RadarIncrementalObjectToMap $candidate.source.baselineFingerprints) $sourceBefore.BaselineFingerprints `
+    'Production Candidate source baseline fingerprints'
   $stage.sourceMatchedCandidate = $true
   Write-RadarJsonFile $stagePath $stage
 

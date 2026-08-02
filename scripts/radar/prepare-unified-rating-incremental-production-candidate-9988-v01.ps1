@@ -131,6 +131,7 @@ try {
     $SourcePostgresContainer $SourceDatabase $SourceDatabaseUser '' $sqlFiles 'source-after-candidate-backup' $outDir
   Assert-RadarMapsEqual $sourceBefore.Counts $sourceAfter.Counts '生产候选备份前后 source counts'
   Assert-RadarMapsEqual $sourceBefore.Fingerprints $sourceAfter.Fingerprints '生产候选备份前后 source fingerprints'
+  Assert-RadarMapsEqual $sourceBefore.BaselineFingerprints $sourceAfter.BaselineFingerprints '生产候选备份前后 baseline fingerprints'
 
   Restart-RadarIncrementalWriters $writerContext.Writers
   $writersRestarted = $true
@@ -190,10 +191,13 @@ try {
       publicRatings = $config.ExistingRatings
       counts = Convert-RadarIncrementalMap $sourceBefore.Counts
       protectedFingerprints = Convert-RadarIncrementalMap $sourceBefore.Fingerprints
+      baselineFingerprints = Convert-RadarIncrementalMap $sourceBefore.BaselineFingerprints
       countsPath = $sourceBefore.CountsPath
       countsSha256 = Get-RadarIncrementalFileSha $sourceBefore.CountsPath
       fingerprintsPath = $sourceBefore.FingerprintsPath
       fingerprintsSha256 = Get-RadarIncrementalFileSha $sourceBefore.FingerprintsPath
+      baselineFingerprintsPath = $sourceBefore.BaselineFingerprintsPath
+      baselineFingerprintsSha256 = Get-RadarIncrementalFileSha $sourceBefore.BaselineFingerprintsPath
       authenticationPerformed = $false
       payloadAccess = $false
       databaseWrite = $false
@@ -240,6 +244,7 @@ try {
     freshBackupSha256 = $backupSha256
     sourceCountsUnchangedDuringBackup = $true
     protectedFingerprintsUnchangedDuringBackup = $true
+    baselineFingerprintsUnchangedDuringBackup = $true
     sourceAuthentication = $false
     sourcePayloadAccess = $false
     sourceDatabaseWrite = $false
