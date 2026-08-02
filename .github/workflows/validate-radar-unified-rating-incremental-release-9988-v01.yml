@@ -48,15 +48,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Disable JavaScript replacement-string expansion
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/radar/patch-incremental-production-gates-v02.mjs')
+          text = path.read_text(encoding='utf-8')
+          old = 'return text.replace(before, after)'
+          new = 'return text.replace(before, () => after)'
+          if old in text:
+              if text.count(old) != 1:
+                  raise SystemExit(f'Expected one replacement primitive, found {text.count(old)}')
+              text = text.replace(old, new)
+              path.write_text(text, encoding='utf-8', newline='\n')
+          elif new not in text:
+              raise SystemExit('Replacement primitive not found')
+          PY
       - name: Apply exact production-gate hardening
         run: node scripts/radar/patch-incremental-production-gates-v02.mjs
       - name: Show generated production database gate
         run: |
-          echo '===== database gate ====='
           grep -n -A45 -B8 'Assert-RadarIncrementalDatabaseUrl' \
-            scripts/radar/lib/radar-unified-rating-incremental-production-9988-v01.ps1 || true
-          echo '===== audit gate boundary ====='
-          grep -n -A8 -B8 'Assert-RadarIncrementalAuditReport' \
             scripts/radar/lib/radar-unified-rating-incremental-production-9988-v01.ps1 || true
       - name: Parse PowerShell wrappers
         shell: pwsh
@@ -71,18 +83,18 @@ jobs:
           )
           foreach ($path in $paths) {
             $tokens = $null
-            $errors = $null
+            $parseErrors = $null
             [System.Management.Automation.Language.Parser]::ParseFile(
               (Resolve-Path -LiteralPath $path),
               [ref]$tokens,
-              [ref]$errors
+              [ref]$parseErrors
             ) | Out-Null
-            if ($errors.Count -gt 0) {
-              foreach ($error in $errors) {
-                $line = $error.Extent.StartLineNumber
-                $column = $error.Extent.StartColumnNumber
-                $text = $error.Extent.Text
-                Write-Host "PARSE_ERROR file=$path line=$line column=$column text=[$text] message=$($error.Message)"
+            if ($parseErrors.Count -gt 0) {
+              foreach ($parseErrorItem in $parseErrors) {
+                $line = $parseErrorItem.Extent.StartLineNumber
+                $column = $parseErrorItem.Extent.StartColumnNumber
+                $text = $parseErrorItem.Extent.Text
+                Write-Host "PARSE_ERROR file=$path line=$line column=$column text=[$text] message=$($parseErrorItem.Message)"
               }
               throw "PowerShell parse failed: $path"
             }
