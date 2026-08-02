@@ -10,6 +10,7 @@ on:
       - 'scripts/radar/authorize-radar-unified-release-production-0575-v01.ps1'
       - 'scripts/radar/authorize-radar-unified-release-production-0575-v02.ps1'
       - 'scripts/radar/execute-radar-unified-release-production-0575-v01.ps1'
+      - 'scripts/radar/execute-radar-unified-release-production-0575-v02.ps1'
       - 'scripts/radar/run-unified-release-production-import-0575-v01.mjs'
       - 'scripts/radar/lib/radar-unified-release-production-0575-v01.ps1'
       - 'src/app/(payload)/api/radar-unified-release-production-marker/route.ts'
@@ -39,6 +40,7 @@ jobs:
             'scripts/radar/authorize-radar-unified-release-production-0575-v01.ps1',
             'scripts/radar/authorize-radar-unified-release-production-0575-v02.ps1',
             'scripts/radar/execute-radar-unified-release-production-0575-v01.ps1',
+            'scripts/radar/execute-radar-unified-release-production-0575-v02.ps1',
             'scripts/radar/lib/radar-unified-release-production-0575-v01.ps1'
           )
           foreach ($file in $files) {
@@ -64,9 +66,10 @@ jobs:
         run: |
           ! grep -nE "method:[[:space:]]*['\"](PATCH|PUT|DELETE)['\"]" scripts/radar/run-unified-release-production-import-0575-v01.mjs
           ! grep -nE 'ready_update|incremental mode' scripts/radar/run-unified-release-production-import-0575-v01.mjs
-          ! grep -nE 'git reset --hard|git clean' scripts/radar/execute-radar-unified-release-production-0575-v01.ps1
-          grep -n 'pg_try_advisory_xact_lock' scripts/radar/execute-radar-unified-release-production-0575-v01.ps1
-          grep -n 'radar_unified_release_apply_control' scripts/radar/execute-radar-unified-release-production-0575-v01.ps1
-          grep -n 'automaticRollbackExecuted = $false' scripts/radar/execute-radar-unified-release-production-0575-v01.ps1
+          ! grep -nE 'git reset --hard|git clean' scripts/radar/execute-radar-unified-release-production-0575-v02.ps1
+          grep -n 'pg_try_advisory_xact_lock' scripts/radar/execute-radar-unified-release-production-0575-v02.ps1
+          grep -n 'radar_unified_release_apply_control' scripts/radar/execute-radar-unified-release-production-0575-v02.ps1
+          grep -n 'automaticRollbackExecuted = $false' scripts/radar/execute-radar-unified-release-production-0575-v02.ps1
+          grep -n 'expectedBlobSha' scripts/radar/execute-radar-unified-release-production-0575-v01.ps1
       - name: Check diff whitespace
         run: git diff --check origin/main...HEAD
