@@ -129,7 +129,15 @@ export const RadarPublicRecords: CollectionConfig = {
       fields: [
         { name: 'factId', type: 'text', label: '事实 ID', required: true },
         { name: 'factType', type: 'text', label: '事实类型', required: true },
-        { name: 'value', type: 'json', label: '事实值', required: true },
+        {
+          name: 'value',
+          type: 'textarea',
+          label: '事实值',
+          required: true,
+          admin: {
+            description: '统一 Release 的公开事实值是原样文本；不得在导入时包装成 JSON 对象或改变内容。',
+          },
+        },
         {
           name: 'sourceRefs',
           type: 'array',
