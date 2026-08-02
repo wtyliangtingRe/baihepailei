@@ -1,0 +1,181 @@
+name: Repair incremental rehearsal importer output root once
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-incremental-rehearsal-output-root-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Patch rehearsal output roots and normalize guards
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          script = Path('scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1')
+          text = script.read_text(encoding='utf-8')
+
+          gate = (
+              "  if ($null -eq $Process -or -not ($Process -is [System.Diagnostics.Process])) {\n"
+              "    throw '临时 Payload 进程句柄无效。'\n"
+              "  }\n"
+          )
+          text = re.sub(r'(?:' + re.escape(gate) + r')+', gate, text)
+
+          old_roots = (
+              "$script:outDir = Join-Path $repoRoot \"data_local\\outputs\\radar-unified-rating-incremental-release-9988-v01\\rehearsal-v02-$stamp\"\n"
+              "$backupDir = Join-Path $repoRoot 'data_local\\backups\\radar-unified-rating-incremental-release-9988-v01'\n"
+          )
+          new_roots = (
+              "$script:outDir = Join-Path $repoRoot \"data_local\\outputs\\radar-unified-rating-incremental-release-9988-v01\\rehearsal-v02-$stamp\"\n"
+              "$script:importerRunRoot = Join-Path $repoRoot \"data_local\\outputs\\radar-unified-rating-incremental-production-9988-v01\\rehearsal-v02-$stamp\"\n"
+              "$backupDir = Join-Path $repoRoot 'data_local\\backups\\radar-unified-rating-incremental-release-9988-v01'\n"
+          )
+          if old_roots in text:
+              text = text.replace(old_roots, new_roots, 1)
+          elif new_roots not in text:
+              raise SystemExit('Unable to locate output root block')
+
+          old_mkdir = 'New-Item -ItemType Directory -Path $outDir, $backupDir, $evidenceDir -Force | Out-Null\n'
+          new_mkdir = 'New-Item -ItemType Directory -Path $outDir, $importerRunRoot, $backupDir, $evidenceDir -Force | Out-Null\n'
+          if old_mkdir in text:
+              text = text.replace(old_mkdir, new_mkdir, 1)
+          elif new_mkdir not in text:
+              raise SystemExit('Unable to locate rehearsal directory creation')
+
+          old_candidate = '    releaseDirectory = $releaseDirectory\n    releaseFiles = $ExpectedReleaseFiles\n'
+          new_candidate = '    releaseDirectory = $releaseDirectory\n    importerOutputRoot = $importerRunRoot\n    releaseFiles = $ExpectedReleaseFiles\n'
+          if old_candidate in text:
+              text = text.replace(old_candidate, new_candidate, 1)
+          elif new_candidate not in text:
+              raise SystemExit('Unable to bind importer output root in candidate')
+
+          old_loop = (
+              '    $importDir = Join-Path $outDir "temporary-$mode-import"\n'
+              '    Invoke-IncrementalImporter $mode $app.BaseUrl $tempDatabase $nonce $email $password $releaseDirectory $candidateSha256 $importDir\n'
+              '    Stop-RadarProcess $app.Process\n'
+              '    $app = $null\n'
+              "    $receipt = Get-Content -LiteralPath (Join-Path $importDir 'accepted-receipt.json') -Raw -Encoding UTF8 | ConvertFrom-Json -Depth 100\n"
+          )
+          new_loop = (
+              '    $importDir = Join-Path $importerRunRoot "temporary-$mode-import"\n'
+              '    $archivedImportDir = Join-Path $outDir "temporary-$mode-import"\n'
+              '    Invoke-IncrementalImporter $mode $app.BaseUrl $tempDatabase $nonce $email $password $releaseDirectory $candidateSha256 $importDir\n'
+              '    Stop-RadarProcess $app.Process\n'
+              '    $app = $null\n'
+              '    if (-not (Test-Path -LiteralPath $importDir -PathType Container)) {\n'
+              '      throw "Importer $mode 未生成输出目录：$importDir"\n'
+              '    }\n'
+              '    if (Test-Path -LiteralPath $archivedImportDir) {\n'
+              '      throw "Rehearsal 证据归档目录已存在：$archivedImportDir"\n'
+              '    }\n'
+              '    New-Item -ItemType Directory -Path $archivedImportDir -Force | Out-Null\n'
+              '    Get-ChildItem -LiteralPath $importDir -Force | Copy-Item -Destination $archivedImportDir -Recurse -Force\n'
+              "    $receipt = Get-Content -LiteralPath (Join-Path $archivedImportDir 'accepted-receipt.json') -Raw -Encoding UTF8 | ConvertFrom-Json -Depth 100\n"
+          )
+          if old_loop in text:
+              text = text.replace(old_loop, new_loop, 1)
+          elif new_loop not in text:
+              raise SystemExit('Unable to locate importer invocation loop')
+
+          old_acceptance = '    transitionPlanDirectory = $resolvedTransitionPlan\n    transitionSummarySha256 = Get-FileSha $transitionSummaryPath\n'
+          new_acceptance = '    transitionPlanDirectory = $resolvedTransitionPlan\n    importerOutputRoot = $importerRunRoot\n    transitionSummarySha256 = Get-FileSha $transitionSummaryPath\n'
+          if old_acceptance in text:
+              text = text.replace(old_acceptance, new_acceptance, 1)
+          elif new_acceptance not in text:
+              raise SystemExit('Unable to add importer root to acceptance')
+
+          old_failure = '    transitionPlanDirectory = $resolvedTransitionPlan\n    candidatePath = $candidatePath\n'
+          new_failure = '    transitionPlanDirectory = $resolvedTransitionPlan\n    importerOutputRoot = $importerRunRoot\n    candidatePath = $candidatePath\n'
+          if old_failure in text:
+              text = text.replace(old_failure, new_failure, 1)
+          elif new_failure not in text:
+              raise SystemExit('Unable to add importer root to failure receipt')
+
+          if text.count('$process = Get-RadarActiveProcess $null') != 1:
+              raise SystemExit(f'Expected one process recovery block, got {text.count("$process = Get-RadarActiveProcess $null")}')
+          if text.count("throw '临时 Payload 进程句柄无效。'") != 2:
+              raise SystemExit('Expected exactly two Process type gates')
+          if 'radar-unified-rating-incremental-production-9988-v01\\rehearsal-v02-$stamp' not in text:
+              raise SystemExit('Importer production output root missing')
+          if '$archivedImportDir' not in text:
+              raise SystemExit('Importer evidence archive directory missing')
+
+          script.write_text(text, encoding='utf-8', newline='\n')
+
+          rehearsal_test = Path('tests/radar-unified-rating-incremental-rehearsal-9988-v02.test.mjs')
+          test_text = rehearsal_test.read_text(encoding='utf-8')
+          test_block = r'''
+
+test('importer writes only under its production output root and is copied into rehearsal evidence', () => {
+  assert.match(source, /radar-unified-rating-incremental-production-9988-v01\\rehearsal-v02-\$stamp/)
+  assert.match(source, /\$importDir = Join-Path \$importerRunRoot "temporary-\$mode-import"/)
+  assert.match(source, /\$archivedImportDir = Join-Path \$outDir "temporary-\$mode-import"/)
+  assert.match(source, /Get-ChildItem -LiteralPath \$importDir -Force \| Copy-Item -Destination \$archivedImportDir -Recurse -Force/)
+  assert.match(source, /Join-Path \$archivedImportDir 'accepted-receipt\.json'/)
+  assert.doesNotMatch(source, /\$importDir = Join-Path \$outDir "temporary-\$mode-import"/)
+  assert.match(source, /importerOutputRoot = \$importerRunRoot/)
+})
+'''
+          if "test('importer writes only under its production output root" not in test_text:
+              test_text += test_block
+              rehearsal_test.write_text(test_text, encoding='utf-8', newline='\n')
+
+          handle_test = Path('tests/radar-unified-rating-incremental-process-handle-9988-v01.test.mjs')
+          handle_text = handle_test.read_text(encoding='utf-8')
+          anchor = "  assert.equal((source.match(/\\$process = Get-RadarActiveProcess \\$null/g) || []).length, 1)\n"
+          addition = anchor + "  assert.equal((source.match(/throw '临时 Payload 进程句柄无效。'/g) || []).length, 2)\n"
+          if addition not in handle_text:
+              if anchor not in handle_text:
+                  raise SystemExit('Process-handle test anchor missing')
+              handle_text = handle_text.replace(anchor, addition, 1)
+              handle_test.write_text(handle_text, encoding='utf-8', newline='\n')
+
+          Path('.github/workflows/fix-incremental-rehearsal-output-root-once.yml').unlink()
+          PY
+      - name: Parse and test repaired workflow
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path -LiteralPath 'scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1'),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            throw 'PowerShell parse failed after output-root repair.'
+          }
+          node --test `
+            tests/radar-unified-rating-incremental-rehearsal-9988-v02.test.mjs `
+            tests/radar-unified-rating-incremental-process-handle-9988-v01.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Output-root repair regression tests failed.' }
+      - name: Commit repair and self-delete
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git add -A -- \
+            scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1 \
+            tests/radar-unified-rating-incremental-rehearsal-9988-v02.test.mjs \
+            tests/radar-unified-rating-incremental-process-handle-9988-v01.test.mjs \
+            .github/workflows/fix-incremental-rehearsal-output-root-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Fix incremental rehearsal importer output root'
+          git push origin "HEAD:$BRANCH"
