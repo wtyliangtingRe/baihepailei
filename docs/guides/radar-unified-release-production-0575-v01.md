@@ -110,6 +110,8 @@ Before the first source write the executor:
 
 Only after the interactive confirmation does it create the source apply marker and continue.
 
+The common helper explicitly resolves the temporary Next process from script scope before readiness polling and cleanup. This preserves secure temporary environment restoration without losing the spawned process handle.
+
 ## Write surface
 
 The production importer permits:
