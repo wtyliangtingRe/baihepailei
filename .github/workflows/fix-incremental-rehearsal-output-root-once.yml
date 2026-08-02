@@ -1,5 +1,6 @@
 name: Repair incremental rehearsal importer output root once
 
+# Triggered once after workflow registration; the repair commit deletes this file.
 on:
   pull_request:
     types: [opened, reopened, synchronize]
