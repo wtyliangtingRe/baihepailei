@@ -120,7 +120,14 @@ try {
   $env:RADAR_PAYLOAD_EMAIL = $email
   $env:RADAR_PAYLOAD_PASSWORD = $plainPassword
 
-  node ".\scripts\radar\plan-unified-rating-incremental-release-9988-v01.mjs" `
+  $nodeCode = @'
+const module = await import('./scripts/radar/plan-unified-rating-incremental-release-9988-v01.mjs');
+await module.run(process.argv.slice(1));
+'@
+  node `
+    --input-type=module `
+    -e $nodeCode `
+    -- `
     --input $releaseDirectory `
     --url $Url `
     --out-dir $outDir `
@@ -128,6 +135,15 @@ try {
     --confirm 'PLAN-RADAR-UNIFIED-RATING-INCREMENTAL-RELEASE-9988-V01'
   if ($LASTEXITCODE -ne 0) {
     throw '9,988 条只读 transition plan 失败。'
+  }
+
+  $summaryPath = Join-Path $outDir 'transition-summary.json'
+  if (-not (Test-Path -LiteralPath $summaryPath -PathType Leaf)) {
+    throw 'planner 未生成 transition-summary.json，禁止判定成功。'
+  }
+  $summary = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
+  if ($summary.accepted -ne $true) {
+    throw 'transition-summary.json 未被接受。'
   }
 
   Write-Host "`n9,988 条只读 transition plan 已通过。" -ForegroundColor Green
