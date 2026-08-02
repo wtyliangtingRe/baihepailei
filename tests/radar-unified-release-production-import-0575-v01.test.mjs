@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 import {
+  assertAllowedArguments,
   assertConverged,
   assertFreshPlan,
   assertProductionUrl,
@@ -26,6 +27,23 @@ test('production URL is loopback-only on a bounded non-default port', () => {
   assert.throws(() => assertProductionUrl('http://example.com:32001'), /loopback/u)
   assert.throws(() => assertProductionUrl('http://127.0.0.1:3000'), /32000-39999/u)
   assert.throws(() => assertProductionUrl('http://127.0.0.1:40000'), /32000-39999/u)
+})
+
+test('production importer accepts its exact input/output arguments and rejects unknown write controls', () => {
+  assert.equal(assertAllowedArguments({
+    input: 'release',
+    url: 'http://127.0.0.1:32001',
+    'out-dir': 'data_local/outputs/radar-unified-release-production-0575-v01/test',
+    mode: 'apply',
+    'expected-main-head': 'a'.repeat(40),
+    'expected-research-head': 'b'.repeat(40),
+    'expected-database': 'temporary_database',
+    'expected-candidate-sha256': 'c'.repeat(64),
+    'expected-phase': 'rehearsal',
+    confirm: 'RUN-RADAR-UNIFIED-RELEASE-PRODUCTION-IMPORT-0575-V01',
+  }), true)
+  assert.throws(() => assertAllowedArguments({ input: 'release', rollback: 'true' }), /Forbidden arguments: rollback/u)
+  assert.throws(() => assertAllowedArguments({ input: 'release', remote: 'true' }), /Forbidden arguments: remote/u)
 })
 
 test('request policy permits GET and only three exact POST targets', () => {
