@@ -1,120 +1,186 @@
 # Radar Unified Release 0575 production gate v01
 
-## Scope
-
-This stage prepares the production apply gate for:
+## Locked release
 
 ```text
-RADAR-UNIFIED-RATING-RELEASE-0575-0001
-```
-
-Locked inputs:
-
-```text
+release             RADAR-UNIFIED-RATING-RELEASE-0575-0001
 accepted lab head   069e2d54055c8c8099ac8f37092e2bdb2b3e060c
 merged lab main     6cdc29e28236f487a6e762a5c8871c681a870810
 research head       728ad2da5f7d3aba03f652b9fd701157b06793ee
 evidence SHA-256    59dc908a447500adb39ef9f72bde306268fdf24ec85fdaaeb418dee0fb9be09f
+candidate SHA-256   0b18c33987abe2c2eb0c2280acee789415396903d697aface2523312a334de31
+P1 backup SHA-256   ea0b1cb68c9f1fde91e5e9f10c12957469b30c37a29097c57cb18fa8b5b13751
 ```
 
-The accepted isolated evidence proves 575 Public Records creates, 575 Public Ratings creates, exact post-import convergence, protected-table stability and no source-database write.
+The isolated rehearsal and P1 read-only candidate are independently accepted. Neither acceptance authorizes a source-database write.
 
-## Stage P0 — independently accepted evidence
+## P1 — read-only candidate
 
-Complete.
-
-The evidence archive has a closed-world manifest and SHA256SUMS. All 575 records and ratings were created in a disposable clone and replanned as `already_current`. The source-before, source-after, restored-clone and post-import protected fingerprints are identical.
-
-## Stage P1 — read-only production candidate preflight
-
-Implemented by:
+Canonical command:
 
 ```text
 scripts/radar/prepare-radar-unified-release-production-0575-v01.ps1
 ```
 
-It may only:
-
-- verify the production-preflight tool head and accepted-lab ancestry;
-- verify the evidence ZIP and locked Release hashes;
-- verify the research repository head;
-- read the source PostgreSQL state;
-- require 35,615 Works and absence of both new projection tables;
-- require the exact known `payload_migrations` starting state;
-- compare current source counts and protected fingerprints with the accepted lab evidence;
-- create a fresh custom-format PostgreSQL backup;
-- re-read counts and fingerprints after the backup;
-- emit an unprivileged candidate receipt under `data_local`.
-
-It must report:
+P1 verifies the locked evidence and Release, reads the exact source state, creates the local custom-format backup, proves backup-before/after source equality, and emits the unprivileged candidate.
 
 ```text
-SourceDatabaseWrite    : False
-MigrationApplied       : False
-PublicRecordsWritten   : 0
-PublicRatingsWritten   : 0
-ProductionAuthorization: False
+SourceDatabaseWrite      false
+MigrationApplied         false
+PublicRecordsWritten     0
+PublicRatingsWritten     0
+ProductionAuthorization  false
 ```
 
-A P1 candidate is not an authorization to apply.
+## P2 — merged-main authorization
 
-## Stage P2 — write-capable apply-once gate
-
-Not implemented yet.
-
-It must be added only after a real P1 candidate and backup are inspected. It must include:
-
-- exact merged `main` head binding;
-- candidate and backup SHA binding;
-- a database-resident apply-once marker acquired under an exclusive lock;
-- failure-closed behavior: an interrupted marker blocks automatic retry;
-- historical migration metadata reconciliation only after schema equivalence is re-proven;
-- formal migrations against the source database;
-- a nonce-bound loopback-only production marker;
-- strict fresh-mode POST-only creation of 575 records and 575 ratings;
-- zero update, PUT and DELETE requests;
-- exact post-import convergence;
-- exact row-count and protected-fingerprint verification;
-- a production evidence bundle without database bytes or credentials;
-- an explicit typed human confirmation immediately before the first database write.
-
-## Expected successful production deltas
-
-The apply-once marker adds one durable migration-control row beyond the isolated rehearsal:
+Canonical authorizer:
 
 ```text
-new projection tables           14
-public fact records             575
-public rating records           575
-audit events added            1,150
-authentication sessions added    1
-formal migration rows added       7
-development marker removed        1
-apply-once marker added            1
-payload_migrations net change     7
-Works mutations                   0
-human assessment mutations        0
-legacy AI assessment mutations    0
-old public conclusion mutations   0
-research record mutations         0
+scripts/radar/authorize-radar-unified-release-production-0575-v02.ps1
 ```
 
-## Failure and rollback boundary
+It runs only after PR #330 is merged and only when local `main`, `origin/main`, and the supplied full SHA are identical. It rechecks:
 
-No automatic retry is permitted after the apply-once marker is acquired.
+- candidate, evidence, Release and P1 backup hashes;
+- current source counts, protected fingerprints and migration rows;
+- absence of both projection families and the apply-control table;
+- a content-hash manifest covering every production-critical script, test, workflow, route and guide.
 
-Before a retry, an operator must independently decide between:
+It writes a local authorization receipt under `data_local`. The receipt is still non-writing and reports:
 
-1. inspect and resume from an explicitly supported state; or
-2. stop the application and restore the exact P1 backup through a separately reviewed destructive recovery command.
+```text
+ReadyForExplicitApply    true
+SourceDatabaseWrite      false
+ProductionAuthorization  false
+```
 
-The backup file is never placed in an evidence ZIP, committed to Git or uploaded by the production tooling.
+## P2 — apply-once executor
+
+Canonical executor:
+
+```text
+scripts/radar/execute-radar-unified-release-production-0575-v01.ps1
+```
+
+Before the first source write it:
+
+1. requires exact merged `main` and the authorization code manifest;
+2. stops application writer containers while leaving PostgreSQL running;
+3. verifies the exact source state;
+4. creates a fresh same-window local backup;
+5. restores that backup into a disposable PostgreSQL container;
+6. reproduces the accepted legacy-schema signature;
+7. creates the apply marker in the disposable database;
+8. reconciles historical migration metadata and runs formal migrations;
+9. runs exact `575 + 575` plan, apply and verify through a nonce-bound loopback Payload process;
+10. verifies all row counts and protected fingerprints;
+11. destroys the disposable database;
+12. proves the source state is still unchanged;
+13. asks for the complete Release-and-main confirmation string.
+
+Only after the interactive confirmation does it create the source apply marker and continue.
+
+## Write surface
+
+The production importer permits:
+
+```text
+GET   collection reads
+POST  Payload login
+POST  radar-public-records create
+POST  radar-public-ratings create
+```
+
+It contains no update path and rejects PATCH, PUT, DELETE, incremental mode, remote URLs and non-loopback ports.
+
+Expected importer result:
+
+```text
+record creates                  575
+rating creates                  575
+record updates                    0
+rating updates                    0
+post records already_current    575
+post ratings already_current    575
+blockers                          0
+```
+
+## Apply-once control
+
+The first write is one transaction that:
+
+- acquires `pg_try_advisory_xact_lock` for the fixed Release ID;
+- requires the apply-control table to be absent;
+- creates `public.radar_unified_release_apply_control`;
+- inserts one `started` row bound to main, candidate, evidence, code manifest, P1 backup and fresh backup hashes.
+
+The durable row then owns concurrency protection.
+
+```text
+started    automatic retry forbidden
+failed     automatic retry forbidden
+completed  second apply forbidden
+```
+
+A failed production run attempts only to mark the row `failed`. It does not automatically retry or restore.
+
+## Expected successful database deltas
+
+```text
+new projection tables                     14
+new apply-control tables                    1
+public records                            575
+public ratings                            575
+audit events added                      1,150
+authentication sessions added              1
+formal migration rows added                 7
+development marker removed                  1
+payload_migrations net change               6
+apply-control rows                           1
+Works mutations                              0
+human assessment mutations                  0
+legacy AI assessment mutations              0
+old public conclusion mutations             0
+research record mutations                    0
+```
+
+## Evidence and backup boundary
+
+The production evidence ZIP contains receipts, plans, logs, counts, fingerprints, manifests and hashes. It excludes:
+
+- database dump bytes;
+- PostgreSQL URLs;
+- passwords;
+- JWTs;
+- private keys.
+
+The P1 backup and same-window fresh backup remain local under `data_local/backups`.
+
+## Failure and rollback
+
+No automatic rollback is permitted after the durable source marker is created.
+
+On a post-marker failure:
+
+- application writer containers remain paused;
+- the stage receipt and fresh backup remain local;
+- normal rerun is blocked;
+- an operator must independently review the exact failed stage;
+- restore requires a separate reviewed destructive recovery command.
+
+Do not manually delete the apply-control table or marker to force a retry.
 
 ## Current authorization
 
 ```text
-Read-only production preflight: allowed after review
-Production migration:           false
-Production import:              false
-Production rollback:            false
+P1 read-only preflight        complete
+P1 independent audit         accepted
+P2 implementation            committed to Draft PR #330
+P2 CI and code review         required
+Production migration         false
+Production import            false
+Production rollback          false
 ```
+
+PR #330 must remain Draft until CI, static review and a real local disposable rehearsal of the merged candidate are accepted.
