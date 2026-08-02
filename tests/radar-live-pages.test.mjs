@@ -12,9 +12,10 @@ test('public Radar pages stay live, current-only for visitors, and staff-editabl
   assert.match(indexPage, /export const dynamic = 'force-dynamic'/)
   assert.match(indexPage, /recordStatus: \{ equals: filters\.status \}/)
   assert.match(indexPage, /const staff = isEditor\(auth\.user\)/)
+  assert.match(indexPage, /recordStatus: \{ equals: filters\.status \}/)
   assert.match(indexPage, /href=\{`\/me\/studio\/radar\/\$\{record\.id\}`\}/)
 
-  assert.match(detailPage, /record\.recordStatus !== 'current' && !auth\.user/)
+  assert.match(detailPage, /record\.recordStatus !== 'current' && !staff/)
   assert.match(detailPage, /isEditor\(auth\.user\)/)
   assert.match(detailPage, /完整编辑研究记录/)
   assert.match(detailPage, /完整编辑评级/)
