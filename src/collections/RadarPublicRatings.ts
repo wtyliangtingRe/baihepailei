@@ -11,18 +11,15 @@ const currentPublicOrStaff: Access = ({ req }) => {
   }
 }
 
-const staffOnlyRead = ({ req }: { req: { user?: unknown } }) => Boolean(req.user)
-
 const gradeOptions = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X'].map((value) => ({
   label: value,
   value,
 }))
 
-const valueArrayField = (name: string, label: string, staffOnly = false) => ({
+const valueArrayField = (name: string, label: string) => ({
   name,
   type: 'array' as const,
   label,
-  ...(staffOnly ? { access: { read: staffOnlyRead } } : {}),
   fields: [{ name: 'value', type: 'text' as const, label: '值', required: true }],
 })
 
@@ -206,7 +203,7 @@ export const RadarPublicRatings: CollectionConfig = {
           name: 'reviewerIdentity',
           type: 'text',
           label: '复核者身份',
-          access: { read: staffOnlyRead },
+          access: { read: ({ req }) => Boolean(req.user) },
         },
         { name: 'reviewedAt', type: 'date', label: '复核时间' },
         { name: 'decision', type: 'text', label: '复核决定' },
@@ -222,14 +219,20 @@ export const RadarPublicRatings: CollectionConfig = {
           type: 'textarea',
           label: '内部复核理由',
           maxLength: 5000,
-          access: { read: staffOnlyRead },
+          access: { read: ({ req }) => Boolean(req.user) },
         },
-        valueArrayField('additionalEvidenceRefs', '内部补充证据引用', true),
+        {
+          name: 'additionalEvidenceRefs',
+          type: 'array',
+          label: '内部补充证据引用',
+          access: { read: ({ req }) => Boolean(req.user) },
+          fields: [{ name: 'value', type: 'text', label: '值', required: true }],
+        },
         {
           name: 'moderationState',
           type: 'text',
           label: '内部审核状态',
-          access: { read: staffOnlyRead },
+          access: { read: ({ req }) => Boolean(req.user) },
         },
         {
           name: 'blocksAnalysis',
