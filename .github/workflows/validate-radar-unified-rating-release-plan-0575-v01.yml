@@ -1,0 +1,44 @@
+name: Validate Radar Unified Rating Release Plan 0575 v01
+
+on:
+  pull_request:
+    paths:
+      - "config/radar-unified-rating-release-0575-v01.lock.json"
+      - "config/radar-public-ratings-schema-v01.json"
+      - "docs/guides/radar-unified-rating-release-plan-0575-v01.md"
+      - "scripts/radar/lib/unified-rating-release-plan-v01.mjs"
+      - "scripts/radar/plan-unified-rating-release-v01.mjs"
+      - "tests/radar-unified-rating-release-plan-v01.test.mjs"
+      - ".github/workflows/validate-radar-unified-rating-release-plan-0575-v01.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse locked JSON contracts
+        run: |
+          node -e "JSON.parse(require('node:fs').readFileSync('config/radar-unified-rating-release-0575-v01.lock.json','utf8'))"
+          node -e "JSON.parse(require('node:fs').readFileSync('config/radar-public-ratings-schema-v01.json','utf8'))"
+      - name: Check Node syntax
+        run: |
+          node --check scripts/radar/lib/unified-rating-release-plan-v01.mjs
+          node --check scripts/radar/plan-unified-rating-release-v01.mjs
+      - name: Run complete transition plan tests
+        run: node --test tests/radar-unified-rating-release-plan-v01.test.mjs
+      - name: Enforce read-only planning boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -RInE 'fetch\(|axios|postgres|pg_dump|payload\.create|payload\.update|method:[[:space:]]*["'\''`](POST|PATCH|PUT|DELETE)' \
+            scripts/radar/lib/unified-rating-release-plan-v01.mjs \
+            scripts/radar/plan-unified-rating-release-v01.mjs
+          grep -q 'payloadWrite: false' scripts/radar/lib/unified-rating-release-plan-v01.mjs
+          grep -q 'postgresqlWrite: false' scripts/radar/lib/unified-rating-release-plan-v01.mjs
+          grep -q 'productionAuthorization: false' scripts/radar/lib/unified-rating-release-plan-v01.mjs
+      - name: Check patch whitespace
+        run: git diff --check origin/${{ github.base_ref }}...HEAD
