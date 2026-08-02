@@ -57,8 +57,10 @@ test('internal human review details are staff-only', () => {
     'additionalEvidenceRefs',
     'moderationState',
   ])
-  assert.match(source, /name: 'reviewerIdentity'[\s\S]*access: \{ read: staffOnlyRead \}/u)
-  assert.match(source, /name: 'reasoning'[\s\S]*access: \{ read: staffOnlyRead \}/u)
-  assert.match(source, /valueArrayField\('additionalEvidenceRefs',[\s\S]*true\)/u)
-  assert.match(source, /name: 'moderationState'[\s\S]*access: \{ read: staffOnlyRead \}/u)
+  const staffOnlyAccess = /access: \{ read: \(\{ req \}\) => Boolean\(req\.user\) \}/u
+  for (const field of contract.humanReviewVisibility.staffOnly) {
+    const fieldStart = source.indexOf(`name: '${field}'`)
+    assert.notEqual(fieldStart, -1, `missing staff-only field ${field}`)
+    assert.match(source.slice(fieldStart, fieldStart + 420), staffOnlyAccess, `${field} is not staff-only`)
+  }
 })
