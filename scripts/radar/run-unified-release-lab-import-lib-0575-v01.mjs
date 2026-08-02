@@ -11,6 +11,14 @@ const CONFIRM = 'RUN-ISOLATED-RADAR-UNIFIED-RELEASE-LAB-0575-V01'
 const LOCK_PATH = 'config/radar-unified-rating-release-0575-v01.lock.json'
 const DEFAULT_OUT_DIR = 'data_local/outputs/radar-unified-release-lab-0575-v01/import'
 const ALLOWED_MODES = new Set(['fresh', 'incremental'])
+const OPTIONAL_HUMAN_REVIEW_FIELDS = [
+  'reviewerIdentity',
+  'reviewedAt',
+  'decision',
+  'proposedCoreGrade',
+  'reasoning',
+  'moderationState',
+]
 
 const val = (value) => String(value ?? '').trim()
 
@@ -123,8 +131,15 @@ function safeWorkId(value) {
   return number
 }
 
-function payloadDocument(desired) {
-  return { ...desired, work: safeWorkId(desired.work) }
+export function payloadDocument(desired) {
+  const document = { ...desired, work: safeWorkId(desired.work) }
+  if (document.humanReview && typeof document.humanReview === 'object') {
+    document.humanReview = { ...document.humanReview }
+    for (const field of OPTIONAL_HUMAN_REVIEW_FIELDS) {
+      if (!val(document.humanReview[field])) document.humanReview[field] = null
+    }
+  }
+  return document
 }
 
 function summarize(plan) {
