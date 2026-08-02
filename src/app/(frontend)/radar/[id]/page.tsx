@@ -1,7 +1,7 @@
 import configPromise from '@payload-config'
 import { headers } from 'next/headers'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 
 import { isEditor } from '@/access/roles'
@@ -42,7 +42,6 @@ type RadarRecord = {
   sourceReviewedAt?: string
   importedAt?: string
   recordStatus: string
-  updatedAt?: string
 }
 
 type RadarRating = {
@@ -54,8 +53,6 @@ type RadarRating = {
   worstGrade?: string
   confidence?: string
   matchedClasses?: Array<{ value?: string }>
-  factRefs?: Array<{ value?: string }>
-  evidenceRefs?: Array<{ value?: string }>
   reasoningSummary?: string
   unresolvedDimensions?: Array<{ value?: string }>
   classificationRule?: string
@@ -65,19 +62,11 @@ type RadarRating = {
   publicWarningTemplateIds?: Array<{ value?: string }>
   humanReview?: {
     status?: string
-    reviewerIdentity?: string
-    reviewedAt?: string
-    decision?: string
     proposedCoreGrade?: string
     reasoning?: string
-    moderationState?: string
-    blocksAnalysis?: boolean
-    blocksPublication?: boolean
   }
   sourceRatingCampaignId?: string
   sourceRatingDecisionHash?: string
-  releaseRatingHash?: string
-  importedAt?: string
   recordStatus?: string
 }
 
@@ -136,8 +125,9 @@ export default async function RadarDetailPage({ params }: { params: Promise<{ id
   const { id } = await params
   const payload = await getPayload({ config: configPromise })
   const auth = await payload.auth({ headers: await headers() })
-  const staff = isEditor(auth.user)
+  if (!auth.user) redirect(`/account/login?redirect=${encodeURIComponent(`/radar/${id}`)}`)
 
+  const staff = isEditor(auth.user)
   let record: RadarRecord
   try {
     record = await payload.findByID({
@@ -175,7 +165,7 @@ export default async function RadarDetailPage({ params }: { params: Promise<{ id
   return (
     <main className="page collection-page radar-detail-page">
       <section className="page-heading collection-heading">
-        <p className="eyebrow">统一 Radar 记录</p>
+        <p className="eyebrow">注册用户只读档案</p>
         <h1>{record.title}</h1>
         <p>{record.pageNotice}</p>
         <div className="work-card-badges">
@@ -186,12 +176,12 @@ export default async function RadarDetailPage({ params }: { params: Promise<{ id
           {record.recordStatus !== 'current' ? <span className="content-visibility-chip">已撤回</span> : null}
         </div>
         <div className="collection-actions">
-          <Link className="back-link" href="/radar">返回 Radar 列表</Link>
-          <Link className="result-link" href={canonicalContentUrl('works', record.workIdSnapshot)}>查看作品页</Link>
-          {staff ? <Link className="review-link" href={`/me/studio/radar/${record.id}`}>网页编辑</Link> : null}
-          {staff ? <Link className="review-link" href={`/admin/collections/radar-public-records/${record.id}`}>完整编辑研究记录</Link> : null}
-          {staff && rating ? <Link className="review-link" href={`/admin/collections/radar-public-ratings/${rating.id}`}>完整编辑评级</Link> : null}
+          <Link className="back-link" href="/radar">返回研究档案</Link>
+          <Link className="result-link" href={canonicalContentUrl('works', record.workIdSnapshot)}>大众作品页</Link>
+          <Link className="back-link" href="/ratings">大众评级页</Link>
+          {staff ? <a className="review-link" href={`/radar/${record.id}/download`}>下载完整 JSON</a> : null}
         </div>
+        <div className="review-safety-note">本页为只读资料档案，不提供修改功能。需要修正 Release 绑定的研究事实、证据或机器评级时，应生成新的受控 Release。</div>
       </section>
 
       {rating ? (
@@ -199,7 +189,7 @@ export default async function RadarDetailPage({ params }: { params: Promise<{ id
           <div className="radar-public-heading-row">
             <div>
               <p className="eyebrow">机器评级</p>
-              <h2>公开评级结论</h2>
+              <h2>评级结论</h2>
             </div>
             <div className="radar-grade-range">
               <span>最好 <strong>{rating.bestGrade || '?'}</strong></span>
@@ -211,7 +201,7 @@ export default async function RadarDetailPage({ params }: { params: Promise<{ id
 
           {matchedClasses.length ? (
             <div className="radar-detail-section">
-              <h3>命中的公开规则类别</h3>
+              <h3>命中的规则类别</h3>
               <div className="radar-chip-list">{matchedClasses.map((value) => <span key={value}>{value}</span>)}</div>
             </div>
           ) : null}
@@ -256,7 +246,7 @@ export default async function RadarDetailPage({ params }: { params: Promise<{ id
             <div><span>分类规则</span><strong>{rating.classificationRule || '未记录'}</strong></div>
             <div><span>谨慎有利推定</span><strong>{rating.benefitOfDoubtBaselineApplied ? '已应用' : '未应用'}</strong></div>
             <div><span>人工复核</span><strong>{rating.humanReview?.status || 'unreviewed'}</strong></div>
-            <div><span>建议等级</span><strong>{rating.humanReview?.proposedCoreGrade || '无'}</strong></div>
+            <div><span>人工建议等级</span><strong>{rating.humanReview?.proposedCoreGrade || '无'}</strong></div>
           </div>
 
           {staff && rating.humanReview?.reasoning ? (
@@ -268,8 +258,8 @@ export default async function RadarDetailPage({ params }: { params: Promise<{ id
         </section>
       ) : (
         <section className="detail-card">
-          <h2>尚无公开评级</h2>
-          <p>这条公开研究记录目前没有对应的机器评级记录。</p>
+          <h2>尚无机器评级</h2>
+          <p>这条研究记录目前没有对应的当前评级。</p>
         </section>
       )}
 
@@ -277,7 +267,7 @@ export default async function RadarDetailPage({ params }: { params: Promise<{ id
         <div className="radar-public-heading-row">
           <div>
             <p className="eyebrow">研究事实</p>
-            <h2>公开事实</h2>
+            <h2>事实记录</h2>
           </div>
           <span>{record.facts?.length || 0} 条</span>
         </div>
@@ -292,39 +282,40 @@ export default async function RadarDetailPage({ params }: { params: Promise<{ id
                 <p>{fact.value}</p>
                 {fact.sourceRefs?.length ? (
                   <div className="radar-chip-list">
-                    {fact.sourceRefs.map((ref, refIndex) => (
-                      <code key={`${ref.value || 'ref'}:${refIndex}`}>{ref.value}</code>
-                    ))}
+                    {fact.sourceRefs.map((ref, refIndex) => <code key={`${ref.value || 'ref'}:${refIndex}`}>{ref.value}</code>)}
                   </div>
                 ) : null}
               </article>
             ))}
           </div>
-        ) : <p>暂无公开事实。</p>}
+        ) : <p>暂无事实记录。</p>}
       </section>
 
       <section className="detail-card">
         <div className="radar-public-heading-row">
           <div>
             <p className="eyebrow">证据</p>
-            <h2>公开来源</h2>
+            <h2>来源记录</h2>
           </div>
           <span>{record.evidence?.length || 0} 条</span>
         </div>
         {record.evidence?.length ? (
           <div className="radar-evidence-list">
-            {record.evidence.map((evidence, index) => (
-              <article key={`${evidence.sourceRef || 'evidence'}:${index}`}>
-                <div className="radar-fact-heading">
-                  <strong>{evidence.title || evidence.sourceRef || '未命名来源'}</strong>
-                  <span>Tier {evidence.tier || '?'} · {roleLabel(evidence.role)}</span>
-                </div>
-                <p><code>{evidence.sourceRef}</code>{evidence.exactIdentityBound ? ' · 已绑定精确身份' : ''}</p>
-                {safeExternalUrl(evidence.url) ? <a href={safeExternalUrl(evidence.url)} rel="noreferrer noopener" target="_blank">打开来源</a> : null}
-              </article>
-            ))}
+            {record.evidence.map((evidence, index) => {
+              const sourceUrl = safeExternalUrl(evidence.url)
+              return (
+                <article key={`${evidence.sourceRef || 'evidence'}:${index}`}>
+                  <div className="radar-fact-heading">
+                    <strong>{evidence.title || evidence.sourceRef || '未命名来源'}</strong>
+                    <span>Tier {evidence.tier || '?'} · {roleLabel(evidence.role)}</span>
+                  </div>
+                  <p><code>{evidence.sourceRef}</code>{evidence.exactIdentityBound ? ' · 已绑定精确身份' : ''}</p>
+                  {sourceUrl ? <a href={sourceUrl} rel="noreferrer noopener" target="_blank">打开来源</a> : null}
+                </article>
+              )
+            })}
           </div>
-        ) : <p>暂无公开来源。</p>}
+        ) : <p>暂无来源记录。</p>}
       </section>
 
       <section className="detail-card radar-provenance-card">
