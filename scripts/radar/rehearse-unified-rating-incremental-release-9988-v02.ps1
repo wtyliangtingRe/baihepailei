@@ -201,6 +201,9 @@ function Wait-IncrementalMarker(
   if ($null -eq $Process -or -not ($Process -is [System.Diagnostics.Process])) {
     throw '临时 Payload 进程句柄无效。'
   }
+  if ($null -eq $Process -or -not ($Process -is [System.Diagnostics.Process])) {
+    throw '临时 Payload 进程句柄无效。'
+  }
   $deadline = [DateTime]::UtcNow.AddSeconds($ReadyTimeoutSeconds)
   do {
     if ($Process.HasExited) { throw "临时 Payload 进程提前退出：$($Process.ExitCode)" }
@@ -261,6 +264,10 @@ function Start-TemporaryApp(
       -RedirectStandardOutput (Join-Path $Directory "$Prefix-app-stdout.txt") `
       -RedirectStandardError (Join-Path $Directory "$Prefix-app-stderr.txt") `
       -PassThru -NoNewWindow
+  }
+  $process = Get-RadarActiveProcess $null
+  if ($null -eq $process -or -not ($process -is [System.Diagnostics.Process])) {
+    throw '临时 Payload 进程句柄无效。'
   }
   $process = Get-RadarActiveProcess $null
   if ($null -eq $process -or -not ($process -is [System.Diagnostics.Process])) {
