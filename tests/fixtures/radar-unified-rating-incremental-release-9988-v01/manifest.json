@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "radar-unified-rating-incremental-release-v03",
+  "releaseId": "RADAR-UNIFIED-RATING-INCREMENTAL-RELEASE-9988-0001",
+  "generatedAt": "2026-08-02T00:00:00+08:00",
+  "sourceCampaign": {
+    "packageId": "RADAR-NEXT-CANONICAL-RESEARCH-10000-0001",
+    "registeredArchiveSha256": "90d5a7aadd81e8131df0602c47e4c7ef5559ff338450b45488e77c062e6e6cb1",
+    "responseFiles": 400,
+    "sourceRows": 10000
+  },
+  "previousRelease": {
+    "releaseId": "RADAR-UNIFIED-RATING-RELEASE-0575-0001",
+    "recordsSha256": "4dcf9e6790fa7175f18b7c91ed3b2f6522ec6d87c623183f0369491b06123605",
+    "recordCount": 575
+  },
+  "policy": {
+    "policyId": "radar-internal-processing-policy-v03",
+    "sha256": "7bf6cd743cd2ece3d71799a7a54c58e0d10c8ca77e1f3a779bfd2262ba2f9260"
+  },
+  "files": {
+    "records.jsonl": {
+      "path": "records.jsonl",
+      "rowCount": 9988,
+      "sha256": "827c5d8c7ea958bf614f2a19db2ad2db2a6847dd7c82d718614a4bcb9cac71a9",
+      "bytes": 17904125
+    },
+    "ratings.jsonl": {
+      "path": "ratings.jsonl",
+      "rowCount": 9988,
+      "sha256": "4c1a55c8cdabbd92bb8c081a28b30b6c2f3e87d370dcfccb89ed776fe0d14d18",
+      "bytes": 28075673
+    },
+    "release-index.jsonl": {
+      "path": "release-index.jsonl",
+      "rowCount": 9988,
+      "sha256": "0412d6e8108d1c0172001cc4986fd376475fdd2dfb52ee1848c14f022ccb419f",
+      "bytes": 5018091
+    },
+    "identity-review-excluded.jsonl": {
+      "path": "identity-review-excluded.jsonl",
+      "rowCount": 12,
+      "sha256": "ad834663fc5b83dd5fbe0e46dd6e28b8684b5b6853e74099929f0f308a55c7a2",
+      "bytes": 17177
+    }
+  },
+  "counts": {
+    "sourceRows": 10000,
+    "overlapWithPreviousRelease": 0,
+    "records": 9988,
+    "ratings": 9988,
+    "identityReviewExcluded": 12,
+    "facts": 39952,
+    "evidence": 12673,
+    "sourceRefs": 50692,
+    "humanReviewUnreviewed": 9988,
+    "httpEvidenceSources": 6,
+    "httpsEvidenceSources": 12667
+  },
+  "researchStatusCounts": {
+    "needs_more_research": 8528,
+    "ready_for_ai_assessment": 1460
+  },
+  "gradeCounts": {
+    "B": 182,
+    "D": 9796,
+    "E": 10
+  },
+  "classCounts": {
+    "B-LIGHT": 182,
+    "D-SETTING-PROFILE": 80,
+    "D-UNCLEAR": 9716,
+    "E-MALE-POSSIBILITY": 7,
+    "E-NTR": 3
+  },
+  "publicTagCounts": {
+    "content-unsuitable": 506,
+    "relationship-needs-radar": 9796,
+    "staff-small-work": 182
+  },
+  "gates": {
+    "closedWorldInventory": true,
+    "allConfirmedNonIdentityReviewRecordsRated": true,
+    "identityReviewExcluded": true,
+    "unknownDimensionsPreserved": true,
+    "humanReviewBlocksPublication": false,
+    "rawHtmlIncluded": false,
+    "credentialsIncluded": false,
+    "databaseBytesIncluded": false,
+    "payloadWrite": false,
+    "postgresqlWrite": false,
+    "websiteWrite": false,
+    "productionAuthorization": false,
+    "automaticX": false,
+    "sourceUrlsPreservedWithoutProtocolRewrite": true,
+    "httpSourcesPubliclyClickable": false,
+    "negatedMaleStatementsDoNotTriggerE": true,
+    "possibleOrUnverifiedNtrDoesNotTriggerNtrClass": true,
+    "reviewedLowerGradeIdentitySetsLocked": true
+  },
+  "decision": "accept_incremental_unified_rating_release_for_import_planning_only",
+  "sourceProtocolPolicy": {
+    "preserveExactSourceUrl": true,
+    "rewriteHttpToHttps": false,
+    "publicFrontendRendersHttpsLinksOnly": true,
+    "httpSourcesRemainEvidenceButAreNotClickable": true
+  },
+  "lowerGradeTriggerPolicy": {
+    "maleInterceptionRequiresAffirmativeRelationshipMarker": true,
+    "maleNegationCheckedBeforeAffirmativeMarkers": true,
+    "ntrRequiresConfirmedStructure": true,
+    "possibleRequiresReviewOrUnknownNtrDoesNotTrigger": true,
+    "maleEIdentityCount": 7,
+    "ntrEIdentityCount": 3,
+    "maleEIdentityHash": "e055fcb53504e6aa98c1680689f8afd680626b83d271c6c05291dd21186a45a4",
+    "ntrEIdentityHash": "723fddf6491f1ae2c95ff244192b0004cce718c3b449be11a8a67c54fda20f6f"
+  }
+}
