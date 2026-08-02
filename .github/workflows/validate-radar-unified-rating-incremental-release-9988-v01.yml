@@ -13,7 +13,6 @@ on:
       - 'scripts/radar/run-unified-rating-incremental-plan-9988-v01.ps1'
       - 'scripts/radar/run-unified-rating-incremental-production-import-9988-v01.mjs'
       - 'scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1'
-      - 'scripts/radar/patch-incremental-rehearsal-output-root-once.py'
       - 'scripts/radar/lib/unified-rating-release-plan-v01.mjs'
       - 'scripts/radar/lib/public-release-plan-v01.mjs'
       - 'scripts/radar/lib/radar-unified-release-production-0575-v01.ps1'
@@ -26,7 +25,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate-release:
@@ -36,17 +35,10 @@ jobs:
       - name: Checkout website repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           fetch-depth: 0
-          persist-credentials: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Apply staged output-root repair when present
-        run: |
-          if [[ -f scripts/radar/patch-incremental-rehearsal-output-root-once.py ]]; then
-            python scripts/radar/patch-incremental-rehearsal-output-root-once.py
-          fi
       - name: Parse PowerShell wrappers
         shell: pwsh
         run: |
@@ -80,24 +72,6 @@ jobs:
           --output _artifacts/radar-unified-rating-incremental-release-9988-lock-validation-v01.json
       - name: Check diff whitespace
         run: git diff --check origin/main...HEAD
-      - name: Commit staged repair when changed
-        env:
-          BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
-        run: |
-          git add -A -- \
-            scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1 \
-            tests/radar-unified-rating-incremental-rehearsal-9988-v02.test.mjs \
-            tests/radar-unified-rating-incremental-process-handle-9988-v01.test.mjs \
-            scripts/radar/patch-incremental-rehearsal-output-root-once.py \
-            .github/workflows/fix-incremental-rehearsal-output-root-once.yml
-          if git diff --cached --quiet; then
-            echo 'No staged repair remains.'
-          else
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m 'Fix incremental rehearsal importer output root'
-            git push origin "HEAD:$BRANCH"
-          fi
       - name: Upload lock validation receipt
         uses: actions/upload-artifact@v4
         with:
