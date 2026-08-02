@@ -1,0 +1,79 @@
+name: Harden incremental rehearsal startup cleanup
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/repair-incremental-rehearsal-startup-cleanup.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Add startup failure cleanup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1')
+          text = path.read_text(encoding='utf-8')
+          old = (
+              "  Wait-IncrementalMarker $baseUrl $Nonce $Phase $DatabaseName $CandidateSha256 $process | Out-Null\n"
+              "  return [pscustomobject]@{ Process = $process; BaseUrl = $baseUrl }\n"
+          )
+          new = (
+              "  try {\n"
+              "    Wait-IncrementalMarker $baseUrl $Nonce $Phase $DatabaseName $CandidateSha256 $process | Out-Null\n"
+              "    return [pscustomobject]@{ Process = $process; BaseUrl = $baseUrl }\n"
+              "  } catch {\n"
+              "    Stop-RadarProcess $process\n"
+              "    throw\n"
+              "  }\n"
+          )
+          if old in text:
+            if text.count(old) != 1:
+              raise SystemExit(f'Expected one startup cleanup target, found {text.count(old)}')
+            text = text.replace(old, new)
+            path.write_text(text, encoding='utf-8', newline='\n')
+          elif new not in text:
+            raise SystemExit('Neither original nor hardened startup block was found')
+          PY
+      - name: Parse repaired PowerShell
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path -LiteralPath 'scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1'),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            throw 'PowerShell parse failed after startup cleanup repair.'
+          }
+      - name: Commit repair when changed
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          git add -- scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1
+          if git diff --cached --quiet; then
+            echo 'Startup cleanup already present.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Stop temporary app when startup marker fails'
+          git push origin "HEAD:$BRANCH"
