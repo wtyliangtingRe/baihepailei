@@ -7,16 +7,23 @@ on:
     paths:
       - '.github/workflows/validate-radar-unified-release-production-0575-v01.yml'
       - 'scripts/radar/prepare-radar-unified-release-production-0575-v01.ps1'
+      - 'scripts/radar/authorize-radar-unified-release-production-0575-v01.ps1'
+      - 'scripts/radar/authorize-radar-unified-release-production-0575-v02.ps1'
+      - 'scripts/radar/execute-radar-unified-release-production-0575-v01.ps1'
+      - 'scripts/radar/run-unified-release-production-import-0575-v01.mjs'
+      - 'scripts/radar/lib/radar-unified-release-production-0575-v01.ps1'
+      - 'src/app/(payload)/api/radar-unified-release-production-marker/route.ts'
       - 'tests/radar-unified-release-production-0575-v01.test.mjs'
+      - 'tests/radar-unified-release-production-import-0575-v01.test.mjs'
       - 'docs/guides/radar-unified-release-production-0575-v01.md'
 
 permissions:
   contents: read
 
 jobs:
-  validate-production-preflight:
+  validate-production-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,23 +31,42 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Parse PowerShell preflight
+      - name: Parse production PowerShell
         shell: pwsh
         run: |
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path 'scripts/radar/prepare-radar-unified-release-production-0575-v01.ps1'),
-            [ref]$null,
-            [ref]$errors
-          ) | Out-Null
-          if ($errors.Count -gt 0) {
-            $errors | Format-List | Out-String | Write-Error
+          $files = @(
+            'scripts/radar/prepare-radar-unified-release-production-0575-v01.ps1',
+            'scripts/radar/authorize-radar-unified-release-production-0575-v01.ps1',
+            'scripts/radar/authorize-radar-unified-release-production-0575-v02.ps1',
+            'scripts/radar/execute-radar-unified-release-production-0575-v01.ps1',
+            'scripts/radar/lib/radar-unified-release-production-0575-v01.ps1'
+          )
+          foreach ($file in $files) {
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $file),
+              [ref]$null,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | Format-List | Out-String | Write-Error
+            }
           }
-      - name: Run production preflight safety tests
-        run: node --test tests/radar-unified-release-production-0575-v01.test.mjs
-      - name: Confirm no write-capable production executor exists yet
+      - name: Check production importer syntax
+        run: node --check scripts/radar/run-unified-release-production-import-0575-v01.mjs
+      - name: Run production gate safety tests
+        run: >-
+          node --test
+          tests/radar-unified-release-production-0575-v01.test.mjs
+          tests/radar-unified-release-production-import-0575-v01.test.mjs
+      - name: Confirm bounded production write surface
+        shell: bash
         run: |
-          test ! -e scripts/radar/execute-radar-unified-release-production-0575-v01.ps1
-          test ! -e scripts/radar/run-unified-release-production-import-0575-v01.mjs
+          ! grep -nE "method:[[:space:]]*['\"](PATCH|PUT|DELETE)['\"]" scripts/radar/run-unified-release-production-import-0575-v01.mjs
+          ! grep -nE 'ready_update|incremental mode' scripts/radar/run-unified-release-production-import-0575-v01.mjs
+          ! grep -nE 'git reset --hard|git clean' scripts/radar/execute-radar-unified-release-production-0575-v01.ps1
+          grep -n 'pg_try_advisory_xact_lock' scripts/radar/execute-radar-unified-release-production-0575-v01.ps1
+          grep -n 'radar_unified_release_apply_control' scripts/radar/execute-radar-unified-release-production-0575-v01.ps1
+          grep -n 'automaticRollbackExecuted = $false' scripts/radar/execute-radar-unified-release-production-0575-v01.ps1
       - name: Check diff whitespace
         run: git diff --check origin/main...HEAD
