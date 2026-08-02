@@ -1,14 +1,15 @@
 param(
   [Parameter(Mandatory = $true)][string]$EnvironmentFile,
   [Parameter(Mandatory = $true)][string]$ExpectedWebsiteHead,
-  [Parameter(Mandatory = $true)][ValidateSet('EXECUTE-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01')][string]$Confirm,
+  [Parameter(Mandatory = $true)][ValidateSet('EXECUTE-ISOLATED-RADAR-UNIFIED-RELEASE-LAB-0575-V01')][string]$Confirm,
   [int]$ReadyTimeoutSeconds = 180
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$ExpectedBranch = 'agent/radar-public-release-lab-v01'
+$ExpectedBranch = 'agent/radar-unified-release-lab-0575-v01'
+$ReleaseId = 'RADAR-UNIFIED-RATING-RELEASE-0575-0001'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 Set-Location -LiteralPath $repoRoot
 
@@ -22,7 +23,6 @@ function Get-ConfiguredValue([string[]]$Names) {
     $value = [Environment]::GetEnvironmentVariable($name, 'Process')
     if (-not [string]::IsNullOrWhiteSpace($value)) { return $value.Trim() }
   }
-
   foreach ($envFile in @('.env.development.local', '.env.local', '.env.development', '.env')) {
     if (-not (Test-Path -LiteralPath $envFile -PathType Leaf)) { continue }
     $lines = @(Microsoft.PowerShell.Management\Get-Content -LiteralPath $envFile -Encoding UTF8)
@@ -59,7 +59,7 @@ function Invoke-WithEnvironment([hashtable]$Variables, [scriptblock]$Action) {
 }
 
 function Get-FreePort([int]$Minimum, [int]$Maximum) {
-  for ($attempt = 0; $attempt -lt 40; $attempt += 1) {
+  for ($attempt = 0; $attempt -lt 50; $attempt += 1) {
     $port = Get-Random -Minimum $Minimum -Maximum ($Maximum + 1)
     $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $port)
     try { $listener.Start(); return $port } catch { continue } finally { try { $listener.Stop() } catch {} }
@@ -109,19 +109,19 @@ function Wait-LabMarker([string]$Url, [string]$Nonce, [object]$Lab, [object]$Pro
   do {
     if ($Process.HasExited) { throw "实验网站进程提前退出：$($Process.ExitCode)" }
     try {
-      $marker = Invoke-RestMethod -Uri "$Url/api/radar-public-release-lab-marker" -Method Get `
-        -Headers @{ 'x-radar-public-release-lab-nonce' = $Nonce } -TimeoutSec 10
+      $marker = Invoke-RestMethod -Uri "$Url/api/radar-unified-release-lab-marker" -Method Get `
+        -Headers @{ 'x-radar-unified-release-lab-nonce' = $Nonce } -TimeoutSec 10
       if (
         $marker.isolatedLab -eq $true -and
         [string]$marker.database -eq [string]$Lab.labDatabase -and
         [string]$marker.websiteCommit -eq [string]$Lab.websiteCommit -and
         [string]$marker.researchHead -eq [string]$Lab.researchHead -and
-        [string]$marker.releaseSourceCommit -eq [string]$Lab.releaseSourceCommit
+        [string]$marker.releaseId -eq $ReleaseId
       ) { return $marker }
     } catch {}
     Start-Sleep -Seconds 2
   } while ([DateTime]::UtcNow -lt $deadline)
-  throw '实验网站未通过隔离 marker。'
+  throw '实验网站未通过统一 Release 隔离 marker。'
 }
 
 function Write-Manifest([string]$Directory) {
@@ -145,29 +145,23 @@ function Write-Manifest([string]$Directory) {
   )
 }
 
-if ($Confirm -ne 'EXECUTE-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01') { throw '确认字符串不匹配。' }
+if ($Confirm -ne 'EXECUTE-ISOLATED-RADAR-UNIFIED-RELEASE-LAB-0575-V01') { throw '确认字符串不匹配。' }
 $environmentPath = (Resolve-Path -LiteralPath $EnvironmentFile).Path
 $lab = Get-Content -LiteralPath $environmentPath -Raw -Encoding UTF8 | ConvertFrom-Json -Depth 100
-if ([string]$lab.schemaVersion -ne 'radar-public-release-lab-environment-v01') { throw '实验环境文件版本不匹配。' }
-if ([string]$lab.websiteCommit -ne $ExpectedWebsiteHead) { throw '实验环境网站提交不匹配。' }
+if ([string]$lab.schemaVersion -ne 'radar-unified-release-lab-environment-0575-v01') { throw '实验环境文件版本不匹配。' }
+if ([string]$lab.websiteCommit -ne $ExpectedWebsiteHead -or [string]$lab.releaseId -ne $ReleaseId) { throw '实验环境身份不匹配。' }
 if ($lab.sourceDatabaseWrite -ne $false -or $lab.sourcePostcheckPassed -ne $true -or $lab.isolatedRestorePassed -ne $true) {
   throw '实验环境没有证明源库只读与隔离恢复通过。'
 }
-if ([string]$lab.researchHead -notmatch '^[a-f0-9]{40}$' -or [string]$lab.releaseSourceCommit -notmatch '^[a-f0-9]{40}$') {
-  throw '研究仓库头或发布来源提交格式无效。'
-}
+if ([string]$lab.researchHead -notmatch '^[a-f0-9]{40}$') { throw '研究仓库头格式无效。' }
 $createdAt = [DateTime]::Parse([string]$lab.createdAt).ToUniversalTime()
-if ($createdAt -lt [DateTime]::UtcNow.AddHours(-4)) { throw '实验环境已超过 4 小时，必须重新从 fresh dump 准备。' }
-if ([string]$lab.labContainer -notmatch '^baihepailei-radar-public-release-lab-') { throw '实验容器名称不在允许前缀内。' }
-if ([int]$lab.labPort -lt 31000 -or [int]$lab.labPort -gt 31999) { throw '实验数据库端口不在 31000-31999。' }
-if ([string]$lab.databaseUrl -notmatch '^postgresql://radar_lab:[a-f0-9]+@127\.0\.0\.1:31[0-9]{3}/radar_public_release_lab$') {
-  throw '实验数据库连接串不符合本地临时容器约束。'
+if ($createdAt -gt [DateTime]::UtcNow.AddMinutes(5) -or $createdAt -lt [DateTime]::UtcNow.AddHours(-4)) {
+  throw '实验环境时间不在允许的 fresh window。'
 }
-
-$releaseManifestPath = Join-Path ([string]$lab.releaseDirectory) 'manifest.json'
-$releaseManifest = Get-Content -LiteralPath $releaseManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json -Depth 100
-if ([string]$releaseManifest.source.commitSha -ne [string]$lab.releaseSourceCommit -or [int]$releaseManifest.files.records.rowCount -ne 520) {
-  throw 'Public Release manifest 与实验环境锁不一致。'
+if ([string]$lab.labContainer -notmatch '^baihepailei-radar-unified-release-lab-') { throw '实验容器名称不在允许前缀内。' }
+if ([int]$lab.labPort -lt 31000 -or [int]$lab.labPort -gt 31999) { throw '实验数据库端口不在 31000-31999。' }
+if ([string]$lab.databaseUrl -notmatch '^postgresql://radar_lab:[a-f0-9]+@127\.0\.0\.1:31[0-9]{3}/radar_unified_release_lab$') {
+  throw '实验数据库连接串不符合本地临时容器约束。'
 }
 
 $containerRunning = ([string](& docker inspect -f '{{.State.Running}}' ([string]$lab.labContainer))).Trim()
@@ -196,22 +190,20 @@ try {
 
 $email = Get-ConfiguredValue @('RADAR_PAYLOAD_EMAIL', 'PAYLOAD_EXPORT_EMAIL', 'PAYLOAD_SEED_EMAIL', 'SITE_OWNER_EMAIL')
 $password = Get-ConfiguredValue @('RADAR_PAYLOAD_PASSWORD', 'PAYLOAD_EXPORT_PASSWORD', 'PAYLOAD_SEED_PASSWORD')
-if (-not $email -or -not $password) {
-  throw '无法解析 Payload 管理员凭据；请通过一键入口安全预检并以内存环境变量传入。'
-}
+if (-not $email -or -not $password) { throw '无法解析 Payload 管理员凭据。' }
 
-node --check '.\scripts\radar\run-public-release-lab-import-v01.mjs'
-node --check '.\scripts\radar\reconcile-radar-public-dev-schema-v01.mjs'
-node --test '.\tests\radar-public-release-lab-v01.test.mjs' '.\tests\radar-public-release-plan-v01.test.mjs'
+node --check '.\scripts\radar\run-unified-release-lab-import-0575-v01.mjs'
+node --check '.\scripts\radar\reconcile-radar-public-dev-schema-v02.mjs'
+node --test '.\tests\radar-unified-release-lab-0575-v01.test.mjs' '.\tests\radar-unified-rating-release-plan-v01.test.mjs'
 if ($LASTEXITCODE -ne 0) { throw '实验室回归测试失败。' }
 pnpm exec tsc --noEmit
 if ($LASTEXITCODE -ne 0) { throw 'TypeScript 检查失败。' }
 
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$outDir = Join-Path $repoRoot "data_local\outputs\radar-public-release-v01\lab-execution-$stamp"
+$outDir = Join-Path $repoRoot "data_local\outputs\radar-unified-release-lab-0575-v01\lab-execution-$stamp"
 $importDir = Join-Path $outDir 'import'
-$evidenceDir = Join-Path $repoRoot "exports\radar-public-release-lab-$stamp"
-$bundlePath = Join-Path $repoRoot "exports\RADAR-PUBLIC-RELEASE-LAB-$stamp.zip"
+$evidenceDir = Join-Path $repoRoot "exports\radar-unified-release-lab-0575-$stamp"
+$bundlePath = Join-Path $repoRoot "exports\RADAR-UNIFIED-RELEASE-LAB-0575-$stamp.zip"
 New-Item -ItemType Directory -Path $outDir, $importDir, $evidenceDir -Force | Out-Null
 $appProcess = $null
 $containerRemoved = $false
@@ -223,34 +215,35 @@ $success = $false
 try {
   Write-Host ''
   Write-Host '==> 对齐临时克隆中的历史 Radar migration 登记' -ForegroundColor Green
-  node '.\scripts\radar\reconcile-radar-public-dev-schema-v01.mjs' `
+  node '.\scripts\radar\reconcile-radar-public-dev-schema-v02.mjs' `
     --environment-file $environmentPath `
     --expected-website-head $ExpectedWebsiteHead `
     --out-dir $outDir `
-    --confirm 'RECONCILE-ISOLATED-RADAR-PUBLIC-DEV-SCHEMA-V01'
+    --confirm 'RECONCILE-ISOLATED-RADAR-PUBLIC-DEV-SCHEMA-V02'
   if ($LASTEXITCODE -ne 0) { throw '历史 Radar schema 对齐失败。' }
 
-  $reconciliationPath = Join-Path $outDir 'radar-public-dev-schema-reconciliation-v01.json'
+  $reconciliationPath = Join-Path $outDir 'radar-public-dev-schema-reconciliation-v02.json'
   $reconciliation = Get-Content -LiteralPath $reconciliationPath -Raw -Encoding UTF8 | ConvertFrom-Json -Depth 100
   if (
     $reconciliation.accepted -ne $true -or
     $reconciliation.schemaSignatureMatched -ne $true -or
     [int]$reconciliation.developmentMigrationMarkersRemoved -ne 1 -or
     [int]$reconciliation.historicalMigrationRowsRegistered -ne 2 -or
+    [int]$reconciliation.recordsMigrationRowsRegistered -ne 0 -or
+    [int]$reconciliation.ratingsMigrationRowsRegistered -ne 0 -or
     $reconciliation.sourceDatabaseWrite -ne $false -or
     $reconciliation.productionAuthorization -ne $false
-  ) {
-    throw '历史 Radar schema 对齐回执不符合预期。'
-  }
+  ) { throw '历史 Radar schema 对齐回执不符合预期。' }
 
   Write-Host ''
-  Write-Host '==> 只在临时 PostgreSQL 执行正式迁移' -ForegroundColor Green
+  Write-Host '==> 只在临时 PostgreSQL 执行 Records 与 Ratings 正式迁移' -ForegroundColor Green
   Invoke-WithEnvironment -Variables @{
     DATABASE_URL = [string]$lab.databaseUrl
     PAYLOAD_DB_PUSH = 'false'
     STEWARDSHIP_NOTICES_SCHEMA_READY = 'true'
     RADAR_PUBLIC_CONCLUSIONS_SCHEMA_READY = 'true'
     RADAR_PUBLIC_RECORDS_SCHEMA_READY = 'true'
+    RADAR_PUBLIC_RATINGS_SCHEMA_READY = 'true'
   } -Action {
     pnpm payload migrate 1> (Join-Path $outDir 'payload-migrate-stdout.txt') 2> (Join-Path $outDir 'payload-migrate-stderr.txt')
     if ($LASTEXITCODE -ne 0) { throw '临时数据库迁移失败。' }
@@ -259,19 +252,20 @@ try {
   $migrationNames = Join-Path $outDir 'migration-names.txt'
   & docker exec -e "PGPASSWORD=$($lab.labPassword)" ([string]$lab.labContainer) psql -X -qAt -v ON_ERROR_STOP=1 `
     -U ([string]$lab.labUser) -d ([string]$lab.labDatabase) `
-    -c "SELECT name FROM payload_migrations WHERE name IN ('20260723_141905_current_schema_baseline_before_radar_public_v01', '20260723_141908_radar_public_conclusions_v01', '20260801_101546_current_schema_baseline_before_radar_public_records_v01', '20260801_101551_radar_public_records_v01') ORDER BY name;" `
+    -c "SELECT name FROM payload_migrations ORDER BY name;" `
     1> $migrationNames 2> (Join-Path $outDir 'migration-names-stderr.txt')
   if ($LASTEXITCODE -ne 0) { throw '读取迁移登记失败。' }
   $names = @(Get-Content -LiteralPath $migrationNames -Encoding UTF8 | Where-Object { $_ })
   $expectedNames = @(
+    '20260718_072813_existing_schema_baseline_v01',
+    '20260718_072843_stewardship_notices_v01',
     '20260723_141905_current_schema_baseline_before_radar_public_v01',
     '20260723_141908_radar_public_conclusions_v01',
     '20260801_101546_current_schema_baseline_before_radar_public_records_v01',
-    '20260801_101551_radar_public_records_v01'
+    '20260801_101551_radar_public_records_v01',
+    '20260802_030535_radar_public_ratings_v01'
   )
-  if (($names -join "`n") -ne ($expectedNames -join "`n")) {
-    throw "迁移登记不符合预期：$($names -join ', ')"
-  }
+  if (($names -join "`n") -ne ($expectedNames -join "`n")) { throw "迁移登记不符合预期：$($names -join ', ')" }
 
   Write-Host ''
   Write-Host '==> 启动仅连接临时数据库的实验网站' -ForegroundColor Green
@@ -282,13 +276,14 @@ try {
     STEWARDSHIP_NOTICES_SCHEMA_READY = 'true'
     RADAR_PUBLIC_CONCLUSIONS_SCHEMA_READY = 'true'
     RADAR_PUBLIC_RECORDS_SCHEMA_READY = 'true'
+    RADAR_PUBLIC_RATINGS_SCHEMA_READY = 'true'
     NEXT_PUBLIC_SERVER_URL = $baseUrl
-    RADAR_PUBLIC_RELEASE_LAB_MODE = 'true'
-    RADAR_PUBLIC_RELEASE_LAB_NONCE = $nonce
-    RADAR_PUBLIC_RELEASE_LAB_DATABASE = [string]$lab.labDatabase
-    RADAR_PUBLIC_RELEASE_LAB_WEBSITE_COMMIT = [string]$lab.websiteCommit
-    RADAR_PUBLIC_RELEASE_LAB_RESEARCH_HEAD = [string]$lab.researchHead
-    RADAR_PUBLIC_RELEASE_LAB_RELEASE_SOURCE_COMMIT = [string]$lab.releaseSourceCommit
+    RADAR_UNIFIED_RELEASE_LAB_MODE = 'true'
+    RADAR_UNIFIED_RELEASE_LAB_NONCE = $nonce
+    RADAR_UNIFIED_RELEASE_LAB_DATABASE = [string]$lab.labDatabase
+    RADAR_UNIFIED_RELEASE_LAB_WEBSITE_COMMIT = [string]$lab.websiteCommit
+    RADAR_UNIFIED_RELEASE_LAB_RESEARCH_HEAD = [string]$lab.researchHead
+    RADAR_UNIFIED_RELEASE_LAB_RELEASE_ID = $ReleaseId
   } -Action {
     $script:appProcess = Start-Process -FilePath $pnpmCommand `
       -ArgumentList @('exec', 'next', 'dev', '--hostname', '127.0.0.1', '--port', [string]$appPort) `
@@ -301,29 +296,35 @@ try {
   Write-JsonFile (Join-Path $outDir 'lab-marker.json') $marker
 
   Write-Host ''
-  Write-Host '==> 创建 520 条公开研究记录并复核 520 already_current' -ForegroundColor Green
+  Write-Host '==> 创建 575 条事实记录与 575 条评级并验证幂等收敛' -ForegroundColor Green
   Invoke-WithEnvironment -Variables @{
-    RADAR_PUBLIC_RELEASE_LAB_NONCE = $nonce
+    RADAR_UNIFIED_RELEASE_LAB_NONCE = $nonce
     RADAR_PAYLOAD_EMAIL = $email
     RADAR_PAYLOAD_PASSWORD = $password
   } -Action {
-    node '.\scripts\radar\run-public-release-lab-import-v01.mjs' `
+    node '.\scripts\radar\run-unified-release-lab-import-0575-v01.mjs' `
       --input ([string]$lab.releaseDirectory) `
       --url $baseUrl `
       --out-dir $importDir `
+      --mode fresh `
       --expected-website-commit ([string]$lab.websiteCommit) `
       --expected-research-head ([string]$lab.researchHead) `
-      --expected-release-source-commit ([string]$lab.releaseSourceCommit) `
       --expected-database ([string]$lab.labDatabase) `
-      --confirm 'RUN-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01'
-    if ($LASTEXITCODE -ne 0) { throw '实验室 520 条导入失败。' }
+      --confirm 'RUN-ISOLATED-RADAR-UNIFIED-RELEASE-LAB-0575-V01'
+    if ($LASTEXITCODE -ne 0) { throw '统一 Release 隔离导入失败。' }
   }
 
-  $receiptPath = Join-Path $importDir 'radar-public-release-lab-import-receipt-v01.json'
+  $receiptPath = Join-Path $importDir 'accepted-receipt.json'
   $receipt = Get-Content -LiteralPath $receiptPath -Raw -Encoding UTF8 | ConvertFrom-Json -Depth 100
-  if ($receipt.accepted -ne $true -or [int]$receipt.createdRows -ne 520 -or [int]$receipt.finalPlan.alreadyCurrent -ne 520) {
-    throw '实验室导入回执没有达到 520 create / 520 already_current。'
-  }
+  if (
+    $receipt.accepted -ne $true -or
+    [int]$receipt.counts.factCreate -ne 575 -or
+    [int]$receipt.counts.ratingCreate -ne 575 -or
+    [int]$receipt.counts.factUpdate -ne 0 -or
+    [int]$receipt.counts.ratingUpdate -ne 0 -or
+    [int]$receipt.postImport.recordStatusCounts.already_current -ne 575 -or
+    [int]$receipt.postImport.ratingStatusCounts.already_current -ne 575
+  ) { throw '导入回执没有达到 575 + 575 create / already_current。' }
 
   $environmentDir = Split-Path -Parent $environmentPath
   $countSql = Join-Path $environmentDir 'table-counts.sql'
@@ -341,9 +342,9 @@ try {
     $before = [long]$beforeCounts[$key]
     $after = [long]$afterCounts[$key]
     if ($key -eq 'public.audit_events') {
-      if ($after -ne $before + 520) { throw "audit_events 增量不是 520：$before -> $after" }
+      if ($after -ne $before + 1150) { throw "audit_events 增量不是 1150：$before -> $after" }
     } elseif ($key -eq 'public.payload_migrations') {
-      if ($after -ne $before + 3) { throw "payload_migrations 净增量不是 3：$before -> $after" }
+      if ($after -ne $before + 4) { throw "payload_migrations 净增量不是 4：$before -> $after" }
     } elseif ($key -eq 'public.users_sessions') {
       if ($after -ne $before + 1) { throw "users_sessions 增量不是 1：$before -> $after" }
     } elseif ($after -ne $before) {
@@ -351,38 +352,47 @@ try {
     }
   }
 
+  $storage = $receipt.expectedStorage
   $expectedNew = [ordered]@{
-    'public.radar_public_records' = 520
-    'public.radar_public_records_facts' = [long]$receipt.expectedFacts
-    'public.radar_public_records_evidence' = [long]$receipt.expectedEvidence
-    'public.radar_public_records_facts_source_refs' = [long]$receipt.expectedSourceRefs
+    'public.radar_public_records' = [long]$storage.publicRecords
+    'public.radar_public_records_facts' = [long]$storage.facts
+    'public.radar_public_records_evidence' = [long]$storage.evidence
+    'public.radar_public_records_facts_source_refs' = [long]$storage.factSourceRefs
+    'public.radar_public_ratings' = [long]$storage.publicRatings
+    'public.radar_public_ratings_matched_classes' = [long]$storage.matchedClasses
+    'public.radar_public_ratings_fact_refs' = [long]$storage.ratingFactRefs
+    'public.radar_public_ratings_evidence_refs' = [long]$storage.ratingEvidenceRefs
+    'public.radar_public_ratings_unresolved_dimensions' = [long]$storage.unresolvedDimensions
+    'public.radar_public_ratings_confirmation_basis' = [long]$storage.confirmationBasis
+    'public.radar_public_ratings_public_tag_hints' = [long]$storage.publicTagHints
+    'public.radar_public_ratings_public_warning_template_ids' = [long]$storage.publicWarningTemplateIds
+    'public.radar_public_ratings_human_review_proposed_profile_changes' = [long]$storage.proposedProfileChanges
+    'public.radar_public_ratings_human_review_additional_evidence_refs' = [long]$storage.additionalEvidenceRefs
   }
   $newKeys = @($afterCounts.Keys | Where-Object { -not $beforeCounts.ContainsKey($_) } | Sort-Object)
   $expectedNewKeys = @($expectedNew.Keys | Sort-Object)
-  if (($newKeys -join "`n") -ne ($expectedNewKeys -join "`n")) {
-    throw "迁移新增表集合不符合预期：$($newKeys -join ', ')"
-  }
+  if (($newKeys -join "`n") -ne ($expectedNewKeys -join "`n")) { throw "迁移新增表集合不符合预期：$($newKeys -join ', ')" }
   foreach ($key in $expectedNew.Keys) {
     if ([long]$afterCounts[$key] -ne [long]$expectedNew[$key]) { throw "新表行数不符合预期：$key" }
   }
 
   Write-JsonFile (Join-Path $outDir 'lab-acceptance.json') ([ordered]@{
-    schemaVersion = 'radar-public-release-lab-acceptance-v01'
+    schemaVersion = 'radar-unified-release-lab-acceptance-0575-v01'
     websiteCommit = [string]$lab.websiteCommit
     researchHead = [string]$lab.researchHead
-    releaseSourceCommit = [string]$lab.releaseSourceCommit
-    publicRecords = 520
-    facts = [long]$receipt.expectedFacts
-    evidence = [long]$receipt.expectedEvidence
-    sourceRefs = [long]$receipt.expectedSourceRefs
-    auditEventsAdded = 520
+    releaseId = $ReleaseId
+    publicRecords = 575
+    publicRatings = 575
+    expectedStorage = $storage
+    auditEventsAdded = 1150
     authenticationSessionsAdded = 1
-    formalMigrationsAdded = 4
+    formalMigrationsAdded = 5
     developmentMigrationMarkersRemoved = 1
-    payloadMigrationsNetAdded = 3
+    payloadMigrationsNetAdded = 4
     historicalSchemaReconciled = $true
     historicalSchemaSignatureSha256 = [string]$reconciliation.actualSchemaSignatureSha256
-    postImportAlreadyCurrent = 520
+    postImportFactsAlreadyCurrent = 575
+    postImportRatingsAlreadyCurrent = 575
     protectedFingerprintsUnchanged = $true
     worksMutation = $false
     humanAssessmentMutation = $false
@@ -392,7 +402,7 @@ try {
     sourceDatabaseWrite = $false
     productionAuthorization = $false
     accepted = $true
-    decision = 'accept_isolated_radar_public_release_lab_v01'
+    decision = 'accept_isolated_unified_rating_release_lab_0575_v01'
   })
 
   Stop-LabApp $appProcess
@@ -408,8 +418,8 @@ try {
     ([string]$lab.sourceProtectedFingerprints), `
     ([string]$lab.sourcePostTableCounts), `
     ([string]$lab.sourcePostProtectedFingerprints), `
-    ([string]$lab.restoredTableCounts), `
-    ([string]$lab.restoredProtectedFingerprints) `
+    ([string]$lab.labRestoredTableCounts), `
+    ([string]$lab.labRestoredProtectedFingerprints) `
     -Destination $evidenceDir -Force
   Write-Manifest $evidenceDir
   Compress-Archive -Path (Join-Path $evidenceDir '*') -DestinationPath $bundlePath -CompressionLevel Optimal -Force
@@ -417,21 +427,22 @@ try {
   $success = $true
 
   Write-Host ''
-  Write-Host '隔离 Public Release 迁移与导入演练通过。' -ForegroundColor Green
-  Write-Host "ResearchHead             : $($lab.researchHead)"
-  Write-Host "ReleaseSourceCommit      : $($lab.releaseSourceCommit)"
-  Write-Host 'SourceDatabaseWrite      : False'
-  Write-Host 'MigrationTarget          : IsolatedTemporaryContainer'
+  Write-Host '统一 Release 隔离迁移与导入演练通过。' -ForegroundColor Green
+  Write-Host "ResearchHead              : $($lab.researchHead)"
+  Write-Host "ReleaseId                 : $ReleaseId"
+  Write-Host 'SourceDatabaseWrite       : False'
+  Write-Host 'MigrationTarget           : IsolatedTemporaryContainer'
   Write-Host 'HistoricalSchemaReconciled: True'
-  Write-Host 'PublicRecordsCreated     : 520'
-  Write-Host 'PostImportAlreadyCurrent : 520'
-  Write-Host 'AuthenticationSessionsAdded: 1'
-  Write-Host 'WorksMutation            : False'
-  Write-Host 'HumanAssessmentMutation  : False'
-  Write-Host 'RadarAssessmentMutation  : False'
-  Write-Host 'ProductionAuthorization  : False'
-  Write-Host "EvidenceBundle           : $bundlePath"
-  Write-Host "EvidenceSHA256           : $bundleHash"
+  Write-Host 'PublicRecordsCreated      : 575'
+  Write-Host 'PublicRatingsCreated      : 575'
+  Write-Host 'PostFactsAlreadyCurrent   : 575'
+  Write-Host 'PostRatingsAlreadyCurrent : 575'
+  Write-Host 'WorksMutation             : False'
+  Write-Host 'HumanAssessmentMutation   : False'
+  Write-Host 'RadarAssessmentMutation   : False'
+  Write-Host 'ProductionAuthorization   : False'
+  Write-Host "EvidenceBundle            : $bundlePath"
+  Write-Host "EvidenceSHA256            : $bundleHash"
 } finally {
   Stop-LabApp $appProcess
   if (-not $containerRemoved) { & docker rm -f ([string]$lab.labContainer) 2>$null | Out-Null }
