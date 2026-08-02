@@ -35,37 +35,37 @@ jobs:
           path = Path('scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1')
           text = path.read_text(encoding='utf-8')
 
-          old_start = """  $process = $null
-          Invoke-RadarWithEnvironment -Variables @{
-          """
-          new_start = """  $script:process = $null
-          $null = Invoke-RadarWithEnvironment -Variables @{
-          """
+          old_start = "  $process = $null\n  Invoke-RadarWithEnvironment -Variables @{\n"
+          new_start = "  $script:process = $null\n  $null = Invoke-RadarWithEnvironment -Variables @{\n"
 
-          old_end = """  }
-          Wait-IncrementalMarker $baseUrl $Nonce $Phase $DatabaseName $CandidateSha256 $process | Out-Null
-          return [pscustomobject]@{ Process = $process; BaseUrl = $baseUrl }
-          """
-          new_end = """  }
-          $process = Get-RadarActiveProcess $null
-          if ($null -eq $process -or -not ($process -is [System.Diagnostics.Process])) {
-            throw '临时 Payload 进程句柄无效。'
-          }
-          Wait-IncrementalMarker $baseUrl $Nonce $Phase $DatabaseName $CandidateSha256 $process | Out-Null
-          return [pscustomobject]@{ Process = $process; BaseUrl = $baseUrl }
-          """
+          old_end = (
+              "  }\n"
+              "  Wait-IncrementalMarker $baseUrl $Nonce $Phase $DatabaseName $CandidateSha256 $process | Out-Null\n"
+              "  return [pscustomobject]@{ Process = $process; BaseUrl = $baseUrl }\n"
+          )
+          new_end = (
+              "  }\n"
+              "  $process = Get-RadarActiveProcess $null\n"
+              "  if ($null -eq $process -or -not ($process -is [System.Diagnostics.Process])) {\n"
+              "    throw '临时 Payload 进程句柄无效。'\n"
+              "  }\n"
+              "  Wait-IncrementalMarker $baseUrl $Nonce $Phase $DatabaseName $CandidateSha256 $process | Out-Null\n"
+              "  return [pscustomobject]@{ Process = $process; BaseUrl = $baseUrl }\n"
+          )
 
-          old_wait = """  $deadline = [DateTime]::UtcNow.AddSeconds($ReadyTimeoutSeconds)
-          do {
-            if ($Process.HasExited) { throw "临时 Payload 进程提前退出：$($Process.ExitCode)" }
-          """
-          new_wait = """  if ($null -eq $Process -or -not ($Process -is [System.Diagnostics.Process])) {
-            throw '临时 Payload 进程句柄无效。'
-          }
-          $deadline = [DateTime]::UtcNow.AddSeconds($ReadyTimeoutSeconds)
-          do {
-            if ($Process.HasExited) { throw "临时 Payload 进程提前退出：$($Process.ExitCode)" }
-          """
+          old_wait = (
+              "  $deadline = [DateTime]::UtcNow.AddSeconds($ReadyTimeoutSeconds)\n"
+              "  do {\n"
+              "    if ($Process.HasExited) { throw \"临时 Payload 进程提前退出：$($Process.ExitCode)\" }\n"
+          )
+          new_wait = (
+              "  if ($null -eq $Process -or -not ($Process -is [System.Diagnostics.Process])) {\n"
+              "    throw '临时 Payload 进程句柄无效。'\n"
+              "  }\n"
+              "  $deadline = [DateTime]::UtcNow.AddSeconds($ReadyTimeoutSeconds)\n"
+              "  do {\n"
+              "    if ($Process.HasExited) { throw \"临时 Payload 进程提前退出：$($Process.ExitCode)\" }\n"
+          )
 
           replacements = [(old_start, new_start), (old_end, new_end), (old_wait, new_wait)]
           changed = False
