@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "radar-unified-rating-release-lock-v01",
+  "releaseId": "RADAR-UNIFIED-RATING-INCREMENTAL-RELEASE-9988-0001",
+  "researchRepository": "wtyliangtingRe/baihepailei-research-data",
+  "researchCommitSha": "c8790df95d1235d8d1aacabfb7c119fec9e1c642",
+  "releasePath": "releases/public/radar-unified-rating-incremental-release-9988-0001/v01",
+  "manifestSha256": "40c8e474c5a6614b259c2ab9402e404fab9bf0c9411c2a3590885f7e619fe896",
+  "recordsSha256": "827c5d8c7ea958bf614f2a19db2ad2db2a6847dd7c82d718614a4bcb9cac71a9",
+  "ratingsSha256": "4c1a55c8cdabbd92bb8c081a28b30b6c2f3e87d370dcfccb89ed776fe0d14d18",
+  "releaseIndexSha256": "0412d6e8108d1c0172001cc4986fd376475fdd2dfb52ee1848c14f022ccb419f",
+  "identityReviewExcludedSha256": "ad834663fc5b83dd5fbe0e46dd6e28b8684b5b6853e74099929f0f308a55c7a2",
+  "previousRelease": {
+    "releaseId": "RADAR-UNIFIED-RATING-RELEASE-0575-0001",
+    "recordsSha256": "4dcf9e6790fa7175f18b7c91ed3b2f6522ec6d87c623183f0369491b06123605",
+    "recordCount": 575
+  },
+  "counts": {
+    "sourceRows": 10000,
+    "records": 9988,
+    "ratings": 9988,
+    "identityReviewExcluded": 12,
+    "newRecords": 9988,
+    "newRatings": 9988,
+    "facts": 39952,
+    "evidence": 12673,
+    "sourceRefs": 50692,
+    "httpEvidenceSources": 6,
+    "httpsEvidenceSources": 12667
+  },
+  "gradeCounts": {
+    "B": 182,
+    "D": 9796,
+    "E": 10
+  },
+  "classCounts": {
+    "B-LIGHT": 182,
+    "D-SETTING-PROFILE": 80,
+    "D-UNCLEAR": 9716,
+    "E-MALE-POSSIBILITY": 7,
+    "E-NTR": 3
+  },
+  "policyVersion": "radar-internal-processing-policy-v03+radar-unified-rating-incremental-release-v03",
+  "researchSnapshotId": "RADAR-NEXT-CANONICAL-RESEARCH-10000-0001",
+  "expectedTransition": {
+    "recordStatusCounts": {
+      "ready_create": 9988
+    },
+    "ratingStatusCounts": {
+      "ready_create": 9988
+    },
+    "updates": 0,
+    "deletes": 0,
+    "blockers": 0
+  },
+  "productionAuthorization": false
+}
