@@ -201,12 +201,6 @@ function Wait-IncrementalMarker(
   if ($null -eq $Process -or -not ($Process -is [System.Diagnostics.Process])) {
     throw '临时 Payload 进程句柄无效。'
   }
-  if ($null -eq $Process -or -not ($Process -is [System.Diagnostics.Process])) {
-    throw '临时 Payload 进程句柄无效。'
-  }
-  if ($null -eq $Process -or -not ($Process -is [System.Diagnostics.Process])) {
-    throw '临时 Payload 进程句柄无效。'
-  }
   $deadline = [DateTime]::UtcNow.AddSeconds($ReadyTimeoutSeconds)
   do {
     if ($Process.HasExited) { throw "临时 Payload 进程提前退出：$($Process.ExitCode)" }
@@ -507,10 +501,11 @@ if (-not $password) { throw 'Payload 管理员密码不能为空。' }
 
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $script:outDir = Join-Path $repoRoot "data_local\outputs\radar-unified-rating-incremental-release-9988-v01\rehearsal-v02-$stamp"
+$script:importerRunRoot = Join-Path $repoRoot "data_local\outputs\radar-unified-rating-incremental-production-9988-v01\rehearsal-v02-$stamp"
 $backupDir = Join-Path $repoRoot 'data_local\backups\radar-unified-rating-incremental-release-9988-v01'
 $evidenceDir = Join-Path $repoRoot "exports\radar-unified-rating-incremental-release-9988-v02-$stamp"
 $evidenceZip = Join-Path $repoRoot "exports\RADAR-UNIFIED-RATING-INCREMENTAL-REHEARSAL-9988-V02-$stamp.zip"
-New-Item -ItemType Directory -Path $outDir, $backupDir, $evidenceDir -Force | Out-Null
+New-Item -ItemType Directory -Path $outDir, $importerRunRoot, $backupDir, $evidenceDir -Force | Out-Null
 $stagePath = Join-Path $outDir 'rehearsal-stage-status.json'
 $stage = [ordered]@{
   schemaVersion = 'radar-unified-rating-incremental-rehearsal-stage-9988-v02'
@@ -622,6 +617,7 @@ try {
     researchHead = $ExpectedResearchHead
     releaseId = $ReleaseId
     releaseDirectory = $releaseDirectory
+    importerOutputRoot = $importerRunRoot
     releaseFiles = $ExpectedReleaseFiles
     transitionPlan = [ordered]@{
       directory = $resolvedTransitionPlan
@@ -701,11 +697,20 @@ try {
   foreach ($mode in @('plan', 'apply', 'verify')) {
     $nonce = [Guid]::NewGuid().ToString('N')
     $app = Start-TemporaryApp $tempDatabaseUrl $tempDatabase $mode $nonce $candidateSha256 "temporary-$mode" $outDir
-    $importDir = Join-Path $outDir "temporary-$mode-import"
+    $importDir = Join-Path $importerRunRoot "temporary-$mode-import"
+    $archivedImportDir = Join-Path $outDir "temporary-$mode-import"
     Invoke-IncrementalImporter $mode $app.BaseUrl $tempDatabase $nonce $email $password $releaseDirectory $candidateSha256 $importDir
     Stop-RadarProcess $app.Process
     $app = $null
-    $receipt = Get-Content -LiteralPath (Join-Path $importDir 'accepted-receipt.json') -Raw -Encoding UTF8 | ConvertFrom-Json -Depth 100
+    if (-not (Test-Path -LiteralPath $importDir -PathType Container)) {
+      throw "Importer $mode 未生成输出目录：$importDir"
+    }
+    if (Test-Path -LiteralPath $archivedImportDir) {
+      throw "Rehearsal 证据归档目录已存在：$archivedImportDir"
+    }
+    New-Item -ItemType Directory -Path $archivedImportDir -Force | Out-Null
+    Get-ChildItem -LiteralPath $importDir -Force | Copy-Item -Destination $archivedImportDir -Recurse -Force
+    $receipt = Get-Content -LiteralPath (Join-Path $archivedImportDir 'accepted-receipt.json') -Raw -Encoding UTF8 | ConvertFrom-Json -Depth 100
     if ($mode -eq 'plan') {
       Assert-PlanReceipt $receipt
       $stage.rehearsalPlanPassed = $true
@@ -751,6 +756,7 @@ try {
     candidatePath = $candidatePath
     candidateSha256 = $candidateSha256
     transitionPlanDirectory = $resolvedTransitionPlan
+    importerOutputRoot = $importerRunRoot
     transitionSummarySha256 = Get-FileSha $transitionSummaryPath
     transitionLedgerSha256 = Get-FileSha $transitionLedgerPath
     freshBackupPath = $freshBackupPath
@@ -813,6 +819,7 @@ if ($null -ne $operationError) {
     failedAt = [DateTime]::UtcNow.ToString('o')
     message = $operationError.Exception.Message
     transitionPlanDirectory = $resolvedTransitionPlan
+    importerOutputRoot = $importerRunRoot
     candidatePath = $candidatePath
     candidateSha256 = $candidateSha256
     freshBackupPath = $freshBackupPath

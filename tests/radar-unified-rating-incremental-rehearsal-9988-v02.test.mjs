@@ -96,3 +96,14 @@ test('failure cleanup is explicit and retry remains disabled', () => {
   assert.match(source, /operatorMustInspectBeforeRetry = \$true/)
   assert.doesNotMatch(source, /git\s+(?:reset\s+--hard|clean\s+-)/)
 })
+
+
+test('importer writes only under its production output root and is copied into rehearsal evidence', () => {
+  assert.match(source, /radar-unified-rating-incremental-production-9988-v01\\rehearsal-v02-\$stamp/)
+  assert.match(source, /\$importDir = Join-Path \$importerRunRoot "temporary-\$mode-import"/)
+  assert.match(source, /\$archivedImportDir = Join-Path \$outDir "temporary-\$mode-import"/)
+  assert.match(source, /Get-ChildItem -LiteralPath \$importDir -Force \| Copy-Item -Destination \$archivedImportDir -Recurse -Force/)
+  assert.match(source, /Join-Path \$archivedImportDir 'accepted-receipt\.json'/)
+  assert.doesNotMatch(source, /\$importDir = Join-Path \$outDir "temporary-\$mode-import"/)
+  assert.match(source, /importerOutputRoot = \$importerRunRoot/)
+})

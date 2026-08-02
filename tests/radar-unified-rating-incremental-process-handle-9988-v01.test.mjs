@@ -11,6 +11,7 @@ test('temporary app returns one real Process handle', () => {
   assert.equal((source.match(/\$script:process = \$null/g) || []).length, 1)
   assert.equal((source.match(/\$null = Invoke-RadarWithEnvironment -Variables/g) || []).length, 1)
   assert.equal((source.match(/\$process = Get-RadarActiveProcess \$null/g) || []).length, 1)
+  assert.equal((source.match(/throw '临时 Payload 进程句柄无效。'/g) || []).length, 2)
   assert.match(source, /\$process -is \[System\.Diagnostics\.Process\]/)
   assert.match(source, /return \[pscustomobject\]@\{ Process = \$process; BaseUrl = \$baseUrl \}/)
 
