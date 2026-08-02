@@ -1,153 +1,171 @@
-# Radar Public Release Isolated Lab v01
+# Radar Unified Rating Release 0575 Isolated Lab v01
 
-This stage rehearses the additive `radar-public-records` migration and the first 520-row unrated Public Release import against a disposable PostgreSQL clone. It does not authorize or perform a production migration or production import.
+## Purpose
+
+This lab rehearses the accepted private research release against a disposable PostgreSQL clone:
+
+```text
+RADAR-UNIFIED-RATING-RELEASE-0575-0001
+```
+
+It creates two separate public projections:
+
+- 575 `radar-public-records` fact/evidence records;
+- 575 `radar-public-ratings` machine-rating records.
+
+It does not authorize or perform a production migration or production import.
 
 ## Locked inputs
 
-- website migration base: `af83019f37354098f884f531ea5fe91d05f50108` plus the current PR head supplied at execution time;
-- research repository head: `6ee4051effa95e19370bb0a2f26500293177212a`;
-- Public Release manifest source commit: `1555eb3e66cd2f8bb7d5048db1afab969ff819dd`;
-- release: `RADAR-PUBLIC-RELEASE-0001`;
-- rows: 520;
-- records SHA-256: `ecb4440e7e102fd69c5a4ebf1f70970d832944f6a50af924cb9437b3c49dc3e0`;
-- rated rows: 0.
+- research repository: `wtyliangtingRe/baihepailei-research-data`;
+- research commit: `728ad2da5f7d3aba03f652b9fd701157b06793ee`;
+- records: 575;
+- ratings: 575;
+- facts: 2,387;
+- evidence: 678;
+- grades: B 476 / D 97 / E 2;
+- all human review states: blank, `unreviewed`, non-blocking.
 
-The research head identifies the committed package. The manifest source commit identifies the canonical snapshot from which it was exported. They are intentionally different and are verified separately.
+The website lock file pins the manifest, records, ratings and release-index SHA-256 values. Phase 1 refuses any byte drift.
 
-## Permanent entrypoints
+## Why this is a fresh-state rehearsal
 
-- `scripts/radar/run-radar-public-release-lab-v01.ps1`
-- `scripts/radar/prepare-radar-public-release-lab-database-v01.ps1`
-- `scripts/radar/execute-radar-public-release-lab-v01.ps1`
-- `scripts/radar/reconcile-radar-public-dev-schema-v01.mjs`
-- `scripts/radar/run-public-release-lab-import-v01.mjs`
-- `src/app/(payload)/api/radar-public-release-lab-marker/route.ts`
-- `tests/radar-public-release-lab-v01.test.mjs`
+The real source database has never received the old 520-row Public Records release. It has neither `radar_public_records` nor `radar_public_ratings`.
 
-The one-command runner is the canonical operator entrypoint. The preparer may read the source container but cannot migrate or import. The executor and reconciler may change only the disposable clone and have no source-container parameters or source-database commands.
+The actual isolated rehearsal therefore expects:
 
-## Source-container behavior
+```text
+fact creates     575
+rating creates   575
+fact updates       0
+rating updates     0
+```
 
-The runner:
+The separate offline planner still proves the hypothetical old-520 transition:
 
-1. reuses `baihepailei-postgres` when already running;
-2. starts that exact container when it exists but is stopped;
-3. invokes `docker compose up -d postgres` only when no exact-name source container exists;
-4. never removes or recreates the source container.
+```text
+fact updates     520
+fact creates      55
+rating creates   575
+```
 
-It securely preflights the existing Payload administrator credentials before cloning, keeps the password only in process memory, and normalizes the generated environment timestamp using `DateTimeOffset` so the four-hour freshness gate remains stable across PowerShell versions.
+That is a future compatibility test, not the current database starting state.
 
-Fallback cleanup is limited to the exact current-run disposable container, the current-run dump under `data_local/backups/radar-public-release-lab-v01`, and the current-run credentials-bearing environment file. The source PostgreSQL container and `.env` are never cleanup targets.
+## One-command entrypoint
 
-## Phase 1: clone only
-
-The preparer:
-
-1. locks website and research commits;
-2. validates the manifest and 520-row count;
-3. requires exactly 35,615 Works and no source `radar_public_records` table;
-4. records public-table counts and protected fingerprints;
-5. creates a fresh custom-format read-only `pg_dump`;
-6. restores it into a random disposable PostgreSQL container bound to `127.0.0.1:31000-31999`;
-7. requires clone counts and fingerprints to match;
-8. reruns source checks and requires the source to remain unchanged;
-9. writes a short-lived local environment file.
-
-It performs no migration or import.
-
-## Historical schema reconciliation
-
-The restored clone contains an old `radar_public*` schema created by a development push while `payload_migrations` has one `dev / -1` marker instead of the two accepted July Radar rows.
-
-The reconciler:
-
-1. requires that exact migration and table boundary;
-2. creates a second disposable reference database from the clone;
-3. removes the old Radar schema only in the reference;
-4. executes the locked historical migrations only in the reference;
-5. compares byte-exact normalized signatures for relations, columns, defaults, enums, constraints, indexes, sequences, triggers, policies and grants;
-6. only after equality, replaces one development marker with the two equivalent historical registrations in the main disposable clone;
-7. destroys the reference in every path.
-
-No historical migration is weakened with `IF NOT EXISTS`.
-
-## Phase 2: disposable clone only
-
-The executor:
-
-1. accepts only a fresh generated lab environment, fixed container/database identity and loopback port;
-2. verifies website, research and release-source identities again;
-3. runs historical reconciliation only inside the disposable container;
-4. applies the accepted August migration only to the clone;
-5. starts Payload on loopback port 32000-39999 with a nonce-bound marker;
-6. requires 520 initial `ready_create` and zero blockers, updates or current rows;
-7. creates records sequentially through the authenticated Payload API;
-8. replans and requires 520 `already_current`;
-9. requires four new `radar_public_records*` tables, four formal migration additions, one development marker removal, net migration +3 and 520 audit events;
-10. requires all other counts and protected fingerprints unchanged;
-11. removes the temporary app, database, dump and credentials file;
-12. creates a checksum-bound evidence ZIP without database bytes or credentials.
-
-## REST payload compatibility
-
-The migration stores `work_id` as an integer foreign key and fact values as `jsonb`.
-
-The importer therefore:
-
-- sends the exact matched Works primary key as a positive safe integer;
-- blocks malformed relationship IDs before any write;
-- preserves fact values exactly, including strings, objects, arrays, booleans and numbers;
-- applies explicit JSON-safe validation so primitive values are not wrapped or rewritten;
-- keeps source record and release hashes unchanged.
-
-It still rejects remote hosts, HTTPS, port 3000, out-of-range ports, missing confirmation, marker or identity mismatches, blockers, PUT and DELETE.
-
-## Validated runtime baseline
-
-REST compatibility code head:
-
-`c946507e2a57cfc2e37a7dd91418c6b32def01db`
-
-Accepted automated runs:
-
-- Plan `30705978662`: success;
-- Migration `30705978661`: success;
-- Lab `30705978659`: success.
-
-The latest real local run completed clone verification, historical reconciliation, formal migration and isolated startup. It stopped on the first create because the relationship ID was text and primitive facts used default JSON validation. No source write occurred and bounded cleanup completed. The branch now contains type-preserving fixes and regressions for both inputs.
-
-Documentation-only commits may advance the PR head without changing this runtime baseline. Execution must always supply the current exact PR head from `git rev-parse HEAD`.
-
-## Local execution
-
-Keep the normal `pnpm dev` process stopped.
+Run from PowerShell 7 with the normal development server stopped:
 
 ```powershell
 Set-Location "D:\0GitHubtest\Baihepailei"
-git switch "agent/radar-public-release-lab-v01"
-git pull --ff-only origin "agent/radar-public-release-lab-v01"
+
+git fetch origin
+git switch "agent/radar-unified-release-lab-0575-v01"
+git pull --ff-only origin "agent/radar-unified-release-lab-0575-v01"
+
+$Head = (git rev-parse HEAD).Trim()
 
 pwsh `
   -NoProfile `
   -ExecutionPolicy Bypass `
-  -File ".\scripts\radar\run-radar-public-release-lab-v01.ps1" `
-  -ExpectedWebsiteHead "<CURRENT_PR_HEAD_SHA>" `
-  -Confirm "RUN-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01"
+  -File ".\scripts\radar\run-radar-unified-release-lab-0575-v01.ps1" `
+  -ExpectedWebsiteHead $Head `
+  -Confirm "RUN-ISOLATED-RADAR-UNIFIED-RELEASE-LAB-0575-V01"
 ```
 
-Expected receipt:
+The wrapper preserves local generated changes to `next-env.d.ts` and `payload-types.ts` and rejects every other unexpected dirty path.
+
+## Phase 1: source-readonly clone
+
+The preparer:
+
+1. locks the exact website and research commits;
+2. verifies all four Release hashes;
+3. requires 35,615 Works;
+4. requires both public projection tables to be absent in the source;
+5. fingerprints Works, versions and all old Radar tracks;
+6. creates a fresh custom-format dump;
+7. restores it into a random loopback-only PostgreSQL container;
+8. requires restored counts and fingerprints to equal the source;
+9. rereads the source and requires it to remain byte-equivalent;
+10. writes a short-lived local environment file containing only disposable credentials.
+
+It performs no migration and no import.
+
+## Historical schema reconciliation
+
+The source database contains the old public Radar schema created by development schema push, represented by one `dev / -1` migration marker.
+
+The reconciler operates only inside the disposable clone:
+
+1. creates a second disposable reference database;
+2. removes the old Radar schema only in the reference;
+3. runs the accepted formal migration in the reference;
+4. compares normalized `pg_dump --schema-only` output for the complete old Radar table family;
+5. requires exact equality;
+6. replaces the clone's one development marker with the two equivalent July migration registrations;
+7. leaves the Records and Ratings migrations unapplied;
+8. destroys the reference database in every path.
+
+The source container is not an accepted parameter and cannot be accessed by the reconciler.
+
+## Phase 2: disposable migration and import
+
+The executor:
+
+1. applies the two Public Records migration entries and one Public Ratings migration only to the disposable clone;
+2. requires all seven formal migration names;
+3. starts Next/Payload on a random loopback port with a nonce-bound marker;
+4. authenticates using an existing administrator account whose password remains in process memory;
+5. validates the unified Release again;
+6. creates facts and ratings sequentially through the two dedicated Payload collections;
+7. performs no Works API write, PUT or DELETE;
+8. rereads both collections;
+9. requires 575 fact plans and 575 rating plans to be `already_current`;
+10. checks every new main/child table count;
+11. requires old protected fingerprints to remain unchanged;
+12. destroys the app and disposable database;
+13. deletes the temporary dump and environment file;
+14. writes a checksum-bound evidence ZIP without database bytes or credentials.
+
+## Exact expected deltas
 
 ```text
-SourceDatabaseWrite      : False
-MigrationTarget          : IsolatedTemporaryContainer
-PublicRecordsCreated     : 520
-PostImportAlreadyCurrent : 520
-WorksMutation            : False
-HumanAssessmentMutation  : False
-RadarAssessmentMutation  : False
-ProductionAuthorization  : False
+new projection tables           14
+public fact records             575
+public rating records           575
+audit events added            1,150
+authentication sessions added    1
+formal migration rows added       5
+development markers removed       1
+payload_migrations net change     4
+Works mutations                   0
+human assessment mutations        0
+legacy AI assessment mutations    0
+old public conclusion mutations   0
+source database writes             0
 ```
 
-A failed lab must restart from Phase 1 and never resume a partially imported clone.
+All nine Public Ratings child arrays and all three Public Records child-table totals are taken from the validated Release plan and checked against PostgreSQL after import.
 
-A successful lab still does not authorize production. Production requires a separately reviewed candidate with fresh backup, exact preflight, apply-once locking, post-apply verification, rollback instructions and explicit human authorization.
+## Failure behavior
+
+A failed run is never resumed. The next run starts from a new source dump and a new random container.
+
+Cleanup is restricted to:
+
+- the current-run container name;
+- the current-run dump under `data_local/backups/radar-unified-release-lab-0575-v01`;
+- the current-run environment file.
+
+The source container, source database, `.env` files and normal site data are never cleanup targets.
+
+## Acceptance is not production authorization
+
+A successful receipt still records:
+
+```text
+SourceDatabaseWrite     : False
+ProductionAuthorization : False
+```
+
+Production requires a separate candidate with a fresh backup, exact read-only preflight, apply-once lock, post-apply readback, rollback package and explicit authorization.
