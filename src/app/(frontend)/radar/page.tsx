@@ -293,7 +293,7 @@ export default async function RadarIndexPage({ searchParams }: { searchParams: S
               <article className="collection-card radar-list-card" key={record.id}>
                 <div className="radar-public-heading-row">
                   <div className="work-card-badges">
-                    <span className="radar-grade-badge">{rating?.coreGrade ? `${rating.coreGrade} 级` : '未评级'}</span>
+                    <span className="radar-grade-badge">{rating?.coreGrade ? `机器 ${rating.coreGrade} 级` : '未评级'}</span>
                     <span className="work-type-chip">{stateLabel(record.publicState)}</span>
                     <span className="work-type-chip">置信度 {confidenceLabel(rating?.confidence)}</span>
                     <span className="work-type-chip">{reviewLabel(rating?.humanReview?.status)}</span>
