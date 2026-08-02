@@ -1,20 +1,24 @@
-name: Validate Radar Public Release Lab v01
+name: Validate Radar Unified Release Lab 0575 v01
 
 on:
   pull_request:
     types: [opened, reopened, synchronize]
     branches: [main]
     paths:
-      - '.github/workflows/validate-radar-public-release-lab-v01.yml'
-      - 'src/app/(payload)/api/radar-public-release-lab-marker/route.ts'
-      - 'scripts/radar/run-radar-public-release-lab-v01.ps1'
-      - 'scripts/radar/run-public-release-lab-import-v01.mjs'
-      - 'scripts/radar/reconcile-radar-public-dev-schema-v01.mjs'
-      - 'scripts/radar/prepare-radar-public-release-lab-database-v01.ps1'
-      - 'scripts/radar/execute-radar-public-release-lab-v01.ps1'
-      - 'tests/radar-public-release-lab-v01.test.mjs'
-      - 'scripts/radar/lib/public-release-v01.mjs'
-      - 'scripts/radar/lib/public-release-plan-v01.mjs'
+      - '.github/workflows/validate-radar-unified-release-lab-0575-v01.yml'
+      - 'src/app/(payload)/api/radar-unified-release-lab-marker/route.ts'
+      - 'scripts/radar/run-radar-unified-release-lab-0575-v01.ps1'
+      - 'scripts/radar/prepare-radar-unified-release-lab-database-0575-v01.ps1'
+      - 'scripts/radar/execute-radar-unified-release-lab-0575-v01.ps1'
+      - 'scripts/radar/reconcile-radar-public-dev-schema-v02.mjs'
+      - 'scripts/radar/run-unified-release-lab-import-0575-v01.mjs'
+      - 'scripts/radar/lib/unified-rating-release-plan-v01.mjs'
+      - 'tests/radar-unified-release-lab-0575-v01.test.mjs'
+      - 'tests/radar-unified-rating-release-plan-v01.test.mjs'
+      - 'config/radar-unified-rating-release-0575-v01.lock.json'
+      - 'docs/guides/radar-unified-rating-release-lab-0575-v01.md'
+      - 'docs/guides/radar-unified-release-incremental-upsert-0575-v01.md'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -30,14 +34,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Parse PowerShell lab entrypoints
+      - name: Parse PowerShell entrypoints
         shell: pwsh
         run: |
           $allErrors = @()
           foreach ($path in @(
-            'scripts/radar/run-radar-public-release-lab-v01.ps1',
-            'scripts/radar/prepare-radar-public-release-lab-database-v01.ps1',
-            'scripts/radar/execute-radar-public-release-lab-v01.ps1'
+            'scripts/radar/run-radar-unified-release-lab-0575-v01.ps1',
+            'scripts/radar/prepare-radar-unified-release-lab-database-0575-v01.ps1',
+            'scripts/radar/execute-radar-unified-release-lab-0575-v01.ps1'
           )) {
             $errors = $null
             [System.Management.Automation.Language.Parser]::ParseFile(
@@ -49,36 +53,37 @@ jobs:
               $allErrors += @($errors | ForEach-Object { "$path`: $($_.Message)" })
             }
           }
-          if ($allErrors.Count -gt 0) {
-            $allErrors -join "`n" | Write-Error
-          }
-      - name: Check Node lab scripts syntax
+          if ($allErrors.Count -gt 0) { $allErrors -join "`n" | Write-Error }
+      - name: Check Node scripts syntax
         run: |
-          node --check scripts/radar/run-public-release-lab-import-v01.mjs
-          node --check scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
-      - name: Run isolated lab and planner tests
+          node --check scripts/radar/run-unified-release-lab-import-0575-v01.mjs
+          node --check scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
+      - name: Run unified Release lab and planner tests
         run: |
           node --test \
-            tests/radar-public-release-lab-v01.test.mjs \
-            tests/radar-public-release-plan-v01.test.mjs \
-            tests/radar-public-records-schema.test.mjs \
-            tests/radar-public-release-v01.test.mjs
-      - name: Confirm lab-only write surface
+            tests/radar-unified-release-lab-0575-v01.test.mjs \
+            tests/radar-unified-rating-release-plan-v01.test.mjs \
+            tests/radar-public-ratings-schema.test.mjs \
+            tests/radar-public-records-schema.test.mjs
+      - name: Confirm disposable-only write surface
+        shell: bash
         run: |
-          grep -q 'RUN-ISOLATED-RADAR-PUBLIC-RELEASE-LAB-V01' scripts/radar/run-public-release-lab-import-v01.mjs
-          grep -q 'RADAR_PUBLIC_RELEASE_LAB_NONCE' src/app/\(payload\)/api/radar-public-release-lab-marker/route.ts
-          grep -q "method: 'POST'" scripts/radar/run-public-release-lab-import-v01.mjs
-          grep -q "method: 'PATCH'" scripts/radar/run-public-release-lab-import-v01.mjs
-          ! grep -E "method: '(PUT|DELETE)'" scripts/radar/run-public-release-lab-import-v01.mjs
-          grep -q 'omissionMeansDelete: false' scripts/radar/run-public-release-lab-import-v01.mjs
-          grep -q 'RECONCILE-ISOLATED-RADAR-PUBLIC-DEV-SCHEMA-V01' scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
-          grep -q 'actualBuffer.equals(referenceBuffer)' scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
-          grep -q "process.env.ComSpec || 'cmd.exe'" scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
-          grep -q 'pnpm.cmd payload migrate' scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
-          grep -q 'developmentMigrationMarkersRemoved: 1' scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
-          ! grep -E 'baihepailei-postgres|SourcePostgresContainer|pg_dump' scripts/radar/reconcile-radar-public-dev-schema-v01.mjs
-          grep -q 'docker ps -aq --filter' scripts/radar/run-radar-public-release-lab-v01.ps1
-          ! grep -E 'docker rm.*baihepailei-postgres' scripts/radar/run-radar-public-release-lab-v01.ps1
-          ! grep -E 'SourcePostgresContainer|SourceDatabaseUser|pg_dump' scripts/radar/execute-radar-public-release-lab-v01.ps1
+          set -euo pipefail
+          grep -q 'RUN-ISOLATED-RADAR-UNIFIED-RELEASE-LAB-0575-V01' scripts/radar/run-radar-unified-release-lab-0575-v01.ps1
+          grep -q 'RADAR_UNIFIED_RELEASE_LAB_NONCE' src/app/\(payload\)/api/radar-unified-release-lab-marker/route.ts
+          grep -q "method: 'POST'" scripts/radar/run-unified-release-lab-import-0575-v01.mjs
+          grep -q "method: 'PATCH'" scripts/radar/run-unified-release-lab-import-0575-v01.mjs
+          ! grep -E "method: '(PUT|DELETE)'" scripts/radar/run-unified-release-lab-import-0575-v01.mjs
+          grep -q 'omissionMeansDelete: false' scripts/radar/run-unified-release-lab-import-0575-v01.mjs
+          grep -q 'normalized_pg_dump_schema_only' scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
+          grep -q "process.env.ComSpec || 'cmd.exe'" scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
+          grep -q 'pnpm.cmd payload migrate' scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
+          grep -q 'developmentMigrationMarkersRemoved: 1' scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
+          ! grep -E 'baihepailei-postgres|SourcePostgresContainer|pg_dump -Fc' scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
+          grep -q 'docker ps -aq --filter' scripts/radar/run-radar-unified-release-lab-0575-v01.ps1
+          ! grep -E 'docker rm.*baihepailei-postgres' scripts/radar/run-radar-unified-release-lab-0575-v01.ps1
+          ! grep -E 'SourcePostgresContainer|SourceDatabaseUser|pg_dump -Fc' scripts/radar/execute-radar-unified-release-lab-0575-v01.ps1
+          grep -q 'SourceDatabaseWrite       : False' scripts/radar/execute-radar-unified-release-lab-0575-v01.ps1
+          grep -q 'ProductionAuthorization   : False' scripts/radar/execute-radar-unified-release-lab-0575-v01.ps1
       - name: Check diff whitespace
         run: git diff --check origin/main...HEAD
