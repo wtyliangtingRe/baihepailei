@@ -21,6 +21,7 @@ on:
       - 'tests/radar-unified-rating-incremental-release-9988-v01.test.mjs'
       - 'tests/radar-unified-rating-incremental-release-9988-lock-fixture.test.mjs'
       - 'tests/radar-unified-rating-incremental-rehearsal-9988-v02.test.mjs'
+      - 'tests/radar-unified-rating-incremental-process-handle-9988-v01.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -64,6 +65,7 @@ jobs:
           tests/radar-unified-rating-incremental-release-9988-v01.test.mjs
           tests/radar-unified-rating-incremental-release-9988-lock-fixture.test.mjs
           tests/radar-unified-rating-incremental-rehearsal-9988-v02.test.mjs
+          tests/radar-unified-rating-incremental-process-handle-9988-v01.test.mjs
       - name: Validate locked private-Research snapshot
         run: >-
           node scripts/radar/validate-unified-rating-incremental-release-lock-9988-v01.mjs
