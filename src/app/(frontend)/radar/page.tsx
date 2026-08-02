@@ -198,7 +198,14 @@ export default async function RadarIndexPage({ searchParams }: { searchParams: S
         page: 1,
         pagination: true,
         overrideAccess: true,
-        where: { publicationKey: { in: keys } },
+        where: filters.status === 'all'
+          ? { publicationKey: { in: keys } }
+          : {
+              and: [
+                { publicationKey: { in: keys } },
+                { recordStatus: { equals: filters.status } },
+              ],
+            },
       })
     : { docs: [] }
   const ratings = ratingResult.docs as unknown as RadarRating[]
