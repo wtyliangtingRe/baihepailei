@@ -7,7 +7,6 @@ on:
     paths:
       - '.github/workflows/validate-radar-unified-rating-incremental-release-9988-v01.yml'
       - 'config/radar-unified-rating-incremental-release-9988-v01.lock.json'
-      - 'scripts/radar/patch-incremental-production-dual-stack-port-v01.mjs'
       - 'scripts/radar/validate-unified-rating-incremental-release-lock-9988-v01.mjs'
       - 'scripts/radar/validate-unified-rating-incremental-release-9988-v01.mjs'
       - 'scripts/radar/plan-unified-rating-incremental-release-9988-v01.mjs'
@@ -32,7 +31,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate-release:
@@ -42,14 +41,10 @@ jobs:
       - name: Checkout website repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           fetch-depth: 0
-          persist-credentials: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Apply exact Docker dual-stack port fix
-        run: node scripts/radar/patch-incremental-production-dual-stack-port-v01.mjs
       - name: Parse PowerShell wrappers
         shell: pwsh
         run: |
@@ -93,23 +88,7 @@ jobs:
           node scripts/radar/validate-unified-rating-incremental-release-lock-9988-v01.mjs
           --output _artifacts/radar-unified-rating-incremental-release-9988-lock-validation-v01.json
       - name: Check diff whitespace
-        run: git diff --check
-      - name: Commit dual-stack port fix when changed
-        env:
-          BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
-        run: |
-          git add -- \
-            scripts/radar/lib/radar-unified-rating-incremental-production-9988-v01.ps1 \
-            tests/radar-unified-rating-incremental-production-gates-9988-v01.test.mjs
-          git rm -- scripts/radar/patch-incremental-production-dual-stack-port-v01.mjs
-          if git diff --cached --quiet; then
-            echo 'Dual-stack production port gate already fixed.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Allow exact Docker dual-stack database bindings'
-          git push origin "HEAD:$BRANCH"
+        run: git diff --check origin/main...HEAD
       - name: Upload lock validation receipt
         uses: actions/upload-artifact@v4
         with:
