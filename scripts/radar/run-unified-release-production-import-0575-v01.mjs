@@ -12,6 +12,18 @@ const CONFIRM = 'RUN-RADAR-UNIFIED-RELEASE-PRODUCTION-IMPORT-0575-V01'
 const LOCK_PATH = 'config/radar-unified-rating-release-0575-v01.lock.json'
 const OUTPUT_ROOT = path.resolve('data_local/outputs/radar-unified-release-production-0575-v01')
 const ALLOWED_MODES = new Set(['plan', 'apply', 'verify'])
+const ALLOWED_ARGUMENTS = new Set([
+  'input',
+  'url',
+  'out-dir',
+  'mode',
+  'expected-main-head',
+  'expected-research-head',
+  'expected-database',
+  'expected-candidate-sha256',
+  'expected-phase',
+  'confirm',
+])
 const OPTIONAL_HUMAN_REVIEW_FIELDS = [
   'reviewerIdentity',
   'reviewedAt',
@@ -278,10 +290,15 @@ function assertMarker(marker, expected) {
   ) throw new Error(`Production marker mismatch: ${JSON.stringify(marker)}`)
 }
 
+export function assertAllowedArguments(args) {
+  const unknown = Object.keys(args).filter((key) => !ALLOWED_ARGUMENTS.has(key))
+  if (unknown.length) throw new Error(`Forbidden arguments: ${unknown.join(', ')}`)
+  return true
+}
+
 export async function run(argv = process.argv.slice(2)) {
   const args = parseArgs(argv)
-  const forbidden = Object.keys(args).filter((key) => /remote|force|delete|withdraw|incremental|update|patch|put|rollback/iu.test(key))
-  if (forbidden.length) throw new Error(`Forbidden arguments: ${forbidden.join(', ')}`)
+  assertAllowedArguments(args)
   if (args.confirm !== CONFIRM) throw new Error(`--confirm must equal ${CONFIRM}`)
 
   const mode = val(args.mode).toLowerCase()
