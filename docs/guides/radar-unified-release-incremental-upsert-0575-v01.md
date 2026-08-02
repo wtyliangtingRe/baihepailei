@@ -1,106 +1,121 @@
-# Radar Public Release Incremental Upsert v01
+# Radar Unified Fact and Rating Upsert v01
 
-This policy defines how the public research collection continues to receive new and corrected data after the website is online. It does not authorize production writes by itself.
+## Model
 
-## Release model
+Every accepted cumulative Release contains two projections in identical identity order:
 
-Every Public Release remains an immutable, checksum-bound package. The recommended post-launch format is a cumulative public snapshot: a later release contains all records that should remain current, including unchanged records, corrected records and newly publishable records.
+- `records.jsonl` → `radar-public-records`;
+- `ratings.jsonl` → `radar-public-ratings`.
 
-The planner compares each release row against the current `radar-public-records` projection by exact identity only:
+Both bind to the same exact `workId + siteId` identity. Titles are never an identity fallback.
 
-- `ready_create`: the exact Work exists and no current public record exists;
-- `ready_update`: the same publication key and identity exist, but release-bound content changed;
-- `already_current`: the current public record already equals the release projection;
-- `blocked_*`: identity, duplicate or schema ambiguity prevents the whole apply candidate from proceeding.
+## Plan states
 
-A package containing 550 records after the first 520-record release might therefore plan as, for example:
+Each projection is independently classified as:
+
+- `ready_create` — no current projection exists;
+- `ready_update` — the same exact identity exists but Release-owned content changed;
+- `already_current` — the stored projection already equals the Release;
+- `blocked_*` — duplicate, missing or conflicting identity prevents execution.
+
+A Release row is executable only when both its fact and rating projections are unblocked.
+
+## Current first import
+
+The source database has neither public projection collection, so the first accepted lab plan is:
 
 ```text
-ready_create     30
-ready_update      4
-already_current 516
-blocked           0
+facts ready_create     575
+ratings ready_create   575
+blockers                 0
 ```
 
-The apply result must converge to all 550 rows being `already_current`.
+After execution, both projections must replan as:
 
-## Idempotent apply behavior
+```text
+facts already_current   575
+ratings already_current 575
+```
 
-The lab importer supports two explicit modes:
+## Hypothetical previous-release state
 
-- `initial`: requires every release row to be `ready_create`;
-- `incremental`: permits only `ready_create`, `ready_update` and `already_current`, with zero blockers.
+The offline planner also proves compatibility with a database that already contained the old 520 fact-only Release:
 
-Incremental execution performs:
+```text
+facts ready_update      520
+facts ready_create       55
+ratings ready_create    575
+blockers                  0
+```
+
+This protects future migrations or restored snapshots, but it is not the current production starting state.
+
+## Apply behavior
+
+The guarded lab importer allows only:
 
 - authenticated `POST` for `ready_create`;
-- authenticated `PATCH` to the exact current record ID for `ready_update`;
+- authenticated `PATCH` to the exact current document ID for `ready_update`;
 - no request for `already_current`;
-- no `PUT` or `DELETE` path.
+- no `PUT`;
+- no `DELETE`;
+- no Works creation or update.
 
-After every create or update, the returned document is checked for publication key, identity key, Work binding, record hash and status. The complete release is then replanned and must converge to `already_current` for every row.
+Every write response is checked for publication key, identity key, Work relationship, snapshots and current status. The full Release is then replanned from a fresh read.
 
 ## Omission and withdrawal
 
-Omitting a record from a later package never means deletion, withdrawal or unpublication. This prevents an incomplete exporter run from silently removing public data.
+Omission from a later Release never means deletion, withdrawal or unpublication. A future withdrawal mechanism must be separately reviewed and require an explicit publication key, expected current hash, reason, evidence and rollback receipt.
 
-Withdrawal requires a future, separately reviewed mechanism with:
-
-- an explicit target publication key;
-- a stated reason and supporting evidence;
-- an expected current record hash;
-- a dedicated confirmation and audit receipt;
-- no title-only targeting;
-- rollback instructions.
-
-Until that mechanism exists, the incremental importer rejects delete, rollback and withdrawal flags.
-
-## Identity and overwrite boundaries
-
-Incremental publication retains the same identity rules as the first release:
-
-- `workId` and `siteId` must resolve to the same exact Work;
-- title matching is never a fallback;
-- a publication key already bound to another identity is blocked;
-- duplicate Work IDs, site IDs or current publication keys are blocked;
-- the importer never creates Works;
-- the importer never writes Works, human assessments, AI rating fields or the old `radar_public` conclusion track.
-
-The Public Release owns only the release-bound projection fields in `radar-public-records`. A later production runner must continue to compare and protect every unrelated table and field.
-
-## Publication sequence after launch
-
-A normal ongoing update should follow this sequence:
+Until then:
 
 ```text
-new canonical research
-→ immutable Public Release package
-→ independent package validation
-→ authenticated read-only plan against current website state
-→ review create/update/blocker partition
-→ disposable cloned-database rehearsal
-→ require all release rows already_current after apply
-→ checksum-bound evidence receipt
-→ separately armed production candidate
-→ post-production readback and rollback checkpoint
+omissionMeansDelete       false
+explicitWithdrawalRequired true
 ```
 
-No research exporter, scheduled job or website request may skip directly from package generation to production writes.
+## Ownership boundaries
 
-## Concurrency and release ordering
+The fact projection owns only:
 
-Production candidates must be serialized. Each candidate should bind:
+- public research state;
+- evidence-bound facts;
+- evidence references;
+- Release provenance and record hashes.
 
-- the expected current website commit;
-- the expected database backup hash;
-- the expected previous release ID and records hash;
-- the new release ID and records hash;
-- the exact create, update and already-current counts from the accepted plan.
+The rating projection owns only:
 
-If any bound value changes before execution, the candidate expires and must be replanned. Two Public Releases must never apply concurrently.
+- core/best/likely/worst grades;
+- matched public classes;
+- public reasoning and unresolved dimensions;
+- tag/warning hints;
+- blank or future moderated review data;
+- rating provenance and hashes.
 
-## Current implementation status
+Neither projection overwrites:
 
-The shared lab importer already implements guarded initial and incremental modes. PR #325 still runs Release 0001 in strict `initial` mode, because the source database has not yet received the first 520 records.
+- `Works.radarAssessment`;
+- `Works.humanAssessment`;
+- `Works.rank`;
+- old `radar-public-conclusions`;
+- unrelated facts, tags or site content.
 
-After the initial production stage is separately designed and accepted, the recurring production workflow should reuse the incremental planner and apply semantics while adding production-only backup, lock, rollback and post-apply gates.
+## Future cumulative releases
+
+A later cumulative Release may contain unchanged, corrected and newly researched works. Normal sequence:
+
+```text
+private canonical research
+→ immutable cumulative Release
+→ checksum and exact-identity validation
+→ read-only current-state plan
+→ disposable cloned-database rehearsal
+→ require both projections already_current
+→ checksum-bound evidence
+→ separately armed production candidate
+→ post-apply verification and rollback checkpoint
+```
+
+Two Release candidates must never execute concurrently. Every candidate must bind the website commit, research commit, previous Release hashes, new Release hashes, backup hash and exact create/update/current partitions.
+
+This policy does not authorize production writes.
