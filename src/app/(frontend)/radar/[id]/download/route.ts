@@ -6,6 +6,8 @@ import { isEditor } from '@/access/roles'
 
 export const dynamic = 'force-dynamic'
 
+type RecordStatus = 'current' | 'withdrawn'
+
 function jsonError(message: string, status: number) {
   return new Response(JSON.stringify({ error: message }) + '\n', {
     status,
@@ -19,6 +21,10 @@ function jsonError(message: string, status: number) {
 function safeFilenamePart(value: unknown) {
   const normalized = String(value || '').normalize('NFKC').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '')
   return normalized.slice(0, 80) || 'record'
+}
+
+function recordStatusOf(value: unknown): RecordStatus {
+  return value === 'withdrawn' ? 'withdrawn' : 'current'
 }
 
 export async function GET(
@@ -45,7 +51,7 @@ export async function GET(
   }
 
   const publicationKey = String(record.publicationKey || '')
-  const recordStatus = String(record.recordStatus || 'current')
+  const recordStatus = recordStatusOf(record.recordStatus)
   const ratingResult = await payload.find({
     collection: 'radar-public-ratings',
     depth: 0,
