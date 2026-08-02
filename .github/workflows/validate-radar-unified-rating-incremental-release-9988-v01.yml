@@ -1,0 +1,98 @@
+name: Validate Radar unified incremental Release 9988 v01
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-radar-unified-rating-incremental-release-9988-v01.yml'
+      - 'config/radar-unified-rating-incremental-release-9988-v01.lock.json'
+      - 'scripts/radar/validate-unified-rating-incremental-release-lock-9988-v01.mjs'
+      - 'scripts/radar/validate-unified-rating-incremental-release-9988-v01.mjs'
+      - 'scripts/radar/plan-unified-rating-incremental-release-9988-v01.mjs'
+      - 'scripts/radar/run-unified-rating-incremental-plan-9988-v01.ps1'
+      - 'scripts/radar/run-unified-rating-incremental-production-import-9988-v01.mjs'
+      - 'scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1'
+      - 'scripts/radar/audit-unified-rating-incremental-rehearsal-evidence-9988-v01.ps1'
+      - 'scripts/radar/prepare-unified-rating-incremental-production-candidate-9988-v01.ps1'
+      - 'scripts/radar/run-unified-rating-incremental-production-apply-once-9988-v01.ps1'
+      - 'scripts/radar/lib/unified-rating-release-plan-v01.mjs'
+      - 'scripts/radar/lib/public-release-plan-v01.mjs'
+      - 'scripts/radar/lib/radar-unified-release-production-0575-v01.ps1'
+      - 'scripts/radar/lib/radar-unified-rating-incremental-production-9988-v01.ps1'
+      - 'src/app/(payload)/api/radar-unified-rating-incremental-production-marker/route.ts'
+      - 'tests/fixtures/radar-unified-rating-incremental-release-9988-v01/**'
+      - 'tests/radar-unified-rating-incremental-release-9988-v01.test.mjs'
+      - 'tests/radar-unified-rating-incremental-release-9988-lock-fixture.test.mjs'
+      - 'tests/radar-unified-rating-incremental-rehearsal-9988-v02.test.mjs'
+      - 'tests/radar-unified-rating-incremental-process-handle-9988-v01.test.mjs'
+      - 'tests/radar-unified-rating-incremental-evidence-audit-9988-v01.test.mjs'
+      - 'tests/radar-unified-rating-incremental-production-gates-9988-v01.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout website repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Parse PowerShell wrappers
+        shell: pwsh
+        run: |
+          $paths = @(
+            'scripts/radar/run-unified-rating-incremental-plan-9988-v01.ps1',
+            'scripts/radar/rehearse-unified-rating-incremental-release-9988-v02.ps1',
+            'scripts/radar/audit-unified-rating-incremental-rehearsal-evidence-9988-v01.ps1',
+            'scripts/radar/prepare-unified-rating-incremental-production-candidate-9988-v01.ps1',
+            'scripts/radar/run-unified-rating-incremental-production-apply-once-9988-v01.ps1',
+            'scripts/radar/lib/radar-unified-rating-incremental-production-9988-v01.ps1'
+          )
+          foreach ($path in $paths) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path -LiteralPath $path),
+              [ref]$tokens,
+              [ref]$parseErrors
+            ) | Out-Null
+            if ($parseErrors.Count -gt 0) {
+              foreach ($parseErrorItem in $parseErrors) {
+                $line = $parseErrorItem.Extent.StartLineNumber
+                $column = $parseErrorItem.Extent.StartColumnNumber
+                $text = $parseErrorItem.Extent.Text
+                Write-Host "PARSE_ERROR file=$path line=$line column=$column text=[$text] message=$($parseErrorItem.Message)"
+              }
+              throw "PowerShell parse failed: $path"
+            }
+          }
+      - name: Run planner, importer, marker, lock, rehearsal, audit and production-gate tests
+        run: >-
+          node --test
+          tests/radar-unified-rating-incremental-release-9988-v01.test.mjs
+          tests/radar-unified-rating-incremental-release-9988-lock-fixture.test.mjs
+          tests/radar-unified-rating-incremental-rehearsal-9988-v02.test.mjs
+          tests/radar-unified-rating-incremental-process-handle-9988-v01.test.mjs
+          tests/radar-unified-rating-incremental-evidence-audit-9988-v01.test.mjs
+          tests/radar-unified-rating-incremental-production-gates-9988-v01.test.mjs
+      - name: Validate locked private-Research snapshot
+        run: >-
+          node scripts/radar/validate-unified-rating-incremental-release-lock-9988-v01.mjs
+          --output _artifacts/radar-unified-rating-incremental-release-9988-lock-validation-v01.json
+      - name: Check diff whitespace
+        run: git diff --check origin/main...HEAD
+      - name: Upload lock validation receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-unified-rating-incremental-release-9988-lock-validation-v01
+          path: _artifacts/radar-unified-rating-incremental-release-9988-lock-validation-v01.json
+          if-no-files-found: error
+          retention-days: 30
