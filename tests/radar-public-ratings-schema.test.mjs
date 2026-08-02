@@ -5,16 +5,25 @@ import test from 'node:test'
 const source = readFileSync('src/collections/RadarPublicRatings.ts', 'utf8')
 const contract = JSON.parse(readFileSync('config/radar-public-ratings-schema-v01.json', 'utf8'))
 
+function assertField(field) {
+  const explicitField = `name: '${field}'`
+  const valueArrayHelper = `valueArrayField('${field}'`
+  assert.ok(
+    source.includes(explicitField) || source.includes(valueArrayHelper),
+    `missing field ${field}`,
+  )
+}
+
 test('Radar public ratings implement the locked separate projection', () => {
   assert.equal(contract.collectionSlug, 'radar-public-ratings')
   assert.equal(contract.dbName, 'radar_public_ratings')
   assert.match(source, /slug: 'radar-public-ratings'/u)
   assert.match(source, /dbName: 'radar_public_ratings'/u)
   for (const field of [...contract.fields.identity, ...contract.fields.rating, ...contract.fields.publicPresentation, ...contract.fields.provenance]) {
-    assert.match(source, new RegExp(`name: '${field}'`, 'u'), `missing field ${field}`)
+    assertField(field)
   }
   for (const field of contract.fields.humanReview) {
-    assert.match(source, new RegExp(`name: '${field}'`, 'u'), `missing human review field ${field}`)
+    assertField(field)
   }
 })
 
