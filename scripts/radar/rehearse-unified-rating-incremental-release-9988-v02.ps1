@@ -280,8 +280,13 @@ function Start-TemporaryApp(
   if ($null -eq $process -or -not ($process -is [System.Diagnostics.Process])) {
     throw '临时 Payload 进程句柄无效。'
   }
-  Wait-IncrementalMarker $baseUrl $Nonce $Phase $DatabaseName $CandidateSha256 $process | Out-Null
-  return [pscustomobject]@{ Process = $process; BaseUrl = $baseUrl }
+  try {
+    Wait-IncrementalMarker $baseUrl $Nonce $Phase $DatabaseName $CandidateSha256 $process | Out-Null
+    return [pscustomobject]@{ Process = $process; BaseUrl = $baseUrl }
+  } catch {
+    Stop-RadarProcess $process
+    throw
+  }
 }
 
 function Invoke-IncrementalImporter(
