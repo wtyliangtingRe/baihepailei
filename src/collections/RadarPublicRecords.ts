@@ -1,9 +1,10 @@
 import type { Access, CollectionConfig } from 'payload'
 
-import { adminsOnly, editorsAndUp } from '@/access/roles'
+import { adminsOnly, editorsAndUp, isEditor } from '@/access/roles'
 
-const currentPublicOrStaff: Access = ({ req }) => {
-  if (req.user) return true
+const currentRegisteredOrStaff: Access = ({ req }) => {
+  if (!req.user) return false
+  if (isEditor(req.user)) return true
   return {
     recordStatus: {
       equals: 'current',
@@ -30,12 +31,12 @@ export const RadarPublicRecords: CollectionConfig = {
     ],
     group: '内容',
     useAsTitle: 'title',
-    description: '无评级的公开研究投影。保存已核实事实、来源与资料不足状态；不会覆盖 Works、人工评级或旧 Radar 评级。',
+    description: '注册用户可只读当前研究投影；编辑以上可检查撤回记录。保存已核实事实、来源与资料不足状态；不会覆盖 Works、人工评级或旧 Radar 评级。',
   },
   access: {
     create: editorsAndUp,
     delete: adminsOnly,
-    read: currentPublicOrStaff,
+    read: currentRegisteredOrStaff,
     update: editorsAndUp,
   },
   disableBulkDelete: true,
