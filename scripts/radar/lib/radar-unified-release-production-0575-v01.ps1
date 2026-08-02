@@ -94,12 +94,25 @@ function Get-RadarFreePort([int]$Minimum, [int]$Maximum) {
   throw '找不到空闲 loopback 端口。'
 }
 
+function Get-RadarActiveProcess([object]$Process) {
+  if ($null -ne $Process) { return $Process }
+  $scriptProcess = Get-Variable -Name process -Scope Script -ErrorAction SilentlyContinue
+  if ($null -ne $scriptProcess -and $null -ne $scriptProcess.Value) { return $scriptProcess.Value }
+  return $null
+}
+
 function Stop-RadarProcess([object]$Process) {
-  if ($null -eq $Process) { return }
+  $resolved = Get-RadarActiveProcess $Process
+  if ($null -eq $resolved) { return }
   try {
-    if ($IsWindows) { & taskkill.exe /PID $Process.Id /T /F 2>$null | Out-Null }
-    else { Stop-Process -Id $Process.Id -Force -ErrorAction SilentlyContinue }
-  } catch {}
+    if ($IsWindows) { & taskkill.exe /PID $resolved.Id /T /F 2>$null | Out-Null }
+    else { Stop-Process -Id $resolved.Id -Force -ErrorAction SilentlyContinue }
+  } catch {} finally {
+    $scriptProcess = Get-Variable -Name process -Scope Script -ErrorAction SilentlyContinue
+    if ($null -ne $scriptProcess -and $null -ne $scriptProcess.Value -and $scriptProcess.Value.Id -eq $resolved.Id) {
+      Set-Variable -Name process -Scope Script -Value $null
+    }
+  }
 }
 
 function Wait-RadarProductionMarker(
@@ -114,9 +127,11 @@ function Wait-RadarProductionMarker(
   [object]$Process,
   [int]$TimeoutSeconds
 ) {
+  $resolved = Get-RadarActiveProcess $Process
+  if ($null -eq $resolved) { throw '找不到 Payload 进程。' }
   $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
   do {
-    if ($Process.HasExited) { throw "Payload 进程提前退出：$($Process.ExitCode)" }
+    if ($resolved.HasExited) { throw "Payload 进程提前退出：$($resolved.ExitCode)" }
     try {
       $marker = Invoke-RestMethod -Uri "$Url/api/radar-unified-release-production-marker" -Method Get `
         -Headers @{ 'x-radar-unified-release-production-nonce' = $Nonce } -TimeoutSec 10
