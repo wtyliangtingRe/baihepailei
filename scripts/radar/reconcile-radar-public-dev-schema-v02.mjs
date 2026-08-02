@@ -11,6 +11,7 @@ const HISTORICAL_MIGRATION = '20260723_141908_radar_public_conclusions_v01'
 const RECORDS_BASELINE = '20260801_101546_current_schema_baseline_before_radar_public_records_v01'
 const RECORDS_MIGRATION = '20260801_101551_radar_public_records_v01'
 const RATINGS_MIGRATION = '20260802_030535_radar_public_ratings_v01'
+const FACT_VALUE_TEXT_MIGRATION = '20260802_045057_radar_public_record_fact_value_text_v01'
 const FORMAL_MIGRATIONS = [
   '20260718_072813_existing_schema_baseline_v01',
   '20260718_072843_stewardship_notices_v01',
@@ -19,6 +20,7 @@ const FORMAL_MIGRATIONS = [
   RECORDS_BASELINE,
   RECORDS_MIGRATION,
   RATINGS_MIGRATION,
+  FACT_VALUE_TEXT_MIGRATION,
 ]
 const OLD_RADAR_TABLES = [
   'radar_public',
@@ -168,7 +170,7 @@ END $$;
 DELETE FROM public.payload_migrations WHERE name = 'dev' AND batch = -1;
 INSERT INTO public.payload_migrations (name, batch, updated_at, created_at)
 SELECT name, 1, now(), now()
-FROM (VALUES ('${RECORDS_BASELINE}'), ('${RECORDS_MIGRATION}'), ('${RATINGS_MIGRATION}')) AS wanted(name)
+FROM (VALUES ('${RECORDS_BASELINE}'), ('${RECORDS_MIGRATION}'), ('${RATINGS_MIGRATION}'), ('${FACT_VALUE_TEXT_MIGRATION}')) AS wanted(name)
 WHERE NOT EXISTS (SELECT 1 FROM public.payload_migrations p WHERE p.name = wanted.name);
 COMMIT;`
   psql(referenceDatabase, setupReference, {
@@ -230,14 +232,15 @@ COMMIT;`
 BEGIN;
 LOCK TABLE public.payload_migrations IN ACCESS EXCLUSIVE MODE;
 DO $$
-DECLARE dev_count integer; historical_count integer; records_count integer; ratings_count integer;
+DECLARE dev_count integer; historical_count integer; records_count integer; ratings_count integer; fact_value_text_count integer;
 BEGIN
   SELECT count(*) INTO dev_count FROM public.payload_migrations WHERE name = 'dev' AND batch = -1;
   SELECT count(*) INTO historical_count FROM public.payload_migrations WHERE name IN ('${HISTORICAL_BASELINE}', '${HISTORICAL_MIGRATION}');
   SELECT count(*) INTO records_count FROM public.payload_migrations WHERE name IN ('${RECORDS_BASELINE}', '${RECORDS_MIGRATION}');
   SELECT count(*) INTO ratings_count FROM public.payload_migrations WHERE name = '${RATINGS_MIGRATION}';
-  IF dev_count <> 1 OR historical_count <> 0 OR records_count <> 0 OR ratings_count <> 0 THEN
-    RAISE EXCEPTION 'reconciliation precondition failed: dev %, historical %, records %, ratings %', dev_count, historical_count, records_count, ratings_count;
+  SELECT count(*) INTO fact_value_text_count FROM public.payload_migrations WHERE name = '${FACT_VALUE_TEXT_MIGRATION}';
+  IF dev_count <> 1 OR historical_count <> 0 OR records_count <> 0 OR ratings_count <> 0 OR fact_value_text_count <> 0 THEN
+    RAISE EXCEPTION 'reconciliation precondition failed: dev %, historical %, records %, ratings %, fact value text %', dev_count, historical_count, records_count, ratings_count, fact_value_text_count;
   END IF;
 END $$;
 DELETE FROM public.payload_migrations WHERE name = 'dev' AND batch = -1;
@@ -273,6 +276,7 @@ COMMIT;`
     historicalMigrationRowsRegistered: 2,
     recordsMigrationRowsRegistered: 0,
     ratingsMigrationRowsRegistered: 0,
+    factValueTextMigrationRowsRegistered: 0,
     sourceDatabaseWrite: false,
     productionAuthorization: false,
     accepted: true,
