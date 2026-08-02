@@ -6,13 +6,14 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/validate-radar-live-pages-v01.yml'
+      - 'src/collections/RadarPublicRecords.ts'
       - 'src/app/(frontend)/page.tsx'
       - 'src/app/(frontend)/layout.tsx'
       - 'src/app/(frontend)/radar.css'
       - 'src/app/(frontend)/radar/**'
+      - 'src/app/(frontend)/ratings/**'
       - 'src/app/(frontend)/_components/RadarPublicProjection.tsx'
       - 'src/app/(frontend)/works/[slug]/page.tsx'
-      - 'src/app/(frontend)/me/studio/radar/**'
       - 'tests/radar-live-pages.test.mjs'
 
 permissions:
@@ -29,7 +30,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run Radar live-page safety tests
+      - name: Run Radar access and presentation tests
         run: node --test tests/radar-live-pages.test.mjs
       - name: Check diff whitespace
         run: git diff --check origin/main...HEAD
