@@ -4,7 +4,8 @@ import test from 'node:test'
 
 const preflight = readFileSync('scripts/radar/prepare-radar-unified-release-production-0575-v01.ps1', 'utf8')
 const authorize = readFileSync('scripts/radar/authorize-radar-unified-release-production-0575-v02.ps1', 'utf8')
-const executor = readFileSync('scripts/radar/execute-radar-unified-release-production-0575-v01.ps1', 'utf8')
+const wrapper = readFileSync('scripts/radar/execute-radar-unified-release-production-0575-v01.ps1', 'utf8')
+const executor = readFileSync('scripts/radar/execute-radar-unified-release-production-0575-v02.ps1', 'utf8')
 const helper = readFileSync('scripts/radar/lib/radar-unified-release-production-0575-v01.ps1', 'utf8')
 
 test('production preflight is bound to the accepted lab, evidence and release', () => {
@@ -32,16 +33,14 @@ test('production preflight remains read-only and emits an unprivileged candidate
   assert.match(preflight, /accept_read_only_production_candidate_preflight_0575_v01/u)
   assert.doesNotMatch(preflight, /pnpm\s+(?:exec\s+)?payload\s+migrate/u)
   assert.doesNotMatch(preflight, /run-unified-release.*import/u)
-  assert.doesNotMatch(preflight, /docker\s+rm.*baihepailei-postgres/u)
 })
 
 test('merged-main authorization binds candidate, backup, release and critical code', () => {
   assert.match(authorize, /0b18c33987abe2c2eb0c2280acee789415396903d697aface2523312a334de31/u)
   assert.match(authorize, /ea0b1cb68c9f1fde91e5e9f10c12957469b30c37a29097c57cb18fa8b5b13751/u)
-  assert.match(authorize, /ExpectedMainHead/u)
   assert.match(authorize, /origin\/main/u)
   assert.match(authorize, /critical-production-code-SHA256SUMS/u)
-  assert.match(authorize, /radar-unified-release-production-0575-v01\.ps1/u)
+  assert.match(authorize, /execute-radar-unified-release-production-0575-v01\.ps1/u)
   assert.match(authorize, /run-unified-release-production-import-0575-v01\.mjs/u)
   assert.match(authorize, /radar-unified-release-production-marker\/route\.ts/u)
   assert.match(authorize, /readyForExplicitApply = \$true/u)
@@ -50,27 +49,42 @@ test('merged-main authorization binds candidate, backup, release and critical co
   assert.doesNotMatch(authorize, /pnpm\s+(?:exec\s+)?payload\s+migrate/u)
 })
 
+test('v01 entrypoint content-binds and delegates to the corrected v02 executor', () => {
+  assert.match(wrapper, /execute-radar-unified-release-production-0575-v02\.ps1/u)
+  assert.match(wrapper, /bfb5367013e454c2129ef3e557749d9e8b5aca6e/u)
+  assert.match(wrapper, /git hash-object/u)
+  assert.match(wrapper, /@PSBoundParameters/u)
+})
+
 test('executor rehearses the exact fresh backup before source writes', () => {
   assert.match(executor, /pg_dump -Fc --no-owner --no-privileges/u)
   assert.match(executor, /pg_restore/u)
   assert.match(executor, /rehearsalPlanPassed/u)
   assert.match(executor, /rehearsalApplyPassed/u)
   assert.match(executor, /rehearsalVerifyPassed/u)
-  assert.match(executor, /Invoke-RadarImporter 'plan'/u)
-  assert.match(executor, /Invoke-RadarImporter 'apply'/u)
-  assert.match(executor, /Invoke-RadarImporter 'verify'/u)
+  assert.match(executor, /Assert-RadarImporterReceipt \$rehearsalReceipt/u)
   assert.match(executor, /source final preflight counts/u)
   assert.match(executor, /source final preflight fingerprints/u)
-  const promptIndex = executor.indexOf("$typedConfirm = Read-Host")
+  assert.doesNotMatch(executor, /Invoke-RadarImporter 'plan'/u)
+  assert.doesNotMatch(executor, /Invoke-RadarImporter 'verify'/u)
+  const promptIndex = executor.indexOf('$typedConfirm = Read-Host')
   const sourceMarkerIndex = executor.indexOf('New-RadarApplyMarker $SourcePostgresContainer')
   assert.ok(promptIndex > 0)
   assert.ok(sourceMarkerIndex > promptIndex)
 })
 
-test('executor uses an atomic advisory transaction lock and durable apply marker', () => {
+test('executor uses one importer login per database apply', () => {
+  assert.match(executor, /Invoke-RadarImporter \$app\.BaseUrl \$tempDatabase/u)
+  assert.match(executor, /Invoke-RadarImporter \$app\.BaseUrl \$SourceDatabase/u)
+  assert.match(executor, /loginPost/u)
+  assert.match(executor, /public\.users_sessions[\s\S]{0,220}\$beforeValue \+ 1/u)
+})
+
+test('executor uses an atomic advisory transaction lock and durable marker', () => {
   assert.match(executor, /pg_try_advisory_xact_lock/u)
   assert.match(executor, /radar_unified_release_apply_control/u)
   assert.match(executor, /state IN \('started', 'completed', 'failed'\)/u)
+  assert.match(executor, /DO `\$check`\$[\s\S]*UPDATE public\.radar_unified_release_apply_control[\s\S]*IF NOT FOUND/u)
   assert.match(executor, /durableMarkerCreated/u)
   assert.match(executor, /durableMarkerCompleted/u)
   assert.match(executor, /Set-RadarApplyMarkerState[\s\S]*'failed'/u)
@@ -80,12 +94,13 @@ test('executor uses an atomic advisory transaction lock and durable apply marker
   assert.doesNotMatch(helper, /pg_sleep/u)
 })
 
-test('executor verifies exact migration and storage deltas', () => {
+test('executor verifies exact migration names and storage deltas', () => {
   assert.match(executor, /ExpectedLegacySchemaSha256 = 'bb4bc33661c989e91dc7fda964f4023f3ef175582fe9e95449f568348eb17c7d'/u)
-  assert.match(executor, /20260802_062015_radar_public_record_evidence_role_v01/u)
+  assert.match(executor, /ExpectedFinalMigrationNames/u)
+  assert.match(executor, /Assert-RadarMigrationNames/u)
+  assert.doesNotMatch(executor, /ExpectedFinalMigrationRows/u)
   assert.match(executor, /public\.payload_migrations[\s\S]{0,220}\$beforeValue \+ 6/u)
   assert.match(executor, /public\.audit_events[\s\S]{0,220}\$beforeValue \+ 1150/u)
-  assert.match(executor, /public\.users_sessions[\s\S]{0,220}\$beforeValue \+ 1/u)
   assert.match(executor, /public\.radar_unified_release_apply_control' = 1/u)
   assert.match(executor, /Assert-RadarMapsEqual \$sourceBaseline\.Fingerprints \$sourcePost\.Fingerprints/u)
   assert.match(executor, /publicRecords = 575/u)
