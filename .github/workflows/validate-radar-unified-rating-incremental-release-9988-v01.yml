@@ -7,7 +7,6 @@ on:
     paths:
       - '.github/workflows/validate-radar-unified-rating-incremental-release-9988-v01.yml'
       - 'config/radar-unified-rating-incremental-release-9988-v01.lock.json'
-      - 'scripts/radar/patch-incremental-production-gates-v02.mjs'
       - 'scripts/radar/validate-unified-rating-incremental-release-lock-9988-v01.mjs'
       - 'scripts/radar/validate-unified-rating-incremental-release-9988-v01.mjs'
       - 'scripts/radar/plan-unified-rating-incremental-release-9988-v01.mjs'
@@ -32,7 +31,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate-release:
@@ -42,34 +41,10 @@ jobs:
       - name: Checkout website repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           fetch-depth: 0
-          persist-credentials: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Disable JavaScript replacement-string expansion
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          path = Path('scripts/radar/patch-incremental-production-gates-v02.mjs')
-          text = path.read_text(encoding='utf-8')
-          old = 'return text.replace(before, after)'
-          new = 'return text.replace(before, () => after)'
-          if old in text:
-              if text.count(old) != 1:
-                  raise SystemExit(f'Expected one replacement primitive, found {text.count(old)}')
-              text = text.replace(old, new)
-              path.write_text(text, encoding='utf-8', newline='\n')
-          elif new not in text:
-              raise SystemExit('Replacement primitive not found')
-          PY
-      - name: Apply exact production-gate hardening
-        run: node scripts/radar/patch-incremental-production-gates-v02.mjs
-      - name: Show generated production database gate
-        run: |
-          grep -n -A45 -B8 'Assert-RadarIncrementalDatabaseUrl' \
-            scripts/radar/lib/radar-unified-rating-incremental-production-9988-v01.ps1 || true
       - name: Parse PowerShell wrappers
         shell: pwsh
         run: |
@@ -113,24 +88,7 @@ jobs:
           node scripts/radar/validate-unified-rating-incremental-release-lock-9988-v01.mjs
           --output _artifacts/radar-unified-rating-incremental-release-9988-lock-validation-v01.json
       - name: Check diff whitespace
-        run: git diff --check
-      - name: Commit hardened production gates when changed
-        env:
-          BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
-        run: |
-          git add -- \
-            scripts/radar/lib/radar-unified-rating-incremental-production-9988-v01.ps1 \
-            scripts/radar/prepare-unified-rating-incremental-production-candidate-9988-v01.ps1 \
-            scripts/radar/run-unified-rating-incremental-production-apply-once-9988-v01.ps1 \
-            tests/radar-unified-rating-incremental-production-gates-9988-v01.test.mjs
-          if git diff --cached --quiet; then
-            echo 'Production gates already hardened.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Harden incremental production baseline identity'
-          git push origin "HEAD:$BRANCH"
+        run: git diff --check origin/main...HEAD
       - name: Upload lock validation receipt
         uses: actions/upload-artifact@v4
         with:
