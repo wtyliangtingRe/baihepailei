@@ -1,0 +1,33 @@
+name: Validate Radar live pages v01
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-radar-live-pages-v01.yml'
+      - 'src/app/(frontend)/page.tsx'
+      - 'src/app/(frontend)/layout.tsx'
+      - 'src/app/(frontend)/radar.css'
+      - 'src/app/(frontend)/radar/**'
+      - 'src/app/(frontend)/_components/RadarPublicProjection.tsx'
+      - 'src/app/(frontend)/works/[slug]/page.tsx'
+      - 'src/app/(frontend)/me/studio/radar/**'
+      - 'tests/radar-live-pages.test.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-live-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run Radar live-page safety tests
+        run: node --test tests/radar-live-pages.test.mjs
+      - name: Check diff whitespace
+        run: git diff --check origin/main...HEAD
