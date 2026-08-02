@@ -67,6 +67,23 @@
     "blocksAnalysis": false,
     "blocksPublication": false
   },
+  "humanReviewVisibility": {
+    "public": [
+      "status",
+      "reviewedAt",
+      "decision",
+      "proposedCoreGrade",
+      "proposedProfileChanges",
+      "blocksAnalysis",
+      "blocksPublication"
+    ],
+    "staffOnly": [
+      "reviewerIdentity",
+      "reasoning",
+      "additionalEvidenceRefs",
+      "moderationState"
+    ]
+  },
   "doesNotOverwrite": [
     "works.radarAssessment",
     "works.humanAssessment",
