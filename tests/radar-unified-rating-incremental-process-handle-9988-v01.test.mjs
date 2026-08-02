@@ -8,9 +8,9 @@ const source = fs.readFileSync(
 )
 
 test('temporary app returns one real Process handle', () => {
-  assert.match(source, /\$script:process = \$null/)
-  assert.match(source, /\$null = Invoke-RadarWithEnvironment -Variables/)
-  assert.match(source, /\$process = Get-RadarActiveProcess \$null/)
+  assert.equal((source.match(/\$script:process = \$null/g) || []).length, 1)
+  assert.equal((source.match(/\$null = Invoke-RadarWithEnvironment -Variables/g) || []).length, 1)
+  assert.equal((source.match(/\$process = Get-RadarActiveProcess \$null/g) || []).length, 1)
   assert.match(source, /\$process -is \[System\.Diagnostics\.Process\]/)
   assert.match(source, /return \[pscustomobject\]@\{ Process = \$process; BaseUrl = \$baseUrl \}/)
 
@@ -26,6 +26,12 @@ test('marker wait rejects invalid handles before HasExited', () => {
 
   assert.ok(typeGate >= 0, 'missing Process type gate')
   assert.ok(hasExited > typeGate, 'HasExited must appear after the Process type gate')
+})
+
+test('startup marker failure stops its temporary app immediately', () => {
+  const hardened = /try \{\s+Wait-IncrementalMarker[^}]+return \[pscustomobject\]@\{ Process = \$process; BaseUrl = \$baseUrl \}\s+\} catch \{\s+Stop-RadarProcess \$process\s+throw\s+\}/s
+  assert.match(source, hardened)
+  assert.equal((source.match(/Stop-RadarProcess \$process/g) || []).length, 1)
 })
 
 test('failed-start cleanup remains conservative', () => {
