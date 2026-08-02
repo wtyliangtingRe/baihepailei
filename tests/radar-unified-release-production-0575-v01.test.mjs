@@ -6,6 +6,7 @@ const preflight = readFileSync('scripts/radar/prepare-radar-unified-release-prod
 const authorize = readFileSync('scripts/radar/authorize-radar-unified-release-production-0575-v02.ps1', 'utf8')
 const wrapper = readFileSync('scripts/radar/execute-radar-unified-release-production-0575-v01.ps1', 'utf8')
 const executor = readFileSync('scripts/radar/execute-radar-unified-release-production-0575-v02.ps1', 'utf8')
+const importer = readFileSync('scripts/radar/run-unified-release-production-import-0575-v01.mjs', 'utf8')
 const helper = readFileSync('scripts/radar/lib/radar-unified-release-production-0575-v01.ps1', 'utf8')
 
 test('production preflight is bound to the accepted lab, evidence and release', () => {
@@ -76,7 +77,7 @@ test('executor rehearses the exact fresh backup before source writes', () => {
 test('executor uses one importer login per database apply', () => {
   assert.match(executor, /Invoke-RadarImporter \$app\.BaseUrl \$tempDatabase/u)
   assert.match(executor, /Invoke-RadarImporter \$app\.BaseUrl \$SourceDatabase/u)
-  assert.match(executor, /loginPost/u)
+  assert.match(importer, /loginPost:\s*1/u)
   assert.match(executor, /public\.users_sessions[\s\S]{0,220}\$beforeValue \+ 1/u)
 })
 
