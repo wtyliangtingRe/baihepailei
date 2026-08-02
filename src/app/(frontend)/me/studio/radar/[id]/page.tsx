@@ -50,8 +50,6 @@ type RadarRating = {
 }
 
 const grades = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X']
-const publicStates = ['verified', 'partial', 'needs_more_research']
-const researchStates = ['ready_for_publication', 'partially_verified', 'needs_more_research']
 const reviewStates = ['unreviewed', 'reviewed', 'disputed']
 const recordStates = ['current', 'withdrawn']
 
@@ -82,23 +80,14 @@ async function updateRecordAction(formData: FormData) {
   const id = text(formData.get('id'), 80)
   if (!id) throw new Error('缺少 Radar 记录 ID。')
 
-  const publicState = choice(formData.get('publicState'), publicStates, 'needs_more_research')
-  const researchStatus = choice(formData.get('researchStatus'), researchStates, 'needs_more_research')
   const recordStatus = choice(formData.get('recordStatus'), recordStates, 'current')
-  const pageNotice = text(formData.get('pageNotice'), 1000)
-  if (!pageNotice) throw new Error('前台资料提示不能为空。')
 
   await payload.update({
     collection: 'radar-public-records',
     id,
     depth: 0,
     overrideAccess: true,
-    data: {
-      publicState,
-      researchStatus,
-      pageNotice,
-      recordStatus,
-    },
+    data: { recordStatus },
   })
 
   revalidatePath('/radar')
@@ -120,15 +109,7 @@ async function updateRatingAction(formData: FormData) {
     overrideAccess: true,
   }) as unknown as RadarRating
 
-  const coreGrade = choice(formData.get('coreGrade'), grades, current.coreGrade || 'X')
-  const bestGrade = choice(formData.get('bestGrade'), grades, current.bestGrade || coreGrade)
-  const likelyGrade = choice(formData.get('likelyGrade'), grades, current.likelyGrade || coreGrade)
-  const worstGrade = choice(formData.get('worstGrade'), grades, current.worstGrade || coreGrade)
-  const confidence = choice(formData.get('confidence'), ['high', 'medium', 'low'], current.confidence || 'low')
   const recordStatus = choice(formData.get('recordStatus'), recordStates, current.recordStatus || 'current')
-  const reasoningSummary = text(formData.get('reasoningSummary'), 5000)
-  if (!reasoningSummary) throw new Error('公开判断摘要不能为空。')
-
   const reviewStatus = choice(formData.get('reviewStatus'), reviewStates, current.humanReview?.status || 'unreviewed')
   const proposedCoreGradeValue = text(formData.get('proposedCoreGrade'), 20)
   const proposedCoreGrade = grades.includes(proposedCoreGradeValue) ? proposedCoreGradeValue : undefined
@@ -145,12 +126,6 @@ async function updateRatingAction(formData: FormData) {
     depth: 0,
     overrideAccess: true,
     data: {
-      coreGrade,
-      bestGrade,
-      likelyGrade,
-      worstGrade,
-      confidence,
-      reasoningSummary,
       recordStatus,
       humanReview: {
         ...previousReview,
@@ -218,8 +193,8 @@ export default async function RadarStudioEditPage({
         <div className="review-hero-copy">
           <p className="eyebrow">站内内容管理</p>
           <h1>编辑 Radar：{record.title}</h1>
-          <p className="muted">这里提供常用公开状态、摘要和人工复核字段的快捷编辑。事实、证据、规则数组与来源哈希请使用 Payload 完整编辑器。</p>
-          <div className="review-safety-note">所有保存仍通过 Payload 集合权限与审计钩子；本页不提供永久删除。</div>
+          <p className="muted">这里直接编辑撤回状态与人工复核层。由 Release 哈希绑定的研究事实、证据、机器等级和机器推理保持只读；需要修正原始投影时应生成新的受控 Release。</p>
+          <div className="review-safety-note">所有保存仍通过 Payload 集合权限与审计钩子；本页不提供永久删除，也不会改写 Release 绑定的机器原始字段。</div>
         </div>
       </section>
 
@@ -239,39 +214,22 @@ export default async function RadarStudioEditPage({
 
       <section className="detail-card">
         <h2>公开研究状态</h2>
+        <div className="radar-metric-grid">
+          <div><span>公开资料状态（只读）</span><strong>{record.publicState}</strong></div>
+          <div><span>研究状态（只读）</span><strong>{record.researchStatus}</strong></div>
+        </div>
+        <p className="radar-page-notice">{record.pageNotice}</p>
         <form action={updateRecordAction} className="radar-editor-form">
           <input name="id" type="hidden" value={String(record.id)} />
-          <div className="radar-editor-grid">
-            <label>
-              <span>公开资料状态</span>
-              <select defaultValue={record.publicState} name="publicState">
-                {option('verified', '已验证')}
-                {option('partial', '部分资料已验证')}
-                {option('needs_more_research', '资料待补充')}
-              </select>
-            </label>
-            <label>
-              <span>研究状态</span>
-              <select defaultValue={record.researchStatus} name="researchStatus">
-                {option('ready_for_publication', '可公开')}
-                {option('partially_verified', '部分验证')}
-                {option('needs_more_research', '资料不足')}
-              </select>
-            </label>
-            <label>
-              <span>记录状态</span>
-              <select defaultValue={record.recordStatus} name="recordStatus">
-                {option('current', '当前')}
-                {option('withdrawn', '已撤回')}
-              </select>
-            </label>
-          </div>
           <label>
-            <span>前台资料提示</span>
-            <textarea defaultValue={record.pageNotice} maxLength={1000} name="pageNotice" required rows={5} />
+            <span>记录状态</span>
+            <select defaultValue={record.recordStatus} name="recordStatus">
+              {option('current', '当前')}
+              {option('withdrawn', '已撤回')}
+            </select>
           </label>
           <div className="review-row-actions">
-            <button className="review-button review-button-primary" type="submit">保存研究状态</button>
+            <button className="review-button review-button-primary" type="submit">保存记录状态</button>
           </div>
         </form>
       </section>
@@ -282,31 +240,19 @@ export default async function RadarStudioEditPage({
           <form action={updateRatingAction} className="radar-editor-form">
             <input name="recordId" type="hidden" value={String(record.id)} />
             <input name="ratingId" type="hidden" value={String(rating.id)} />
-            <div className="radar-editor-grid">
-              <label><span>核心等级</span><select defaultValue={rating.coreGrade} name="coreGrade">{grades.map((grade) => option(grade, `${grade} 级`))}</select></label>
-              <label><span>最好情况</span><select defaultValue={rating.bestGrade} name="bestGrade">{grades.map((grade) => option(grade, grade))}</select></label>
-              <label><span>最可能</span><select defaultValue={rating.likelyGrade} name="likelyGrade">{grades.map((grade) => option(grade, grade))}</select></label>
-              <label><span>最坏情况</span><select defaultValue={rating.worstGrade} name="worstGrade">{grades.map((grade) => option(grade, grade))}</select></label>
-              <label>
-                <span>置信度</span>
-                <select defaultValue={rating.confidence} name="confidence">
-                  {option('high', '高')}
-                  {option('medium', '中')}
-                  {option('low', '低')}
-                </select>
-              </label>
-              <label>
-                <span>评级记录状态</span>
-                <select defaultValue={rating.recordStatus || 'current'} name="recordStatus">
-                  {option('current', '当前')}
-                  {option('withdrawn', '已撤回')}
-                </select>
-              </label>
+            <div className="radar-metric-grid">
+              <div><span>机器核心等级（只读）</span><strong>{rating.coreGrade || '未记录'}</strong></div>
+              <div><span>最好 / 可能 / 最坏（只读）</span><strong>{rating.bestGrade || '?'} / {rating.likelyGrade || '?'} / {rating.worstGrade || '?'}</strong></div>
+              <div><span>机器置信度（只读）</span><strong>{rating.confidence || '未记录'}</strong></div>
             </div>
+            <p className="radar-reasoning-summary">{rating.reasoningSummary}</p>
 
             <label>
-              <span>公开判断摘要</span>
-              <textarea defaultValue={rating.reasoningSummary} maxLength={5000} name="reasoningSummary" required rows={8} />
+              <span>评级记录状态</span>
+              <select defaultValue={rating.recordStatus || 'current'} name="recordStatus">
+                {option('current', '当前')}
+                {option('withdrawn', '已撤回')}
+              </select>
             </label>
 
             <div className="radar-editor-grid">
