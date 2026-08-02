@@ -141,9 +141,9 @@ if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($postgresImage)) { thro
 
 $sourceGate = ([string](& docker exec $SourcePostgresContainer psql -X -qAt -v ON_ERROR_STOP=1 `
   -U $SourceDatabaseUser -d $SourceDatabase `
-  -c "SELECT concat_ws(E'\t', count(*)::text, COALESCE(to_regclass('public.radar_public_records')::text, ''), COALESCE(to_regclass('public.radar_public_ratings')::text, '')) FROM public.works;")).TrimEnd()
+  -c "SELECT concat_ws(E'\t', count(*)::text, COALESCE(to_regclass('public.radar_public_records')::text, ''), COALESCE(to_regclass('public.radar_public_ratings')::text, '')) FROM public.works;")).TrimEnd([char[]]@("`r", "`n"))
 if ($LASTEXITCODE -ne 0) { throw '读取源数据库边界失败。' }
-$gateParts = $sourceGate.Split("`t")
+$gateParts = $sourceGate.Split([char[]]@("`t"), [System.StringSplitOptions]::None)
 if ($gateParts.Count -ne 3 -or $gateParts[0] -ne [string]$ExpectedWorks) { throw "源 Works 数量不符合预期：$sourceGate" }
 if ($gateParts[1] -or $gateParts[2]) { throw "源库已存在统一 Release 表，fresh 演练输入失效：$sourceGate" }
 
