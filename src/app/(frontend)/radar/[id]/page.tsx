@@ -141,7 +141,7 @@ export default async function RadarDetailPage({ params }: { params: Promise<{ id
     notFound()
   }
 
-  if (record.recordStatus !== 'current' && !auth.user) notFound()
+  if (record.recordStatus !== 'current' && !staff) notFound()
 
   const ratingResult = await payload.find({
     collection: 'radar-public-ratings',
@@ -150,7 +150,12 @@ export default async function RadarDetailPage({ params }: { params: Promise<{ id
     page: 1,
     pagination: true,
     overrideAccess: true,
-    where: { publicationKey: { equals: record.publicationKey } },
+    where: {
+      and: [
+        { publicationKey: { equals: record.publicationKey } },
+        { recordStatus: { equals: record.recordStatus } },
+      ],
+    },
   })
   const rating = ratingResult.docs[0] as unknown as RadarRating | undefined
   const matchedClasses = values(rating?.matchedClasses)
