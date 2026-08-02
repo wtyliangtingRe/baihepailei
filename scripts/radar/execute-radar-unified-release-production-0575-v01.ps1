@@ -11,6 +11,8 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+# The merged-main authorization manifest binds this stable entrypoint by SHA-256.
+# This entrypoint in turn binds the corrected v02 core by its exact Git blob ID.
 $inner = Join-Path $PSScriptRoot 'execute-radar-unified-release-production-0575-v02.ps1'
 $expectedBlobSha = 'bfb5367013e454c2129ef3e557749d9e8b5aca6e'
 
