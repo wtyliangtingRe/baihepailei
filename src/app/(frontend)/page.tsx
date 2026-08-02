@@ -1,6 +1,10 @@
+import configPromise from '@payload-config'
 import Link from 'next/link'
+import { getPayload } from 'payload'
 
 import { readSearchIndex } from './_lib/search-index'
+
+export const dynamic = 'force-dynamic'
 
 const sections = [
   {
@@ -9,6 +13,13 @@ const sections = [
     eyebrow: '作品',
     title: '作品',
     description: '浏览作品条目、排雷分级、页面提示与资料状态。',
+  },
+  {
+    kind: 'radar',
+    href: '/radar',
+    eyebrow: '统一 Radar',
+    title: '公开研究与评级',
+    description: '查看已经进入数据库的研究事实、来源、机器评级与人工复核状态。',
   },
   {
     kind: 'creators',
@@ -38,8 +49,27 @@ function countLabel(count?: number) {
   return `${count} 条`
 }
 
-export default function HomePage() {
+async function currentRadarCount() {
+  try {
+    const payload = await getPayload({ config: configPromise })
+    const result = await payload.find({
+      collection: 'radar-public-records',
+      depth: 0,
+      limit: 1,
+      page: 1,
+      pagination: true,
+      overrideAccess: true,
+      where: { recordStatus: { equals: 'current' } },
+    })
+    return result.totalDocs
+  } catch {
+    return undefined
+  }
+}
+
+export default async function HomePage() {
   const index = readSearchIndex()
+  const radarCount = await currentRadarCount()
 
   return (
     <main className="home">
@@ -66,27 +96,34 @@ export default function HomePage() {
           </form>
           <div className="home-stats" aria-label="当前索引统计">
             <span>{index ? `当前收录 ${index.total} 条` : '生成索引后显示条目数'}</span>
+            {typeof radarCount === 'number' ? <span>统一 Radar：{radarCount} 条当前记录</span> : null}
             {index?.generatedAt ? <span>索引生成：{new Date(index.generatedAt).toLocaleString('zh-CN')}</span> : null}
           </div>
           <div className="actions">
             <Link href="/browse">浏览资料库</Link>
             <Link href="/works">浏览作品</Link>
+            <Link href="/radar">查看统一 Radar</Link>
             <Link href="/search">开始搜索</Link>
             <Link href="/me/lists">我的列表</Link>
           </div>
         </section>
 
         <section className="home-section-grid" aria-label="资料分类">
-          {sections.map((section) => (
-            <Link className="home-section-card" href={section.href} key={section.href}>
-              <div className="home-section-card-header">
-                <p>{section.eyebrow}</p>
-                <span>{countLabel(index?.counts?.[section.kind])}</span>
-              </div>
-              <h2>{section.title}</h2>
-              <span>{section.description}</span>
-            </Link>
-          ))}
+          {sections.map((section) => {
+            const count = section.kind === 'radar'
+              ? radarCount
+              : index?.counts?.[section.kind]
+            return (
+              <Link className="home-section-card" href={section.href} key={section.href}>
+                <div className="home-section-card-header">
+                  <p>{section.eyebrow}</p>
+                  <span>{countLabel(count)}</span>
+                </div>
+                <h2>{section.title}</h2>
+                <span>{section.description}</span>
+              </Link>
+            )
+          })}
         </section>
       </div>
     </main>
