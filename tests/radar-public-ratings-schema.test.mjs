@@ -49,3 +49,16 @@ test('Radar public ratings support the full public grade and review vocabulary',
   assert.match(source, /name: 'blocksAnalysis'[\s\S]*defaultValue: false/u)
   assert.match(source, /name: 'blocksPublication'[\s\S]*defaultValue: false/u)
 })
+
+test('internal human review details are staff-only', () => {
+  assert.deepEqual(contract.humanReviewVisibility.staffOnly, [
+    'reviewerIdentity',
+    'reasoning',
+    'additionalEvidenceRefs',
+    'moderationState',
+  ])
+  assert.match(source, /name: 'reviewerIdentity'[\s\S]*access: \{ read: staffOnlyRead \}/u)
+  assert.match(source, /name: 'reasoning'[\s\S]*access: \{ read: staffOnlyRead \}/u)
+  assert.match(source, /valueArrayField\('additionalEvidenceRefs',[\s\S]*true\)/u)
+  assert.match(source, /name: 'moderationState'[\s\S]*access: \{ read: staffOnlyRead \}/u)
+})
