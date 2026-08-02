@@ -7,7 +7,8 @@ import {
   assertPlanForMode,
 } from '../scripts/radar/run-unified-release-lab-import-0575-v01.mjs'
 
-const importer = readFileSync('scripts/radar/run-unified-release-lab-import-0575-v01.mjs', 'utf8')
+const importerCli = readFileSync('scripts/radar/run-unified-release-lab-import-0575-v01.mjs', 'utf8')
+const importer = readFileSync('scripts/radar/run-unified-release-lab-import-lib-0575-v01.mjs', 'utf8')
 const marker = readFileSync('src/app/(payload)/api/radar-unified-release-lab-marker/route.ts', 'utf8')
 const wrapper = readFileSync('scripts/radar/run-radar-unified-release-lab-0575-v01.ps1', 'utf8')
 const preparer = readFileSync('scripts/radar/prepare-radar-unified-release-lab-database-0575-v01.ps1', 'utf8')
@@ -32,6 +33,13 @@ test('write-capable importer accepts only loopback high ports', () => {
   assert.throws(() => assertIsolatedLabUrl('http://127.0.0.1:3000'), /31000-39999/u)
   assert.throws(() => assertIsolatedLabUrl('https://127.0.0.1:32001'), /HTTP/u)
   assert.throws(() => assertIsolatedLabUrl('http://example.com:32001'), /loopback/u)
+})
+
+test('Windows-safe CLI guard delegates to the importer library', () => {
+  assert.match(importerCli, /pathToFileURL/u)
+  assert.match(importerCli, /import\.meta\.url === pathToFileURL\(process\.argv\[1\]\)\.href/u)
+  assert.match(importerCli, /run-unified-release-lab-import-lib-0575-v01\.mjs/u)
+  assert.doesNotMatch(importerCli, /replace\(\/\\\\\/gu, '\/'\)/u)
 })
 
 test('fresh mode requires 575 fact creates and 575 rating creates', () => {
@@ -128,6 +136,9 @@ test('database preparer validates the locked release and only clones the source'
   assert.match(preparer, /migrationApplied = \$false/u)
   assert.match(preparer, /publicRecordsWritten = 0/u)
   assert.match(preparer, /publicRatingsWritten = 0/u)
+  assert.match(preparer, /TrimEnd\(\[char\[\]\]@\("`r", "`n"\)\)/u)
+  assert.match(preparer, /StringSplitOptions\]::None/u)
+  assert.doesNotMatch(preparer, /\)\.TrimEnd\(\)/u)
   assert.doesNotMatch(preparer, /pnpm payload migrate/u)
   assert.doesNotMatch(preparer, /run-unified-release-lab-import/u)
 })
