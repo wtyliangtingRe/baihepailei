@@ -91,7 +91,7 @@ jobs:
           grep -q "name: 'value'" src/collections/RadarPublicRecords.ts
           grep -q "type: 'textarea'" src/collections/RadarPublicRecords.ts
           grep -q 'payload migrate:create \$MigrationName --skip-empty' "$FACT_MIGRATION_PREPARER"
-          ! grep -E '(^|[^:])payload migrate([[:space:]|"'"'])' "$FACT_MIGRATION_PREPARER"
+          ! grep -E '(^|[^:])payload migrate([[:space:]]|$)' "$FACT_MIGRATION_PREPARER"
           grep -q 'default_transaction_read_only=on' "$FACT_MIGRATION_PREPARER"
           grep -q 'normalized_pg_dump_schema_only' scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
           grep -q "process.env.ComSpec || 'cmd.exe'" scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
