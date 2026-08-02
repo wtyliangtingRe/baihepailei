@@ -8,6 +8,7 @@ import AssessmentOriginBadge from '../../_components/AssessmentOriginBadge'
 import DetailIndexDetail from '../../_components/DetailIndexDetail'
 import FeedbackPrompt from '../../_components/FeedbackPrompt'
 import MissingSearchIndex from '../../_components/MissingSearchIndex'
+import RadarPublicProjection from '../../_components/RadarPublicProjection'
 import SearchIndexDetail from '../../_components/SearchIndexDetail'
 import VersionInfo from '../../_components/VersionInfo'
 import { isCanonicalContentRoute, recordIdFromContentRoute } from '../../_lib/content-identity'
@@ -60,7 +61,7 @@ async function staffLiveWork(recordID: string) {
       collection: 'works',
       id: recordID,
       depth: 0,
-            overrideAccess: true,
+      overrideAccess: true,
     }) as unknown as LiveWork
   } catch {
     return null
@@ -147,6 +148,7 @@ export default async function WorkDetailPage({ params, searchParams }: Args) {
           </section>
         ) : null}
         <DetailIndexDetail item={visibleItem} relatedEvidence={findEvidenceByWorkTitle(visibleItem.title)} />
+        <RadarPublicProjection workId={visibleItem.recordId} />
         <VersionInfo item={visibleItem} />
         <FeedbackPrompt item={visibleItem} />
       </>
@@ -168,6 +170,7 @@ export default async function WorkDetailPage({ params, searchParams }: Args) {
   return (
     <>
       <SearchIndexDetail item={item} />
+      <RadarPublicProjection workId={item.recordId} />
       <FeedbackPrompt item={item} />
     </>
   )
