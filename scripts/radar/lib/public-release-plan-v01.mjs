@@ -2,6 +2,13 @@ import crypto from 'node:crypto'
 
 const val = (value) => String(value ?? '').trim()
 
+function normalizeDate(value) {
+  const text = val(value)
+  if (!text) return ''
+  const timestamp = Date.parse(text)
+  return Number.isNaN(timestamp) ? text : new Date(timestamp).toISOString()
+}
+
 export function stableValue(value) {
   if (Array.isArray(value)) return value.map(stableValue)
   if (value && typeof value === 'object') {
@@ -114,7 +121,7 @@ export function buildDesiredPublicRecord(record, work, release, importedAt) {
     researchSnapshotId: val(release.researchSnapshotId),
     recordSha256: sha256Json(record),
     releaseRecordsSha256: val(release.recordsSha256),
-    sourceReviewedAt: val(record.lastReviewedAt),
+    sourceReviewedAt: normalizeDate(record.lastReviewedAt),
     importedAt,
     recordStatus: 'current',
   }
@@ -153,7 +160,7 @@ function comparableCurrentRecord(record) {
     researchSnapshotId: val(record.researchSnapshotId),
     recordSha256: val(record.recordSha256),
     releaseRecordsSha256: val(record.releaseRecordsSha256),
-    sourceReviewedAt: val(record.sourceReviewedAt),
+    sourceReviewedAt: normalizeDate(record.sourceReviewedAt),
     recordStatus: val(record.recordStatus || 'current'),
   }
 }
