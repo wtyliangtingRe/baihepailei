@@ -7,9 +7,14 @@ import { getPayload } from 'payload'
 
 import { isEditor } from '@/access/roles'
 
-import { canonicalContentUrl } from '../../../_lib/content-identity'
+import { canonicalContentUrl } from '../../../../_lib/content-identity'
 
 export const dynamic = 'force-dynamic'
+
+type Grade = 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X'
+type ReviewState = 'unreviewed' | 'reviewed' | 'disputed'
+type RecordState = 'current' | 'withdrawn'
+type Confidence = 'high' | 'medium' | 'low'
 
 type RadarRecord = {
   id: string | number
@@ -19,15 +24,15 @@ type RadarRecord = {
   publicState: string
   researchStatus: string
   pageNotice: string
-  recordStatus: string
+  recordStatus: RecordState
 }
 
 type HumanReview = {
-  status?: string
+  status?: ReviewState
   reviewerIdentity?: string
   reviewedAt?: string
   decision?: string
-  proposedCoreGrade?: string
+  proposedCoreGrade?: Grade
   proposedProfileChanges?: Array<{ value?: string }>
   reasoning?: string
   additionalEvidenceRefs?: Array<{ value?: string }>
@@ -39,19 +44,19 @@ type HumanReview = {
 type RadarRating = {
   id: string | number
   publicationKey: string
-  coreGrade?: string
-  bestGrade?: string
-  likelyGrade?: string
-  worstGrade?: string
-  confidence?: string
+  coreGrade?: Grade
+  bestGrade?: Grade
+  likelyGrade?: Grade
+  worstGrade?: Grade
+  confidence?: Confidence
   reasoningSummary?: string
   humanReview?: HumanReview
-  recordStatus?: string
+  recordStatus?: RecordState
 }
 
-const grades = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X']
-const reviewStates = ['unreviewed', 'reviewed', 'disputed']
-const recordStates = ['current', 'withdrawn']
+const grades = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X'] as const satisfies readonly Grade[]
+const reviewStates = ['unreviewed', 'reviewed', 'disputed'] as const satisfies readonly ReviewState[]
+const recordStates = ['current', 'withdrawn'] as const satisfies readonly RecordState[]
 
 function text(value: FormDataEntryValue | null, max = 5000) {
   return String(value || '').trim().slice(0, max)
@@ -61,9 +66,13 @@ function checked(value: FormDataEntryValue | null) {
   return String(value || '') === 'on'
 }
 
-function choice(value: FormDataEntryValue | null, allowed: string[], fallback: string) {
+function choice<T extends string>(
+  value: FormDataEntryValue | null,
+  allowed: readonly T[],
+  fallback: T,
+): T {
   const normalized = text(value, 80)
-  return allowed.includes(normalized) ? normalized : fallback
+  return allowed.includes(normalized as T) ? normalized as T : fallback
 }
 
 async function requireEditor() {
@@ -109,10 +118,20 @@ async function updateRatingAction(formData: FormData) {
     overrideAccess: true,
   }) as unknown as RadarRating
 
-  const recordStatus = choice(formData.get('recordStatus'), recordStates, current.recordStatus || 'current')
-  const reviewStatus = choice(formData.get('reviewStatus'), reviewStates, current.humanReview?.status || 'unreviewed')
+  const recordStatus = choice(
+    formData.get('recordStatus'),
+    recordStates,
+    current.recordStatus || 'current',
+  )
+  const reviewStatus = choice(
+    formData.get('reviewStatus'),
+    reviewStates,
+    current.humanReview?.status || 'unreviewed',
+  )
   const proposedCoreGradeValue = text(formData.get('proposedCoreGrade'), 20)
-  const proposedCoreGrade = grades.includes(proposedCoreGradeValue) ? proposedCoreGradeValue : undefined
+  const proposedCoreGrade = grades.includes(proposedCoreGradeValue as Grade)
+    ? proposedCoreGradeValue as Grade
+    : undefined
   const decision = text(formData.get('decision'), 1000)
   const reasoning = text(formData.get('reviewReasoning'), 5000)
   const previousReview = current.humanReview || {}
