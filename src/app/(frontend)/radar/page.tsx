@@ -1,6 +1,7 @@
 import configPromise from '@payload-config'
 import { headers } from 'next/headers'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { getPayload, type Where } from 'payload'
 
 import { isEditor } from '@/access/roles'
@@ -25,11 +26,9 @@ type RadarRecord = {
   evidence?: Array<unknown>
   sourceReviewedAt?: string
   recordStatus: string
-  updatedAt?: string
 }
 
 type RadarRating = {
-  id: string | number
   publicationKey: string
   coreGrade?: string
   confidence?: string
@@ -146,10 +145,7 @@ function recordWhere(filters: Filters, allowedPublicationKeys: string[] | null):
   return and.length ? { and } : {}
 }
 
-async function ratingKeys(
-  payload: Awaited<ReturnType<typeof getPayload>>,
-  filters: Filters,
-) {
+async function ratingKeys(payload: Awaited<ReturnType<typeof getPayload>>, filters: Filters) {
   if (filters.grade === 'all' && filters.review === 'all') return null
   const and: Where[] = []
   if (filters.status !== 'all') and.push({ recordStatus: { equals: filters.status } })
@@ -170,10 +166,11 @@ async function ratingKeys(
 export default async function RadarIndexPage({ searchParams }: { searchParams: SearchParams }) {
   const payload = await getPayload({ config: configPromise })
   const auth = await payload.auth({ headers: await headers() })
+  if (!auth.user) redirect(`/account/login?redirect=${encodeURIComponent('/radar')}`)
+
   const staff = isEditor(auth.user)
   const filters = filtersFrom(await searchParams, staff)
   const allowedPublicationKeys = await ratingKeys(payload, filters)
-
   const emptyByRatingFilter = Array.isArray(allowedPublicationKeys) && allowedPublicationKeys.length === 0
   const result = emptyByRatingFilter
     ? { docs: [], totalDocs: 0, totalPages: 1, page: 1 }
@@ -216,14 +213,14 @@ export default async function RadarIndexPage({ searchParams }: { searchParams: S
   return (
     <main className="page collection-page radar-index-page">
       <section className="page-heading collection-heading">
-        <p className="eyebrow">统一 Radar</p>
-        <h1>公开研究与评级</h1>
-        <p>这里直接读取已经进入数据库的公开研究记录与机器评级。普通访客只会看到当前记录；工作人员可以切换到撤回记录并进入网页编辑。</p>
+        <p className="eyebrow">注册用户资料区</p>
+        <h1>Radar 研究档案</h1>
+        <p>这里保存事实、证据与来源绑定，登录后只读浏览。普通注册用户只能查看当前记录；编辑以上可以检查撤回记录并下载单条 JSON，但本页不提供任何修改入口。</p>
         <div className="collection-actions">
           <span>{Number(result.totalDocs || 0).toLocaleString('zh-CN')} 条</span>
           <span>第 {currentPage} / {totalPages} 页</span>
+          <Link className="result-link" href="/ratings">查看面向大众的评级页</Link>
           <Link className="back-link" href="/works">返回作品</Link>
-          {staff ? <Link className="review-link" href="/admin/collections/radar-public-records">Payload 完整管理</Link> : null}
         </div>
 
         <form action="/radar" className="works-filter-panel">
@@ -233,7 +230,7 @@ export default async function RadarIndexPage({ searchParams }: { searchParams: S
               <input defaultValue={filters.q} name="q" placeholder="标题、身份 Key、Work ID、Site ID" type="search" />
             </label>
             <label>
-              <span>核心等级</span>
+              <span>机器核心等级</span>
               <select defaultValue={filters.grade} name="grade">
                 <option value="all">全部等级</option>
                 {grades.map((grade) => <option key={grade} value={grade}>{grade} 级</option>)}
@@ -277,7 +274,7 @@ export default async function RadarIndexPage({ searchParams }: { searchParams: S
             </label>
           </div>
           <div className="works-filter-actions">
-            <button className="result-link" type="submit">筛选 Radar</button>
+            <button className="result-link" type="submit">筛选档案</button>
             <Link className="back-link" href="/radar">清除筛选</Link>
           </div>
         </form>
@@ -312,9 +309,8 @@ export default async function RadarIndexPage({ searchParams }: { searchParams: S
                   <span>复核 {formatDate(record.sourceReviewedAt)}</span>
                 </div>
                 <div className="collection-actions">
-                  <Link className="result-link" href={`/radar/${record.id}`}>查看详情</Link>
-                  <Link className="back-link" href={canonicalContentUrl('works', record.workIdSnapshot)}>查看作品</Link>
-                  {staff ? <Link className="review-link" href={`/me/studio/radar/${record.id}`}>网页编辑</Link> : null}
+                  <Link className="result-link" href={`/radar/${record.id}`}>只读查看</Link>
+                  <Link className="back-link" href={canonicalContentUrl('works', record.workIdSnapshot)}>大众作品页</Link>
                 </div>
               </article>
             )
@@ -322,7 +318,7 @@ export default async function RadarIndexPage({ searchParams }: { searchParams: S
         </section>
       ) : (
         <section className="empty-state small">
-          <h2>没有符合条件的 Radar 记录</h2>
+          <h2>没有符合条件的 Radar 档案</h2>
           <p>可以清除等级、资料状态或人工复核筛选。</p>
           <Link className="result-link" href="/radar">查看全部当前记录</Link>
         </section>
