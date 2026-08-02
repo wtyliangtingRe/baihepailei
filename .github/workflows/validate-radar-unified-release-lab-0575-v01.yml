@@ -12,6 +12,7 @@ on:
       - 'scripts/radar/execute-radar-unified-release-lab-0575-v01.ps1'
       - 'scripts/radar/reconcile-radar-public-dev-schema-v02.mjs'
       - 'scripts/radar/run-unified-release-lab-import-0575-v01.mjs'
+      - 'scripts/radar/run-unified-release-lab-import-lib-0575-v01.mjs'
       - 'scripts/radar/lib/unified-rating-release-plan-v01.mjs'
       - 'tests/radar-unified-release-lab-0575-v01.test.mjs'
       - 'tests/radar-unified-rating-release-plan-v01.test.mjs'
@@ -57,6 +58,7 @@ jobs:
       - name: Check Node scripts syntax
         run: |
           node --check scripts/radar/run-unified-release-lab-import-0575-v01.mjs
+          node --check scripts/radar/run-unified-release-lab-import-lib-0575-v01.mjs
           node --check scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
       - name: Run unified Release lab and planner tests
         run: |
@@ -69,17 +71,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          IMPORTER='scripts/radar/run-unified-release-lab-import-lib-0575-v01.mjs'
+          CLI='scripts/radar/run-unified-release-lab-import-0575-v01.mjs'
           grep -q 'RUN-ISOLATED-RADAR-UNIFIED-RELEASE-LAB-0575-V01' scripts/radar/run-radar-unified-release-lab-0575-v01.ps1
           grep -q 'RADAR_UNIFIED_RELEASE_LAB_NONCE' src/app/\(payload\)/api/radar-unified-release-lab-marker/route.ts
-          grep -q "method: 'POST'" scripts/radar/run-unified-release-lab-import-0575-v01.mjs
-          grep -q "method: 'PATCH'" scripts/radar/run-unified-release-lab-import-0575-v01.mjs
-          ! grep -E "method: '(PUT|DELETE)'" scripts/radar/run-unified-release-lab-import-0575-v01.mjs
-          grep -q 'omissionMeansDelete: false' scripts/radar/run-unified-release-lab-import-0575-v01.mjs
+          grep -q 'pathToFileURL' "$CLI"
+          grep -q "method: 'POST'" "$IMPORTER"
+          grep -q "method: 'PATCH'" "$IMPORTER"
+          ! grep -E "method: '(PUT|DELETE)'" "$IMPORTER"
+          grep -q 'omissionMeansDelete: false' "$IMPORTER"
           grep -q 'normalized_pg_dump_schema_only' scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
           grep -q "process.env.ComSpec || 'cmd.exe'" scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
           grep -q 'pnpm.cmd payload migrate' scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
           grep -q 'developmentMigrationMarkersRemoved: 1' scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
           ! grep -E 'baihepailei-postgres|SourcePostgresContainer|pg_dump -Fc' scripts/radar/reconcile-radar-public-dev-schema-v02.mjs
+          grep -q 'StringSplitOptions]::None' scripts/radar/prepare-radar-unified-release-lab-database-0575-v01.ps1
           grep -q 'docker ps -aq --filter' scripts/radar/run-radar-unified-release-lab-0575-v01.ps1
           ! grep -E 'docker rm.*baihepailei-postgres' scripts/radar/run-radar-unified-release-lab-0575-v01.ps1
           ! grep -E 'SourcePostgresContainer|SourceDatabaseUser|pg_dump -Fc' scripts/radar/execute-radar-unified-release-lab-0575-v01.ps1
