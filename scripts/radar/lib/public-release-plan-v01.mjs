@@ -9,6 +9,10 @@ function normalizeDate(value) {
   return Number.isNaN(timestamp) ? text : new Date(timestamp).toISOString()
 }
 
+function releaseFactType(fact) {
+  return val(fact?.factType ?? fact?.type)
+}
+
 export function stableValue(value) {
   if (Array.isArray(value)) return value.map(stableValue)
   if (value && typeof value === 'object') {
@@ -91,6 +95,21 @@ export function matchExactWork(record, indexes) {
 }
 
 export function buildDesiredPublicRecord(record, work, release, importedAt) {
+  const facts = (record.facts || []).map((fact, index) => {
+    const factType = releaseFactType(fact)
+    if (!factType) {
+      throw new Error(
+        `Public fact type is required: ${val(record.identityKey) || 'unknown'}:${val(fact?.factId) || index + 1}`,
+      )
+    }
+    return {
+      factId: val(fact.factId),
+      factType,
+      value: fact.value,
+      sourceRefs: (fact.sourceRefs || []).map((sourceRef) => ({ value: val(sourceRef) })),
+    }
+  })
+
   const desired = {
     publicationKey: `work:${val(work.id)}`,
     work: val(work.id),
@@ -101,12 +120,7 @@ export function buildDesiredPublicRecord(record, work, release, importedAt) {
     publicState: val(record.publicState),
     researchStatus: val(record.researchStatus),
     pageNotice: val(record.pageNotice),
-    facts: (record.facts || []).map((fact) => ({
-      factId: val(fact.factId),
-      factType: val(fact.type),
-      value: fact.value,
-      sourceRefs: (fact.sourceRefs || []).map((sourceRef) => ({ value: val(sourceRef) })),
-    })),
+    facts,
     evidence: (record.evidence || []).map((source) => ({
       sourceRef: val(source.sourceRef),
       tier: val(source.tier),
