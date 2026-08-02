@@ -15,6 +15,17 @@ test('Radar public records schema is separate from Works and grade conclusions',
   assert.doesNotMatch(source, /compatibilityGrade|suggestedGrade|humanAssessment|radarAssessment/u)
 })
 
+test('Radar public fact values preserve Release strings as text', () => {
+  const source = readFileSync('src/collections/RadarPublicRecords.ts', 'utf8')
+  const factsStart = source.indexOf("name: 'facts'")
+  const evidenceStart = source.indexOf("name: 'evidence'")
+  assert.ok(factsStart >= 0 && evidenceStart > factsStart)
+  const factsBlock = source.slice(factsStart, evidenceStart)
+  assert.match(factsBlock, /name: 'value',[\s\S]*type: 'textarea'/u)
+  assert.match(factsBlock, /不得在导入时包装成 JSON 对象或改变内容/u)
+  assert.doesNotMatch(factsBlock, /name: 'value',[\s\S]*type: 'json'/u)
+})
+
 test('Radar public records expose only current records anonymously', () => {
   const source = readFileSync('src/collections/RadarPublicRecords.ts', 'utf8')
   assert.match(source, /recordStatus:[\s\S]*equals: 'current'/u)
