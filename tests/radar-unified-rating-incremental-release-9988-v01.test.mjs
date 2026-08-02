@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 
+import { buildDesiredPublicRecord } from '../scripts/radar/lib/public-release-plan-v01.mjs'
 import {
   assertAllowedArguments as assertPlannerArguments,
   assertExactTransition,
@@ -75,6 +76,57 @@ test('planner argument and transition contract is exact', () => {
     counts: { rows: 9988, blockers: 0 },
     rows,
   }, lock), /transition mismatch/)
+})
+
+test('public-record conversion accepts canonical factType and legacy type', () => {
+  const base = {
+    identityKey: '123|catalog-test',
+    workId: '123',
+    siteId: 'catalog-test',
+    title: 'Test',
+    publicState: 'partial',
+    researchStatus: 'partially_verified',
+    pageNotice: 'notice',
+    evidence: [],
+    lastReviewedAt: '2026-08-02T00:00:00+08:00',
+  }
+  const work = { id: 123, siteId: 'catalog-test' }
+  const release = {
+    releaseId: 'release',
+    sourceCommitSha: 'a'.repeat(40),
+    policyVersion: 'policy',
+    researchSnapshotId: 'snapshot',
+    recordsSha256: 'b'.repeat(64),
+  }
+
+  const canonical = buildDesiredPublicRecord({
+    ...base,
+    facts: [{ factId: 'f1', factType: 'content_summary', value: 'value', sourceRefs: [] }],
+  }, work, release, '2026-08-02T00:00:00.000Z')
+  assert.equal(canonical.facts[0].factType, 'content_summary')
+
+  const legacy = buildDesiredPublicRecord({
+    ...base,
+    facts: [{ factId: 'f2', type: 'relationship_summary', value: 'value', sourceRefs: [] }],
+  }, work, release, '2026-08-02T00:00:00.000Z')
+  assert.equal(legacy.facts[0].factType, 'relationship_summary')
+
+  const preferred = buildDesiredPublicRecord({
+    ...base,
+    facts: [{
+      factId: 'f3',
+      factType: 'ending_summary',
+      type: 'legacy_should_not_win',
+      value: 'value',
+      sourceRefs: [],
+    }],
+  }, work, release, '2026-08-02T00:00:00.000Z')
+  assert.equal(preferred.facts[0].factType, 'ending_summary')
+
+  assert.throws(() => buildDesiredPublicRecord({
+    ...base,
+    facts: [{ factId: 'f4', value: 'value', sourceRefs: [] }],
+  }, work, release, '2026-08-02T00:00:00.000Z'), /Public fact type is required: 123\|catalog-test:f4/)
 })
 
 test('create-only importer permits only locked POST targets', () => {
@@ -158,6 +210,7 @@ test('source safety contracts contain no update or delete path', () => {
   const planner = fs.readFileSync(new URL('../scripts/radar/plan-unified-rating-incremental-release-9988-v01.mjs', import.meta.url), 'utf8')
   const importer = fs.readFileSync(new URL('../scripts/radar/run-unified-rating-incremental-production-import-9988-v01.mjs', import.meta.url), 'utf8')
   const validator = fs.readFileSync(new URL('../scripts/radar/validate-unified-rating-incremental-release-9988-v01.mjs', import.meta.url), 'utf8')
+  const publicPlan = fs.readFileSync(new URL('../scripts/radar/lib/public-release-plan-v01.mjs', import.meta.url), 'utf8')
   const marker = fs.readFileSync(new URL('../src/app/(payload)/api/radar-unified-rating-incremental-production-marker/route.ts', import.meta.url), 'utf8')
 
   assert.doesNotMatch(planner, /writeKind:\s*['"]record_create/)
@@ -166,6 +219,8 @@ test('source safety contracts contain no update or delete path', () => {
   assert.doesNotMatch(validator, /fetch\s*\(/)
   assert.match(planner, /authenticationSessionMayBeCreated:\s*true/)
   assert.match(planner, /productionAuthorization:\s*false/)
+  assert.match(publicPlan, /fact\?\.factType \?\? fact\?\.type/)
+  assert.match(publicPlan, /Public fact type is required/)
 
   assert.doesNotMatch(importer, /method:\s*['"](?:PATCH|PUT|DELETE)['"]/)
   assert.doesNotMatch(importer, /payload\.update|payload\.delete|omissionMeansDelete:\s*true/)
