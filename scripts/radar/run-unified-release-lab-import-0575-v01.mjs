@@ -137,6 +137,48 @@ function summarize(plan) {
   }
 }
 
+function expectedStorage(plan) {
+  const totals = {
+    publicRecords: 0,
+    facts: 0,
+    evidence: 0,
+    factSourceRefs: 0,
+    publicRatings: 0,
+    matchedClasses: 0,
+    ratingFactRefs: 0,
+    ratingEvidenceRefs: 0,
+    unresolvedDimensions: 0,
+    confirmationBasis: 0,
+    publicTagHints: 0,
+    publicWarningTemplateIds: 0,
+    proposedProfileChanges: 0,
+    additionalEvidenceRefs: 0,
+  }
+  for (const row of plan.rows) {
+    const record = row.recordPlan.desired
+    const rating = row.ratingPlan.desired
+    if (record) {
+      totals.publicRecords += 1
+      totals.facts += record.facts?.length || 0
+      totals.evidence += record.evidence?.length || 0
+      totals.factSourceRefs += (record.facts || []).reduce((sum, fact) => sum + (fact.sourceRefs?.length || 0), 0)
+    }
+    if (rating) {
+      totals.publicRatings += 1
+      totals.matchedClasses += rating.matchedClasses?.length || 0
+      totals.ratingFactRefs += rating.factRefs?.length || 0
+      totals.ratingEvidenceRefs += rating.evidenceRefs?.length || 0
+      totals.unresolvedDimensions += rating.unresolvedDimensions?.length || 0
+      totals.confirmationBasis += rating.confirmationBasis?.length || 0
+      totals.publicTagHints += rating.publicTagHints?.length || 0
+      totals.publicWarningTemplateIds += rating.publicWarningTemplateIds?.length || 0
+      totals.proposedProfileChanges += rating.humanReview?.proposedProfileChanges?.length || 0
+      totals.additionalEvidenceRefs += rating.humanReview?.additionalEvidenceRefs?.length || 0
+    }
+  }
+  return totals
+}
+
 export function assertPlanForMode(plan, mode, expectedRows = 575) {
   if (!ALLOWED_MODES.has(mode)) throw new Error(`Unsupported lab mode: ${mode}`)
   if (!plan.accepted || plan.counts.blockers !== 0 || plan.counts.rows !== expectedRows) {
@@ -260,7 +302,8 @@ export async function run(argv = process.argv.slice(2)) {
     importedAt,
   })
   assertPlanForMode(prePlan, mode, release.lock.counts.records)
-  writeJson(path.join(outputDir, 'pre-import-summary.json'), summarize(prePlan))
+  const storage = expectedStorage(prePlan)
+  writeJson(path.join(outputDir, 'pre-import-summary.json'), { ...summarize(prePlan), expectedStorage: storage })
   writeJsonl(path.join(outputDir, 'pre-import-plan.jsonl'), prePlan.rows)
 
   const ledger = []
@@ -301,6 +344,7 @@ export async function run(argv = process.argv.slice(2)) {
       accepted: false,
       failedAt: new Date().toISOString(),
       counts,
+      expectedStorage: storage,
       completedRows: ledger.length,
       error: error?.stack || error?.message || String(error),
       isolatedLabOnly: true,
@@ -337,6 +381,7 @@ export async function run(argv = process.argv.slice(2)) {
     database: expectedDatabase,
     rows: release.lock.counts.records,
     counts,
+    expectedStorage: storage,
     postImport: summarize(postPlan),
     safety: {
       isolatedLabOnly: true,
