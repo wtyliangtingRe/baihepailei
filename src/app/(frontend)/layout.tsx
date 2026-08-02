@@ -41,7 +41,8 @@ export const metadata: Metadata = {
 const navItems = [
   { href: '/browse', label: '资料库' },
   { href: '/works', label: '作品' },
-  { href: '/radar', label: 'Radar' },
+  { href: '/ratings', label: '评级' },
+  { href: '/radar', label: '研究档案' },
   { href: '/creators', label: '创作者' },
   { href: '/organizations', label: '机构' },
   { href: '/terms', label: '站点说明' },
