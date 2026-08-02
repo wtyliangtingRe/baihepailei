@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Parse locked JSON contracts
         run: |
           node -e "JSON.parse(require('node:fs').readFileSync('config/radar-unified-rating-release-0575-v01.lock.json','utf8'))"
