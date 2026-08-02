@@ -167,6 +167,7 @@ export const RadarPublicRecords: CollectionConfig = {
           required: true,
           options: [
             { label: '主要证据', value: 'primary' },
+            { label: '正版或授权来源', value: 'licensed_or_authorized' },
             { label: '补充证据', value: 'supplemental' },
             { label: '仅作线索', value: 'lead_only' },
           ],
