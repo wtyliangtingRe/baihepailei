@@ -37,11 +37,13 @@ test('generated ratings migration, when present, is additive and registered once
 
   const migration = readFileSync(`src/migrations/${files[0]}`, 'utf8')
   const index = readFileSync('src/migrations/index.ts', 'utf8')
-  const snapshot = `src/migrations/${files[0].replace(/\.ts$/u, '.json')}`
+  const stem = files[0].replace(/\.ts$/u, '')
+  const snapshot = `src/migrations/${stem}.json`
 
   assert.ok(existsSync(snapshot), 'generated migration snapshot is missing')
   assert.match(migration, /CREATE TABLE[\s\S]*radar_public_ratings/u)
   assert.doesNotMatch(migration, /(?:ALTER|DROP|CREATE) TABLE[\s\S]*"radar_public_records/u)
   assert.doesNotMatch(migration, /(?:ALTER|DROP|CREATE) TABLE[\s\S]*"works"/u)
-  assert.equal(index.split(files[0].replace(/\.ts$/u, '')).length - 1, 3)
+  assert.equal((index.match(new RegExp(`name: '${stem}'`, 'gu')) || []).length, 1)
+  assert.match(index, new RegExp(`from './${stem}'`, 'u'))
 })
