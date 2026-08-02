@@ -1,0 +1,46 @@
+name: Validate Radar Unified Release Production 0575 v01
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-radar-unified-release-production-0575-v01.yml'
+      - 'scripts/radar/prepare-radar-unified-release-production-0575-v01.ps1'
+      - 'tests/radar-unified-release-production-0575-v01.test.mjs'
+      - 'docs/guides/radar-unified-release-production-0575-v01.md'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-production-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Parse PowerShell preflight
+        shell: pwsh
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'scripts/radar/prepare-radar-unified-release-production-0575-v01.ps1'),
+            [ref]$null,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | Format-List | Out-String | Write-Error
+          }
+      - name: Run production preflight safety tests
+        run: node --test tests/radar-unified-release-production-0575-v01.test.mjs
+      - name: Confirm no write-capable production executor exists yet
+        run: |
+          test ! -e scripts/radar/execute-radar-unified-release-production-0575-v01.ps1
+          test ! -e scripts/radar/run-unified-release-production-import-0575-v01.mjs
+      - name: Check diff whitespace
+        run: git diff --check origin/main...HEAD
