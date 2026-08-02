@@ -4,6 +4,7 @@ import test from 'node:test'
 
 const preflight = readFileSync('scripts/radar/prepare-radar-unified-release-production-0575-v01.ps1', 'utf8')
 const authorize = readFileSync('scripts/radar/authorize-radar-unified-release-production-0575-v02.ps1', 'utf8')
+const rehearsal = readFileSync('scripts/radar/rehearse-radar-unified-release-production-gate-0575-v01.ps1', 'utf8')
 const wrapper = readFileSync('scripts/radar/execute-radar-unified-release-production-0575-v01.ps1', 'utf8')
 const executor = readFileSync('scripts/radar/execute-radar-unified-release-production-0575-v02.ps1', 'utf8')
 const importer = readFileSync('scripts/radar/run-unified-release-production-import-0575-v01.mjs', 'utf8')
@@ -50,11 +51,31 @@ test('merged-main authorization binds candidate, backup, release and critical co
   assert.doesNotMatch(authorize, /pnpm\s+(?:exec\s+)?payload\s+migrate/u)
 })
 
+test('pre-merge rehearsal writes only to the disposable database', () => {
+  assert.match(rehearsal, /ExpectedBranch = 'agent\/radar-unified-release-production-0575-v01'/u)
+  assert.match(rehearsal, /pg_restore/u)
+  assert.match(rehearsal, /New-RehearsalMarker \$tempContainer/u)
+  assert.match(rehearsal, /Invoke-RehearsalPayloadMigrations \$tempDatabaseUrl/u)
+  assert.match(rehearsal, /sourceDatabaseWrite = \$false/u)
+  assert.match(rehearsal, /productionAuthorization = \$false/u)
+  assert.doesNotMatch(rehearsal, /New-RehearsalMarker \$SourcePostgresContainer/u)
+  assert.doesNotMatch(rehearsal, /Invoke-RehearsalPayloadMigrations \$source/u)
+  assert.doesNotMatch(rehearsal, /pg_restore[^\n]*SourcePostgresContainer/u)
+})
+
 test('v01 entrypoint content-binds and delegates to the corrected v02 executor', () => {
   assert.match(wrapper, /execute-radar-unified-release-production-0575-v02\.ps1/u)
   assert.match(wrapper, /bfb5367013e454c2129ef3e557749d9e8b5aca6e/u)
   assert.match(wrapper, /git hash-object/u)
   assert.match(wrapper, /@PSBoundParameters/u)
+})
+
+test('helper resolves script-scoped app processes for wait and cleanup', () => {
+  assert.match(helper, /function Get-RadarActiveProcess/u)
+  assert.match(helper, /Get-Variable -Name process -Scope Script/u)
+  assert.match(helper, /function Stop-RadarProcess[\s\S]*Get-RadarActiveProcess/u)
+  assert.match(helper, /function Wait-RadarProductionMarker[\s\S]*Get-RadarActiveProcess/u)
+  assert.match(helper, /Set-Variable -Name process -Scope Script -Value \$null/u)
 })
 
 test('executor rehearses the exact fresh backup before source writes', () => {
