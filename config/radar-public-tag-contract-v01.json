@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "radar-public-tag-contract-v01",
+  "purpose": "Public website import and display contract only. Internal detection and processing rules live in the private research-data repository.",
+  "tags": {
+    "staff-small-work": {
+      "group": "排雷协作-站务提示",
+      "value": "小作品",
+      "warningTemplateId": "info-insufficient",
+      "allowedRatingClasses": ["B-LIGHT", "D-UNCLEAR"]
+    },
+    "accelerated-radar-matching-conflict": {
+      "group": "加速排雷",
+      "value": "匹配冲突",
+      "warningTemplateId": "identity-conflict"
+    },
+    "relationship-needs-radar": {
+      "group": "关系提示",
+      "value": "需要排雷",
+      "warningTemplateId": "needs-radar",
+      "allowedRatingClasses": ["D-UNCLEAR"]
+    },
+    "content-unsuitable": {
+      "group": "内容提示",
+      "value": "不适内容",
+      "warningTemplateId": "adult-visibility-warning",
+      "changesCoreGradeByItself": false
+    }
+  },
+  "boundary": {
+    "containsInternalEvidenceThresholds": false,
+    "containsInternalDetectionPatterns": false,
+    "containsPrivateResearchNotes": false,
+    "containsPublicDisplayContract": true
+  }
+}
