@@ -67,6 +67,7 @@ test('v01 entrypoint content-binds and delegates to the corrected v02 executor',
   assert.match(wrapper, /execute-radar-unified-release-production-0575-v02\.ps1/u)
   assert.match(wrapper, /bfb5367013e454c2129ef3e557749d9e8b5aca6e/u)
   assert.match(wrapper, /git hash-object/u)
+  assert.match(wrapper, /merged-main authorization manifest binds this stable entrypoint/u)
   assert.match(wrapper, /@PSBoundParameters/u)
 })
 
