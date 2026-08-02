@@ -15,11 +15,18 @@ const sections = [
     description: '浏览作品条目、排雷分级、页面提示与资料状态。',
   },
   {
+    kind: 'ratings',
+    href: '/ratings',
+    eyebrow: '大众评级',
+    title: '作品排雷评级',
+    description: '公开查看机器等级、置信度、判断摘要、标签提示与人工复核状态。',
+  },
+  {
     kind: 'radar',
     href: '/radar',
-    eyebrow: '统一 Radar',
-    title: '公开研究与评级',
-    description: '查看已经进入数据库的研究事实、来源、机器评级与人工复核状态。',
+    eyebrow: '注册用户资料区',
+    title: 'Radar 研究档案',
+    description: '登录后只读查看事实、证据与来源绑定；只有编辑以上可以下载完整 JSON。',
   },
   {
     kind: 'creators',
@@ -49,27 +56,38 @@ function countLabel(count?: number) {
   return `${count} 条`
 }
 
-async function currentRadarCount() {
+async function currentRadarCounts() {
   try {
     const payload = await getPayload({ config: configPromise })
-    const result = await payload.find({
-      collection: 'radar-public-records',
-      depth: 0,
-      limit: 1,
-      page: 1,
-      pagination: true,
-      overrideAccess: true,
-      where: { recordStatus: { equals: 'current' } },
-    })
-    return result.totalDocs
+    const [records, ratings] = await Promise.all([
+      payload.find({
+        collection: 'radar-public-records',
+        depth: 0,
+        limit: 1,
+        page: 1,
+        pagination: true,
+        overrideAccess: true,
+        where: { recordStatus: { equals: 'current' } },
+      }),
+      payload.find({
+        collection: 'radar-public-ratings',
+        depth: 0,
+        limit: 1,
+        page: 1,
+        pagination: true,
+        overrideAccess: true,
+        where: { recordStatus: { equals: 'current' } },
+      }),
+    ])
+    return { records: records.totalDocs, ratings: ratings.totalDocs }
   } catch {
-    return undefined
+    return { records: undefined, ratings: undefined }
   }
 }
 
 export default async function HomePage() {
   const index = readSearchIndex()
-  const radarCount = await currentRadarCount()
+  const radarCounts = await currentRadarCounts()
 
   return (
     <main className="home">
@@ -78,7 +96,7 @@ export default async function HomePage() {
           <p className="eyebrow">百合排雷 · 资料库</p>
           <h1>百合作品排雷资料库</h1>
           <p>
-            这里整理作品、创作者、机构、排雷分级与页面提示。读者可以通过结构化条目、公开资料和证据说明，更快判断作品是否适合自己。
+            这里整理作品、创作者、机构、排雷分级与页面提示。读者可以通过结构化条目、公开评级和证据说明，更快判断作品是否适合自己。
           </p>
           <form action="/search" className="search-box" role="search">
             <span>快速搜索</span>
@@ -96,13 +114,15 @@ export default async function HomePage() {
           </form>
           <div className="home-stats" aria-label="当前索引统计">
             <span>{index ? `当前收录 ${index.total} 条` : '生成索引后显示条目数'}</span>
-            {typeof radarCount === 'number' ? <span>统一 Radar：{radarCount} 条当前记录</span> : null}
+            {typeof radarCounts.ratings === 'number' ? <span>公开评级：{radarCounts.ratings} 条</span> : null}
+            {typeof radarCounts.records === 'number' ? <span>注册用户研究档案：{radarCounts.records} 条</span> : null}
             {index?.generatedAt ? <span>索引生成：{new Date(index.generatedAt).toLocaleString('zh-CN')}</span> : null}
           </div>
           <div className="actions">
             <Link href="/browse">浏览资料库</Link>
             <Link href="/works">浏览作品</Link>
-            <Link href="/radar">查看统一 Radar</Link>
+            <Link href="/ratings">查看大众评级</Link>
+            <Link href="/radar">登录后查看研究档案</Link>
             <Link href="/search">开始搜索</Link>
             <Link href="/me/lists">我的列表</Link>
           </div>
@@ -110,9 +130,11 @@ export default async function HomePage() {
 
         <section className="home-section-grid" aria-label="资料分类">
           {sections.map((section) => {
-            const count = section.kind === 'radar'
-              ? radarCount
-              : index?.counts?.[section.kind]
+            const count = section.kind === 'ratings'
+              ? radarCounts.ratings
+              : section.kind === 'radar'
+                ? radarCounts.records
+                : index?.counts?.[section.kind]
             return (
               <Link className="home-section-card" href={section.href} key={section.href}>
                 <div className="home-section-card-header">
