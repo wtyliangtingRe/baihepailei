@@ -19,6 +19,7 @@ on:
       - 'scripts/radar/lib/unified-rating-release-plan-v01.mjs'
       - 'tests/radar-unified-release-lab-0575-v01.test.mjs'
       - 'tests/radar-unified-rating-release-plan-v01.test.mjs'
+      - 'tests/radar-unified-release-payload-normalization-v01.test.mjs'
       - 'tests/radar-public-records-schema.test.mjs'
       - 'tests/radar-public-record-fact-value-text-migration-preparation.test.mjs'
       - 'config/radar-unified-rating-release-0575-v01.lock.json'
@@ -71,6 +72,7 @@ jobs:
           node --test \
             tests/radar-unified-release-lab-0575-v01.test.mjs \
             tests/radar-unified-rating-release-plan-v01.test.mjs \
+            tests/radar-unified-release-payload-normalization-v01.test.mjs \
             tests/radar-public-ratings-schema.test.mjs \
             tests/radar-public-records-schema.test.mjs \
             tests/radar-public-record-fact-value-text-migration-preparation.test.mjs
@@ -87,6 +89,8 @@ jobs:
           grep -q "method: 'POST'" "$IMPORTER"
           grep -q "method: 'PATCH'" "$IMPORTER"
           ! grep -E "method: '(PUT|DELETE)'" "$IMPORTER"
+          grep -q 'OPTIONAL_HUMAN_REVIEW_FIELDS' "$IMPORTER"
+          grep -q 'document.humanReview\[field\] = null' "$IMPORTER"
           grep -q 'omissionMeansDelete: false' "$IMPORTER"
           grep -q "name: 'value'" src/collections/RadarPublicRecords.ts
           grep -q "type: 'textarea'" src/collections/RadarPublicRecords.ts
