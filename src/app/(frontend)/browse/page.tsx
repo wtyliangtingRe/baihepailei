@@ -51,7 +51,7 @@ export default function BrowsePage() {
 
   return (
     <main className="page">
-      <section className="page-heading">
+      <section className="page-heading site-guide-heading">
         <p className="eyebrow">资料库</p>
         <h1>浏览资料库</h1>
         <p>当前轻量索引共收录 {index.total} 个条目。你可以按内容类型浏览，也可以直接使用搜索。</p>

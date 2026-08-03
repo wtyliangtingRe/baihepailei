@@ -7,17 +7,52 @@
 }
 
 .theme-toggle {
-  padding: 10px 16px;
-  border: 1px solid #444;
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #544a2f;
   border-radius: 999px;
-  background: #222;
-  color: #f7f7f7;
+  background: #242016;
+  color: #ffd978;
   cursor: pointer;
   font: inherit;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
 }
 
 .theme-toggle:hover {
-  border-color: #ffb5d7;
+  border-color: #ffcf62;
+  background: #2d2718;
+  transform: translateY(-1px);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid #ffb5d7;
+  outline-offset: 3px;
+}
+
+.theme-toggle-icon {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  transition:
+    filter 160ms ease,
+    transform 160ms ease;
+}
+
+.theme-toggle:hover .theme-toggle-icon {
+  filter: drop-shadow(0 0 5px rgb(255 217 120 / 0.48));
+  transform: rotate(-6deg) scale(1.04);
 }
 
 [data-theme='light'] body {
@@ -30,7 +65,17 @@
   background: rgb(246 242 238 / 0.88);
 }
 
-[data-theme='light'] .theme-toggle,
+[data-theme='light'] .theme-toggle {
+  border-color: #e6ca91;
+  background: #fff7dc;
+  color: #bd7300;
+}
+
+[data-theme='light'] .theme-toggle:hover {
+  border-color: #dba84c;
+  background: #fff1bd;
+}
+
 [data-theme='light'] .site-nav a,
 [data-theme='light'] .actions a,
 [data-theme='light'] .result-link,

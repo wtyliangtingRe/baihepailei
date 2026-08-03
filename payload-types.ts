@@ -71,6 +71,9 @@ export interface Config {
     'audit-events': AuditEvent;
     media: Media;
     works: Work;
+    'radar-public-conclusions': RadarPublicConclusion;
+    'radar-public-records': RadarPublicRecord;
+    'radar-public-ratings': RadarPublicRating;
     creators: Creator;
     organizations: Organization;
     evidence: Evidence;
@@ -94,6 +97,9 @@ export interface Config {
     'audit-events': AuditEventsSelect<false> | AuditEventsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     works: WorksSelect<false> | WorksSelect<true>;
+    'radar-public-conclusions': RadarPublicConclusionsSelect<false> | RadarPublicConclusionsSelect<true>;
+    'radar-public-records': RadarPublicRecordsSelect<false> | RadarPublicRecordsSelect<true>;
+    'radar-public-ratings': RadarPublicRatingsSelect<false> | RadarPublicRatingsSelect<true>;
     creators: CreatorsSelect<false> | CreatorsSelect<true>;
     organizations: OrganizationsSelect<false> | OrganizationsSelect<true>;
     evidence: EvidenceSelect<false> | EvidenceSelect<true>;
@@ -661,9 +667,9 @@ export interface Work {
    */
   evidenceNote?: string | null;
   /**
-   * 只表示作品是否仍在本站目录中。草稿与发布由 Payload 内置 _status 管理。
+   * 正式与临时作品都保持发布并进入前台；临时表示事实资料已入库、仍待补齐或复核。归档才会从前台隐藏。
    */
-  catalogStatus: 'active' | 'archived';
+  catalogStatus: 'active' | 'temporary' | 'archived';
   /**
    * 可选。用于身份争议、版本差异、站务裁量、用语说明或其他特殊提醒；可以关联多条。
    */
@@ -1110,6 +1116,286 @@ export interface Term {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * 面向前台的当前 AI Radar 结论投影。每个作品只保留一条当前记录；更新此集合不会写入 Works 或提升 Works 草稿。
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "radar-public-conclusions".
+ */
+export interface RadarPublicConclusion {
+  id: number;
+  /**
+   * 稳定幂等键，固定使用 work:<Works 数据库 ID>。新 AI 结论更新同一条记录。
+   */
+  publicationKey: string;
+  work: number | Work;
+  workIdSnapshot: string;
+  workSiteId?: string | null;
+  title: string;
+  recordStatus: 'current' | 'withdrawn';
+  conclusionMode: 'fixed_grade' | 'bounded_range';
+  /**
+   * 固定等级直接使用该等级；有界范围使用最可能等级。人工轨道仍在前台优先。
+   */
+  compatibilityGrade: 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X' | 'unknown';
+  bestGrade?: ('S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X' | 'unknown') | null;
+  likelyGrade?: ('S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X' | 'unknown') | null;
+  worstGrade?: ('S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X' | 'unknown') | null;
+  ratingNotice: 'ai_synthesized_pending_review' | 'insufficient_information' | 'none';
+  reviewReasons?:
+    | (
+        | 'radar_v06_package_import'
+        | 'radar_publication_guard'
+        | 'radar_guard_low_evidence_coverage'
+        | 'radar_guard_weak_or_conflicting_source'
+        | 'radar_guard_unclear_provisional_grade'
+      )[]
+    | null;
+  evidenceStrength: 'unassessed' | 'weak' | 'medium' | 'strong';
+  /**
+   * 保存当前排雷判断、命中规则、置信度、资料覆盖度和证据状态。这里的百分比不表示作品安全概率。
+   */
+  radarAssessment?: {
+    /**
+     * 表示当前建议与现有证据的一致程度，不等同于作品安全概率。
+     */
+    confidencePercent?: number | null;
+    /**
+     * 表示角色关系、剧情发展、结局、官方说明和来源材料等关键证据的完整度。
+     */
+    evidenceCoveragePercent?: number | null;
+    evidenceStatus?:
+      | (
+          | 'official_confirmed'
+          | 'primary_material_confirmed'
+          | 'multiple_secondary_supported'
+          | 'single_secondary_supported'
+          | 'community_consensus'
+          | 'inferred_from_metadata'
+          | 'conflicting_evidence'
+          | 'insufficient_evidence'
+          | 'unknown'
+        )
+      | null;
+    /**
+     * 面向读者的简短来源说明；具体链接仍放在来源链接或候选来源中。
+     */
+    sourceSummary?: string | null;
+    sourceCount?: number | null;
+    /**
+     * 例如 radar-rating-policy-v0.4-draft。
+     */
+    policyVersion?: string | null;
+    /**
+     * 用于回溯产生本次建议的暂存批次。
+     */
+    assessmentBatch?: string | null;
+    /**
+     * 保存本次规则解析建议；人工确认前仍受分级提示和复核状态约束。
+     */
+    suggestedGrade?: ('S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X') | null;
+    decisiveRuleCode?: string | null;
+    decisiveRuleReason?: string | null;
+    /**
+     * 保留全部命中的子规则；最低安全等级只决定建议等级，不会丢弃其他命中项。
+     */
+    matchedRules?:
+      | {
+          code: string;
+          grade: 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X';
+          confidencePercent?: number | null;
+          reason?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    contradictions?:
+      | {
+          value: string;
+          id?: string | null;
+        }[]
+      | null;
+    requiresHumanReview?: boolean | null;
+    assessedAt?: string | null;
+  };
+  sourceKind: 'package' | 'latest_ai_draft' | 'manual_ai_update';
+  sourcePackageId?: string | null;
+  sourcePackageSha256?: string | null;
+  conclusionSha256: string;
+  publicationVersion: string;
+  publishedAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * 注册用户可只读当前研究投影；编辑以上可检查撤回记录。保存已核实事实、来源与资料不足状态；不会覆盖 Works、人工评级或旧 Radar 评级。
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "radar-public-records".
+ */
+export interface RadarPublicRecord {
+  id: number;
+  /**
+   * 固定使用 work:<Works 数据库 ID>；后续发布包幂等更新同一条记录。
+   */
+  publicationKey: string;
+  work: number | Work;
+  /**
+   * 精确 workId|siteId 身份；禁止标题近似匹配与版本替换。
+   */
+  identityKey: string;
+  workIdSnapshot: string;
+  workSiteId: string;
+  title: string;
+  publicState: 'verified' | 'partial' | 'needs_more_research';
+  researchStatus: 'ready_for_publication' | 'partially_verified' | 'needs_more_research';
+  pageNotice: string;
+  facts?:
+    | {
+        factId: string;
+        factType: string;
+        /**
+         * 统一 Release 的公开事实值是原样文本；不得在导入时包装成 JSON 对象或改变内容。
+         */
+        value: string;
+        sourceRefs: {
+          value: string;
+          id?: string | null;
+        }[];
+        id?: string | null;
+      }[]
+    | null;
+  evidence?:
+    | {
+        sourceRef: string;
+        tier: 'A' | 'B' | 'C' | 'D' | 'E';
+        role: 'primary' | 'licensed_or_authorized' | 'supplemental' | 'lead_only';
+        url: string;
+        title: string;
+        exactIdentityBound: boolean;
+        id?: string | null;
+      }[]
+    | null;
+  sourceReleaseId: string;
+  sourceCommitSha: string;
+  sourcePolicyVersion: string;
+  researchSnapshotId: string;
+  recordSha256: string;
+  releaseRecordsSha256: string;
+  sourceReviewedAt: string;
+  importedAt: string;
+  recordStatus: 'current' | 'withdrawn';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * 独立保存公开机器评级、规则类别、标签提示与来源哈希；不覆盖 Works 的 AI 或人工评级字段。
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "radar-public-ratings".
+ */
+export interface RadarPublicRating {
+  id: number;
+  /**
+   * 固定使用 work:<Works 数据库 ID>；后续发布包幂等更新同一条评级记录。
+   */
+  publicationKey: string;
+  work: number | Work;
+  /**
+   * 精确 workId|siteId 身份；禁止标题近似匹配与版本替换。
+   */
+  identityKey: string;
+  workIdSnapshot: string;
+  workSiteId: string;
+  title: string;
+  coreGrade: 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X';
+  bestGrade: 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X';
+  likelyGrade: 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X';
+  worstGrade: 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X';
+  confidence: 'high' | 'medium' | 'low';
+  matchedClasses?:
+    | {
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
+  factRefs?:
+    | {
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
+  evidenceRefs?:
+    | {
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
+  reasoningSummary: string;
+  unresolvedDimensions?:
+    | {
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
+  classificationRule: string;
+  confirmationBasis?:
+    | {
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
+  benefitOfDoubtBaselineApplied: boolean;
+  publicTagHints?:
+    | {
+        key: string;
+        group: string;
+        value: string;
+        warningTemplateId?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  publicWarningTemplateIds?:
+    | {
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
+  humanReview: {
+    status: 'unreviewed' | 'reviewed' | 'disputed';
+    reviewerIdentity?: string | null;
+    reviewedAt?: string | null;
+    decision?: string | null;
+    proposedCoreGrade?: ('S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X') | null;
+    proposedProfileChanges?:
+      | {
+          value: string;
+          id?: string | null;
+        }[]
+      | null;
+    reasoning?: string | null;
+    additionalEvidenceRefs?:
+      | {
+          value: string;
+          id?: string | null;
+        }[]
+      | null;
+    moderationState?: string | null;
+    blocksAnalysis: boolean;
+    blocksPublication: boolean;
+  };
+  sourceReleaseId: string;
+  sourceCommitSha: string;
+  sourcePolicyVersion: string;
+  researchSnapshotId: string;
+  sourceRatingCampaignId: string;
+  sourceRatingDecisionHash: string;
+  releaseRatingHash: string;
+  releaseRatingsSha256: string;
+  importedAt: string;
+  recordStatus: 'current' | 'withdrawn';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "evidence".
  */
@@ -1235,6 +1521,10 @@ export interface Comment {
    */
   parentComment?: (number | null) | Comment;
   replyToName?: string | null;
+  /**
+   * 仅用于账户消息提醒；由服务器根据被回复评论的作者写入，不对公共评论 API 暴露。
+   */
+  replyToUser?: (number | null) | User;
   author?: (number | null) | User;
   authorName?: string | null;
   /**
@@ -1289,6 +1579,18 @@ export interface FeedbackSubmission {
   targetCollection?: string | null;
   targetSlug?: string | null;
   targetTitle: string;
+  /**
+   * 仅用于新增作品建议：原名、别名、作品类别、形态、首次日期、简介和搜索补充信息。评级与 AI 字段不由提交者填写。
+   */
+  newWorkMetadata?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   pageUrl?: string | null;
   proposedGrade?: ('S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X') | null;
   /**
@@ -1745,6 +2047,218 @@ export interface WorksSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "radar-public-conclusions_select".
+ */
+export interface RadarPublicConclusionsSelect<T extends boolean = true> {
+  publicationKey?: T;
+  work?: T;
+  workIdSnapshot?: T;
+  workSiteId?: T;
+  title?: T;
+  recordStatus?: T;
+  conclusionMode?: T;
+  compatibilityGrade?: T;
+  bestGrade?: T;
+  likelyGrade?: T;
+  worstGrade?: T;
+  ratingNotice?: T;
+  reviewReasons?: T;
+  evidenceStrength?: T;
+  radarAssessment?:
+    | T
+    | {
+        confidencePercent?: T;
+        evidenceCoveragePercent?: T;
+        evidenceStatus?: T;
+        sourceSummary?: T;
+        sourceCount?: T;
+        policyVersion?: T;
+        assessmentBatch?: T;
+        suggestedGrade?: T;
+        decisiveRuleCode?: T;
+        decisiveRuleReason?: T;
+        matchedRules?:
+          | T
+          | {
+              code?: T;
+              grade?: T;
+              confidencePercent?: T;
+              reason?: T;
+              id?: T;
+            };
+        contradictions?:
+          | T
+          | {
+              value?: T;
+              id?: T;
+            };
+        requiresHumanReview?: T;
+        assessedAt?: T;
+      };
+  sourceKind?: T;
+  sourcePackageId?: T;
+  sourcePackageSha256?: T;
+  conclusionSha256?: T;
+  publicationVersion?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "radar-public-records_select".
+ */
+export interface RadarPublicRecordsSelect<T extends boolean = true> {
+  publicationKey?: T;
+  work?: T;
+  identityKey?: T;
+  workIdSnapshot?: T;
+  workSiteId?: T;
+  title?: T;
+  publicState?: T;
+  researchStatus?: T;
+  pageNotice?: T;
+  facts?:
+    | T
+    | {
+        factId?: T;
+        factType?: T;
+        value?: T;
+        sourceRefs?:
+          | T
+          | {
+              value?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  evidence?:
+    | T
+    | {
+        sourceRef?: T;
+        tier?: T;
+        role?: T;
+        url?: T;
+        title?: T;
+        exactIdentityBound?: T;
+        id?: T;
+      };
+  sourceReleaseId?: T;
+  sourceCommitSha?: T;
+  sourcePolicyVersion?: T;
+  researchSnapshotId?: T;
+  recordSha256?: T;
+  releaseRecordsSha256?: T;
+  sourceReviewedAt?: T;
+  importedAt?: T;
+  recordStatus?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "radar-public-ratings_select".
+ */
+export interface RadarPublicRatingsSelect<T extends boolean = true> {
+  publicationKey?: T;
+  work?: T;
+  identityKey?: T;
+  workIdSnapshot?: T;
+  workSiteId?: T;
+  title?: T;
+  coreGrade?: T;
+  bestGrade?: T;
+  likelyGrade?: T;
+  worstGrade?: T;
+  confidence?: T;
+  matchedClasses?:
+    | T
+    | {
+        value?: T;
+        id?: T;
+      };
+  factRefs?:
+    | T
+    | {
+        value?: T;
+        id?: T;
+      };
+  evidenceRefs?:
+    | T
+    | {
+        value?: T;
+        id?: T;
+      };
+  reasoningSummary?: T;
+  unresolvedDimensions?:
+    | T
+    | {
+        value?: T;
+        id?: T;
+      };
+  classificationRule?: T;
+  confirmationBasis?:
+    | T
+    | {
+        value?: T;
+        id?: T;
+      };
+  benefitOfDoubtBaselineApplied?: T;
+  publicTagHints?:
+    | T
+    | {
+        key?: T;
+        group?: T;
+        value?: T;
+        warningTemplateId?: T;
+        id?: T;
+      };
+  publicWarningTemplateIds?:
+    | T
+    | {
+        value?: T;
+        id?: T;
+      };
+  humanReview?:
+    | T
+    | {
+        status?: T;
+        reviewerIdentity?: T;
+        reviewedAt?: T;
+        decision?: T;
+        proposedCoreGrade?: T;
+        proposedProfileChanges?:
+          | T
+          | {
+              value?: T;
+              id?: T;
+            };
+        reasoning?: T;
+        additionalEvidenceRefs?:
+          | T
+          | {
+              value?: T;
+              id?: T;
+            };
+        moderationState?: T;
+        blocksAnalysis?: T;
+        blocksPublication?: T;
+      };
+  sourceReleaseId?: T;
+  sourceCommitSha?: T;
+  sourcePolicyVersion?: T;
+  researchSnapshotId?: T;
+  sourceRatingCampaignId?: T;
+  sourceRatingDecisionHash?: T;
+  releaseRatingHash?: T;
+  releaseRatingsSha256?: T;
+  importedAt?: T;
+  recordStatus?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "creators_select".
  */
 export interface CreatorsSelect<T extends boolean = true> {
@@ -1944,6 +2458,7 @@ export interface CommentsSelect<T extends boolean = true> {
   targetTitle?: T;
   parentComment?: T;
   replyToName?: T;
+  replyToUser?: T;
   author?: T;
   authorName?: T;
   body?: T;
@@ -1977,6 +2492,7 @@ export interface FeedbackSubmissionsSelect<T extends boolean = true> {
   targetCollection?: T;
   targetSlug?: T;
   targetTitle?: T;
+  newWorkMetadata?: T;
   pageUrl?: T;
   proposedGrade?: T;
   matchedRuleCodes?:

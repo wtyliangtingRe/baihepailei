@@ -423,7 +423,7 @@ export default async function WorksIndexPage({ searchParams }: { searchParams?: 
 
   return (
     <main className="page collection-page">
-      <section className="page-heading collection-heading">
+      <section className="page-heading collection-heading site-guide-heading">
         <p className="eyebrow">作品</p>
         <h1>作品</h1>
         <p>分组等级统一按“人工正式评级优先；尚未人工标注时采用 AI 建议；两者皆无则未录入”计算。</p>

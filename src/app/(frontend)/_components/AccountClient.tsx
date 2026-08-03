@@ -122,6 +122,7 @@ export default function AccountClient() {
       <section className="account-feature-grid" aria-label="账户功能">
         <Link className="detail-card account-feature" href="/me/messages"><strong>站务消息</strong><span>查看评论回复，以及建议被核查、采纳、驳回或要求补充材料的通知。</span></Link>
         <Link className="detail-card account-feature" href="/me/submissions"><strong>我的提交</strong><span>查看、修改待审核表单，并在站务要求补充材料时继续编辑原记录。</span></Link>
+        <Link className="detail-card account-feature" href="/radar"><strong>研究档案</strong><span>查看已录入主数据库的只读研究记录、证据与统一评级结论。</span></Link>
         <Link className="detail-card account-feature" href="/me/lists"><strong>我的列表</strong><span>想看、在看、已看、喜欢、避雷与待复核。</span></Link>
         <Link className="detail-card account-feature" href="/feedback"><strong>提交人工排雷</strong><span>补充规则、等级建议、来源链接与证据说明。</span></Link>
         <Link className="detail-card account-feature" href={isStaff ? '/me/studio' : '/feedback?type=new_work'}><strong>{isStaff ? '站内内容管理' : '提交新作品'}</strong><span>{isStaff ? '搜索、创建、编辑、隐藏和恢复正式或临时作品。' : '提交新作品申请；采纳前可在“我的提交”中继续修改。'}</span></Link>
