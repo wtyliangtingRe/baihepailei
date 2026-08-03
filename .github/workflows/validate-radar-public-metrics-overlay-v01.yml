@@ -1,0 +1,84 @@
+name: Validate Radar Public Metrics Overlay v01
+
+on:
+  pull_request:
+    paths:
+      - "docs/guides/radar-public-metrics-overlay-v01.md"
+      - "payload-types.ts"
+      - "scripts/radar/plan-radar-public-metrics-overlay-v01.mjs"
+      - "src/app/(frontend)/_lib/radar-public-rating-bridge.ts"
+      - "src/collections/RadarPublicRatings.ts"
+      - "src/migrations/20260803_102741_radar_public_metrics_v01.json"
+      - "src/migrations/20260803_102741_radar_public_metrics_v01.ts"
+      - "src/migrations/index.ts"
+      - "tests/radar-public-metrics-migration.test.mjs"
+      - "tests/radar-public-metrics-plan.test.mjs"
+      - "tests/radar-public-metrics-schema.test.mjs"
+      - "tests/radar-public-rating-bridge.test.mjs"
+      - "tests/radar-live-pages.test.mjs"
+      - "tests/collection-list-visual-headings.test.mjs"
+      - ".github/workflows/validate-radar-public-metrics-overlay-v01.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Parse planner and generated migration snapshot
+        run: |
+          node --check scripts/radar/plan-radar-public-metrics-overlay-v01.mjs
+          node -e "JSON.parse(require('node:fs').readFileSync('src/migrations/20260803_102741_radar_public_metrics_v01.json','utf8'))"
+
+      - name: Run Radar public metrics regression tests
+        run: |
+          node --test \
+            tests/radar-live-pages.test.mjs \
+            tests/collection-list-visual-headings.test.mjs \
+            tests/radar-public-rating-bridge.test.mjs \
+            tests/radar-public-metrics-schema.test.mjs \
+            tests/radar-public-metrics-plan.test.mjs \
+            tests/radar-public-metrics-migration.test.mjs
+
+      - name: Enforce read-only planner and exact metric contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          planner='scripts/radar/plan-radar-public-metrics-overlay-v01.mjs'
+          bridge='src/app/(frontend)/_lib/radar-public-rating-bridge.ts'
+          migration='src/migrations/20260803_102741_radar_public_metrics_v01.ts'
+
+          ! grep -EIn 'payload\.(create|update|delete)|INSERT[[:space:]]+INTO|UPDATE[[:space:]]+radar_public_ratings|DELETE[[:space:]]+FROM' "$planner"
+          grep -q "RADAR-PUBLIC-METRICS-10563-0001" "$planner"
+          grep -q "radar-public-metrics-policy-v01" "$planner"
+          grep -q "canonicalRatingReleaseRewrite" "$planner"
+          grep -q "websiteWrite" "$planner"
+          grep -q "payloadWrite" "$planner"
+          grep -q "postgresqlWrite" "$planner"
+          grep -q "productionAuthorization" "$planner"
+          grep -q "Number.isInteger(value)" "$planner"
+          grep -q "Number.isInteger(value)" "$bridge"
+          ! grep -q "Math.round(value)" "$bridge"
+
+          ! grep -EIn '\b(INSERT[[:space:]]+INTO|UPDATE[[:space:]]+|DELETE[[:space:]]+FROM|TRUNCATE)\b' "$migration"
+          ! grep -EIn 'ALTER[[:space:]]+TABLE[[:space:]]+"(works|radar_public_records)"' "$migration"
+
+      - name: Require reusable guide and authorization boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          guide='docs/guides/radar-public-metrics-overlay-v01.md'
+          test -s "$guide"
+          grep -q "RADAR-PUBLIC-METRICS-10563-0001" "$guide"
+          grep -q "Temporary columns" "$guide"
+          grep -q "Never rerun a completed apply-once release" "$guide"
+          grep -q "productionAuthorization" "$guide"
+
+      - name: Check patch whitespace
+        run: git diff --check origin/${{ github.base_ref }}...HEAD
