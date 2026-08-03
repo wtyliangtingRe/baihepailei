@@ -1,0 +1,134 @@
+name: Validate Radar Public Metrics Update Rehearsal v01
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-radar-public-metrics-update-rehearsal-v01.yml'
+      - 'config/radar-public-metrics-update-rehearsal-v01.lock.json'
+      - 'docs/guides/radar-public-metrics-update-rehearsal-v01.md'
+      - 'scripts/radar/rehearse-radar-public-metrics-update-v01.ps1'
+      - 'scripts/radar/run-radar-public-metrics-update-rehearsal-v01.mjs'
+      - 'src/app/(payload)/api/radar-public-metrics-update-rehearsal-marker/route.ts'
+      - 'tests/radar-public-metrics-update-rehearsal.test.mjs'
+      - 'scripts/radar/plan-radar-public-metrics-overlay-v01.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Parse PowerShell rehearsal
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path `
+              '.\scripts\radar\rehearse-radar-public-metrics-update-v01.ps1'),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+
+      - name: Check importer syntax
+        run: >-
+          node --check
+          scripts/radar/run-radar-public-metrics-update-rehearsal-v01.mjs
+
+      - name: Run update-only contract tests
+        run: >-
+          node --test
+          tests/radar-public-metrics-update-rehearsal.test.mjs
+          tests/radar-public-metrics-schema.test.mjs
+
+      - name: Enforce exact reviewed bindings
+        shell: bash
+        run: |
+          set -euo pipefail
+          lock='config/radar-public-metrics-update-rehearsal-v01.lock.json'
+          rehearsal='scripts/radar/rehearse-radar-public-metrics-update-v01.ps1'
+
+          for value in \
+            62768b16d7f2bba102bb4391999b479b1fda4110 \
+            c2fe7847ee8b60b439f8e92025437937ceff06d5 \
+            RADAR-PUBLIC-METRICS-10563-0001 \
+            7c387dba1e5c6bfa9e3fe312c39b7ff203d969386209c02536b821f03f923b21 \
+            6f724b85a0f125bc99d3b0074f9f017609b7acff9b91ddfa5bb3b570afa544c5 \
+            aaaf3a2d0e05ed565e673198a9b134717945b56b49038b97243d958d60ed63a2 \
+            e9fc00aa5e66cb4d03c34397da80df21c5b109ccb0bed6b967ad9c41dad3fae5
+          do
+            grep -q "$value" "$lock"
+            grep -q "$value" "$rehearsal"
+          done
+
+          test "$(grep -c 'pnpm exec payload migrate' "$rehearsal")" -eq 1
+          grep -q 'MigrationDatabaseUrl' "$rehearsal"
+          grep -q '\$env:DATABASE_URL = \$MigrationDatabaseUrl' "$rehearsal"
+          grep -q "PlanCandidate.schemaExecution.executionReceiptSha256" "$rehearsal"
+          grep -q "radar_public_ratings_existing_business_fields" "$rehearsal"
+          grep -q "'updated_at'" "$rehearsal"
+          ! grep -q "radar_public_ratings_existing_fields" "$rehearsal"
+          grep -q "payloadUpdatedAtExpectedToChange = \$true" "$rehearsal"
+          grep -q "\-Expected 36" "$rehearsal"
+          grep -q "\-Expected 9" "$rehearsal"
+          grep -Fq -- '-Sql "SELECT count(*)::text FROM public.$TableName;"' "$rehearsal"
+          ! grep -Fq -- 'public.\"$TableName\";' "$rehearsal"
+
+      - name: Enforce update-only HTTP surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          importer='scripts/radar/run-radar-public-metrics-update-rehearsal-v01.mjs'
+
+          grep -q "method: 'PATCH'" "$importer"
+          grep -q 'Forbidden HTTP request' "$importer"
+          grep -q 'metric_update' "$importer"
+          grep -q 'radar-public-ratings' "$importer"
+
+          ! grep -EIn \
+            "method:[[:space:]]*'?(PUT|DELETE)'?|writeKind:[[:space:]]*'?(record_create|rating_create)'?" \
+            "$importer"
+
+      - name: Enforce exact eight-field body and boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          importer='scripts/radar/run-radar-public-metrics-update-rehearsal-v01.mjs'
+          guide='docs/guides/radar-public-metrics-update-rehearsal-v01.md'
+
+          for field in \
+            confidencePercent \
+            evidenceCoveragePercent \
+            metricsPolicyVersion \
+            sourceMetricsPolicyVersion \
+            relationshipEvidenceState \
+            metricsSourceReleaseId \
+            metricsCalculationBasisSha256 \
+            requiresMetricReview
+          do
+            grep -q "$field" "$importer"
+          done
+
+          grep -q 'productionAuthorization: false' "$importer"
+          grep -q 'disposableDatabaseOnly: true' "$importer"
+          grep -q 'No production authorization' "$guide"
+          grep -q '10,563' "$guide"
+
+      - name: Check patch whitespace
+        run: git diff --check origin/main...HEAD

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "radar-public-metrics-update-rehearsal-lock-v01",
+  "baseMain": "62768b16d7f2bba102bb4391999b479b1fda4110",
+  "researchRepository": "wtyliangtingRe/baihepailei-research-data",
+  "researchHead": "c2fe7847ee8b60b439f8e92025437937ceff06d5",
+  "releaseId": "RADAR-PUBLIC-METRICS-10563-0001",
+  "releasePath": "releases/public/radar-public-metrics-10563-0001/v01",
+  "releaseManifestSha256": "da4b52eae91224a8bab46aebff69734c6a3d2bc3005de415b027a9e4eba6226d",
+  "metricsSha256": "1bdfda49f4f72a823efc86de42c565d3bdef162136aef697d0dc1d3bb343a946",
+  "planCandidateSha256": "7c387dba1e5c6bfa9e3fe312c39b7ff203d969386209c02536b821f03f923b21",
+  "planReviewZipSha256": "6f724b85a0f125bc99d3b0074f9f017609b7acff9b91ddfa5bb3b570afa544c5",
+  "schemaExecutionReceiptSha256": "aaaf3a2d0e05ed565e673198a9b134717945b56b49038b97243d958d60ed63a2",
+  "applyTimeBackupSha256": "e9fc00aa5e66cb4d03c34397da80df21c5b109ccb0bed6b967ad9c41dad3fae5",
+  "applyTimeBackupBytes": 37207203,
+  "counts": {
+    "metrics": 10563,
+    "reviewTrue": 299,
+    "reviewFalse": 10264,
+    "zeroConfidenceAndCoverage": 34
+  },
+  "expectedTransition": {
+    "alreadyCurrent": 0,
+    "wouldUpdate": 10563,
+    "missingRating": 0,
+    "identityMismatch": 0,
+    "blocked": 0,
+    "postAlreadyCurrent": 10563,
+    "patchRequests": 10563,
+    "postCreateRequests": 0,
+    "putRequests": 0,
+    "deleteRequests": 0
+  },
+  "productionAuthorization": false
+}
