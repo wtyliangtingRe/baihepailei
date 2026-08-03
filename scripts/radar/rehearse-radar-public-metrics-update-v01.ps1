@@ -290,7 +290,7 @@ SELECT 'radar_public_records' || E'\t' || count(*)::text || E'\t' ||
   coalesce(md5(string_agg(md5(to_jsonb(r)::text), '' ORDER BY r.id)), md5(''))
 FROM public.radar_public_records AS r
 UNION ALL
-SELECT 'radar_public_ratings_existing_fields' || E'\t' || count(*)::text || E'\t' ||
+SELECT 'radar_public_ratings_existing_business_fields' || E'\t' || count(*)::text || E'\t' ||
   coalesce(
     md5(
       string_agg(
@@ -304,7 +304,8 @@ SELECT 'radar_public_ratings_existing_fields' || E'\t' || count(*)::text || E'\t
               'relationship_evidence_state',
               'metrics_source_release_id',
               'metrics_calculation_basis_sha256',
-              'requires_metric_review'
+              'requires_metric_review',
+              'updated_at'
             ]::text[]
           )::text
         ),
@@ -969,7 +970,7 @@ try {
     Assert-Equal `
         -Expected ($TempBeforeFingerprints -join "`n") `
         -Actual ($TempAfterFingerprints -join "`n") `
-        -Label 'Temp existing-field fingerprints'
+        -Label 'Temp existing-business-field fingerprints'
 
     Assert-Equal -Expected 10563 -Actual $TempAfterMetricState.rows -Label 'Temp metric rows'
     Assert-Equal -Expected 10563 -Actual $TempAfterMetricState.nonEmptyMetricRows -Label 'Temp non-empty metric rows'
@@ -1113,7 +1114,8 @@ try {
             relationshipCovered = 1300
             relationshipPartial = 1059
             relationshipUncovered = 8204
-            existingFingerprintsUnchanged = $true
+            existingBusinessFingerprintsUnchanged = $true
+            payloadUpdatedAtExpectedToChange = $true
         }
         boundaries = [ordered]@{
             disposableDatabaseOnly = $true
@@ -1143,7 +1145,8 @@ try {
 - temporary PATCH requests: 10,563
 - temporary post-plan: 10,563 alreadyCurrent
 - POST create / PUT / DELETE: 0 / 0 / 0
-- existing fields and protected fingerprints: unchanged
+- existing business fields excluding Payload ``updated_at``: unchanged
+- Payload ``updated_at``: expected automatic PATCH side effect
 - production authorization: false
 
 This evidence accepts only the disposable update-only rehearsal. It does not

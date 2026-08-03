@@ -262,3 +262,39 @@ test('public table count SQL uses PowerShell-safe validated identifiers', () => 
     /public\.\\\\"\$TableName\\\\";/u,
   )
 })
+
+test('protected business fingerprint excludes metrics and Payload updated_at only', () => {
+  const rehearsal = fs.readFileSync(rehearsalPath, 'utf8')
+
+  const requiredExclusions = [
+    'confidence_percent',
+    'evidence_coverage_percent',
+    'metrics_policy_version',
+    'source_metrics_policy_version',
+    'relationship_evidence_state',
+    'metrics_source_release_id',
+    'metrics_calculation_basis_sha256',
+    'requires_metric_review',
+    'updated_at',
+  ]
+
+  for (const field of requiredExclusions) {
+    assert.match(rehearsal, new RegExp(`'${field}'`, 'u'))
+  }
+
+  assert.match(
+    rehearsal,
+    /radar_public_ratings_existing_business_fields/u,
+  )
+  assert.doesNotMatch(
+    rehearsal,
+    /radar_public_ratings_existing_fields/u,
+  )
+  assert.match(
+    rehearsal,
+    /payloadUpdatedAtExpectedToChange\s*=\s*\$true/u,
+  )
+  assert.doesNotMatch(rehearsal, /'created_at'\s*[,\]]/u)
+  assert.doesNotMatch(rehearsal, /'publication_key'\s*[,\]]/u)
+  assert.doesNotMatch(rehearsal, /'human_review_status'\s*[,\]]/u)
+})

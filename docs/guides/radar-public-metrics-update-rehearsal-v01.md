@@ -121,3 +121,19 @@ The rehearsal must:
 7. only then run `plan -> apply -> verify`.
 
 The source PostgreSQL connection is never supplied to the migration command.
+
+## Payload timestamp boundary
+
+Payload automatically updates `updated_at` for every accepted PATCH. The
+rehearsal therefore treats `updated_at` as an expected technical side effect,
+not as immutable rating content.
+
+The protected Public Rating fingerprint excludes exactly:
+
+- the eight reviewed Public Metrics fields; and
+- `updated_at`.
+
+It continues to protect identity, grades, reasoning, source rating provenance,
+human-review fields, `created_at`, and all other pre-existing business fields.
+The source database fingerprint still includes its unchanged timestamps because
+no source PATCH is allowed.
