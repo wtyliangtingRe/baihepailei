@@ -60,9 +60,44 @@ test('public ratings feed the existing Works AI panel without a second detail ce
     /collection: 'radar-public-ratings'/,
   )
 
-  assert.doesNotMatch(
+  assert.match(
     bridge,
     /collection: 'radar-public-records'/,
+  )
+
+  assert.match(
+    bridge,
+    /Promise\.all/,
+  )
+
+  assert.match(
+    bridge,
+    /clean\(record\?\.publicationKey\) === publicationKey/,
+  )
+
+  assert.match(
+    bridge,
+    /publicState === 'needs_more_research'/,
+  )
+
+  assert.match(
+    bridge,
+    /researchStatus === 'needs_more_research'/,
+  )
+
+  assert.match(
+    bridge,
+    /\['B', 'C'\]\.includes\(clean\(item\?\.tier\)\)/,
+  )
+
+  assert.match(
+    bridge,
+    /return 'primary_material_confirmed'/,
+  )
+
+  assert.doesNotMatch(
+    bridge,
+    /sourceReferenceCount[\s\S]*factRefs/,
   )
 
   assert.match(
