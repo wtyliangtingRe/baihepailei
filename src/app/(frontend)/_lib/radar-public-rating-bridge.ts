@@ -1,5 +1,5 @@
 import configPromise from '@payload-config'
-import { getPayload } from 'payload'
+import { getPayload, type Where } from 'payload'
 
 import type { RadarAssessmentMetrics } from '@/lib/radar/assessmentPresentation'
 
@@ -36,6 +36,14 @@ type PublicRating = {
   likelyGrade?: string | null
   worstGrade?: string | null
   confidence?: string | null
+  confidencePercent?: number | null
+  evidenceCoveragePercent?: number | null
+  metricsPolicyVersion?: string | null
+  sourceMetricsPolicyVersion?: string | null
+  relationshipEvidenceState?: string | null
+  metricsSourceReleaseId?: string | null
+  metricsCalculationBasisSha256?: string | null
+  requiresMetricReview?: boolean | null
   matchedClasses?: ValueRow[] | null
   factRefs?: ValueRow[] | null
   evidenceRefs?: ValueRow[] | null
@@ -81,6 +89,19 @@ function normalizedGrade(value: unknown) {
   }
 
   return grade
+}
+
+function normalizedPercent(value: unknown) {
+  if (
+    typeof value !== 'number'
+    || !Number.isInteger(value)
+    || value < 0
+    || value > 100
+  ) {
+    return undefined
+  }
+
+  return value
 }
 
 function rowValues(rows?: ValueRow[] | null) {
@@ -317,7 +338,9 @@ export function mapPublicRatingToWorksAI(
     usableRecord,
   )
   const sourceSummary = clean(rating.reasoningSummary)
-  const policyVersion = clean(rating.sourcePolicyVersion)
+  const policyVersion =
+    clean(rating.metricsPolicyVersion)
+    || clean(rating.sourcePolicyVersion)
   const assessedAt = clean(rating.importedAt)
 
   const humanReviewStatus = clean(
@@ -333,6 +356,12 @@ export function mapPublicRatingToWorksAI(
     evidenceStatus: evidenceStatus(
       rating,
       usableRecord,
+    ),
+    confidencePercent: normalizedPercent(
+      rating.confidencePercent,
+    ),
+    evidenceCoveragePercent: normalizedPercent(
+      rating.evidenceCoveragePercent,
     ),
     sourceSummary,
     sourceCount,
@@ -407,11 +436,29 @@ export function applyPublicRatingBridge<
     clean(item.radarAssessment?.assessedAt),
   )
 
+  const currentAssessment = item.radarAssessment
+  const bridgedAssessment = bridge.radarAssessment
+
+  const mergedAssessment = hasCanonicalWorksAssessment
+    ? {
+        ...bridgedAssessment,
+        ...currentAssessment,
+        confidencePercent:
+          normalizedPercent(
+            currentAssessment?.confidencePercent,
+          )
+          ?? bridgedAssessment.confidencePercent,
+        evidenceCoveragePercent:
+          normalizedPercent(
+            currentAssessment?.evidenceCoveragePercent,
+          )
+          ?? bridgedAssessment.evidenceCoveragePercent,
+      }
+    : bridgedAssessment
+
   return {
     ...item,
-    radarAssessment: hasCanonicalWorksAssessment
-      ? item.radarAssessment
-      : bridge.radarAssessment,
+    radarAssessment: mergedAssessment,
     researchPreview: mergeResearchPreview(
       item.researchPreview,
       bridge.researchPreview,
@@ -432,7 +479,7 @@ export async function readPublicRatingBridge(
     })
 
     const publicationKey = `work:${normalizedWorkId}`
-    const where = {
+    const where: Where = {
       and: [
         {
           publicationKey: {
