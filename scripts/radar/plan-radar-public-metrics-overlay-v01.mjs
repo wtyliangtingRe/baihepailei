@@ -3,6 +3,23 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+const releaseId = 'RADAR-PUBLIC-METRICS-10563-0001'
+const policyId = 'radar-public-metrics-policy-v01'
+const expectedReleaseRows = 10563
+const relationshipEvidenceStates = new Set([
+  'covered',
+  'partial',
+  'uncovered',
+])
+const forbiddenWriteGates = [
+  'canonicalRatingReleaseRewrite',
+  'websiteWrite',
+  'payloadWrite',
+  'postgresqlWrite',
+  'productionAuthorization',
+]
+const sha256Pattern = /^[a-f0-9]{64}$/iu
+
 export const metricFieldMap = [
   ['confidencePercent', 'confidence_percent'],
   ['evidenceCoveragePercent', 'evidence_coverage_percent'],
@@ -90,6 +107,98 @@ function comparableValue(field, value) {
   return clean(value)
 }
 
+function requireIntegerPercent(value, label) {
+  if (
+    typeof value !== 'number'
+    || !Number.isInteger(value)
+    || value < 0
+    || value > 100
+  ) {
+    throw new Error(`${label} must be an integer from 0 through 100`)
+  }
+
+  return value
+}
+
+function validateManifest(manifest) {
+  if (manifest.releaseId !== releaseId) {
+    throw new Error('Unexpected public metrics Release ID')
+  }
+
+  if (manifest.policy?.policyId !== policyId) {
+    throw new Error('Unexpected public metrics policy ID')
+  }
+
+  if (manifest.policy?.status !== 'frozen') {
+    throw new Error('Public metrics policy is not frozen')
+  }
+
+  for (const gate of forbiddenWriteGates) {
+    if (manifest.gates?.[gate] !== false) {
+      throw new Error(`Unsafe or missing Release gate: ${gate}`)
+    }
+  }
+}
+
+function validateMetric(metric) {
+  const workId = clean(metric.workId)
+  const siteId = clean(metric.siteId)
+  const publicationKey = clean(metric.publicationKey)
+  const identityKey = clean(metric.identityKey)
+  const sourcePolicy = clean(metric.sourceMetricsPolicyVersion)
+  const relationshipState = clean(metric.relationshipEvidenceState)
+  const basisSha256 = clean(metric.sourceCalculationBasisSha256)
+
+  if (metric.releaseId !== releaseId) {
+    throw new Error(`Metric row has unexpected Release ID: ${identityKey}`)
+  }
+
+  if (clean(metric.recordStatus) !== 'current') {
+    throw new Error(`Metric row is not current: ${identityKey}`)
+  }
+
+  if (!workId || !siteId) {
+    throw new Error(`Metric row lacks exact Work or site identity: ${identityKey}`)
+  }
+
+  if (publicationKey !== `work:${workId}`) {
+    throw new Error(`Metric publication key does not match Work ID: ${identityKey}`)
+  }
+
+  if (identityKey !== `${workId}|${siteId}`) {
+    throw new Error(`Metric identity key does not match Work and site IDs: ${identityKey}`)
+  }
+
+  requireIntegerPercent(
+    metric.confidencePercent,
+    `confidencePercent for ${identityKey}`,
+  )
+  requireIntegerPercent(
+    metric.evidenceCoveragePercent,
+    `evidenceCoveragePercent for ${identityKey}`,
+  )
+
+  if (metric.metricsPolicyVersion !== policyId) {
+    throw new Error(`Metric row has unexpected public policy: ${identityKey}`)
+  }
+
+  if (!sourcePolicy) {
+    throw new Error(`Metric row lacks source policy provenance: ${identityKey}`)
+  }
+
+  if (!relationshipEvidenceStates.has(relationshipState)) {
+    throw new Error(`Metric row has invalid relationship evidence state: ${identityKey}`)
+  }
+
+  if (!sha256Pattern.test(basisSha256)) {
+    throw new Error(`Metric row has invalid calculation-basis SHA-256: ${identityKey}`)
+  }
+
+  if (typeof metric.requiresMetricReview !== 'boolean') {
+    throw new Error(`Metric review flag is not boolean: ${identityKey}`)
+  }
+}
+
 function desiredValues(metric) {
   return {
     confidencePercent: metric.confidencePercent,
@@ -100,7 +209,7 @@ function desiredValues(metric) {
     metricsSourceReleaseId: metric.releaseId,
     metricsCalculationBasisSha256:
       metric.sourceCalculationBasisSha256,
-    requiresMetricReview: metric.requiresMetricReview === true,
+    requiresMetricReview: metric.requiresMetricReview,
   }
 }
 
@@ -144,28 +253,16 @@ export function buildPlan({
   dbRows,
   dbColumns,
 }) {
-  if (manifest.releaseId !== 'RADAR-PUBLIC-METRICS-10563-0001') {
-    throw new Error('Unexpected public metrics Release ID')
-  }
-
-  if (manifest.policy?.status !== 'frozen') {
-    throw new Error('Public metrics policy is not frozen')
-  }
-
-  if (manifest.gates?.productionAuthorization !== false) {
-    throw new Error('Production authorization must remain false')
-  }
+  validateManifest(manifest)
 
   const releasePublicationKeys = new Set()
   const releaseIdentityKeys = new Set()
 
   for (const metric of metrics) {
+    validateMetric(metric)
+
     const publicationKey = clean(metric.publicationKey)
     const identityKey = clean(metric.identityKey)
-
-    if (!publicationKey.startsWith('work:')) {
-      throw new Error(`Invalid publication key: ${publicationKey}`)
-    }
 
     if (releasePublicationKeys.has(publicationKey)) {
       throw new Error(`Duplicate Release publication key: ${publicationKey}`)
@@ -348,6 +445,9 @@ export function buildPlan({
         plan.filter((row) => row.status === 'blocked'),
         'reason',
       ),
+      releaseContractValidated: true,
+      validatedMetricRows: metrics.length,
+      writeAuthorizationGatesVerified: true,
       exactPublicationKeyOnly: true,
       exactIdentityKeyOnly: true,
       categoricalConfidenceConvertedToNumber: false,
@@ -393,6 +493,8 @@ function renderMarkdown(summary) {
     `- Database rows: ${summary.databaseRows}`,
     `- Current database rows: ${summary.databaseCurrentRows}`,
     `- Schema ready: ${summary.schemaReady}`,
+    `- Release contract validated: ${summary.releaseContractValidated}`,
+    `- Write authorization gates verified: ${summary.writeAuthorizationGatesVerified}`,
     '',
     '| Status | Count |',
     '| --- | ---: |',
@@ -471,13 +573,17 @@ function main() {
   const databaseColumns =
     databaseColumnsDocument.columns || []
 
-  if (metrics.length !== manifest.counts.metrics) {
-    throw new Error('Metrics row count differs from manifest')
+  if (manifest.counts?.metrics !== expectedReleaseRows) {
+    throw new Error('Manifest metric inventory is not the locked 10,563 rows')
+  }
+
+  if (metrics.length !== expectedReleaseRows) {
+    throw new Error('Metrics JSONL is not the locked 10,563 rows')
   }
 
   if (
     sha256File(metricsPath)
-    !== manifest.files['metrics.jsonl'].sha256
+    !== manifest.files?.['metrics.jsonl']?.sha256
   ) {
     throw new Error('Metrics SHA-256 differs from manifest')
   }
