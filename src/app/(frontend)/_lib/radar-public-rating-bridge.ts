@@ -13,6 +13,21 @@ type PublicTagHint = {
   value?: string | null
 }
 
+type PublicEvidence = {
+  sourceRef?: string | null
+  tier?: string | null
+  role?: string | null
+  exactIdentityBound?: boolean | null
+}
+
+type PublicRecord = {
+  publicationKey?: string | null
+  publicState?: string | null
+  researchStatus?: string | null
+  evidence?: PublicEvidence[] | null
+  recordStatus?: string | null
+}
+
 type PublicRating = {
   id: string | number
   publicationKey?: string | null
@@ -84,28 +99,113 @@ function unique(values: string[]) {
   ]
 }
 
-function sourceReferenceCount(rating: PublicRating) {
-  const evidenceRefs = unique(
-    rowValues(rating.evidenceRefs),
+function relevantEvidence(
+  rating: PublicRating,
+  record?: PublicRecord,
+) {
+  const evidence = (record?.evidence || []).filter(
+    (item) => item?.exactIdentityBound !== false,
   )
 
-  if (evidenceRefs.length > 0) {
-    return evidenceRefs.length
-  }
+  const refs = new Set(rowValues(rating.evidenceRefs))
 
-  return unique(rowValues(rating.factRefs)).length
+  if (refs.size === 0) return evidence
+
+  return evidence.filter((item) =>
+    refs.has(clean(item?.sourceRef)),
+  )
 }
 
-function evidenceStatus(sourceCount: number) {
-  if (sourceCount >= 2) {
+function sourceReferenceCount(
+  rating: PublicRating,
+  record?: PublicRecord,
+) {
+  const evidence = relevantEvidence(rating, record)
+
+  if (evidence.length > 0) {
+    return unique(
+      evidence.map((item) => clean(item?.sourceRef)),
+    ).length
+  }
+
+  return unique(rowValues(rating.evidenceRefs)).length
+}
+
+function evidenceStatus(
+  rating: PublicRating,
+  record?: PublicRecord,
+) {
+  if (!record) return 'unknown'
+
+  const publicState = clean(record.publicState)
+  const researchStatus = clean(record.researchStatus)
+
+  if (
+    publicState === 'needs_more_research'
+    || researchStatus === 'needs_more_research'
+  ) {
+    return 'insufficient_evidence'
+  }
+
+  const evidence = relevantEvidence(rating, record)
+
+  if (
+    evidence.some((item) => clean(item?.tier) === 'A')
+  ) {
+    return 'primary_material_confirmed'
+  }
+
+  const secondaryCount = evidence.filter((item) =>
+    ['B', 'C'].includes(clean(item?.tier)),
+  ).length
+
+  if (secondaryCount >= 2) {
     return 'multiple_secondary_supported'
   }
 
-  if (sourceCount === 1) {
+  if (secondaryCount === 1) {
     return 'single_secondary_supported'
   }
 
-  return 'insufficient_evidence'
+  return evidence.length > 0
+    ? 'insufficient_evidence'
+    : 'unknown'
+}
+
+function bridgeResearchStatus(
+  record: PublicRecord | undefined,
+  unresolvedCount: number,
+) {
+  if (!record) {
+    return unresolvedCount > 0 ? 'partial' : 'unknown'
+  }
+
+  const publicState = clean(record.publicState)
+  const researchStatus = clean(record.researchStatus)
+
+  if (
+    publicState === 'needs_more_research'
+    || researchStatus === 'needs_more_research'
+  ) {
+    return 'needs_more_research'
+  }
+
+  if (
+    publicState === 'partial'
+    || researchStatus === 'partially_verified'
+    || unresolvedCount > 0
+  ) {
+    return 'partial'
+  }
+
+  if (
+    publicState === 'verified'
+    || researchStatus === 'ready_for_publication'
+  ) {
+    return 'resolved'
+  }
+
+  return 'unknown'
 }
 
 function mergeResearchPreview(
@@ -184,12 +284,18 @@ function mergeResearchPreview(
 
 export function mapPublicRatingToWorksAI(
   rating: PublicRating,
+  record?: PublicRecord,
 ): RadarPublicRatingBridge | null {
   const publicationKey = clean(rating.publicationKey)
 
   if (!publicationKey.startsWith('work:')) {
     return null
   }
+
+  const usableRecord =
+    clean(record?.publicationKey) === publicationKey
+      ? record
+      : undefined
 
   const coreGrade =
     normalizedGrade(rating.coreGrade)
@@ -206,7 +312,10 @@ export function mapPublicRatingToWorksAI(
     rowValues(rating.unresolvedDimensions),
   )
 
-  const sourceCount = sourceReferenceCount(rating)
+  const sourceCount = sourceReferenceCount(
+    rating,
+    usableRecord,
+  )
   const sourceSummary = clean(rating.reasoningSummary)
   const policyVersion = clean(rating.sourcePolicyVersion)
   const assessedAt = clean(rating.importedAt)
@@ -221,7 +330,10 @@ export function mapPublicRatingToWorksAI(
     || rating.humanReview?.blocksPublication === true
 
   const radarAssessment: RadarAssessmentMetrics = {
-    evidenceStatus: evidenceStatus(sourceCount),
+    evidenceStatus: evidenceStatus(
+      rating,
+      usableRecord,
+    ),
     sourceSummary,
     sourceCount,
     policyVersion,
@@ -246,9 +358,13 @@ export function mapPublicRatingToWorksAI(
       .filter(Boolean),
   ])
 
+  const researchStatus = bridgeResearchStatus(
+    usableRecord,
+    unresolved.length,
+  )
+
   const researchPreview: RadarResearchPreview = {
-    researchStatus:
-      unresolved.length > 0 ? 'partial' : 'resolved',
+    researchStatus,
     riskSignals,
     likelyGrade:
       normalizedGrade(rating.likelyGrade)
@@ -263,9 +379,11 @@ export function mapPublicRatingToWorksAI(
     sourceCount,
     unresolvedQuestionCount: unresolved.length,
     recommendedNextAction:
-      requiresHumanReview
-        ? '等待人工复核'
-        : '机器评级已通过人工复核',
+      researchStatus === 'needs_more_research'
+        ? '继续补充研究资料'
+        : requiresHumanReview
+          ? '等待人工复核'
+          : '机器评级已通过人工复核',
     importedAt: assessedAt,
   }
 
@@ -314,36 +432,50 @@ export async function readPublicRatingBridge(
     })
 
     const publicationKey = `work:${normalizedWorkId}`
+    const where = {
+      and: [
+        {
+          publicationKey: {
+            equals: publicationKey,
+          },
+        },
+        {
+          recordStatus: {
+            equals: 'current',
+          },
+        },
+      ],
+    }
 
-    const result = await payload.find({
-      collection: 'radar-public-ratings',
-      depth: 0,
-      limit: 1,
-      page: 1,
-      pagination: true,
-      overrideAccess: true,
-      where: {
-        and: [
-          {
-            publicationKey: {
-              equals: publicationKey,
-            },
-          },
-          {
-            recordStatus: {
-              equals: 'current',
-            },
-          },
-        ],
-      },
-    })
+    const [ratingResult, recordResult] = await Promise.all([
+      payload.find({
+        collection: 'radar-public-ratings',
+        depth: 0,
+        limit: 1,
+        page: 1,
+        pagination: true,
+        overrideAccess: true,
+        where,
+      }),
+      payload.find({
+        collection: 'radar-public-records',
+        depth: 0,
+        limit: 1,
+        page: 1,
+        pagination: true,
+        overrideAccess: true,
+        where,
+      }),
+    ])
 
     const rating =
-      result.docs[0] as unknown as PublicRating | undefined
+      ratingResult.docs[0] as unknown as PublicRating | undefined
+    const record =
+      recordResult.docs[0] as unknown as PublicRecord | undefined
 
     if (!rating) return null
 
-    return mapPublicRatingToWorksAI(rating)
+    return mapPublicRatingToWorksAI(rating, record)
   } catch {
     // Missing local schema or a temporarily unavailable projection
     // must not make the canonical work detail page unavailable.
