@@ -245,3 +245,20 @@ test('rehearsal binds the schema receipt and migrates only the disposable restor
 
   assert.equal(migrationCommands.length, 1)
 })
+
+test('public table count SQL uses PowerShell-safe validated identifiers', () => {
+  const rehearsal = fs.readFileSync(rehearsalPath, 'utf8')
+
+  assert.match(
+    rehearsal,
+    /\[string\]\$TableName -notmatch '\^\[a-zA-Z0-9_\]\+\$'/u,
+  )
+  assert.match(
+    rehearsal,
+    /-Sql "SELECT count\(\*\)::text FROM public\.\$TableName;"/u,
+  )
+  assert.doesNotMatch(
+    rehearsal,
+    /public\.\\\\"\$TableName\\\\";/u,
+  )
+})

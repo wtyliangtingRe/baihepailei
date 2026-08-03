@@ -348,7 +348,7 @@ ORDER BY tablename;
             Invoke-ContainerSql `
                 -Container $Container `
                 -ReadOnly `
-                -Sql "SELECT count(*)::text FROM public.\"$TableName\";"
+                -Sql "SELECT count(*)::text FROM public.$TableName;"
         )
 
         Assert-Equal `

@@ -83,6 +83,8 @@ jobs:
           grep -q "PlanCandidate.schemaExecution.executionReceiptSha256" "$rehearsal"
           grep -q "\-Expected 36" "$rehearsal"
           grep -q "\-Expected 9" "$rehearsal"
+          grep -Fq -- '-Sql "SELECT count(*)::text FROM public.$TableName;"' "$rehearsal"
+          ! grep -Fq -- 'public.\"$TableName\";' "$rehearsal"
 
       - name: Enforce update-only HTTP surface
         shell: bash
