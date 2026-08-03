@@ -94,18 +94,14 @@ function normalizedGrade(value: unknown) {
 function normalizedPercent(value: unknown) {
   if (
     typeof value !== 'number'
-    || !Number.isFinite(value)
+    || !Number.isInteger(value)
+    || value < 0
+    || value > 100
   ) {
     return undefined
   }
 
-  const rounded = Math.round(value)
-
-  if (rounded < 0 || rounded > 100) {
-    return undefined
-  }
-
-  return rounded
+  return value
 }
 
 function rowValues(rows?: ValueRow[] | null) {
