@@ -47,7 +47,7 @@ test('Radar public ratings store optional numeric metrics and provenance', () =>
   )
 })
 
-test('the existing AI panel reads only explicit metric numbers', () => {
+test('the existing AI panel reads only explicit integer metric values', () => {
   const bridge = read(
     'src/app/(frontend)/_lib/radar-public-rating-bridge.ts',
   )
@@ -65,6 +65,16 @@ test('the existing AI panel reads only explicit metric numbers', () => {
   assert.match(
     bridge,
     /typeof value !== 'number'/,
+  )
+
+  assert.match(
+    bridge,
+    /Number\.isInteger\(value\)/,
+  )
+
+  assert.doesNotMatch(
+    bridge,
+    /Math\.round\(value\)/,
   )
 
   assert.match(
