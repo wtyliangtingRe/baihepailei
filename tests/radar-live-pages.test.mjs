@@ -52,8 +52,10 @@ test('ratings are public on normal catalogue and work pages', () => {
   assert.doesNotMatch(ratingsPage, /redirect\(`\/account\/login/)
 
   assert.match(bridge, /collection: 'radar-public-ratings'/)
+  assert.match(bridge, /collection: 'radar-public-records'/)
   assert.match(bridge, /mapPublicRatingToWorksAI/)
   assert.match(bridge, /suggestedGrade: coreGrade/)
+  assert.match(bridge, /publicState === 'needs_more_research'/)
   assert.doesNotMatch(bridge, /payload\.(create|update|delete)/)
 
   assert.doesNotMatch(workDetail, /RadarPublicProjection/)
