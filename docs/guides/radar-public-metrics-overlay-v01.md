@@ -39,7 +39,7 @@ The Release authorizes website schema planning and import dry-run only. It does 
 
 ```text
 confidencePercent
- evidenceCoveragePercent
+evidenceCoveragePercent
 metricsPolicyVersion
 sourceMetricsPolicyVersion
 relationshipEvidenceState
