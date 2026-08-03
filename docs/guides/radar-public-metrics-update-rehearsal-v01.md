@@ -104,3 +104,20 @@ The PowerShell runner:
 A successful disposable rehearsal is only evidence for later PR review. A new
 post-merge production preflight, fresh backup, apply-once marker, explicit human
 authorization, and separate execution receipt remain mandatory.
+## Disposable restore schema transition
+
+The apply-time backup was created immediately before the source schema
+migration. It therefore contains exactly 36 Radar Public Rating columns and
+nine Payload migration rows.
+
+The rehearsal must:
+
+1. restore that exact backup into the loopback-only disposable PostgreSQL;
+2. verify the restored state is exactly `36 / 9`;
+3. bind the source-schema execution receipt SHA-256;
+4. set `DATABASE_URL` only to the disposable loopback database;
+5. run `pnpm exec payload migrate` exactly once against the disposable restore;
+6. verify the temporary database is exactly `44 / 10` with empty metrics;
+7. only then run `plan -> apply -> verify`.
+
+The source PostgreSQL connection is never supplied to the migration command.

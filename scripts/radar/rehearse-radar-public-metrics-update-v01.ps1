@@ -37,6 +37,9 @@ $ExpectedCandidateSha =
 $ExpectedPlanReviewZipSha =
     '6f724b85a0f125bc99d3b0074f9f017609b7acff9b91ddfa5bb3b570afa544c5'
 
+$ExpectedSchemaExecutionReceiptSha =
+    'aaaf3a2d0e05ed565e673198a9b134717945b56b49038b97243d958d60ed63a2'
+
 $ExpectedBackupSha =
     'e9fc00aa5e66cb4d03c34397da80df21c5b109ccb0bed6b967ad9c41dad3fae5'
 
@@ -635,6 +638,31 @@ try {
         -Actual (Get-Item -LiteralPath $BackupPath).Length `
         -Label 'Apply-time backup bytes'
 
+    $PlanCandidate = Get-Content `
+        -LiteralPath $CandidatePath `
+        -Raw `
+        -Encoding UTF8 |
+        ConvertFrom-Json -Depth 100
+
+    Assert-Equal `
+        -Expected $ExpectedSchemaExecutionReceiptSha `
+        -Actual (
+            [string]$PlanCandidate.schemaExecution.executionReceiptSha256
+        ).ToLowerInvariant() `
+        -Label 'Candidate schema execution receipt SHA-256'
+
+    Assert-Equal `
+        -Expected $ExpectedBackupSha `
+        -Actual (
+            [string]$PlanCandidate.schemaExecution.applyTimeBackupSha256
+        ).ToLowerInvariant() `
+        -Label 'Candidate apply-time backup SHA-256'
+
+    Assert-Equal `
+        -Expected $ExpectedBackupBytes `
+        -Actual $PlanCandidate.schemaExecution.applyTimeBackupBytes `
+        -Label 'Candidate apply-time backup bytes'
+
     node --check $ImporterPath
     if ($LASTEXITCODE -ne 0) { throw 'Importer syntax check failed' }
 
@@ -735,6 +763,68 @@ try {
         --no-privileges `
         /tmp/source.dump
     if ($LASTEXITCODE -ne 0) { throw 'pg_restore 失败' }
+
+    $TempRestoredSummary =
+        Get-DatabaseSummary -Container $TempContainer
+
+    $TempRestoredFingerprints =
+        Get-ProtectedFingerprints -Container $TempContainer
+
+    Assert-Equal `
+        -Expected 35615 `
+        -Actual $TempRestoredSummary.works `
+        -Label 'Temp restored Works'
+
+    Assert-Equal `
+        -Expected 10563 `
+        -Actual $TempRestoredSummary.publicRecords `
+        -Label 'Temp restored Public Records'
+
+    Assert-Equal `
+        -Expected 10563 `
+        -Actual $TempRestoredSummary.publicRatings `
+        -Label 'Temp restored Public Ratings'
+
+    Assert-Equal `
+        -Expected 36 `
+        -Actual $TempRestoredSummary.columns `
+        -Label 'Temp restored columns'
+
+    Assert-Equal `
+        -Expected 9 `
+        -Actual $TempRestoredSummary.migrations `
+        -Label 'Temp restored migrations'
+
+    Assert-Equal `
+        -Expected ($SourceBeforeFingerprints -join "`n") `
+        -Actual ($TempRestoredFingerprints -join "`n") `
+        -Label 'Source/restored protected fingerprints'
+
+    $MigrationDatabaseUrl =
+        "postgresql://${DatabaseUser}@127.0.0.1:${TempPort}/${DatabaseName}"
+
+    $DatabaseUrlBeforeMigration =
+        [Environment]::GetEnvironmentVariable(
+            'DATABASE_URL',
+            'Process'
+        )
+
+    try {
+        $env:DATABASE_URL = $MigrationDatabaseUrl
+
+        pnpm exec payload migrate
+
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Disposable schema migration failed'
+        }
+    }
+    finally {
+        [Environment]::SetEnvironmentVariable(
+            'DATABASE_URL',
+            $DatabaseUrlBeforeMigration,
+            'Process'
+        )
+    }
 
     $TempBeforeSummary = Get-DatabaseSummary -Container $TempContainer
     $TempBeforeFingerprints = Get-ProtectedFingerprints -Container $TempContainer
@@ -1001,6 +1091,8 @@ try {
         releaseId = $ExpectedReleaseId
         candidateSha256 = $ExpectedCandidateSha
         planReviewZipSha256 = $ExpectedPlanReviewZipSha
+        schemaExecutionReceiptSha256 =
+            $ExpectedSchemaExecutionReceiptSha
         backupSha256 = $ExpectedBackupSha
         source = [ordered]@{
             unchanged = $true

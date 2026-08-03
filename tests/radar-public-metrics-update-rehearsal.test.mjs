@@ -25,6 +25,10 @@ const lockPath = path.join(
   root,
   'config/radar-public-metrics-update-rehearsal-v01.lock.json',
 )
+const rehearsalPath = path.join(
+  root,
+  'scripts/radar/rehearse-radar-public-metrics-update-v01.ps1',
+)
 
 const importer = await import(pathToFileURL(importerPath).href)
 
@@ -216,4 +220,28 @@ test('marker, workflow and guide preserve disposable-only boundary', () => {
   assert.match(guide, /10,563/u)
   assert.match(guide, /disposable/u)
   assert.match(guide, /No production authorization/u)
+})
+test('rehearsal binds the schema receipt and migrates only the disposable restore', () => {
+  const rehearsal = fs.readFileSync(rehearsalPath, 'utf8')
+
+  assert.match(
+    rehearsal,
+    /aaaf3a2d0e05ed565e673198a9b134717945b56b49038b97243d958d60ed63a2/u,
+  )
+  assert.match(
+    rehearsal,
+    /PlanCandidate\.schemaExecution\.executionReceiptSha256/u,
+  )
+  assert.match(rehearsal, /Temp restored columns/u)
+  assert.match(rehearsal, /Temp restored migrations/u)
+  assert.match(rehearsal, /-Expected 36/u)
+  assert.match(rehearsal, /-Expected 9/u)
+  assert.match(rehearsal, /pnpm exec payload migrate/u)
+  assert.match(rehearsal, /MigrationDatabaseUrl/u)
+  assert.match(rehearsal, /\$env:DATABASE_URL = \$MigrationDatabaseUrl/u)
+
+  const migrationCommands =
+    rehearsal.match(/pnpm exec payload migrate/gu) || []
+
+  assert.equal(migrationCommands.length, 1)
 })
