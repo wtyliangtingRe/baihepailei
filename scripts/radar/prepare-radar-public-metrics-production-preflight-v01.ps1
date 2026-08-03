@@ -275,7 +275,9 @@ ORDER BY 1;
     $Invoke.ReadOnly = $true
   }
 
-  $SummaryLines = Invoke-ContainerSql @Invoke -Sql $SummarySql
+  $SummaryLines = @(
+    Invoke-ContainerSql @Invoke -Sql $SummarySql
+  )
   if ($SummaryLines.Count -ne 1) {
     throw "$Label summary 行数不正确"
   }

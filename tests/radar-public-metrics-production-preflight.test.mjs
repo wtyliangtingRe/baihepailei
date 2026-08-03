@@ -199,3 +199,9 @@ test('runbook preserves the reusable authorization boundary', () => {
     assert.match(guide, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   }
 })
+test('single-row SQL snapshot summary is normalized to an array', () => {
+  assert.match(
+    script,
+    /\$SummaryLines = @\(\s*Invoke-ContainerSql @Invoke -Sql \$SummarySql\s*\)/,
+  )
+})
