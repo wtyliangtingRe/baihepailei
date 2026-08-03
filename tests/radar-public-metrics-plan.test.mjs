@@ -27,6 +27,10 @@ const manifest = {
     status: 'frozen',
   },
   gates: {
+    canonicalRatingReleaseRewrite: false,
+    websiteWrite: false,
+    payloadWrite: false,
+    postgresqlWrite: false,
     productionAuthorization: false,
   },
 }
@@ -34,6 +38,9 @@ const manifest = {
 function metric(number, overrides = {}) {
   return {
     releaseId: 'RADAR-PUBLIC-METRICS-10563-0001',
+    recordStatus: 'current',
+    workId: String(number),
+    siteId: `SITE-${number}`,
     publicationKey: `work:${number}`,
     identityKey: `${number}|SITE-${number}`,
     titleSnapshot: `Work ${number}`,
@@ -100,10 +107,10 @@ test('planner classifies exact current, update, missing and identity mismatch ro
     },
   )
 
-  assert.equal(
-    result.summary.databaseWriteExecuted,
-    false,
-  )
+  assert.equal(result.summary.releaseContractValidated, true)
+  assert.equal(result.summary.writeAuthorizationGatesVerified, true)
+  assert.equal(result.summary.validatedMetricRows, 4)
+  assert.equal(result.summary.databaseWriteExecuted, false)
 })
 
 test('planner blocks matched rows until additive schema columns exist', () => {
@@ -132,6 +139,78 @@ test('planner blocks matched rows until additive schema columns exist', () => {
   assert.match(
     result.plan[0].reason,
     /schema_columns_missing/,
+  )
+})
+
+test('planner rejects an unsafe Release policy or write authorization gate', () => {
+  assert.throws(
+    () => buildPlan({
+      manifest: {
+        ...manifest,
+        policy: {
+          ...manifest.policy,
+          policyId: 'unexpected-policy',
+        },
+      },
+      metrics: [metric(1)],
+      dbRows: [databaseRow(1)],
+      dbColumns: metricColumns,
+    }),
+    /unexpected public metrics policy/i,
+  )
+
+  assert.throws(
+    () => buildPlan({
+      manifest: {
+        ...manifest,
+        gates: {
+          ...manifest.gates,
+          payloadWrite: true,
+        },
+      },
+      metrics: [metric(1)],
+      dbRows: [databaseRow(1)],
+      dbColumns: metricColumns,
+    }),
+    /unsafe or missing Release gate: payloadWrite/i,
+  )
+})
+
+test('planner rejects malformed identity and noninteger metric values', () => {
+  assert.throws(
+    () => buildPlan({
+      manifest,
+      metrics: [metric(1, {
+        publicationKey: 'work:WRONG',
+      })],
+      dbRows: [databaseRow(1)],
+      dbColumns: metricColumns,
+    }),
+    /publication key does not match Work ID/i,
+  )
+
+  assert.throws(
+    () => buildPlan({
+      manifest,
+      metrics: [metric(1, {
+        confidencePercent: 41.5,
+      })],
+      dbRows: [databaseRow(1)],
+      dbColumns: metricColumns,
+    }),
+    /must be an integer from 0 through 100/i,
+  )
+
+  assert.throws(
+    () => buildPlan({
+      manifest,
+      metrics: [metric(1, {
+        relationshipEvidenceState: 'unknown',
+      })],
+      dbRows: [databaseRow(1)],
+      dbColumns: metricColumns,
+    }),
+    /invalid relationship evidence state/i,
   )
 })
 
