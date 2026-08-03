@@ -1311,6 +1311,23 @@ export interface RadarPublicRating {
   likelyGrade: 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X';
   worstGrade: 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X';
   confidence: 'high' | 'medium' | 'low';
+  /**
+   * 当前机器评级结论与保留证据的一致程度；不是作品安全概率。
+   */
+  confidencePercent?: number | null;
+  /**
+   * 关系、剧情、结局、来源及风险维度的加权证据完整度；不是来源数量。
+   */
+  evidenceCoveragePercent?: number | null;
+  metricsPolicyVersion?: string | null;
+  sourceMetricsPolicyVersion?: string | null;
+  relationshipEvidenceState?: ('covered' | 'partial' | 'uncovered') | null;
+  metricsSourceReleaseId?: string | null;
+  metricsCalculationBasisSha256?: string | null;
+  /**
+   * 非阻断校准提示；不会改变人工审核状态或评级等级。
+   */
+  requiresMetricReview?: boolean | null;
   matchedClasses?:
     | {
         value: string;
@@ -2171,6 +2188,14 @@ export interface RadarPublicRatingsSelect<T extends boolean = true> {
   likelyGrade?: T;
   worstGrade?: T;
   confidence?: T;
+  confidencePercent?: T;
+  evidenceCoveragePercent?: T;
+  metricsPolicyVersion?: T;
+  sourceMetricsPolicyVersion?: T;
+  relationshipEvidenceState?: T;
+  metricsSourceReleaseId?: T;
+  metricsCalculationBasisSha256?: T;
+  requiresMetricReview?: T;
   matchedClasses?:
     | T
     | {
