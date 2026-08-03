@@ -41,7 +41,7 @@ test('Radar download is editor-only and mutation-free', () => {
 
 test('ratings are public on normal catalogue and work pages', () => {
   const ratingsPage = read('src/app/(frontend)/ratings/page.tsx')
-  const projection = read('src/app/(frontend)/_components/RadarPublicProjection.tsx')
+  const bridge = read('src/app/(frontend)/_lib/radar-public-rating-bridge.ts')
   const workDetail = read('src/app/(frontend)/works/[slug]/page.tsx')
   const home = read('src/app/(frontend)/page.tsx')
   const layout = read('src/app/(frontend)/layout.tsx')
@@ -51,15 +51,57 @@ test('ratings are public on normal catalogue and work pages', () => {
   assert.match(ratingsPage, /canonicalContentUrl\('works', rating\.workIdSnapshot\)/)
   assert.doesNotMatch(ratingsPage, /redirect\(`\/account\/login/)
 
-  assert.match(projection, /统一评级结论/)
-  assert.match(projection, /机器 \{rating\.coreGrade/)
-  assert.match(projection, /浏览大众评级页/)
-  assert.doesNotMatch(projection, /编辑这条 Radar 记录/)
+  assert.match(bridge, /collection: 'radar-public-ratings'/)
+  assert.match(bridge, /mapPublicRatingToWorksAI/)
+  assert.match(bridge, /suggestedGrade: coreGrade/)
+  assert.doesNotMatch(bridge, /payload\.(create|update|delete)/)
 
-  assert.match(workDetail, /RadarPublicProjection/)
-  assert.match(workDetail, /<RadarPublicProjection workId=\{visibleItem\.recordId\} \/>/)
+  assert.doesNotMatch(workDetail, /RadarPublicProjection/)
+  assert.match(workDetail, /applyPublicRatingBridge/)
+  assert.match(workDetail, /readPublicRatingBridge/)
   assert.match(home, /href: '\/ratings'/)
   assert.match(home, /currentRadarCounts/)
   assert.match(layout, /\{ href: '\/ratings', label: '评级' \}/)
-  assert.match(layout, /\{ href: '\/radar', label: '研究档案' \}/)
+  assert.doesNotMatch(layout, /\{ href: '\/radar', label: '研究档案' \}/)
+})
+
+test('research archive is grouped with account tools and theme toggle uses a bulb icon', () => {
+  const layout = read('src/app/(frontend)/layout.tsx')
+  const account = read(
+    'src/app/(frontend)/_components/AccountClient.tsx',
+  )
+  const themeToggle = read(
+    'src/app/(frontend)/_components/ThemeToggle.tsx',
+  )
+  const themeCss = read('src/app/(frontend)/theme.css')
+  const browse = read('src/app/(frontend)/browse/page.tsx')
+
+  assert.doesNotMatch(
+    layout,
+    /\{ href: '\/radar', label: '研究档案' \}/,
+  )
+
+  const messagesIndex = account.indexOf('href="/me/messages"')
+  const submissionsIndex =
+    account.indexOf('href="/me/submissions"')
+  const radarIndex = account.indexOf('href="/radar"')
+
+  assert.ok(messagesIndex >= 0)
+  assert.ok(submissionsIndex > messagesIndex)
+  assert.ok(radarIndex > submissionsIndex)
+  assert.match(account, /<strong>研究档案<\/strong>/)
+  assert.match(account, /已录入主数据库的只读研究记录/)
+
+  assert.match(themeToggle, /className="theme-toggle-icon"/)
+  assert.match(themeToggle, /切换到白天模式/)
+  assert.match(themeToggle, /切换到夜间模式/)
+  assert.doesNotMatch(
+    themeToggle,
+    />\s*\{theme === 'dark' \? '白天模式'/,
+  )
+  assert.match(themeCss, /\.theme-toggle-icon/)
+  assert.match(
+    browse,
+    /className="page-heading site-guide-heading"/,
+  )
 })

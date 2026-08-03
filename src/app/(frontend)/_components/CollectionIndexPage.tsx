@@ -10,6 +10,7 @@ type CollectionIndexConfig = {
   eyebrow: string
   title: string
   description: string
+  visualHeading?: boolean
   searchParams?: Record<string, string | string[] | undefined>
 }
 
@@ -161,7 +162,7 @@ function CollectionPagination({ collection, currentPage, pageSize, totalItems, t
   )
 }
 
-export default function CollectionIndexPage({ collection, eyebrow, title, description, searchParams = {} }: CollectionIndexConfig) {
+export default function CollectionIndexPage({ collection, eyebrow, title, description, visualHeading = false, searchParams = {} }: CollectionIndexConfig) {
   const index = readSearchIndex()
   if (!index) return <MissingSearchIndex />
 
@@ -180,7 +181,7 @@ export default function CollectionIndexPage({ collection, eyebrow, title, descri
 
   return (
     <main className="page collection-page">
-      <section className="page-heading collection-heading">
+      <section className={`page-heading collection-heading${visualHeading ? ' site-guide-heading' : ''}`}>
         <p className="eyebrow">{eyebrow}</p>
         <h1>{title}</h1>
         <p>{description}</p>

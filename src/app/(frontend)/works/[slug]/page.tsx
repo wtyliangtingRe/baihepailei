@@ -8,10 +8,10 @@ import AssessmentOriginBadge from '../../_components/AssessmentOriginBadge'
 import DetailIndexDetail from '../../_components/DetailIndexDetail'
 import FeedbackPrompt from '../../_components/FeedbackPrompt'
 import MissingSearchIndex from '../../_components/MissingSearchIndex'
-import RadarPublicProjection from '../../_components/RadarPublicProjection'
 import SearchIndexDetail from '../../_components/SearchIndexDetail'
 import VersionInfo from '../../_components/VersionInfo'
 import { isCanonicalContentRoute, recordIdFromContentRoute } from '../../_lib/content-identity'
+import { applyPublicRatingBridge, readPublicRatingBridge } from '../../_lib/radar-public-rating-bridge'
 import { findDetailItem, findEvidenceByWorkTitle, type DetailItem } from '../../_lib/detail-index'
 import { findSearchItem, readSearchIndex } from '../../_lib/search-index'
 
@@ -136,6 +136,11 @@ export default async function WorkDetailPage({ params, searchParams }: Args) {
     const live = preview && detailItem.recordId ? await staffLiveWork(String(detailItem.recordId)) : null
     if ((detailItem.catalogStatus === 'archived' || detailItem.status === 'archived') && !live) notFound()
     const visibleItem = live ? liveDetailItem(detailItem, live) : detailItem
+    const bridgedItem = applyPublicRatingBridge(
+      visibleItem,
+      await readPublicRatingBridge(visibleItem.recordId),
+    )
+
     return (
       <>
         {live ? (
@@ -147,8 +152,7 @@ export default async function WorkDetailPage({ params, searchParams }: Args) {
             </div>
           </section>
         ) : null}
-        <DetailIndexDetail item={visibleItem} relatedEvidence={findEvidenceByWorkTitle(visibleItem.title)} />
-        <RadarPublicProjection workId={visibleItem.recordId} />
+        <DetailIndexDetail item={bridgedItem} relatedEvidence={findEvidenceByWorkTitle(visibleItem.title)} />
         <VersionInfo item={visibleItem} />
         <FeedbackPrompt item={visibleItem} />
       </>
@@ -167,10 +171,14 @@ export default async function WorkDetailPage({ params, searchParams }: Args) {
   if (item.catalogStatus === 'archived' || item.status === 'archived') notFound()
   if (item.recordId && !isCanonicalContentRoute('works', decodedSlug, item.recordId)) redirect(item.url)
 
+  const bridgedItem = applyPublicRatingBridge(
+    item,
+    await readPublicRatingBridge(item.recordId),
+  )
+
   return (
     <>
-      <SearchIndexDetail item={item} />
-      <RadarPublicProjection workId={item.recordId} />
+      <SearchIndexDetail item={bridgedItem} />
       <FeedbackPrompt item={item} />
     </>
   )
