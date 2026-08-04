@@ -16,7 +16,7 @@ test('production gate binds accepted evidence and is ready only for disposable r
   )
   assert.equal(
     lock.stage,
-    'production_gate_replacement_rehearsal_schema_remediation_ready',
+    'production_gate_replacement_rehearsal_accepted_review_ready',
   )
   assert.equal(
     lock.baseMain,
@@ -143,7 +143,7 @@ test('final repaired rehearsal evidence is independently accepted', () => {
 
   assert.equal(
     lock.stage,
-    'production_gate_replacement_rehearsal_schema_remediation_ready',
+    'production_gate_replacement_rehearsal_accepted_review_ready',
   )
   assert.equal(
     final.evidenceSha256,
@@ -195,7 +195,7 @@ test('final repaired rehearsal evidence is independently accepted', () => {
     final.decision,
     'accept_final_disposable_public_metrics_production_gate_rehearsal_evidence_v01',
   )
-  assert.equal(lock.implementation.finalDisposableRehearsalAccepted, false)
+  assert.equal(lock.implementation.finalDisposableRehearsalAccepted, true)
   assert.equal(lock.authorization.productionAuthorization, false)
   assert.equal(lock.authorization.metricImportAuthorized, false)
 })
@@ -203,7 +203,7 @@ test('final repaired rehearsal evidence is independently accepted', () => {
 test('final code review remediation is closed and requires replacement rehearsal', () => {
   assert.equal(
     lock.stage,
-    'production_gate_replacement_rehearsal_schema_remediation_ready',
+    'production_gate_replacement_rehearsal_accepted_review_ready',
   )
   assert.equal(lock.implementation.freshBackupFreshnessRequired, true)
   assert.equal(lock.implementation.freshBackupSourceBindingRequired, true)
@@ -230,7 +230,7 @@ test('final code review remediation is closed and requires replacement rehearsal
   assert.equal(lock.finalCodeReview.remediationImplemented, true)
   assert.equal(
     lock.finalCodeReview.replacementDisposableRehearsalRequired,
-    true,
+    false,
   )
   assert.equal(lock.finalCodeReview.markReadyAuthorized, false)
   assert.equal(lock.finalCodeReview.mergeAuthorized, false)
@@ -243,7 +243,7 @@ test('failed replacement rehearsal is closed before plan and schema-remediated',
 
   assert.equal(
     lock.stage,
-    'production_gate_replacement_rehearsal_schema_remediation_ready',
+    'production_gate_replacement_rehearsal_accepted_review_ready',
   )
   assert.equal(failed.attemptedHead, 'ea99394ae6f0d3f96fdfde61445946f3b4e5ed14')
   assert.equal(
@@ -270,6 +270,88 @@ test('failed replacement rehearsal is closed before plan and schema-remediated',
     lock.implementation.replacementRehearsalSchemaRemediationRequired,
     true,
   )
+  assert.equal(lock.authorization.productionAuthorization, false)
+  assert.equal(lock.authorization.metricImportAuthorized, false)
+})
+test('replacement rehearsal evidence is independently accepted for current code', () => {
+  const replacement = lock.replacementProductionGateRehearsal
+
+  assert.equal(
+    lock.stage,
+    'production_gate_replacement_rehearsal_accepted_review_ready',
+  )
+  assert.equal(
+    replacement.evidenceSha256,
+    '224658a4797c795f6b2603bbac865a87e77b223d8434de2225628909e0d94555',
+  )
+  assert.equal(replacement.evidenceBytes, 1987405)
+  assert.equal(replacement.archiveEntries, 37)
+  assert.equal(replacement.checksumEntries, 36)
+  assert.equal(replacement.internalChecksumsValid, 36)
+  assert.equal(
+    replacement.toolHead,
+    '67b8faa2b975c9528ce70a333c4a74f771c019ec',
+  )
+  assert.equal(
+    replacement.authorizationSha256,
+    'a6357062d62659a3f901a87f524b9aaabba7297e371132895b73c9139aa7abb6',
+  )
+  assert.equal(
+    replacement.freshBackupSha256,
+    'f6eec13aa55e1f59ca17413b9f380808d00a2159d3e441f19197e36d7adc890f',
+  )
+  assert.equal(
+    replacement.applyControlSha256,
+    '7791df8dfaae2815be90cf6f3e6e082ef5d0b5469160aa1f05b09e20c5a902dc',
+  )
+  assert.equal(replacement.applyControlState, 'completed')
+  assert.equal(replacement.applyControlFreshBackupCreatedAt, null)
+  assert.equal(
+    replacement.rehearsalNullBackupControlTimestampAccepted,
+    true,
+  )
+  assert.equal(replacement.planPassed, true)
+  assert.equal(replacement.applyStarted, true)
+  assert.equal(replacement.applyPassed, true)
+  assert.equal(replacement.verifyPassed, true)
+  assert.equal(replacement.patchRequests, 10563)
+  assert.equal(replacement.uniqueNumericPatchIds, 10563)
+  assert.equal(replacement.postAlreadyCurrent, 10563)
+  assert.equal(replacement.postCreateRequests, 0)
+  assert.equal(replacement.putRequests, 0)
+  assert.equal(replacement.deleteRequests, 0)
+  assert.equal(replacement.allHttpResponses200, true)
+  assert.equal(replacement.targetDatabaseWrite, true)
+  assert.equal(replacement.sourceDatabaseWrite, false)
+  assert.equal(replacement.sourceDatabaseUnchanged, true)
+  assert.equal(replacement.productionAuthorization, false)
+  assert.equal(replacement.independentAuditChecks, 121)
+  assert.equal(replacement.independentAuditPassed, 121)
+  assert.equal(replacement.independentAuditFailed, 0)
+  assert.equal(
+    replacement.independentAuditMarkdownSha256,
+    'ba5e1b30f06c0b0b327e8b03722831934f8d36b6e2b515be83d83e2dd9be6dca',
+  )
+  assert.equal(
+    replacement.independentAuditJsonSha256,
+    'b1e0bcb99e4dc55d446ee92d34211b31f47ebf2ca6c32f2ab69048d37887fbfc',
+  )
+  assert.equal(replacement.finalEvidenceAccepted, true)
+  assert.equal(replacement.markReadyAuthorized, false)
+  assert.equal(replacement.mergeAuthorized, false)
+  assert.equal(replacement.productionWriteAuthorized, false)
+  assert.equal(lock.implementation.finalDisposableRehearsalAccepted, true)
+  assert.equal(lock.implementation.replacementDisposableRehearsalAccepted, true)
+  assert.equal(
+    lock.implementation.replacementEvidenceIndependentAuditAccepted,
+    true,
+  )
+  assert.equal(lock.finalCodeReview.replacementDisposableRehearsalRequired, false)
+  assert.equal(lock.finalCodeReview.replacementDisposableRehearsalAccepted, true)
+  assert.equal(lock.finalCodeReview.replacementIndependentAuditAccepted, true)
+  assert.equal(lock.finalCodeReview.markReadyAuthorized, false)
+  assert.equal(lock.finalCodeReview.mergeAuthorized, false)
+  assert.equal(lock.finalCodeReview.productionWriteAuthorized, false)
   assert.equal(lock.authorization.productionAuthorization, false)
   assert.equal(lock.authorization.metricImportAuthorized, false)
 })

@@ -247,3 +247,44 @@ fresh-backup provenance needed by the control marker:
 The failed attempt is not resumable and is not accepted as evidence. A new
 replacement disposable rehearsal is required. Production authorization remains
 closed.
+## Stage F — replacement disposable rehearsal accepted
+
+The current PR HEAD
+`67b8faa2b975c9528ce70a333c4a74f771c019ec`
+completed the replacement disposable production-gate rehearsal.
+
+Accepted evidence:
+
+- ZIP:
+  `public-metrics-production-gate-20260804-150026-9e777365-evidence-v01.zip`
+- bytes: `1987405`
+- SHA-256:
+  `224658a4797c795f6b2603bbac865a87e77b223d8434de2225628909e0d94555`
+- independent audit Markdown SHA-256:
+  `ba5e1b30f06c0b0b327e8b03722831934f8d36b6e2b515be83d83e2dd9be6dca`
+- independent audit JSON SHA-256:
+  `b1e0bcb99e4dc55d446ee92d34211b31f47ebf2ca6c32f2ab69048d37887fbfc`
+- independent checks: `121 / 121`
+
+```text
+initial wouldUpdate        10,563
+unique numeric PATCH IDs   10,563
+final alreadyCurrent       10,563
+missing / mismatch / block 0 / 0 / 0
+POST create / PUT / DELETE 0 / 0 / 0
+source before / after       byte-exact
+target disposable write    true
+source production write    false
+apply-control state         completed
+production authorization   false
+```
+
+In rehearsal mode, `applyControl.freshBackupCreatedAt` is null by design. The
+timestamp remains exact in the backup binding and rehearsal authorization, while
+the control binds the backup path, SHA-256, bytes, source container, image,
+database and user. Production mode still enforces the strict timestamp and
+authorization windows.
+
+This closes the replacement rehearsal gate. It does not mark the PR Ready,
+authorize merging, or authorize production execution. The next gate is CI on
+the evidence-binding commit followed by final PR review.
