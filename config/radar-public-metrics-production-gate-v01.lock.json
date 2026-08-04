@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "radar-public-metrics-production-gate-lock-v01",
+  "stage": "candidate_acceptance_lock_only",
+  "baseMain": "cba94510c6ed460f821d82179e24d9a61ee28f5c",
+  "research": {
+    "head": "c2fe7847ee8b60b439f8e92025437937ceff06d5",
+    "releaseId": "RADAR-PUBLIC-METRICS-10563-0001",
+    "releasePath": "releases/public/radar-public-metrics-10563-0001/v01",
+    "manifestSha256": "da4b52eae91224a8bab46aebff69734c6a3d2bc3005de415b027a9e4eba6226d",
+    "metricsSha256": "1bdfda49f4f72a823efc86de42c565d3bdef162136aef697d0dc1d3bb343a946",
+    "checksumFileSha256": "b3a88c81b449f4636bb7ddfeca6c598998571d794032e761b2eced3bdde420b3"
+  },
+  "postMergePreflight": {
+    "candidateName": "post-merge-production-preflight-candidate.json",
+    "candidateSha256": "cc8757e41be8ef51e8331e9e19d59d9fadb2ad8e2ca1eba9e2a8357f7bdea6b7",
+    "reviewZipName": "post-merge-preflight-20260804-095732-59a018e8-independent-review-v01.zip",
+    "reviewZipBytes": 3237517,
+    "reviewZipSha256": "d044479131e8ce77f01901ea092970a2a72c69deecc3382cfbc625fca1c69d83",
+    "auditMarkdownName": "post-merge-preflight-independent-audit-v01.md",
+    "auditMarkdownSha256": "88f84319459f9627f1296a3ba85f0ac51e7c4a71bb3a947a5e258d561454f9e3",
+    "auditJsonName": "post-merge-preflight-independent-audit-v01.json",
+    "auditJsonSha256": "b96b2f1561bc7cc5e465ac6a0e06f400f230da1dfb14b2a3857da18530f8d025",
+    "decision": "accept_post_merge_readonly_metric_import_preflight_candidate_v01"
+  },
+  "disposableRehearsal": {
+    "evidenceName": "rehearsal-20260804-034430-df885442-evidence-v01.zip",
+    "evidenceBytes": 2632248,
+    "evidenceSha256": "1474267b2d53ecf08209afb0eb2bf6f8d01c2fbdba9a1f5845b23f3f86b67b0f",
+    "patchRequests": 10563,
+    "postAlreadyCurrent": 10563,
+    "productionAuthorization": false
+  },
+  "source": {
+    "containerId": "89eea3013fbfb18506eb1febef1c76b8d5b171d95737c59388ff6510e4402a1e",
+    "image": "postgres:17-alpine",
+    "database": "baihepailei",
+    "databaseUser": "baihe",
+    "works": 35615,
+    "publicRecords": 10563,
+    "publicRatings": 10563,
+    "columns": 44,
+    "migrations": 10,
+    "nonEmptyMetricRows": 0
+  },
+  "expectedTransition": {
+    "initialWouldUpdate": 10563,
+    "finalAlreadyCurrent": 10563,
+    "missingRating": 0,
+    "identityMismatch": 0,
+    "blocked": 0,
+    "metricPatch": 10563,
+    "postCreate": 0,
+    "put": 0,
+    "delete": 0
+  },
+  "permittedFields": [
+    "confidencePercent",
+    "evidenceCoveragePercent",
+    "metricsPolicyVersion",
+    "sourceMetricsPolicyVersion",
+    "relationshipEvidenceState",
+    "metricsSourceReleaseId",
+    "metricsCalculationBasisSha256",
+    "requiresMetricReview"
+  ],
+  "implementation": {
+    "executableProductionApplyPresent": false,
+    "productionImporterPresent": false,
+    "productionMarkerPresent": false,
+    "disposableGateRehearsalPresent": false,
+    "automaticRetryAllowed": false,
+    "automaticRollbackAllowed": false
+  },
+  "authorization": {
+    "productionAuthorization": false,
+    "metricImportAuthorized": false,
+    "explicitFutureAuthorizationRequired": true
+  }
+}
