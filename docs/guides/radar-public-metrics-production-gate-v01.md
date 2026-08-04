@@ -2,7 +2,7 @@
 
 ## Current stage
 
-This branch begins with a **candidate-acceptance lock only**.
+This branch now contains the accepted candidate lock plus a non-executable production runtime contract.
 
 It binds the accepted post-merge source-read-only Candidate, the accepted
 disposable update-only rehearsal, the frozen Research Release, and the exact
@@ -55,3 +55,28 @@ executable production gate  false
 ```
 
 This Stage A commit cannot execute or authorize the production update.
+
+## Stage B1 — production runtime contract
+
+Stage B1 adds:
+
+- a nonce-bound loopback-only production marker;
+- explicit `rehearsal` versus `production` execution modes;
+- strict authorization parity:
+  - rehearsal requires `productionAuthorization = false`;
+  - production requires `productionAuthorization = true`;
+- strict database identity separation;
+- the exact eight-field metric PATCH contract;
+- GET, login POST and exact numeric rating PATCH as the only permitted HTTP
+  surface.
+
+Stage B1 deliberately does **not** export or include an executable importer,
+source apply runner, backup executor or database connection path.
+
+```text
+production marker             present
+runtime write contract        present
+executable production import  false
+source database access        false
+production authorization      false
+```

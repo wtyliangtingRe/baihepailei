@@ -1,6 +1,6 @@
 {
   "schemaVersion": "radar-public-metrics-production-gate-lock-v01",
-  "stage": "candidate_acceptance_lock_only",
+  "stage": "production_runtime_contract_review",
   "baseMain": "cba94510c6ed460f821d82179e24d9a61ee28f5c",
   "research": {
     "head": "c2fe7847ee8b60b439f8e92025437937ceff06d5",
@@ -66,10 +66,11 @@
   "implementation": {
     "executableProductionApplyPresent": false,
     "productionImporterPresent": false,
-    "productionMarkerPresent": false,
+    "productionMarkerPresent": true,
     "disposableGateRehearsalPresent": false,
     "automaticRetryAllowed": false,
-    "automaticRollbackAllowed": false
+    "automaticRollbackAllowed": false,
+    "productionRuntimeContractPresent": true
   },
   "authorization": {
     "productionAuthorization": false,
