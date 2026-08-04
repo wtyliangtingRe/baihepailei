@@ -57,7 +57,7 @@ jobs:
             ) | Out-Null
             if ($errors.Count -gt 0) {
               $errors | ForEach-Object {
-                Write-Error "$file:$($_.Extent.StartLineNumber):$($_.Extent.StartColumnNumber) $($_.Message)"
+                Write-Error "${file}:$($_.Extent.StartLineNumber):$($_.Extent.StartColumnNumber) $($_.Message)"
               }
               throw "PowerShell syntax check failed: $file"
             }
