@@ -288,3 +288,43 @@ authorization windows.
 This closes the replacement rehearsal gate. It does not mark the PR Ready,
 authorize merging, or authorize production execution. The next gate is CI on
 the evidence-binding commit followed by final PR review.
+## Stage G — final PR review accepted
+
+The exact evidence-binding HEAD
+`2a3167deb52542d50f3b1706c4721fd5cdfb32bc`
+passed CI run `30890582574` and the final 11-file PR review.
+
+Final review state:
+
+```text
+changed files             11
+commits                   9
+comments                  0
+review submissions        0
+review threads            0
+requested reviewers       0
+replacement audit         121 / 121
+blocking findings         0
+```
+
+The latest evidence-binding commit changed only workflow assertions, the lock,
+the guide and the lock test. It did not change the importer, production runner,
+rehearsal executor or runtime contract.
+
+The final review also closes two non-blocking maintenance findings:
+
+1. the PR-body control character caused by PowerShell backtick interpolation;
+2. a duplicate workflow assertion.
+
+Authorization after this stage:
+
+```text
+mark PR Ready             true
+merge PR                  false
+production write          false
+production authorization  false
+metric import authorized  false
+```
+
+After CI succeeds on this final-review acceptance commit, PR #338 may be marked
+Ready for review. Merging and production execution remain separate later gates.
