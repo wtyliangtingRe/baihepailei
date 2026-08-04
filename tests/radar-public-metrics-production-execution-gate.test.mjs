@@ -5,6 +5,7 @@ import test from 'node:test'
 import {
   assertAllowedArguments,
   assertConvergedPlan,
+  assertImmediateProductionApplyConfirmation,
   assertInitialPlan,
   assertModeAuthorization,
   assertRuntimeUrl,
@@ -110,6 +111,33 @@ test('execution mode and production authorization cannot be confused', () => {
   )
 })
 
+test('production apply requires an immediate exact confirmation', () => {
+  assert.equal(
+    assertImmediateProductionApplyConfirmation({
+      executionMode: 'rehearsal',
+      mode: 'apply',
+      confirmation: '',
+    }),
+    true,
+  )
+  assert.equal(
+    assertImmediateProductionApplyConfirmation({
+      executionMode: 'production',
+      mode: 'apply',
+      confirmation:
+        'APPLY-RADAR-PUBLIC-METRICS-10563-NOW-I-ACCEPT-FIRST-SOURCE-PATCH',
+    }),
+    true,
+  )
+  assert.throws(() =>
+    assertImmediateProductionApplyConfirmation({
+      executionMode: 'production',
+      mode: 'apply',
+      confirmation: 'wrong',
+    }),
+  )
+})
+
 test('plan and verification remain exact closed-world states', () => {
   assert.equal(assertInitialPlan(initial), initial)
   assert.equal(assertConvergedPlan(converged), converged)
@@ -147,6 +175,12 @@ test('PowerShell gate contains backup, lock, durable marker and failure closure'
     'Stop-RadarIncrementalWriters',
     'Restart-RadarIncrementalWriters',
     'APPLY-RADAR-PUBLIC-METRICS-10563-ONCE-I-ACCEPT-PRODUCTION-WRITE',
+    'MaximumBackupAgeMinutes = 30',
+    'MaximumBackupAuthorizationGapMinutes = 15',
+    'MaximumBackupFileTimestampSkewMinutes = 5',
+    'freshBackup.sourceContainerId',
+    'FreshBackupFileTimestampSkewMinutes',
+    'WritersStopped -and -not $WritersRestarted',
   ]) {
     assert.match(runner, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   }
@@ -184,6 +218,14 @@ test('production importer is update-only and exact-ID only', () => {
   assert.doesNotMatch(importer, /method: 'PUT'/u)
   assert.doesNotMatch(importer, /method: 'DELETE'/u)
   assert.doesNotMatch(importer, /writeKind: 'rating_create'/u)
+  assert.match(
+    importer,
+    /requestImmediateProductionApplyConfirmation/u,
+  )
+  assert.match(
+    importer,
+    /APPLY-RADAR-PUBLIC-METRICS-10563-NOW-I-ACCEPT-FIRST-SOURCE-PATCH/u,
+  )
 })
 
 test('final rehearsal evidence distinguishes target and source writes', () => {

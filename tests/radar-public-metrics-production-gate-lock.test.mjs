@@ -16,7 +16,7 @@ test('production gate binds accepted evidence and is ready only for disposable r
   )
   assert.equal(
     lock.stage,
-    'production_gate_final_rehearsal_accepted_review_ready',
+    'production_gate_final_review_remediation_ready',
   )
   assert.equal(
     lock.baseMain,
@@ -83,13 +83,13 @@ test('production gate binds accepted evidence and is ready only for disposable r
 test('critical production-gate code is hash-bound', () => {
   const expected = {
     'scripts/radar/run-radar-public-metrics-production-import-v01.mjs':
-      '81723aea3975a4edadd7e0ce923dc671ebe95718291c7e987564790e07474d12',
+      '3abce88f24523f795d933f4faeafb897783a0f49febadc2ea4d5c51e923721a4',
     'scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1':
-      '5b9b7df921ccb2b745d7d1e22152134e02ee04ca4b190f5e887bb8dab1e4de03',
+      '9ee7f1741722416e94cd3aaad2a797364a63b2bc891e4e47953e7e8cfb7560f2',
     'scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1':
       '233b2b653cb926b0d620e6c6c0a99cc81bb76939de773e2b5b55ad9dc0c2611b',
     'tests/radar-public-metrics-production-execution-gate.test.mjs':
-      'd71635c09f62dfdc0c30b688c25870bb252e3b99dfeecb2fa9f020420de4c9e1',
+      '6533a6fb596c9f47edaa41840c042cc57828ae87e070a324ec87af91ec4fd2c5',
   }
 
   assert.deepEqual(lock.implementation.criticalCodeFiles, expected)
@@ -143,7 +143,7 @@ test('final repaired rehearsal evidence is independently accepted', () => {
 
   assert.equal(
     lock.stage,
-    'production_gate_final_rehearsal_accepted_review_ready',
+    'production_gate_final_review_remediation_ready',
   )
   assert.equal(
     final.evidenceSha256,
@@ -179,7 +179,10 @@ test('final repaired rehearsal evidence is independently accepted', () => {
   assert.equal(final.sourceDatabaseWrite, false)
   assert.equal(final.sourceDatabaseUnchanged, true)
   assert.equal(final.productionAuthorization, false)
-  assert.equal(final.finalEvidenceAccepted, true)
+  assert.equal(final.finalEvidenceAccepted, false)
+  assert.equal(final.behaviorEvidenceAccepted, true)
+  assert.equal(final.exactCurrentCodeAccepted, false)
+  assert.equal(final.supersededByFinalReviewRemediation, true)
   assert.equal(
     final.independentAuditMarkdownSha256,
     '4aaeead0ae65da6c475e91d72125602d6315cff3b7d698aa760fa3068c7cd9c4',
@@ -192,7 +195,46 @@ test('final repaired rehearsal evidence is independently accepted', () => {
     final.decision,
     'accept_final_disposable_public_metrics_production_gate_rehearsal_evidence_v01',
   )
-  assert.equal(lock.implementation.finalDisposableRehearsalAccepted, true)
+  assert.equal(lock.implementation.finalDisposableRehearsalAccepted, false)
+  assert.equal(lock.authorization.productionAuthorization, false)
+  assert.equal(lock.authorization.metricImportAuthorized, false)
+})
+
+test('final code review remediation is closed and requires replacement rehearsal', () => {
+  assert.equal(
+    lock.stage,
+    'production_gate_final_review_remediation_ready',
+  )
+  assert.equal(lock.implementation.freshBackupFreshnessRequired, true)
+  assert.equal(lock.implementation.freshBackupSourceBindingRequired, true)
+  assert.equal(lock.implementation.authorizationFutureSkewRejected, true)
+  assert.equal(
+    lock.implementation.immediateProductionPatchConfirmationRequired,
+    true,
+  )
+  assert.equal(
+    lock.implementation.writerRestartFailureInspectionRequired,
+    true,
+  )
+  assert.equal(lock.implementation.finalReviewRemediationRequired, true)
+  assert.equal(
+    lock.implementation.finalReviewRemediationRehearsalRequired,
+    true,
+  )
+  assert.deepEqual(lock.finalCodeReview.blockingFindings, [
+    'F1_fresh_backup_freshness_and_source_binding',
+    'F2_future_dated_authorization',
+    'F3_immediate_operator_confirmation',
+    'F4_writer_restart_inspection_flag',
+  ])
+  assert.equal(lock.finalCodeReview.remediationImplemented, true)
+  assert.equal(
+    lock.finalCodeReview.replacementDisposableRehearsalRequired,
+    true,
+  )
+  assert.equal(lock.finalCodeReview.markReadyAuthorized, false)
+  assert.equal(lock.finalCodeReview.mergeAuthorized, false)
+  assert.equal(lock.finalCodeReview.productionWriteAuthorized, false)
   assert.equal(lock.authorization.productionAuthorization, false)
   assert.equal(lock.authorization.metricImportAuthorized, false)
 })

@@ -76,11 +76,14 @@ jobs:
           runner='scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1'
           rehearsal='scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1'
 
-          grep -q '"stage": "production_gate_final_rehearsal_accepted_review_ready"' "$lock"
+          grep -q '"stage": "production_gate_final_review_remediation_ready"' "$lock"
           grep -q '"productionAuthorization": false' "$lock"
           grep -q '"metricImportAuthorized": false' "$lock"
           grep -q '"postMergeAuthorizationArtifactRequired": true' "$lock"
-          grep -q '"finalDisposableRehearsalAccepted": true' "$lock"
+          grep -q '"finalDisposableRehearsalAccepted": false' "$lock"
+          grep -q '"finalReviewRemediationRequired": true' "$lock"
+          grep -q '"finalReviewRemediationRehearsalRequired": true' "$lock"
+          grep -q '"productionWriteAuthorized": false' "$lock"
           grep -q '187021c234751ef9ea3cd69bc9830e914b926ab6c68378bdf874ee77c23d5140' "$lock"
           grep -q '4aaeead0ae65da6c475e91d72125602d6315cff3b7d698aa760fa3068c7cd9c4' "$lock"
           grep -q '6f7cea1cfc32317ca6aaa23bdc78cc902badb995a45f2a97ab0107716910a216' "$lock"
@@ -105,6 +108,15 @@ jobs:
           grep -q 'targetDatabaseWrite = $true' "$runner"
           grep -q "sourceDatabaseWrite = (\$ExecutionMode -eq 'production')" "$runner"
           grep -q 'applyControlSha256 = $ControlSha256' "$runner"
+          grep -q 'MaximumBackupAgeMinutes = 30' "$runner"
+          grep -q 'MaximumBackupAuthorizationGapMinutes = 15' "$runner"
+          grep -q 'MaximumBackupFileTimestampSkewMinutes = 5' "$runner"
+          grep -q 'freshBackup.sourceContainerId' "$runner"
+          grep -q 'FreshBackupFileTimestampSkewMinutes' "$runner"
+          grep -q 'WritersStopped -and -not $WritersRestarted' "$runner"
+
+          grep -q 'requestImmediateProductionApplyConfirmation' "$importer"
+          grep -q 'APPLY-RADAR-PUBLIC-METRICS-10563-NOW-I-ACCEPT-FIRST-SOURCE-PATCH' "$importer"
 
           grep -q 'pg_dump' "$rehearsal"
           grep -q 'pg_restore' "$rehearsal"

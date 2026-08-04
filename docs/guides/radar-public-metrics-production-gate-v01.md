@@ -191,3 +191,34 @@ merging the PR and does not authorize a production write. The PR remains Draft
 for code and evidence review. Any production execution still requires the exact
 merged `main`, a fresh same-window backup, and a separate short-lived post-merge
 production authorization artifact.
+## Stage E — final code review remediation
+
+The final 11-file review of evidence-binding head
+`1fe59d98aea9c6cc690fbf3357259006d04a2e48` found four production-only
+blocking gaps that the disposable rehearsal could not exercise:
+
+1. the runner verified backup path, SHA-256 and bytes but did not enforce backup
+   age, source identity or the backup-to-authorization time relationship;
+2. a materially future-dated authorization could pass and `expiresAt` was not
+   explicitly required to follow `createdAt`;
+3. the typed confirmation was checked at runner startup rather than immediately
+   before entering the first production PATCH loop;
+4. a failure after apply could leave writers stopped while the failure receipt
+   incorrectly reported that writer-restart inspection was unnecessary.
+
+This remediation:
+
+- binds `freshBackup` to exact container ID, image, database and user;
+- requires the backup to be no older than 30 minutes, within 15 minutes before
+  authorization creation, and consistent with the local file timestamp;
+- rejects future-dated authorization outside a two-minute clock-skew allowance
+  and requires `expiresAt > createdAt`;
+- prompts for a second production-only phrase inside the importer after the
+  final pre-plan and immediately before the PATCH loop;
+- records only the confirmation timestamp;
+- derives writer-restart inspection from actual stopped/restarted state.
+
+The prior final rehearsal remains accepted behavior evidence for its exact old
+head, but it no longer accepts the newly changed importer/runner hashes. PR #338
+remains Draft, all production authorization remains false, and one replacement
+disposable rehearsal plus independent audit is required before Ready for review.

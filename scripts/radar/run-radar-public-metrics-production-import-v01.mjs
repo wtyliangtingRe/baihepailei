@@ -2,6 +2,7 @@
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
+import { createInterface } from 'node:readline/promises'
 import { pathToFileURL } from 'node:url'
 
 import { buildPlan } from './plan-radar-public-metrics-overlay-v01.mjs'
@@ -17,6 +18,8 @@ const RELEASE_ID = 'RADAR-PUBLIC-METRICS-10563-0001'
 const POLICY_ID = 'radar-public-metrics-policy-v01'
 const EXPECTED_ROWS = 10563
 const CONFIRM = 'RUN-RADAR-PUBLIC-METRICS-PRODUCTION-IMPORT-V01'
+const IMMEDIATE_PRODUCTION_CONFIRM =
+  'APPLY-RADAR-PUBLIC-METRICS-10563-NOW-I-ACCEPT-FIRST-SOURCE-PATCH'
 const MARKER_PATH = '/api/radar-public-metrics-production-marker'
 const OUTPUT_ROOT = path.resolve(
   'data_local/outputs/radar-public-metrics-production-gate-v01',
@@ -79,6 +82,51 @@ export function assertAllowedArguments(args) {
     throw new Error(`Forbidden arguments: ${unknown.join(', ')}`)
   }
   return true
+}
+
+export function assertImmediateProductionApplyConfirmation({
+  executionMode,
+  mode,
+  confirmation,
+}) {
+  if (executionMode !== 'production' || mode !== 'apply') {
+    return true
+  }
+  if (val(confirmation) !== IMMEDIATE_PRODUCTION_CONFIRM) {
+    throw new Error(
+      'Immediate production apply confirmation did not match.',
+    )
+  }
+  return true
+}
+
+async function requestImmediateProductionApplyConfirmation({
+  executionMode,
+  mode,
+}) {
+  if (executionMode !== 'production' || mode !== 'apply') {
+    return null
+  }
+
+  const terminal = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  })
+
+  try {
+    const confirmation = await terminal.question(
+      `Type exactly before the first source PATCH:\n`
+        + `${IMMEDIATE_PRODUCTION_CONFIRM}\n> `,
+    )
+    assertImmediateProductionApplyConfirmation({
+      executionMode,
+      mode,
+      confirmation,
+    })
+    return new Date().toISOString()
+  } finally {
+    terminal.close()
+  }
 }
 
 function sha256File(filePath) {
@@ -545,6 +593,7 @@ export async function run(argv = process.argv.slice(2)) {
   const { manifest, metrics } = readRelease(releaseDirectory)
   let updates = 0
   let activePhase = 'marker'
+  let operatorConfirmedAt = null
 
   try {
     const marker = await requestJson(`${baseUrl}${MARKER_PATH}`, {
@@ -664,6 +713,13 @@ export async function run(argv = process.argv.slice(2)) {
       return receipt
     }
 
+    activePhase = 'immediate_operator_confirmation'
+    operatorConfirmedAt =
+      await requestImmediateProductionApplyConfirmation({
+        executionMode,
+        mode,
+      })
+
     activePhase = 'metric_update'
     for (const row of prePlan.plan) {
       const id = await patchMetricRow({
@@ -726,6 +782,9 @@ export async function run(argv = process.argv.slice(2)) {
       },
       postStatusCounts: postPlan.summary.statusCounts,
       fieldsLimitedTo: METRIC_FIELDS,
+      operatorConfirmationRequired:
+        executionMode === 'production',
+      operatorConfirmedAt,
       safety: {
         worksWrite: false,
         publicRecordsWrite: false,
@@ -766,6 +825,8 @@ export async function run(argv = process.argv.slice(2)) {
       sourceContainerId: expectedSourceContainerId,
       database: expectedDatabase,
       metricPatchCount: updates,
+      operatorConfirmationCompleted:
+        Boolean(operatorConfirmedAt),
       error: val(error?.stack || error),
       safety: {
         productionAuthorization,

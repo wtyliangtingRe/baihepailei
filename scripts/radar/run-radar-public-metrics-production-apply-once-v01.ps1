@@ -75,6 +75,12 @@ $ExpectedProductionConfirm =
 $ExpectedRehearsalConfirm =
     'REHEARSE-RADAR-PUBLIC-METRICS-PRODUCTION-GATE-V01'
 
+$MaximumAuthorizationAgeMinutes = 30
+$MaximumClockSkewMinutes = 2
+$MaximumBackupAgeMinutes = 30
+$MaximumBackupAuthorizationGapMinutes = 15
+$MaximumBackupFileTimestampSkewMinutes = 5
+
 function Assert-True {
     param(
         [Parameter(Mandatory = $true)][bool]$Condition,
@@ -947,6 +953,8 @@ Assert-Equal -Expected 10563 -Actual $Candidate.plan.wouldUpdate -Label 'Candida
 Assert-Equal -Expected 0 -Actual $Candidate.plan.blocked -Label 'Candidate blockers'
 Assert-Equal -Expected 'False' -Actual $Candidate.authorization.productionAuthorization -Label 'Candidate production authorization'
 
+$FreshBackupCreatedAt = $null
+
 if ($ExecutionMode -eq 'production') {
     Assert-Equal `
         -Expected 'radar-public-metrics-production-authorization-v01' `
@@ -974,11 +982,75 @@ if ($ExecutionMode -eq 'production') {
     ).ToUniversalTime()
     $Now = [DateTimeOffset]::UtcNow
 
-    if ($CreatedAt -lt $Now.AddMinutes(-30)) {
-        throw 'Production authorization 已超过 30 分钟新鲜度'
+    if (
+        $CreatedAt -lt $Now.AddMinutes(
+            -$MaximumAuthorizationAgeMinutes
+        ) -or
+        $CreatedAt -gt $Now.AddMinutes($MaximumClockSkewMinutes)
+    ) {
+        throw 'Production authorization 创建时间不在允许的新鲜度/时钟偏差窗口'
     }
-    if ($ExpiresAt -le $Now -or $ExpiresAt -gt $CreatedAt.AddMinutes(30)) {
-        throw 'Production authorization 有效期不符合 30 分钟窗口'
+    if (
+        $ExpiresAt -le $Now -or
+        $ExpiresAt -le $CreatedAt -or
+        $ExpiresAt -gt $CreatedAt.AddMinutes(
+            $MaximumAuthorizationAgeMinutes
+        )
+    ) {
+        throw 'Production authorization 有效期不符合严格 30 分钟窗口'
+    }
+
+    $FreshBackupCreatedAt = [DateTimeOffset]::Parse(
+        [string]$Authorization.freshBackup.createdAt
+    ).ToUniversalTime()
+
+    Assert-Equal `
+        -Expected $ExpectedSourceContainerId `
+        -Actual (
+            [string]$Authorization.freshBackup.sourceContainerId
+        ).ToLowerInvariant() `
+        -Label 'Fresh backup source container ID'
+    Assert-Equal `
+        -Expected $ExpectedSourceImage `
+        -Actual (
+            [string]$Authorization.freshBackup.sourceImage
+        ) `
+        -Label 'Fresh backup source image'
+    Assert-Equal `
+        -Expected $ExpectedSourceDatabase `
+        -Actual (
+            [string]$Authorization.freshBackup.sourceDatabase
+        ) `
+        -Label 'Fresh backup source database'
+    Assert-Equal `
+        -Expected $TargetDatabaseUser `
+        -Actual (
+            [string]$Authorization.freshBackup.sourceDatabaseUser
+        ) `
+        -Label 'Fresh backup source database user'
+
+    if (
+        $FreshBackupCreatedAt -lt $Now.AddMinutes(
+            -$MaximumBackupAgeMinutes
+        ) -or
+        $FreshBackupCreatedAt -gt $Now.AddMinutes(
+            $MaximumClockSkewMinutes
+        )
+    ) {
+        throw 'Fresh backup 创建时间不在允许的新鲜度/时钟偏差窗口'
+    }
+
+    $BackupAuthorizationGapMinutes =
+        ($CreatedAt - $FreshBackupCreatedAt).TotalMinutes
+
+    if (
+        $FreshBackupCreatedAt -gt $CreatedAt.AddMinutes(
+            $MaximumClockSkewMinutes
+        ) -or
+        $BackupAuthorizationGapMinutes -gt
+            $MaximumBackupAuthorizationGapMinutes
+    ) {
+        throw 'Fresh backup 与 authorization 不在同一受限时间窗口'
     }
 }
 else {
@@ -1007,14 +1079,37 @@ $FreshBackupSha256 =
     ([string]$Authorization.freshBackup.sha256).ToLowerInvariant()
 $FreshBackupBytes = [long]$Authorization.freshBackup.bytes
 Assert-File -Path $FreshBackupPath
+$FreshBackupItem = Get-Item -LiteralPath $FreshBackupPath
+
 Assert-Equal `
     -Expected $FreshBackupSha256 `
     -Actual (Get-Sha256 -Path $FreshBackupPath) `
     -Label 'Fresh backup SHA-256'
 Assert-Equal `
     -Expected $FreshBackupBytes `
-    -Actual (Get-Item -LiteralPath $FreshBackupPath).Length `
+    -Actual $FreshBackupItem.Length `
     -Label 'Fresh backup bytes'
+
+if ($ExecutionMode -eq 'production') {
+    $FreshBackupFileTimestamp =
+        [DateTimeOffset]::new(
+            $FreshBackupItem.LastWriteTimeUtc
+        )
+    $FreshBackupFileTimestampSkewMinutes =
+        [Math]::Abs(
+            (
+                $FreshBackupFileTimestamp -
+                $FreshBackupCreatedAt
+            ).TotalMinutes
+        )
+
+    if (
+        $FreshBackupFileTimestampSkewMinutes -gt
+            $MaximumBackupFileTimestampSkewMinutes
+    ) {
+        throw 'Fresh backup 声明时间与本地文件时间不一致'
+    }
+}
 
 Write-Host 'Code, Candidate, authorization and fresh backup: exact' -ForegroundColor Green
 
@@ -1108,12 +1203,29 @@ $Control = [ordered]@{
     freshBackupPath = (Resolve-Path -LiteralPath $FreshBackupPath).Path
     freshBackupSha256 = $FreshBackupSha256
     freshBackupBytes = $FreshBackupBytes
+    freshBackupCreatedAt = $(if ($FreshBackupCreatedAt) {
+        $FreshBackupCreatedAt.ToString('o')
+    }
+    else {
+        $null
+    })
+    freshBackupSourceContainerId =
+        [string]$Authorization.freshBackup.sourceContainerId
+    freshBackupSourceImage =
+        [string]$Authorization.freshBackup.sourceImage
+    freshBackupSourceDatabase =
+        [string]$Authorization.freshBackup.sourceDatabase
+    freshBackupSourceDatabaseUser =
+        [string]$Authorization.freshBackup.sourceDatabaseUser
     createdAt = [DateTime]::UtcNow.ToString('o')
     state = 'prepared'
     planPassed = $false
     applyStarted = $false
     applyPassed = $false
     verifyPassed = $false
+    operatorConfirmationRequired =
+        ($ExecutionMode -eq 'production')
+    operatorConfirmedAt = $null
     targetDatabaseWrite = $false
     sourceDatabaseWrite = $false
     productionAuthorization = ($ExecutionMode -eq 'production')
@@ -1276,6 +1388,46 @@ try {
             Assert-Equal -Expected 0 -Actual $Receipt.counts.put -Label 'Apply PUT'
             Assert-Equal -Expected 0 -Actual $Receipt.counts.delete -Label 'Apply DELETE'
             Assert-Equal -Expected 10563 -Actual $Receipt.postStatusCounts.alreadyCurrent -Label 'Apply alreadyCurrent'
+
+            if ($ExecutionMode -eq 'production') {
+                Assert-Equal `
+                    -Expected 'True' `
+                    -Actual $Receipt.operatorConfirmationRequired `
+                    -Label 'Immediate operator confirmation required'
+
+                $OperatorConfirmedAt =
+                    [DateTimeOffset]::Parse(
+                        [string]$Receipt.operatorConfirmedAt
+                    ).ToUniversalTime()
+                $ReceiptCompletedAt =
+                    [DateTimeOffset]::Parse(
+                        [string]$Receipt.completedAt
+                    ).ToUniversalTime()
+
+                if (
+                    $OperatorConfirmedAt -gt $ReceiptCompletedAt -or
+                    $OperatorConfirmedAt -gt
+                        [DateTimeOffset]::UtcNow.AddMinutes(
+                            $MaximumClockSkewMinutes
+                        )
+                ) {
+                    throw 'Immediate operator confirmation timestamp 不合法'
+                }
+
+                $Control.operatorConfirmedAt =
+                    $OperatorConfirmedAt.ToString('o')
+            }
+            else {
+                Assert-Equal `
+                    -Expected 'False' `
+                    -Actual $Receipt.operatorConfirmationRequired `
+                    -Label 'Rehearsal immediate confirmation'
+                Assert-Equal `
+                    -Expected $null `
+                    -Actual $Receipt.operatorConfirmedAt `
+                    -Label 'Rehearsal confirmation timestamp'
+            }
+
             $ApplyCompleted = $true
             $Control.applyPassed = $true
             $Control.targetDatabaseWrite = $true
@@ -1417,13 +1569,13 @@ if ($null -ne $OperationError) {
         sourceDatabaseWriteMayHaveOccurred =
             ($ExecutionMode -eq 'production' -and $ApplyStarted)
         productionAuthorization =
-            ($ExecutionMode -eq 'production' -and $ApplyStarted)
+            ($ExecutionMode -eq 'production')
         writersRestarted = $WritersRestarted
         automaticRetryAllowed = $false
         automaticRollbackExecuted = $false
         operatorMustInspectBeforeAnyFurtherAction = $true
         operatorMustInspectBeforeWriterRestart =
-            ($ApplyStarted -and -not $ApplyCompleted)
+            ($WritersStopped -and -not $WritersRestarted)
         message = $OperationError.Exception.Message
     }
     Write-Json `
