@@ -1046,6 +1046,23 @@ else {
     Assert-Equal -Expected $ExpectedSourceImage -Actual $ContainerImage -Label 'Rehearsal image'
 }
 
+$ActualDatabaseLines = @(
+    Invoke-ContainerSql `
+        -Container $TargetPostgresContainer `
+        -Database $TargetDatabase `
+        -DatabaseUser $TargetDatabaseUser `
+        -ReadOnly `
+        -Sql 'SELECT current_database();'
+)
+Assert-Equal `
+    -Expected 1 `
+    -Actual $ActualDatabaseLines.Count `
+    -Label 'current_database rows'
+Assert-Equal `
+    -Expected $TargetDatabase `
+    -Actual $ActualDatabaseLines[0] `
+    -Label 'current_database exact identity'
+
 $Before = Get-DatabaseState `
     -Container $TargetPostgresContainer `
     -Database $TargetDatabase `
@@ -1097,6 +1114,7 @@ $Control = [ordered]@{
     applyStarted = $false
     applyPassed = $false
     verifyPassed = $false
+    targetDatabaseWrite = $false
     sourceDatabaseWrite = $false
     productionAuthorization = ($ExecutionMode -eq 'production')
     automaticRetryAllowed = $false
@@ -1260,7 +1278,9 @@ try {
             Assert-Equal -Expected 10563 -Actual $Receipt.postStatusCounts.alreadyCurrent -Label 'Apply alreadyCurrent'
             $ApplyCompleted = $true
             $Control.applyPassed = $true
-            $Control.sourceDatabaseWrite = $true
+            $Control.targetDatabaseWrite = $true
+            $Control.sourceDatabaseWrite =
+                ($ExecutionMode -eq 'production')
             $Control.state = 'apply_passed'
         }
         else {
@@ -1289,6 +1309,7 @@ try {
     $Control.state = 'completed'
     $Control.completedAt = [DateTime]::UtcNow.ToString('o')
     Write-Json -Path $ControlPath -Value $Control
+    $ControlSha256 = Get-Sha256 -Path $ControlPath
 
     Write-Json `
         -Path (Join-Path $RunDirectory 'accepted-apply-once-receipt.json') `
@@ -1312,7 +1333,10 @@ try {
             put = 0
             delete = 0
             protectedBusinessFingerprintsUnchanged = $true
-            sourceDatabaseWrite = $true
+            applyControlPath = (Resolve-Path -LiteralPath $ControlPath).Path
+            applyControlSha256 = $ControlSha256
+            targetDatabaseWrite = $true
+            sourceDatabaseWrite = ($ExecutionMode -eq 'production')
             productionAuthorization = ($ExecutionMode -eq 'production')
             automaticRetryAllowed = $false
             automaticRollbackExecuted = $false
@@ -1389,7 +1413,9 @@ if ($null -ne $OperationError) {
         targetContainerId = $ContainerId
         applyStarted = $ApplyStarted
         applyCompleted = $ApplyCompleted
-        sourceDatabaseWriteMayHaveOccurred = $ApplyStarted
+        targetDatabaseWriteMayHaveOccurred = $ApplyStarted
+        sourceDatabaseWriteMayHaveOccurred =
+            ($ExecutionMode -eq 'production' -and $ApplyStarted)
         productionAuthorization =
             ($ExecutionMode -eq 'production' -and $ApplyStarted)
         writersRestarted = $WritersRestarted

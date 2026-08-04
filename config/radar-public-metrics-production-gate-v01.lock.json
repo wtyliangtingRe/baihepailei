@@ -1,6 +1,6 @@
 {
   "schemaVersion": "radar-public-metrics-production-gate-lock-v01",
-  "stage": "production_gate_disposable_rehearsal_ready",
+  "stage": "production_gate_final_rehearsal_remediation_ready",
   "baseMain": "cba94510c6ed460f821d82179e24d9a61ee28f5c",
   "research": {
     "head": "c2fe7847ee8b60b439f8e92025437937ceff06d5",
@@ -77,15 +77,36 @@
     "advisoryLockRequired": true,
     "criticalCodeFiles": {
       "scripts/radar/run-radar-public-metrics-production-import-v01.mjs": "81723aea3975a4edadd7e0ce923dc671ebe95718291c7e987564790e07474d12",
-      "scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1": "4935b7779eb632c7f64bd726385601e1e27cd9df2c85e1daf8a028d1bc937a94",
-      "scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1": "19e4e6a2effc315fc118cc735273fcd730e849dcd4286abf353eb710692c8b7e",
-      "tests/radar-public-metrics-production-execution-gate.test.mjs": "e04a18657e95a524a0da85a4ecef4722318759f5595117419931561d18b20d3e"
-    }
+      "scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1": "5b9b7df921ccb2b745d7d1e22152134e02ee04ca4b190f5e887bb8dab1e4de03",
+      "scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1": "233b2b653cb926b0d620e6c6c0a99cc81bb76939de773e2b5b55ad9dc0c2611b",
+      "tests/radar-public-metrics-production-execution-gate.test.mjs": "d71635c09f62dfdc0c30b688c25870bb252e3b99dfeecb2fa9f020420de4c9e1"
+    },
+    "exactCurrentDatabaseRequired": true,
+    "targetSourceWriteDistinctionRequired": true,
+    "applyControlEvidenceRequired": true,
+    "databaseIdentifierMaximumUtf8Bytes": 63,
+    "finalDisposableRehearsalRequired": true
   },
   "authorization": {
     "productionAuthorization": false,
     "metricImportAuthorized": false,
     "explicitFutureAuthorizationRequired": true,
     "postMergeAuthorizationArtifactRequired": true
+  },
+  "priorProductionGateRehearsal": {
+    "evidenceName": "public-metrics-production-gate-20260804-120021-d5708d5b-evidence-v01.zip",
+    "evidenceBytes": 1976002,
+    "evidenceSha256": "6c6164a2d4275a5ea63ab075fdf99eba41a51a83540d4318df1a857fda23f6f6",
+    "independentAuditMarkdownSha256": "248f62c9bf273eedec980e3b47f1f417de1101efd117f28379f3230496ed7d15",
+    "independentAuditJsonSha256": "51958e4c1db64bbd4eac4bb73d52795984d348a2d8a4f0abc1fcfdffcac7baea",
+    "executionBehaviorPassed": true,
+    "sourceDatabaseUnchanged": true,
+    "finalEvidenceAccepted": false,
+    "blockingFindings": [
+      "F1_target_source_write_semantics",
+      "F2_postgresql_identifier_truncation",
+      "F3_apply_control_marker_missing"
+    ],
+    "decision": "remediation_required_before_final_disposable_rehearsal_acceptance"
   }
 }

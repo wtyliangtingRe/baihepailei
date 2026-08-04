@@ -16,7 +16,7 @@ test('production gate binds accepted evidence and is ready only for disposable r
   )
   assert.equal(
     lock.stage,
-    'production_gate_disposable_rehearsal_ready',
+    'production_gate_final_rehearsal_remediation_ready',
   )
   assert.equal(
     lock.baseMain,
@@ -85,11 +85,11 @@ test('critical production-gate code is hash-bound', () => {
     'scripts/radar/run-radar-public-metrics-production-import-v01.mjs':
       '81723aea3975a4edadd7e0ce923dc671ebe95718291c7e987564790e07474d12',
     'scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1':
-      '4935b7779eb632c7f64bd726385601e1e27cd9df2c85e1daf8a028d1bc937a94',
+      '5b9b7df921ccb2b745d7d1e22152134e02ee04ca4b190f5e887bb8dab1e4de03',
     'scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1':
-      '19e4e6a2effc315fc118cc735273fcd730e849dcd4286abf353eb710692c8b7e',
+      '233b2b653cb926b0d620e6c6c0a99cc81bb76939de773e2b5b55ad9dc0c2611b',
     'tests/radar-public-metrics-production-execution-gate.test.mjs':
-      'e04a18657e95a524a0da85a4ecef4722318759f5595117419931561d18b20d3e',
+      'd71635c09f62dfdc0c30b688c25870bb252e3b99dfeecb2fa9f020420de4c9e1',
   }
 
   assert.deepEqual(lock.implementation.criticalCodeFiles, expected)
@@ -98,4 +98,43 @@ test('critical production-gate code is hash-bound', () => {
     assert.equal(fs.existsSync(file), true, `missing ${file}`)
     assert.match(sha, /^[a-f0-9]{64}$/u)
   }
+})
+
+test('prior rehearsal is retained as remediation evidence only', () => {
+  assert.equal(
+    lock.priorProductionGateRehearsal.evidenceSha256,
+    '6c6164a2d4275a5ea63ab075fdf99eba41a51a83540d4318df1a857fda23f6f6',
+  )
+  assert.equal(
+    lock.priorProductionGateRehearsal.finalEvidenceAccepted,
+    false,
+  )
+  assert.equal(
+    lock.priorProductionGateRehearsal.sourceDatabaseUnchanged,
+    true,
+  )
+  assert.deepEqual(
+    lock.priorProductionGateRehearsal.blockingFindings,
+    [
+      'F1_target_source_write_semantics',
+      'F2_postgresql_identifier_truncation',
+      'F3_apply_control_marker_missing',
+    ],
+  )
+  assert.equal(lock.implementation.exactCurrentDatabaseRequired, true)
+  assert.equal(
+    lock.implementation.targetSourceWriteDistinctionRequired,
+    true,
+  )
+  assert.equal(lock.implementation.applyControlEvidenceRequired, true)
+  assert.equal(
+    lock.implementation.databaseIdentifierMaximumUtf8Bytes,
+    63,
+  )
+  assert.equal(
+    lock.implementation.finalDisposableRehearsalRequired,
+    true,
+  )
+  assert.equal(lock.authorization.productionAuthorization, false)
+  assert.equal(lock.authorization.metricImportAuthorized, false)
 })

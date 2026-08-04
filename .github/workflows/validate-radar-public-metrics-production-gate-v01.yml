@@ -76,7 +76,7 @@ jobs:
           runner='scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1'
           rehearsal='scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1'
 
-          grep -q '"stage": "production_gate_disposable_rehearsal_ready"' "$lock"
+          grep -q '"stage": "production_gate_final_rehearsal_remediation_ready"' "$lock"
           grep -q '"productionAuthorization": false' "$lock"
           grep -q '"metricImportAuthorized": false' "$lock"
           grep -q '"postMergeAuthorizationArtifactRequired": true' "$lock"
@@ -95,11 +95,18 @@ jobs:
           grep -q 'automaticRollbackAllowed = \$false' "$runner"
           grep -q 'operatorMustInspectBeforeAnyFurtherAction' "$runner"
           grep -q 'Stop-RadarIncrementalWriters' "$runner"
+          grep -q 'SELECT current_database();' "$runner"
+          grep -q 'targetDatabaseWrite = $true' "$runner"
+          grep -q "sourceDatabaseWrite = (\$ExecutionMode -eq 'production')" "$runner"
+          grep -q 'applyControlSha256 = $ControlSha256' "$runner"
 
           grep -q 'pg_dump' "$rehearsal"
           grep -q 'pg_restore' "$rehearsal"
           grep -q 'sourceDatabaseUnchanged = \$true' "$rehearsal"
           grep -q 'productionAuthorization = \$false' "$rehearsal"
+          grep -q 'apply-control-marker.json' "$rehearsal"
+          grep -q "applyControlState = 'completed'" "$rehearsal"
+          grep -q 'GetByteCount($TempDatabase) -gt 63' "$rehearsal"
 
       - name: Check patch whitespace
         run: git diff --check origin/main...HEAD

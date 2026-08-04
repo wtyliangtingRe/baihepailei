@@ -586,8 +586,17 @@ try {
         -ForegroundColor Cyan
 
     $TempPort = Get-FreePort -Minimum 31000 -Maximum 31999
+    $DatabaseSuffix =
+        "$(Get-Date -Format 'yyMMddHHmmss')_$([guid]::NewGuid().ToString('N').Substring(0, 3))"
     $TempDatabase =
-        "radar_public_metrics_production_gate_rehearsal_$($RunId.Replace('-', '_'))"
+        "radar_public_metrics_production_gate_rehearsal_$DatabaseSuffix"
+
+    if (
+        [System.Text.Encoding]::UTF8.GetByteCount($TempDatabase) -gt 63
+    ) {
+        throw 'Disposable database identifier exceeds 63 UTF-8 bytes'
+    }
+
     $TempContainer =
         "radar-metrics-production-gate-rehearsal-$RunId"
 
@@ -761,6 +770,30 @@ try {
     Assert-Equal -Expected 0 -Actual $Acceptance.put -Label 'Gate PUT'
     Assert-Equal -Expected 0 -Actual $Acceptance.delete -Label 'Gate DELETE'
     Assert-Equal -Expected 'False' -Actual $Acceptance.productionAuthorization -Label 'Gate production authorization'
+    Assert-Equal -Expected 'True' -Actual $Acceptance.targetDatabaseWrite -Label 'Gate target database write'
+    Assert-Equal -Expected 'False' -Actual $Acceptance.sourceDatabaseWrite -Label 'Gate source database write'
+
+    $ApplyControlPath = [string]$Acceptance.applyControlPath
+    $ApplyControlSha256 =
+        ([string]$Acceptance.applyControlSha256).ToLowerInvariant()
+    Assert-File -Path $ApplyControlPath
+    Assert-Equal `
+        -Expected $ApplyControlSha256 `
+        -Actual (Get-Sha256 -Path $ApplyControlPath) `
+        -Label 'Apply-control SHA-256'
+
+    $ApplyControl =
+        Get-Content -LiteralPath $ApplyControlPath -Raw |
+            ConvertFrom-Json -Depth 100
+
+    Assert-Equal -Expected 'completed' -Actual $ApplyControl.state -Label 'Apply-control state'
+    Assert-Equal -Expected 'True' -Actual $ApplyControl.planPassed -Label 'Apply-control plan'
+    Assert-Equal -Expected 'True' -Actual $ApplyControl.applyStarted -Label 'Apply-control apply started'
+    Assert-Equal -Expected 'True' -Actual $ApplyControl.applyPassed -Label 'Apply-control apply'
+    Assert-Equal -Expected 'True' -Actual $ApplyControl.verifyPassed -Label 'Apply-control verify'
+    Assert-Equal -Expected 'True' -Actual $ApplyControl.targetDatabaseWrite -Label 'Apply-control target write'
+    Assert-Equal -Expected 'False' -Actual $ApplyControl.sourceDatabaseWrite -Label 'Apply-control source write'
+    Assert-Equal -Expected 'False' -Actual $ApplyControl.productionAuthorization -Label 'Apply-control production authorization'
 
     Write-Host 'Disposable production gate converged' `
         -ForegroundColor Green
@@ -812,6 +845,14 @@ try {
                 'post-merge-production-preflight-candidate.json'
         )
 
+    Copy-Item `
+        -LiteralPath $ApplyControlPath `
+        -Destination (
+            Join-Path `
+                $ReviewDirectory `
+                'apply-control-marker.json'
+        )
+
     $RunnerEvidence =
         Join-Path $ReviewDirectory 'runner-evidence'
     Copy-Item `
@@ -839,6 +880,10 @@ try {
             put = 0
             delete = 0
             sourceDatabaseUnchanged = $true
+            targetDatabaseWrite = $true
+            sourceDatabaseWrite = $false
+            applyControlSha256 = $ApplyControlSha256
+            applyControlState = 'completed'
             productionAuthorization = $false
             automaticRetryAllowed = $false
             automaticRollbackExecuted = $false

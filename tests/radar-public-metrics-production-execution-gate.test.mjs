@@ -185,3 +185,34 @@ test('production importer is update-only and exact-ID only', () => {
   assert.doesNotMatch(importer, /method: 'DELETE'/u)
   assert.doesNotMatch(importer, /writeKind: 'rating_create'/u)
 })
+
+test('final rehearsal evidence distinguishes target and source writes', () => {
+  const runner = fs.readFileSync(
+    'scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1',
+    'utf8',
+  )
+  const rehearsal = fs.readFileSync(
+    'scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1',
+    'utf8',
+  )
+
+  for (const required of [
+    "SELECT current_database();",
+    'targetDatabaseWrite = $true',
+    "sourceDatabaseWrite = ($ExecutionMode -eq 'production')",
+    'targetDatabaseWriteMayHaveOccurred = $ApplyStarted',
+    'applyControlSha256 = $ControlSha256',
+  ]) {
+    assert.equal(runner.includes(required), true, required)
+  }
+
+  for (const required of [
+    "GetByteCount($TempDatabase) -gt 63",
+    'apply-control-marker.json',
+    "applyControlState = 'completed'",
+    'targetDatabaseWrite = $true',
+    'sourceDatabaseWrite = $false',
+  ]) {
+    assert.equal(rehearsal.includes(required), true, required)
+  }
+})

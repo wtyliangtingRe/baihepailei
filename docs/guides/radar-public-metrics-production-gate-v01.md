@@ -125,3 +125,32 @@ real source execution           not authorized
 The next gate is to execute the disposable production-gate rehearsal and
 independently audit its evidence ZIP. No production execution is allowed before
 that evidence is accepted and this PR is merged.
+
+## Stage C — final rehearsal remediation
+
+The first exact Stage B2 disposable execution proved:
+
+- 10,563 update-only PATCH requests converged;
+- source database before/after state was byte-identical;
+- production authorization remained false.
+
+The independent audit did not accept that ZIP as the final rehearsal because:
+
+1. the acceptance receipt used `sourceDatabaseWrite: true` for the disposable
+   target write;
+2. PostgreSQL truncated the overlong disposable database identifier;
+3. the durable apply-control marker body was not included in the ZIP.
+
+This remediation commit:
+
+- distinguishes `targetDatabaseWrite` from `sourceDatabaseWrite`;
+- records source-write risk only in production mode;
+- asserts `current_database()` exactly;
+- limits the disposable database name to 63 UTF-8 bytes;
+- binds the apply-control path and SHA-256;
+- verifies the completed control state;
+- includes `apply-control-marker.json` in the final evidence package.
+
+The prior ZIP remains preserved as remediation evidence only. A single final
+disposable rehearsal of the exact repaired HEAD is required before review.
+Production authorization remains closed.
