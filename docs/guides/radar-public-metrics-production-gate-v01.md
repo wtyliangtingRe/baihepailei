@@ -154,3 +154,40 @@ This remediation commit:
 The prior ZIP remains preserved as remediation evidence only. A single final
 disposable rehearsal of the exact repaired HEAD is required before review.
 Production authorization remains closed.
+## Stage D — final disposable rehearsal accepted
+
+The exact repaired HEAD
+`1ce8f3df61063105ebbc66df0eb9f879d56d87ea`
+completed the final disposable production-gate rehearsal.
+
+Accepted final evidence:
+
+- ZIP:
+  `public-metrics-production-gate-20260804-131816-4ac226c7-evidence-v01.zip`
+- bytes: `2000446`
+- SHA-256:
+  `187021c234751ef9ea3cd69bc9830e914b926ab6c68378bdf874ee77c23d5140`
+- independent audit Markdown SHA-256:
+  `4aaeead0ae65da6c475e91d72125602d6315cff3b7d698aa760fa3068c7cd9c4`
+- independent audit JSON SHA-256:
+  `6f7cea1cfc32317ca6aaa23bdc78cc902badb995a45f2a97ab0107716910a216`
+
+The independent audit confirmed:
+
+```text
+initial wouldUpdate        10,563
+PATCH requests             10,563
+final alreadyCurrent       10,563
+POST create / PUT / DELETE 0 / 0 / 0
+target disposable write    true
+source production write    false
+source before/after         byte-exact
+apply-control state         completed
+production authorization   false
+```
+
+This acceptance closes the disposable rehearsal gate. It does not authorize
+merging the PR and does not authorize a production write. The PR remains Draft
+for code and evidence review. Any production execution still requires the exact
+merged `main`, a fresh same-window backup, and a separate short-lived post-merge
+production authorization artifact.

@@ -16,7 +16,7 @@ test('production gate binds accepted evidence and is ready only for disposable r
   )
   assert.equal(
     lock.stage,
-    'production_gate_final_rehearsal_remediation_ready',
+    'production_gate_final_rehearsal_accepted_review_ready',
   )
   assert.equal(
     lock.baseMain,
@@ -135,6 +135,64 @@ test('prior rehearsal is retained as remediation evidence only', () => {
     lock.implementation.finalDisposableRehearsalRequired,
     true,
   )
+  assert.equal(lock.authorization.productionAuthorization, false)
+  assert.equal(lock.authorization.metricImportAuthorized, false)
+})
+test('final repaired rehearsal evidence is independently accepted', () => {
+  const final = lock.finalProductionGateRehearsal
+
+  assert.equal(
+    lock.stage,
+    'production_gate_final_rehearsal_accepted_review_ready',
+  )
+  assert.equal(
+    final.evidenceSha256,
+    '187021c234751ef9ea3cd69bc9830e914b926ab6c68378bdf874ee77c23d5140',
+  )
+  assert.equal(final.evidenceBytes, 2000446)
+  assert.equal(final.archiveEntries, 37)
+  assert.equal(final.checksumEntries, 36)
+  assert.equal(final.internalChecksumsValid, 36)
+  assert.equal(
+    final.toolHead,
+    '1ce8f3df61063105ebbc66df0eb9f879d56d87ea',
+  )
+  assert.equal(
+    final.candidateSha256,
+    'cc8757e41be8ef51e8331e9e19d59d9fadb2ad8e2ca1eba9e2a8357f7bdea6b7',
+  )
+  assert.equal(
+    final.applyControlSha256,
+    '7fd67a1c9367c9625512e366077c27d55918727ba266599881f762edd7e64ab6',
+  )
+  assert.equal(final.applyControlState, 'completed')
+  assert.equal(final.planPassed, true)
+  assert.equal(final.applyStarted, true)
+  assert.equal(final.applyPassed, true)
+  assert.equal(final.verifyPassed, true)
+  assert.equal(final.patchRequests, 10563)
+  assert.equal(final.postAlreadyCurrent, 10563)
+  assert.equal(final.postCreateRequests, 0)
+  assert.equal(final.putRequests, 0)
+  assert.equal(final.deleteRequests, 0)
+  assert.equal(final.targetDatabaseWrite, true)
+  assert.equal(final.sourceDatabaseWrite, false)
+  assert.equal(final.sourceDatabaseUnchanged, true)
+  assert.equal(final.productionAuthorization, false)
+  assert.equal(final.finalEvidenceAccepted, true)
+  assert.equal(
+    final.independentAuditMarkdownSha256,
+    '4aaeead0ae65da6c475e91d72125602d6315cff3b7d698aa760fa3068c7cd9c4',
+  )
+  assert.equal(
+    final.independentAuditJsonSha256,
+    '6f7cea1cfc32317ca6aaa23bdc78cc902badb995a45f2a97ab0107716910a216',
+  )
+  assert.equal(
+    final.decision,
+    'accept_final_disposable_public_metrics_production_gate_rehearsal_evidence_v01',
+  )
+  assert.equal(lock.implementation.finalDisposableRehearsalAccepted, true)
   assert.equal(lock.authorization.productionAuthorization, false)
   assert.equal(lock.authorization.metricImportAuthorized, false)
 })

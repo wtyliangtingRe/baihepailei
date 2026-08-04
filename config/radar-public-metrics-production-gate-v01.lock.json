@@ -1,6 +1,6 @@
 {
   "schemaVersion": "radar-public-metrics-production-gate-lock-v01",
-  "stage": "production_gate_final_rehearsal_remediation_ready",
+  "stage": "production_gate_final_rehearsal_accepted_review_ready",
   "baseMain": "cba94510c6ed460f821d82179e24d9a61ee28f5c",
   "research": {
     "head": "c2fe7847ee8b60b439f8e92025437937ceff06d5",
@@ -85,7 +85,8 @@
     "targetSourceWriteDistinctionRequired": true,
     "applyControlEvidenceRequired": true,
     "databaseIdentifierMaximumUtf8Bytes": 63,
-    "finalDisposableRehearsalRequired": true
+    "finalDisposableRehearsalRequired": true,
+    "finalDisposableRehearsalAccepted": true
   },
   "authorization": {
     "productionAuthorization": false,
@@ -108,5 +109,47 @@
       "F3_apply_control_marker_missing"
     ],
     "decision": "remediation_required_before_final_disposable_rehearsal_acceptance"
+  },
+  "finalProductionGateRehearsal": {
+    "evidenceName": "public-metrics-production-gate-20260804-131816-4ac226c7-evidence-v01.zip",
+    "evidenceBytes": 2000446,
+    "evidenceSha256": "187021c234751ef9ea3cd69bc9830e914b926ab6c68378bdf874ee77c23d5140",
+    "archiveEntries": 37,
+    "checksumEntries": 36,
+    "internalChecksumsValid": 36,
+    "toolHead": "1ce8f3df61063105ebbc66df0eb9f879d56d87ea",
+    "researchHead": "c2fe7847ee8b60b439f8e92025437937ceff06d5",
+    "releaseId": "RADAR-PUBLIC-METRICS-10563-0001",
+    "candidateSha256": "cc8757e41be8ef51e8331e9e19d59d9fadb2ad8e2ca1eba9e2a8357f7bdea6b7",
+    "authorizationSha256": "736a88d7700a409c07d9ce34d96b8169a7d44f4d2a12a482c38edd8cd30cff72",
+    "freshBackupSha256": "10acb052dec1a0eee752a49377e0075f7fd4d3e06611cccbab54598085edccb3",
+    "freshBackupBytes": 37218612,
+    "disposableDatabase": "radar_public_metrics_production_gate_rehearsal_260804131823_283",
+    "disposableDatabaseUtf8Bytes": 63,
+    "targetContainerId": "e3253bb08f5e2af916e4c222eb41b805a8c8300071c36c04a991b5bd95536631",
+    "applyControlSha256": "7fd67a1c9367c9625512e366077c27d55918727ba266599881f762edd7e64ab6",
+    "applyControlState": "completed",
+    "planPassed": true,
+    "applyStarted": true,
+    "applyPassed": true,
+    "verifyPassed": true,
+    "initialWouldUpdate": 10563,
+    "patchRequests": 10563,
+    "postAlreadyCurrent": 10563,
+    "postCreateRequests": 0,
+    "putRequests": 0,
+    "deleteRequests": 0,
+    "targetDatabaseWrite": true,
+    "sourceDatabaseWrite": false,
+    "sourceDatabaseUnchanged": true,
+    "productionAuthorization": false,
+    "automaticRetryAllowed": false,
+    "automaticRollbackAllowed": false,
+    "independentAuditMarkdownName": "public-metrics-production-gate-final-evidence-independent-audit-v01.md",
+    "independentAuditMarkdownSha256": "4aaeead0ae65da6c475e91d72125602d6315cff3b7d698aa760fa3068c7cd9c4",
+    "independentAuditJsonName": "public-metrics-production-gate-final-evidence-independent-audit-v01.json",
+    "independentAuditJsonSha256": "6f7cea1cfc32317ca6aaa23bdc78cc902badb995a45f2a97ab0107716910a216",
+    "finalEvidenceAccepted": true,
+    "decision": "accept_final_disposable_public_metrics_production_gate_rehearsal_evidence_v01"
   }
 }
