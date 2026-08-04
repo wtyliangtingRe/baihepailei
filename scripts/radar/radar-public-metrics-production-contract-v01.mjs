@@ -217,5 +217,7 @@ export const PRODUCTION_RUNTIME_CONTRACT = Object.freeze({
   deleteAllowed: false,
   automaticRetryAllowed: false,
   automaticRollbackAllowed: false,
-  executableImporterIncluded: false,
+  executableImporterIncluded: true,
+  applyOnceRunnerIncluded: true,
+  disposableGateRehearsalIncluded: true,
 })

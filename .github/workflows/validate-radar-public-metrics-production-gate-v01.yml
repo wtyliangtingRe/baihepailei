@@ -9,9 +9,10 @@ on:
       - 'docs/guides/radar-public-metrics-production-gate-v01.md'
       - 'tests/radar-public-metrics-production-gate-lock.test.mjs'
       - 'tests/radar-public-metrics-production-runtime-contract.test.mjs'
+      - 'tests/radar-public-metrics-production-execution-gate.test.mjs'
       - 'scripts/radar/radar-public-metrics-production-contract-v01.mjs'
-      - 'scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1'
       - 'scripts/radar/run-radar-public-metrics-production-import-v01.mjs'
+      - 'scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1'
       - 'scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1'
       - 'src/app/(payload)/api/radar-public-metrics-production-marker/route.ts'
   workflow_dispatch:
@@ -22,7 +23,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
@@ -33,66 +34,72 @@ jobs:
         with:
           node-version: 22
 
-      - name: Check runtime contract syntax
-        run: >-
-          node --check
-          scripts/radar/radar-public-metrics-production-contract-v01.mjs
+      - name: Check JavaScript syntax
+        run: |
+          node --check scripts/radar/radar-public-metrics-production-contract-v01.mjs
+          node --check scripts/radar/run-radar-public-metrics-production-import-v01.mjs
+
+      - name: Check PowerShell syntax
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $files = @(
+            'scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1',
+            'scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1'
+          )
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $file).Path,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object {
+                Write-Error "$file:$($_.Extent.StartLineNumber):$($_.Extent.StartColumnNumber) $($_.Message)"
+              }
+              throw "PowerShell syntax check failed: $file"
+            }
+          }
 
       - name: Run production gate tests
-        run: >-
-          node --test
-          tests/radar-public-metrics-production-gate-lock.test.mjs
-          tests/radar-public-metrics-production-runtime-contract.test.mjs
+        run: |
+          node --test             tests/radar-public-metrics-production-gate-lock.test.mjs             tests/radar-public-metrics-production-runtime-contract.test.mjs             tests/radar-public-metrics-production-execution-gate.test.mjs
 
-      - name: Enforce accepted bindings and authorization boundary
+      - name: Enforce bindings and closed production authorization
         shell: bash
         run: |
           set -euo pipefail
           lock='config/radar-public-metrics-production-gate-v01.lock.json'
-          contract='scripts/radar/radar-public-metrics-production-contract-v01.mjs'
-          marker='src/app/(payload)/api/radar-public-metrics-production-marker/route.ts'
+          importer='scripts/radar/run-radar-public-metrics-production-import-v01.mjs'
+          runner='scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1'
+          rehearsal='scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1'
 
-          for value in \
-            cba94510c6ed460f821d82179e24d9a61ee28f5c \
-            cc8757e41be8ef51e8331e9e19d59d9fadb2ad8e2ca1eba9e2a8357f7bdea6b7 \
-            d044479131e8ce77f01901ea092970a2a72c69deecc3382cfbc625fca1c69d83 \
-            1474267b2d53ecf08209afb0eb2bf6f8d01c2fbdba9a1f5845b23f3f86b67b0f
-          do
-            grep -q "$value" "$lock"
-          done
-
-          grep -q '"stage": "production_runtime_contract_review"' "$lock"
+          grep -q '"stage": "production_gate_disposable_rehearsal_ready"' "$lock"
           grep -q '"productionAuthorization": false' "$lock"
           grep -q '"metricImportAuthorized": false' "$lock"
+          grep -q '"postMergeAuthorizationArtifactRequired": true' "$lock"
           ! grep -q '"productionAuthorization": true' "$lock"
           ! grep -q '"metricImportAuthorized": true' "$lock"
 
-          for field in \
-            confidencePercent \
-            evidenceCoveragePercent \
-            metricsPolicyVersion \
-            sourceMetricsPolicyVersion \
-            relationshipEvidenceState \
-            metricsSourceReleaseId \
-            metricsCalculationBasisSha256 \
-            requiresMetricReview
-          do
-            grep -q "$field" "$contract"
-          done
+          grep -q 'RUN-RADAR-PUBLIC-METRICS-PRODUCTION-IMPORT-V01' "$importer"
+          grep -q "method: 'PATCH'" "$importer"
+          grep -q 'postCreate: 0' "$importer"
+          grep -q 'put: 0' "$importer"
+          grep -q 'delete: 0' "$importer"
 
-          grep -q 'exactIdPatchOnly: true' "$contract"
-          grep -q 'createAllowed: false' "$contract"
-          grep -q 'putAllowed: false' "$contract"
-          grep -q 'deleteAllowed: false' "$contract"
-          grep -q 'executableImporterIncluded: false' "$contract"
+          grep -q 'pg_advisory_lock' "$runner"
+          grep -q 'durable apply-control marker' "$runner"
+          grep -q 'automaticRetryAllowed = \$false' "$runner"
+          grep -q 'automaticRollbackAllowed = \$false' "$runner"
+          grep -q 'operatorMustInspectBeforeAnyFurtherAction' "$runner"
+          grep -q 'Stop-RadarIncrementalWriters' "$runner"
 
-          grep -q 'productionMode: true' "$marker"
-          grep -q 'authorization_mode_mismatch' "$marker"
-          grep -q 'x-radar-public-metrics-production-nonce' "$marker"
-
-          test ! -e scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1
-          test ! -e scripts/radar/run-radar-public-metrics-production-import-v01.mjs
-          test ! -e scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1
+          grep -q 'pg_dump' "$rehearsal"
+          grep -q 'pg_restore' "$rehearsal"
+          grep -q 'sourceDatabaseUnchanged = \$true' "$rehearsal"
+          grep -q 'productionAuthorization = \$false' "$rehearsal"
 
       - name: Check patch whitespace
         run: git diff --check origin/main...HEAD

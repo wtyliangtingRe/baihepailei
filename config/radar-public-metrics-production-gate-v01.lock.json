@@ -1,6 +1,6 @@
 {
   "schemaVersion": "radar-public-metrics-production-gate-lock-v01",
-  "stage": "production_runtime_contract_review",
+  "stage": "production_gate_disposable_rehearsal_ready",
   "baseMain": "cba94510c6ed460f821d82179e24d9a61ee28f5c",
   "research": {
     "head": "c2fe7847ee8b60b439f8e92025437937ceff06d5",
@@ -64,17 +64,28 @@
     "requiresMetricReview"
   ],
   "implementation": {
-    "executableProductionApplyPresent": false,
-    "productionImporterPresent": false,
+    "executableProductionApplyPresent": true,
+    "productionImporterPresent": true,
     "productionMarkerPresent": true,
-    "disposableGateRehearsalPresent": false,
+    "disposableGateRehearsalPresent": true,
     "automaticRetryAllowed": false,
     "automaticRollbackAllowed": false,
-    "productionRuntimeContractPresent": true
+    "productionRuntimeContractPresent": true,
+    "writerIsolationRequired": true,
+    "freshBackupRequired": true,
+    "durableApplyControlRequired": true,
+    "advisoryLockRequired": true,
+    "criticalCodeFiles": {
+      "scripts/radar/run-radar-public-metrics-production-import-v01.mjs": "81723aea3975a4edadd7e0ce923dc671ebe95718291c7e987564790e07474d12",
+      "scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1": "4935b7779eb632c7f64bd726385601e1e27cd9df2c85e1daf8a028d1bc937a94",
+      "scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1": "19e4e6a2effc315fc118cc735273fcd730e849dcd4286abf353eb710692c8b7e",
+      "tests/radar-public-metrics-production-execution-gate.test.mjs": "e04a18657e95a524a0da85a4ecef4722318759f5595117419931561d18b20d3e"
+    }
   },
   "authorization": {
     "productionAuthorization": false,
     "metricImportAuthorized": false,
-    "explicitFutureAuthorizationRequired": true
+    "explicitFutureAuthorizationRequired": true,
+    "postMergeAuthorizationArtifactRequired": true
   }
 }

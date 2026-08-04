@@ -40,7 +40,15 @@ test('production runtime contract preserves exact eight-field PATCH', () => {
   assert.equal(PRODUCTION_RUNTIME_CONTRACT.deleteAllowed, false)
   assert.equal(
     PRODUCTION_RUNTIME_CONTRACT.executableImporterIncluded,
-    false,
+    true,
+  )
+  assert.equal(
+    PRODUCTION_RUNTIME_CONTRACT.applyOnceRunnerIncluded,
+    true,
+  )
+  assert.equal(
+    PRODUCTION_RUNTIME_CONTRACT.disposableGateRehearsalIncluded,
+    true,
   )
 })
 

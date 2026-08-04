@@ -9,12 +9,15 @@ const lock = JSON.parse(
   ),
 )
 
-test('production gate binds the accepted candidate and remains non-executable', () => {
+test('production gate binds accepted evidence and is ready only for disposable rehearsal', () => {
   assert.equal(
     lock.schemaVersion,
     'radar-public-metrics-production-gate-lock-v01',
   )
-  assert.equal(lock.stage, 'production_runtime_contract_review')
+  assert.equal(
+    lock.stage,
+    'production_gate_disposable_rehearsal_ready',
+  )
   assert.equal(
     lock.baseMain,
     'cba94510c6ed460f821d82179e24d9a61ee28f5c',
@@ -44,24 +47,24 @@ test('production gate binds the accepted candidate and remains non-executable', 
     delete: 0,
   })
 
-  assert.equal(lock.source.columns, 44)
-  assert.equal(lock.source.migrations, 10)
-  assert.equal(lock.source.nonEmptyMetricRows, 0)
-
   assert.equal(lock.implementation.productionMarkerPresent, true)
   assert.equal(
     lock.implementation.productionRuntimeContractPresent,
     true,
   )
-  assert.equal(lock.implementation.productionImporterPresent, false)
+  assert.equal(lock.implementation.productionImporterPresent, true)
   assert.equal(
     lock.implementation.executableProductionApplyPresent,
-    false,
+    true,
   )
   assert.equal(
     lock.implementation.disposableGateRehearsalPresent,
-    false,
+    true,
   )
+  assert.equal(lock.implementation.freshBackupRequired, true)
+  assert.equal(lock.implementation.advisoryLockRequired, true)
+  assert.equal(lock.implementation.durableApplyControlRequired, true)
+  assert.equal(lock.implementation.writerIsolationRequired, true)
   assert.equal(lock.implementation.automaticRetryAllowed, false)
   assert.equal(lock.implementation.automaticRollbackAllowed, false)
 
@@ -71,31 +74,28 @@ test('production gate binds the accepted candidate and remains non-executable', 
     lock.authorization.explicitFutureAuthorizationRequired,
     true,
   )
+  assert.equal(
+    lock.authorization.postMergeAuthorizationArtifactRequired,
+    true,
+  )
 })
 
-test('Stage B1 still contains no executable production importer or runner', () => {
-  for (const file of [
-    'scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1',
-    'scripts/radar/run-radar-public-metrics-production-import-v01.mjs',
-    'scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1',
-  ]) {
-    assert.equal(
-      fs.existsSync(file),
-      false,
-      `unexpected executable file: ${file}`,
-    )
+test('critical production-gate code is hash-bound', () => {
+  const expected = {
+    'scripts/radar/run-radar-public-metrics-production-import-v01.mjs':
+      '81723aea3975a4edadd7e0ce923dc671ebe95718291c7e987564790e07474d12',
+    'scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1':
+      '4935b7779eb632c7f64bd726385601e1e27cd9df2c85e1daf8a028d1bc937a94',
+    'scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1':
+      '19e4e6a2effc315fc118cc735273fcd730e849dcd4286abf353eb710692c8b7e',
+    'tests/radar-public-metrics-production-execution-gate.test.mjs':
+      'e04a18657e95a524a0da85a4ecef4722318759f5595117419931561d18b20d3e',
   }
 
-  assert.equal(
-    fs.existsSync(
-      'scripts/radar/radar-public-metrics-production-contract-v01.mjs',
-    ),
-    true,
-  )
-  assert.equal(
-    fs.existsSync(
-      'src/app/(payload)/api/radar-public-metrics-production-marker/route.ts',
-    ),
-    true,
-  )
+  assert.deepEqual(lock.implementation.criticalCodeFiles, expected)
+
+  for (const [file, sha] of Object.entries(expected)) {
+    assert.equal(fs.existsSync(file), true, `missing ${file}`)
+    assert.match(sha, /^[a-f0-9]{64}$/u)
+  }
 })

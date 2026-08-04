@@ -80,3 +80,48 @@ executable production import  false
 source database access        false
 production authorization      false
 ```
+
+## Stage B2 — executable gate, still unauthorized
+
+Stage B2 adds the complete production-gate engineering surface:
+
+- the production importer, derived from the already accepted update-only
+  rehearsal contract;
+- exact numeric database-ID PATCH only;
+- the same eight reviewed Metrics fields;
+- `plan -> apply -> verify` closed-world convergence;
+- a fresh backup binding supplied by a separate authorization artifact;
+- writer isolation for production mode;
+- a PostgreSQL advisory lock held for the full operation;
+- an atomic durable apply-control marker that refuses automatic reruns;
+- failure receipts with no automatic retry or rollback;
+- a disposable rehearsal driver that creates a fresh source `pg_dump`, restores
+  it into a uniquely named temporary database, and runs the exact gate in
+  `rehearsal` mode.
+
+The production branch remains unauthorized. The apply-once runner refuses real
+source execution unless all of these are true:
+
+1. it runs from exact merged `main`;
+2. a separate post-merge production authorization artifact is present;
+3. the artifact binds the exact tool HEAD, Candidate SHA, source container,
+   database and fresh backup;
+4. the authorization is no older than 30 minutes;
+5. the operator supplies the exact production confirmation string.
+
+```text
+production importer             present
+apply-once runner               present
+disposable rehearsal driver     present
+fresh backup required           true
+advisory lock required          true
+durable apply-control required  true
+automatic retry                 false
+automatic rollback              false
+production authorization        false
+real source execution           not authorized
+```
+
+The next gate is to execute the disposable production-gate rehearsal and
+independently audit its evidence ZIP. No production execution is allowed before
+that evidence is accepted and this PR is merged.
