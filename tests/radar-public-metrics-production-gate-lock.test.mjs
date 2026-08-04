@@ -16,7 +16,7 @@ test('production gate binds accepted evidence and is ready only for disposable r
   )
   assert.equal(
     lock.stage,
-    'production_gate_final_review_remediation_ready',
+    'production_gate_replacement_rehearsal_schema_remediation_ready',
   )
   assert.equal(
     lock.baseMain,
@@ -87,9 +87,9 @@ test('critical production-gate code is hash-bound', () => {
     'scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1':
       '9ee7f1741722416e94cd3aaad2a797364a63b2bc891e4e47953e7e8cfb7560f2',
     'scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1':
-      '233b2b653cb926b0d620e6c6c0a99cc81bb76939de773e2b5b55ad9dc0c2611b',
+      '8aaf002caacc06bbdfb02c31d99ad3d6f35a6a042746524f0266a49b4d286d47',
     'tests/radar-public-metrics-production-execution-gate.test.mjs':
-      '6533a6fb596c9f47edaa41840c042cc57828ae87e070a324ec87af91ec4fd2c5',
+      '3ee4d376db23ab10692a3979e5e060bdbbd4f79a16602e494c7b86cdfbc6562f',
   }
 
   assert.deepEqual(lock.implementation.criticalCodeFiles, expected)
@@ -143,7 +143,7 @@ test('final repaired rehearsal evidence is independently accepted', () => {
 
   assert.equal(
     lock.stage,
-    'production_gate_final_review_remediation_ready',
+    'production_gate_replacement_rehearsal_schema_remediation_ready',
   )
   assert.equal(
     final.evidenceSha256,
@@ -203,7 +203,7 @@ test('final repaired rehearsal evidence is independently accepted', () => {
 test('final code review remediation is closed and requires replacement rehearsal', () => {
   assert.equal(
     lock.stage,
-    'production_gate_final_review_remediation_ready',
+    'production_gate_replacement_rehearsal_schema_remediation_ready',
   )
   assert.equal(lock.implementation.freshBackupFreshnessRequired, true)
   assert.equal(lock.implementation.freshBackupSourceBindingRequired, true)
@@ -235,6 +235,41 @@ test('final code review remediation is closed and requires replacement rehearsal
   assert.equal(lock.finalCodeReview.markReadyAuthorized, false)
   assert.equal(lock.finalCodeReview.mergeAuthorized, false)
   assert.equal(lock.finalCodeReview.productionWriteAuthorized, false)
+  assert.equal(lock.authorization.productionAuthorization, false)
+  assert.equal(lock.authorization.metricImportAuthorized, false)
+})
+test('failed replacement rehearsal is closed before plan and schema-remediated', () => {
+  const failed = lock.replacementRehearsalFailedAttempt
+
+  assert.equal(
+    lock.stage,
+    'production_gate_replacement_rehearsal_schema_remediation_ready',
+  )
+  assert.equal(failed.attemptedHead, 'ea99394ae6f0d3f96fdfde61445946f3b4e5ed14')
+  assert.equal(
+    failed.freshBackupSha256,
+    '9d934be1a619e086a5ddc1144e173995e839718344a5d0095fb464474ed45516',
+  )
+  assert.equal(
+    failed.rehearsalAuthorizationSha256,
+    'a4bb66c7fb343afaa4ba4cae97c40b22ac1877ba0e0bcc6a97530c221aaa3b69',
+  )
+  assert.equal(failed.databaseIdentityAndInitialStatePassed, true)
+  assert.equal(failed.planStarted, false)
+  assert.equal(failed.applyStarted, false)
+  assert.equal(failed.metricPatch, 0)
+  assert.equal(failed.sourceDatabaseWrite, false)
+  assert.equal(failed.productionAuthorization, false)
+  assert.equal(failed.accepted, false)
+  assert.equal(failed.automaticRetryAllowed, false)
+  assert.equal(
+    lock.implementation.rehearsalAuthorizationFreshBackupBindingRequired,
+    true,
+  )
+  assert.equal(
+    lock.implementation.replacementRehearsalSchemaRemediationRequired,
+    true,
+  )
   assert.equal(lock.authorization.productionAuthorization, false)
   assert.equal(lock.authorization.metricImportAuthorized, false)
 })

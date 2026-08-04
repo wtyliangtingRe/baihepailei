@@ -1,6 +1,6 @@
 {
   "schemaVersion": "radar-public-metrics-production-gate-lock-v01",
-  "stage": "production_gate_final_review_remediation_ready",
+  "stage": "production_gate_replacement_rehearsal_schema_remediation_ready",
   "baseMain": "cba94510c6ed460f821d82179e24d9a61ee28f5c",
   "research": {
     "head": "c2fe7847ee8b60b439f8e92025437937ceff06d5",
@@ -78,8 +78,8 @@
     "criticalCodeFiles": {
       "scripts/radar/run-radar-public-metrics-production-import-v01.mjs": "3abce88f24523f795d933f4faeafb897783a0f49febadc2ea4d5c51e923721a4",
       "scripts/radar/run-radar-public-metrics-production-apply-once-v01.ps1": "9ee7f1741722416e94cd3aaad2a797364a63b2bc891e4e47953e7e8cfb7560f2",
-      "scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1": "233b2b653cb926b0d620e6c6c0a99cc81bb76939de773e2b5b55ad9dc0c2611b",
-      "tests/radar-public-metrics-production-execution-gate.test.mjs": "6533a6fb596c9f47edaa41840c042cc57828ae87e070a324ec87af91ec4fd2c5"
+      "scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1": "8aaf002caacc06bbdfb02c31d99ad3d6f35a6a042746524f0266a49b4d286d47",
+      "tests/radar-public-metrics-production-execution-gate.test.mjs": "3ee4d376db23ab10692a3979e5e060bdbbd4f79a16602e494c7b86cdfbc6562f"
     },
     "exactCurrentDatabaseRequired": true,
     "targetSourceWriteDistinctionRequired": true,
@@ -93,7 +93,9 @@
     "immediateProductionPatchConfirmationRequired": true,
     "writerRestartFailureInspectionRequired": true,
     "finalReviewRemediationRequired": true,
-    "finalReviewRemediationRehearsalRequired": true
+    "finalReviewRemediationRehearsalRequired": true,
+    "rehearsalAuthorizationFreshBackupBindingRequired": true,
+    "replacementRehearsalSchemaRemediationRequired": true
   },
   "authorization": {
     "productionAuthorization": false,
@@ -181,5 +183,22 @@
     "mergeAuthorized": false,
     "productionWriteAuthorized": false,
     "decision": "rerun_final_disposable_rehearsal_after_final_review_remediation"
+  },
+  "replacementRehearsalFailedAttempt": {
+    "attemptedHead": "ea99394ae6f0d3f96fdfde61445946f3b4e5ed14",
+    "attemptedAtLocal": "2026-08-04T14:36:35+08:00",
+    "freshBackupSha256": "9d934be1a619e086a5ddc1144e173995e839718344a5d0095fb464474ed45516",
+    "freshBackupBytes": 37218612,
+    "rehearsalAuthorizationSha256": "a4bb66c7fb343afaa4ba4cae97c40b22ac1877ba0e0bcc6a97530c221aaa3b69",
+    "databaseIdentityAndInitialStatePassed": true,
+    "planStarted": false,
+    "applyStarted": false,
+    "metricPatch": 0,
+    "sourceDatabaseWrite": false,
+    "productionAuthorization": false,
+    "rootCause": "rehearsal_authorization_missing_fresh_backup_source_binding_fields",
+    "accepted": false,
+    "automaticRetryAllowed": false,
+    "decision": "schema_remediation_required_before_new_replacement_rehearsal"
   }
 }

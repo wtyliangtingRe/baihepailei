@@ -258,3 +258,21 @@ test('final rehearsal evidence distinguishes target and source writes', () => {
     assert.equal(rehearsal.includes(required), true, required)
   }
 })
+test('rehearsal authorization carries complete fresh-backup source binding', () => {
+  const rehearsal = fs.readFileSync(
+    'scripts/radar/rehearse-radar-public-metrics-production-gate-v01.ps1',
+    'utf8',
+  )
+
+  for (const required of [
+    '$BackupCreatedAt =',
+    'createdAt = $BackupCreatedAt',
+    'sourceContainerId = $ExpectedSourceContainerId',
+    'sourceImage = $ExpectedSourceImage',
+    'sourceDatabase = $SourceDatabase',
+    'sourceDatabaseUser = $DatabaseUser',
+    'sourceDatabaseWrite = $false',
+  ]) {
+    assert.equal(rehearsal.includes(required), true, required)
+  }
+})

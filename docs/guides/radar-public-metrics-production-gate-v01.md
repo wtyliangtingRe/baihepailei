@@ -222,3 +222,28 @@ The prior final rehearsal remains accepted behavior evidence for its exact old
 head, but it no longer accepts the newly changed importer/runner hashes. PR #338
 remains Draft, all production authorization remains false, and one replacement
 disposable rehearsal plus independent audit is required before Ready for review.
+## Stage E — replacement rehearsal schema closure
+
+The first replacement rehearsal attempt on
+`ea99394ae6f0d3f96fdfde61445946f3b4e5ed14` stopped before `plan`.
+
+The source database identity and restored disposable initial state were exact.
+No Payload application phase started and no metric PATCH occurred.
+
+The failure was a closed schema mismatch: the hardened runner records the
+fresh-backup source binding in its durable apply-control marker, while the
+rehearsal authorization still contained only `path`, `sha256`, and `bytes`.
+
+This remediation makes the rehearsal authorization carry the same complete
+fresh-backup provenance needed by the control marker:
+
+- `createdAt`;
+- source container ID;
+- source image;
+- source database;
+- source database user;
+- explicit `sourceDatabaseWrite: false`.
+
+The failed attempt is not resumable and is not accepted as evidence. A new
+replacement disposable rehearsal is required. Production authorization remains
+closed.

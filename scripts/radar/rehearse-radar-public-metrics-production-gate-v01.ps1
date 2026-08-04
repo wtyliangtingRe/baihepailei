@@ -480,6 +480,8 @@ try {
     $BackupSha = Get-Sha256 -Path $BackupPath
     $BackupBytes =
         (Get-Item -LiteralPath $BackupPath).Length
+    $BackupCreatedAt =
+        [DateTime]::UtcNow.ToString('o')
 
     Write-Json `
         -Path (Join-Path $ReviewDirectory 'fresh-backup-binding.json') `
@@ -490,7 +492,8 @@ try {
             sourceContainerId = $ExpectedSourceContainerId
             sourceImage = $ExpectedSourceImage
             sourceDatabase = $SourceDatabase
-            createdAt = [DateTime]::UtcNow.ToString('o')
+            sourceDatabaseUser = $DatabaseUser
+            createdAt = $BackupCreatedAt
             sourceDatabaseWrite = $false
         })
 
@@ -699,6 +702,12 @@ try {
             path = (Resolve-Path -LiteralPath $BackupPath).Path
             sha256 = $BackupSha
             bytes = $BackupBytes
+            createdAt = $BackupCreatedAt
+            sourceContainerId = $ExpectedSourceContainerId
+            sourceImage = $ExpectedSourceImage
+            sourceDatabase = $SourceDatabase
+            sourceDatabaseUser = $DatabaseUser
+            sourceDatabaseWrite = $false
         }
         productionAuthorization = $false
         automaticRetryAllowed = $false
