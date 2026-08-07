@@ -6,7 +6,7 @@
   "activatedDate": "2026-08-07",
   "activationEpochId": "radar-rating-policy-v0.5-activation-20260807-01",
   "activationRecord": "config/radar-policy-activation-record-v05.json",
-  "activationRecordSha256": "b72e058b1286983eb8ab43f97526b3092b5422c786f965af09c0656190351452",
+  "activationRecordSha256": "c707ed1f093e4c3db92663ef8d72ed376053b88537f72b9da20416732a1ad102",
   "activationStateAuthority": true,
   "componentEmbeddedStatusSemantics": "frozen_approval_provenance_not_runtime_activation_authority",
   "activationCondition": "Satisfied by the shared activation epoch and research-data Activation Amendment 01; research activation merge 6a45eacde0cc31bce34f95da2b6b11624dffe9ad precedes website activation merge; the website final activation PR must be owner-validated at its exact head before merge",
