@@ -78,37 +78,21 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
   const assessmentItem = item as AssessmentItem
   const research = item.researchPreview as Research | undefined
   const runtimeAuthority = assessmentItem.radarAuthority
-  const researchOnly = runtimeAuthority === 'research'
   const exactMachineAuthority = runtimeAuthority === 'published' || runtimeAuthority === 'candidate'
   const controlledRadarAssessment = exactMachineAuthority
     ? assessmentItem.radarAssessment
-    : researchOnly
+    : runtimeAuthority === 'research'
       ? undefined
       : assessmentItem.radarAssessment?.assessedAt
         ? assessmentItem.radarAssessment
         : undefined
-  // Static index Research is retained only as a degraded compatibility fallback.
-  // Exact Research never becomes an AI public grade/range.
-  const researchAssessment: RadarAssessmentMetrics | undefined = !runtimeAuthority && research ? {
-    confidencePercent: research.confidencePercent,
-    evidenceCoveragePercent: research.evidenceCoveragePercent,
-    sourceSummary: research.sourceSummary,
-    sourceCount: research.sourceCount,
-    conclusionMode: research.conclusionMode,
-    fixedGrade: research.fixedGrade,
-    bestGrade: research.bestGrade,
-    likelyGrade: research.likelyGrade,
-    worstGrade: research.worstGrade,
-    unresolvedDimensions: research.unresolvedQuestions,
-    validationIssues: research.validationIssues,
-    requiresHumanReview: research.requiresHumanReview ?? true,
-    recommendedNextQueue: research.recommendedNextQueue,
-    warningTemplateId: research.warningTemplateId,
-    publicTags: research.publicTags,
-  } : undefined
-  const hasAI = Boolean(controlledRadarAssessment || (!runtimeAuthority && researchAssessment))
+  // Research is evidence lineage only. It never supplies a public AI grade/range,
+  // including when the exact database read layer is temporarily unavailable.
+  const researchOnly = runtimeAuthority === 'research'
+    || Boolean(research && !controlledRadarAssessment)
+  const hasAI = Boolean(controlledRadarAssessment)
   const presentation = buildRadarAssessmentPresentation({
-    radarAssessment: controlledRadarAssessment || researchAssessment,
+    radarAssessment: controlledRadarAssessment,
     ratingNotice: researchOnly
       ? 'insufficient_information'
       : assessmentItem.ratingNotice === 'manual_reviewed'
@@ -136,6 +120,7 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
     && humanStatus === 'pending',
   )
   const fallbackRecordedGrade = !runtimeAuthority
+    && !researchOnly
     && !legacyManualAIPlaceholder
     && presentation.conclusionMode === 'fixed_grade'
       ? recordedGrade
@@ -163,7 +148,9 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
   const sources = sourceCount(item, presentation.sourceCount)
   const authorityLabel = runtimeAuthority
     ? authorityLabels[runtimeAuthority] || runtimeAuthority
-    : '静态兼容展示'
+    : researchOnly
+      ? '仅有研究资料（静态降级）'
+      : '静态兼容展示'
   const catalogGradeDisplay = humanGrade
     ? `${humanGrade} 级`
     : runtimeAuthority === 'candidate'
@@ -214,7 +201,7 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
               <span>{aiHeading}</span>
               <h3>{aiSummary || '尚未形成可展示的等级建议'}</h3>
               <p>{researchOnly
-                ? '当前只有与该作品 exact identity 绑定的研究资料；研究建议等级不会自动提升为 Candidate、Published 或固定 AI 等级。'
+                ? '当前只有与该作品身份绑定的研究资料；研究建议等级不会自动提升为 Candidate、Published 或固定 AI 等级。'
                 : bounded
                   ? '资料尚不完整；最可能等级不是固定等级，也不是人工最终结论。'
                   : fixedAIGrade ? '该单等级来自当前规则或 AI 研究整理，仍可由人工证据修正，不等于不可改变的最终结论。'
