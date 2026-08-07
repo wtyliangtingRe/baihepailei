@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "radar-website-policy-activation-record-v0.5",
+  "activationEpochId": "radar-rating-policy-v0.5-activation-20260807-01",
+  "policyId": "radar-rating-policy-v0.5",
+  "status": "active",
+  "activatedDate": "2026-08-07",
+  "activationStateAuthority": "config/radar-policy-status-registry-v05.json",
+  "componentEmbeddedStatusSemantics": "frozen_approval_provenance_not_runtime_activation_authority",
+  "researchAuthority": {
+    "repository": "wtyliangtingRe/baihepailei-research-data",
+    "gateEvidenceMain": "d1e616a11564375dde18d05762f970821af34077",
+    "activationPr": 318,
+    "peerActivationMergeRequiredBeforeWebsiteActivationMerge": true,
+    "activationRecordPath": "policies/radar-policy-activation-record-v0.5.json",
+    "activationEpochId": "radar-rating-policy-v0.5-activation-20260807-01"
+  },
+  "websiteEvidence": {
+    "runtimeAndUiMain": "75e080f47fcbad01d5bd8a3c93077164d8971b78",
+    "runtimeSelectionPr": 344,
+    "runtimeValidatedHead": "f2351dc887372baa7b50aacb964ed4f499c2c2ba",
+    "hostedWorkflowRun": 31176920162,
+    "hostedWorkflowExecutedTestOrBuildSteps": false,
+    "hostedInfrastructureFailure": "billing_or_spending_limit",
+    "runtimeLocalFallback": {
+      "ownerControlled": true,
+      "exactHeadShaBound": true,
+      "isolatedWorktree": true,
+      "focusedTests": "8/8_pass",
+      "typescriptNoEmit": "pass",
+      "productionBuild": "pass",
+      "gitDiffCheck": "pass"
+    },
+    "finalActivationPrValidationRecord": "pull_request_body_exact_head_required_before_merge"
+  },
+  "safety": {
+    "databaseMigrationAuthorized": false,
+    "payloadWriteAuthorized": false,
+    "postgresqlWriteAuthorized": false,
+    "productionAuthorization": false,
+    "historicalReleaseRewriteAuthorized": false,
+    "existingPublicRatingsRerateAuthorized": false
+  }
+}
