@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "radar-policy-status-registry-v0.5",
+  "registryId": "radar-policy-status-registry-v0.5",
+  "status": "approved_active_on_dual_repository_merge",
+  "approvedDate": "2026-08-07",
+  "activeOnActivation": [
+    "radar-website-policy-bundle-v0.5",
+    "radar-public-tag-contract-v0.5"
+  ],
+  "historicalSupersededForNewDisplay": [
+    "radar-rating-policy-v0.2-draft",
+    "radar-rating-policy-v0.4-draft",
+    "radar-public-tag-contract-v01"
+  ],
+  "partiallySuperseded": {
+    "radar-internal-processing-policy-v03": [
+      "D-UNCLEAR display semantics",
+      "old public warning mapping"
+    ]
+  },
+  "historicalFilesRemain": true,
+  "productionAuthorization": false
+}
