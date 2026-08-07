@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const policy = await import('../src/lib/radar/ratingPolicy.ts')
+const warnings = await import('../src/lib/radar/warningTemplates.ts')
 
 const active = new Set(Object.keys(policy.radarClassDefinitions))
 const retired = new Set(policy.radarRetiredClassIds)
@@ -23,6 +24,15 @@ test('v0.5 runtime class registry excludes retired classes', () => {
   assert.equal(active.has('D-UNCLEAR'), false)
   assert.equal(active.has('D-TS'), false)
   assert.equal(active.has('S-CREATOR-SAFE'), false)
+})
+
+test('warning templates reference only active v0.5 rating classes', () => {
+  for (const template of warnings.warningTemplates) {
+    for (const classId of template.relatedRatingClasses ?? []) {
+      assert.equal(active.has(classId), true, `${template.id}:${classId}`)
+      assert.equal(retired.has(classId), false, `${template.id}:${classId}`)
+    }
+  }
 })
 
 test('v0.5 runtime class registry contains new and human-only special classes', () => {
