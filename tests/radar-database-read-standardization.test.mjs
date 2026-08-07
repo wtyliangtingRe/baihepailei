@@ -40,6 +40,36 @@ test('Published authority wins without erasing a coexisting Candidate', () => {
   assert.equal(selected.snapshot.candidate.compatibilityGrade, 'B')
 })
 
+test('legacy Published with all four equal grades is fixed_grade under v0.5 fallback', () => {
+  const selected = standardization.selectRadarAuthority({ identity, published: published('A') })
+  assert.equal(selected.authority, 'published')
+  assert.equal(selected.gradeState.mode, 'fixed_grade')
+  assert.equal(selected.gradeState.grade, 'A')
+  assert.equal(selected.gradeState.range, null)
+  assert.equal(selected.gradeState.reason, 'legacy_published_all_four_equal')
+})
+
+test('unresolved legacy Published keeps authority and does not yield to Candidate', () => {
+  const malformed = published('D-UNCLEAR')
+  malformed.rating.bestGrade = 'D'
+  malformed.rating.likelyGrade = 'D'
+  malformed.rating.worstGrade = 'D'
+
+  const selected = standardization.selectRadarAuthority({
+    identity,
+    published: malformed,
+    candidate: candidate('A'),
+  })
+
+  assert.equal(selected.authority, 'published')
+  assert.equal(selected.pending, false)
+  assert.equal(selected.gradeState.valid, false)
+  assert.equal(selected.gradeState.grade, null)
+  assert.equal(selected.gradeState.rawGrade, 'D-UNCLEAR')
+  assert.equal(selected.gradeState.reason, 'legacy_published_unresolved_do_not_claim_fixed_grade')
+  assert.equal(selected.snapshot.candidate.compatibilityGrade, 'A')
+})
+
 test('Candidate remains pending and preserves Research as a separate lineage', () => {
   const research = { ...exact, recordStatus: 'current', proposedLikelyGrade: 'C' }
   const snapshot = {
