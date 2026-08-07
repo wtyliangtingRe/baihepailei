@@ -15,7 +15,31 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
 
 export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
   await db.execute(sql`
-   ALTER TABLE "radar_public" ALTER COLUMN "conclusion_mode" SET DATA TYPE text;
+   DO $$
+   BEGIN
+     IF EXISTS (
+       SELECT 1
+       FROM "radar_public"
+       WHERE "conclusion_mode" IN ('labels_only', 'blocked')
+          OR "compatibility_grade" IS NULL
+     ) THEN
+       RAISE EXCEPTION 'Cannot roll back Radar v0.5 persistence: radar_public contains v0.5-only modes or NULL compatibility_grade values.';
+     END IF;
+
+     IF EXISTS (
+       SELECT 1
+       FROM "radar_public_ratings"
+       WHERE "conclusion_mode" IN ('labels_only', 'blocked')
+          OR "core_grade" IS NULL
+          OR "best_grade" IS NULL
+          OR "likely_grade" IS NULL
+          OR "worst_grade" IS NULL
+     ) THEN
+       RAISE EXCEPTION 'Cannot roll back Radar v0.5 persistence: radar_public_ratings contains v0.5-only modes or NULL grade values.';
+     END IF;
+   END $$;
+
+  ALTER TABLE "radar_public" ALTER COLUMN "conclusion_mode" SET DATA TYPE text;
   DROP TYPE "public"."enum_radar_public_conclusion_mode";
   CREATE TYPE "public"."enum_radar_public_conclusion_mode" AS ENUM('fixed_grade', 'bounded_range');
   ALTER TABLE "radar_public" ALTER COLUMN "conclusion_mode" SET DATA TYPE "public"."enum_radar_public_conclusion_mode" USING "conclusion_mode"::"public"."enum_radar_public_conclusion_mode";
