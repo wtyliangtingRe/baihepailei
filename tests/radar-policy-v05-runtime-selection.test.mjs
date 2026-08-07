@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import test from 'node:test'
 
@@ -70,11 +71,39 @@ test('setting profiles are separate from core-grade classes', () => {
   assert.equal(policy.radarPolicySafety.settingProfilesDoNotAutomaticallyChangeCoreGrade, true)
 })
 
-test('policy activation status remains pending until every gate passes', () => {
+test('policy activation status is hash-bound active while production remains closed', () => {
   const status = JSON.parse(fs.readFileSync('config/radar-policy-status-registry-v05.json', 'utf8'))
   const websiteBundle = JSON.parse(fs.readFileSync('config/radar-policy-bundle-v05.json', 'utf8'))
-  assert.equal(status.status, 'approved_pending_activation_gates')
+
+  assert.equal(status.status, 'active')
+  assert.equal(status.activationEpochId, 'radar-rating-policy-v0.5-activation-20260807-01')
+  assert.equal(status.activationStateAuthority, true)
+  assert.equal(
+    status.componentEmbeddedStatusSemantics,
+    'frozen_approval_provenance_not_runtime_activation_authority',
+  )
+
+  const activationBytes = fs.readFileSync(status.activationRecord)
+  const activationSha = createHash('sha256').update(activationBytes).digest('hex')
+  assert.equal(activationSha, status.activationRecordSha256)
+
+  const activation = JSON.parse(activationBytes.toString('utf8'))
+  assert.equal(activation.status, 'active')
+  assert.equal(activation.activationEpochId, status.activationEpochId)
+  assert.equal(
+    activation.researchAuthority.gateEvidenceMain,
+    'd1e616a11564375dde18d05762f970821af34077',
+  )
+  assert.equal(activation.researchAuthority.activationPr, 318)
+  assert.equal(activation.researchAuthority.peerActivationMergeRequiredBeforeWebsiteActivationMerge, true)
+  assert.equal(
+    activation.websiteEvidence.finalActivationPrValidationRecord,
+    'pull_request_body_exact_head_required_before_merge',
+  )
+
+  for (const value of Object.values(activation.safety)) assert.equal(value, false)
   assert.equal(status.productionAuthorization, false)
+
   assert.equal(websiteBundle.status, 'approved_pending_activation_gates')
   assert.equal(websiteBundle.databaseMigrationAuthorized, false)
   assert.equal(websiteBundle.payloadWriteAuthorized, false)
