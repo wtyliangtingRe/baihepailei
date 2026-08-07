@@ -175,6 +175,18 @@ test('a generated v0.5 Payload migration, when present, is paired with its schem
   for (const token of ['radar_public', 'radar_public_ratings', 'compatibility_grade', 'conclusion_mode', 'labels_only', 'blocked']) {
     assert.match(migrationSource, new RegExp(token, 'u'))
   }
+  for (const token of [
+    'DO $$',
+    'RAISE EXCEPTION',
+    '"conclusion_mode" IN (\'labels_only\', \'blocked\')',
+    '"compatibility_grade" IS NULL',
+    '"core_grade" IS NULL',
+    '"best_grade" IS NULL',
+    '"likely_grade" IS NULL',
+    '"worst_grade" IS NULL',
+  ]) {
+    assert.ok(migrationSource.includes(token), `missing fail-closed rollback guard token: ${token}`)
+  }
   for (const token of ['public.radar_public', 'public.radar_public_ratings', 'public.radar_public_records', 'public.works']) {
     assert.match(migrationSnapshot, new RegExp(token.replace('.', '\\.'), 'u'))
   }
