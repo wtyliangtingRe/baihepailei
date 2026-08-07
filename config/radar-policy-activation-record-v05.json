@@ -10,7 +10,8 @@
     "repository": "wtyliangtingRe/baihepailei-research-data",
     "gateEvidenceMain": "d1e616a11564375dde18d05762f970821af34077",
     "activationPr": 318,
-    "peerActivationMergeRequiredBeforeWebsiteActivationMerge": true,
+    "activationMerge": "6a45eacde0cc31bce34f95da2b6b11624dffe9ad",
+    "peerActivationMergedBeforeWebsiteActivation": true,
     "activationRecordPath": "policies/radar-policy-activation-record-v0.5.json",
     "activationEpochId": "radar-rating-policy-v0.5-activation-20260807-01"
   },
