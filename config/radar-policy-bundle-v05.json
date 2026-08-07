@@ -2,9 +2,9 @@
   "schemaVersion": "radar-website-policy-bundle-v0.5",
   "bundleId": "radar-website-policy-bundle-v0.5",
   "policyId": "radar-rating-policy-v0.5",
-  "status": "approved_active_on_dual_repository_merge",
+  "status": "approved_pending_activation_gates",
   "approvedDate": "2026-08-07",
-  "activationCondition": "Both repository v0.5 PRs merged to main",
+  "activationCondition": "All activation gates in the research-data docs/RADAR_RATING_POLICY_V0.5.md Section 13 must be satisfied; dual-repository merge is necessary but not sufficient",
   "humanReadableContract": "docs/RADAR_RATING_POLICY_V0.5_WEBSITE_CONTRACT.md",
   "researchAuthority": {
     "repository": "wtyliangtingRe/baihepailei-research-data",
