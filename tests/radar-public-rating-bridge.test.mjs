@@ -102,7 +102,32 @@ test('public ratings feed the existing Works AI panel without a second detail ce
 
   assert.match(
     bridge,
+    /normalizeRadarConclusion/,
+  )
+
+  assert.match(
+    bridge,
+    /suggestedGrade:\s*\n\s*conclusion\.fixedGrade \|\| undefined/,
+  )
+
+  assert.doesNotMatch(
+    bridge,
     /suggestedGrade: coreGrade/,
+  )
+
+  assert.doesNotMatch(
+    bridge,
+    /normalizedGrade\(rating\.coreGrade\)[\s\S]*\|\|[\s\S]*normalizedGrade\(rating\.likelyGrade\)/,
+  )
+
+  assert.match(
+    bridge,
+    /conclusionMode: conclusion\.conclusionMode/,
+  )
+
+  assert.match(
+    bridge,
+    /publicTags: conclusion\.publicTags/,
   )
 
   assert.match(
@@ -128,6 +153,11 @@ test('public ratings feed the existing Works AI panel without a second detail ce
   assert.match(
     trustCard,
     /AI 建议与规则分析/,
+  )
+
+  assert.match(
+    trustCard,
+    /AI 暂定评级范围/,
   )
 
   assert.match(

@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "readOnly": true,
+  "total": 8,
+  "modeCounts": {
+    "fixed_grade": 1,
+    "bounded_range": 2,
+    "labels_only": 4,
+    "unscanned": 0,
+    "blocked": 1
+  },
+  "fixedRanges": 2,
+  "trueBoundedRanges": 2,
+  "malformedRanges": 2,
+  "missingFields": 3,
+  "coreLikelyMismatch": 2,
+  "dUnclearBoundedRange": 1,
+  "aiPendingTagMissing": 5,
+  "warningTemplateAliasUsage": 1,
+  "pageNoticeAliasUsage": 1,
+  "warningTemplateAliases": {
+    "ai_synthesized_pending_review": 1
+  },
+  "pageNoticeAliases": {
+    "ai-synthesized-pending-review": 1
+  },
+  "findings": [
+    {
+      "id": "work:bounded-cde",
+      "conclusionMode": "bounded_range",
+      "validationIssues": [],
+      "pendingTagMissing": true
+    },
+    {
+      "id": "work:malformed",
+      "conclusionMode": "labels_only",
+      "validationIssues": [
+        "range_order_invalid"
+      ],
+      "pendingTagMissing": true
+    },
+    {
+      "id": "work:core-likely-mismatch",
+      "conclusionMode": "labels_only",
+      "validationIssues": [
+        "fixed_grade_conflict"
+      ],
+      "pendingTagMissing": false
+    },
+    {
+      "id": "work:missing-range",
+      "conclusionMode": "labels_only",
+      "validationIssues": [
+        "missing_range_grade"
+      ],
+      "pendingTagMissing": true
+    },
+    {
+      "id": "work:labels-only",
+      "conclusionMode": "labels_only",
+      "validationIssues": [],
+      "pendingTagMissing": true
+    },
+    {
+      "id": "work:blocked",
+      "conclusionMode": "blocked",
+      "validationIssues": [],
+      "pendingTagMissing": true
+    }
+  ]
+}

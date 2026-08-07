@@ -2,6 +2,11 @@ import configPromise from '@payload-config'
 import { getPayload, type Where } from 'payload'
 
 import type { RadarAssessmentMetrics } from '@/lib/radar/assessmentPresentation'
+import {
+  normalizeRadarConclusion,
+  type RadarConclusionMode,
+  type RadarPublicTagContract,
+} from '@/lib/radar/conclusionNormalizer.mjs'
 
 import type { RadarResearchPreview } from './detail-index'
 
@@ -10,7 +15,10 @@ type ValueRow = {
 }
 
 type PublicTagHint = {
+  key?: string | null
+  group?: string | null
   value?: string | null
+  warningTemplateId?: string | null
 }
 
 type PublicEvidence = {
@@ -24,6 +32,7 @@ type PublicRecord = {
   publicationKey?: string | null
   publicState?: string | null
   researchStatus?: string | null
+  pageNotice?: string | null
   evidence?: PublicEvidence[] | null
   recordStatus?: string | null
 }
@@ -51,6 +60,7 @@ type PublicRating = {
   unresolvedDimensions?: ValueRow[] | null
   classificationRule?: string | null
   publicTagHints?: PublicTagHint[] | null
+  publicWarningTemplateIds?: ValueRow[] | null
   humanReview?: {
     status?: string | null
     blocksAnalysis?: boolean | null
@@ -61,16 +71,27 @@ type PublicRating = {
   recordStatus?: string | null
 }
 
+type ExtendedResearchPreview = RadarResearchPreview & {
+  conclusionMode?: RadarConclusionMode
+  fixedGrade?: string
+  evidenceCoveragePercent?: number
+  unresolvedQuestions?: string[]
+  requiresHumanReview?: boolean
+  validationIssues?: string[]
+  warningTemplateId?: string
+  publicTags?: RadarPublicTagContract[]
+}
+
 export type RadarPublicRatingBridge = {
   publicationKey: string
   ratingId: string | number
   radarAssessment: RadarAssessmentMetrics
-  researchPreview: RadarResearchPreview
+  researchPreview: ExtendedResearchPreview
 }
 
 type BridgeableWorkItem = {
   radarAssessment?: RadarAssessmentMetrics
-  researchPreview?: RadarResearchPreview
+  researchPreview?: ExtendedResearchPreview
 }
 
 function clean(value: unknown) {
@@ -230,9 +251,9 @@ function bridgeResearchStatus(
 }
 
 function mergeResearchPreview(
-  current?: RadarResearchPreview,
-  incoming?: RadarResearchPreview,
-): RadarResearchPreview | undefined {
+  current?: ExtendedResearchPreview,
+  incoming?: ExtendedResearchPreview,
+): ExtendedResearchPreview | undefined {
   if (!current) return incoming
   if (!incoming) return current
 
@@ -258,6 +279,10 @@ function mergeResearchPreview(
 
   return {
     ...current,
+    conclusionMode:
+      incoming.conclusionMode || current.conclusionMode,
+    fixedGrade:
+      incoming.fixedGrade || current.fixedGrade,
     researchStatus:
       incoming.researchStatus || current.researchStatus,
     riskSignals: unique([
@@ -288,16 +313,37 @@ function mergeResearchPreview(
             currentUnresolved || 0,
             incomingUnresolved || 0,
           ),
+    unresolvedQuestions: unique([
+      ...(current.unresolvedQuestions || []),
+      ...(incoming.unresolvedQuestions || []),
+    ]),
     confidencePercent:
       typeof current.confidencePercent === 'number'
         ? current.confidencePercent
-        : undefined,
+        : incoming.confidencePercent,
+    evidenceCoveragePercent:
+      typeof current.evidenceCoveragePercent === 'number'
+        ? current.evidenceCoveragePercent
+        : incoming.evidenceCoveragePercent,
     recommendedNextAction:
       incoming.recommendedNextAction
       || current.recommendedNextAction,
     recommendedNextQueue:
       incoming.recommendedNextQueue
       || current.recommendedNextQueue,
+    requiresHumanReview:
+      current.requiresHumanReview === true
+      || incoming.requiresHumanReview === true,
+    validationIssues: unique([
+      ...(current.validationIssues || []),
+      ...(incoming.validationIssues || []),
+    ]),
+    warningTemplateId:
+      incoming.warningTemplateId || current.warningTemplateId,
+    publicTags:
+      incoming.publicTags?.length
+        ? incoming.publicTags
+        : current.publicTags,
     importedAt:
       incoming.importedAt || current.importedAt,
   }
@@ -317,12 +363,6 @@ export function mapPublicRatingToWorksAI(
     clean(record?.publicationKey) === publicationKey
       ? record
       : undefined
-
-  const coreGrade =
-    normalizedGrade(rating.coreGrade)
-    || normalizedGrade(rating.likelyGrade)
-
-  if (!coreGrade) return null
 
   const matchedClasses = unique([
     clean(rating.classificationRule),
@@ -352,11 +392,45 @@ export function mapPublicRatingToWorksAI(
     || rating.humanReview?.blocksAnalysis === true
     || rating.humanReview?.blocksPublication === true
 
+  const bridgedEvidenceStatus = evidenceStatus(
+    rating,
+    usableRecord,
+  )
+  const researchStatus = bridgeResearchStatus(
+    usableRecord,
+    unresolved.length,
+  )
+  const recommendedNextQueue =
+    researchStatus === 'needs_more_research'
+      ? 'more_research'
+      : ''
+
+  const conclusion = normalizeRadarConclusion({
+    coreGrade: rating.coreGrade,
+    bestGrade: rating.bestGrade,
+    likelyGrade: rating.likelyGrade,
+    worstGrade: rating.worstGrade,
+    classificationRule: rating.classificationRule,
+    matchedClasses,
+    unresolvedDimensions: unresolved,
+    requiresHumanReview,
+    recommendedNextQueue,
+    evidenceStatus: bridgedEvidenceStatus,
+    publicState: usableRecord?.publicState,
+    researchStatus: usableRecord?.researchStatus,
+    pageNotice: usableRecord?.pageNotice,
+    publicTagHints: rating.publicTagHints,
+    publicWarningTemplateIds:
+      rating.publicWarningTemplateIds,
+  })
+
+  const ruleGrade =
+    normalizedGrade(rating.coreGrade)
+    || conclusion.likelyGrade
+    || conclusion.fixedGrade
+
   const radarAssessment: RadarAssessmentMetrics = {
-    evidenceStatus: evidenceStatus(
-      rating,
-      usableRecord,
-    ),
+    evidenceStatus: bridgedEvidenceStatus,
     confidencePercent: normalizedPercent(
       rating.confidencePercent,
     ),
@@ -366,17 +440,32 @@ export function mapPublicRatingToWorksAI(
     sourceSummary,
     sourceCount,
     policyVersion,
-    suggestedGrade: coreGrade,
+    conclusionMode: conclusion.conclusionMode,
+    suggestedGrade:
+      conclusion.fixedGrade || undefined,
+    fixedGrade:
+      conclusion.fixedGrade || undefined,
+    bestGrade:
+      conclusion.bestGrade || undefined,
+    likelyGrade:
+      conclusion.likelyGrade || undefined,
+    worstGrade:
+      conclusion.worstGrade || undefined,
     decisiveRuleCode:
       clean(rating.classificationRule)
       || matchedClasses[0],
     decisiveRuleReason: sourceSummary,
     matchedRules: matchedClasses.map((code) => ({
       code,
-      grade: coreGrade,
+      grade: ruleGrade || undefined,
     })),
     contradictions: [],
+    unresolvedDimensions: unresolved,
+    validationIssues: conclusion.validationIssues,
     requiresHumanReview,
+    recommendedNextQueue,
+    warningTemplateId: conclusion.warningTemplateId,
+    publicTags: conclusion.publicTags,
     assessedAt,
   }
 
@@ -387,32 +476,45 @@ export function mapPublicRatingToWorksAI(
       .filter(Boolean),
   ])
 
-  const researchStatus = bridgeResearchStatus(
-    usableRecord,
-    unresolved.length,
-  )
-
-  const researchPreview: RadarResearchPreview = {
+  const researchPreview: ExtendedResearchPreview = {
+    conclusionMode: conclusion.conclusionMode,
+    fixedGrade:
+      conclusion.fixedGrade || undefined,
     researchStatus,
     riskSignals,
     likelyGrade:
-      normalizedGrade(rating.likelyGrade)
-      || coreGrade,
+      conclusion.likelyGrade
+      || conclusion.fixedGrade
+      || undefined,
     bestGrade:
-      normalizedGrade(rating.bestGrade)
-      || coreGrade,
+      conclusion.bestGrade
+      || conclusion.fixedGrade
+      || undefined,
     worstGrade:
-      normalizedGrade(rating.worstGrade)
-      || coreGrade,
+      conclusion.worstGrade
+      || conclusion.fixedGrade
+      || undefined,
     sourceSummary,
     sourceCount,
     unresolvedQuestionCount: unresolved.length,
+    unresolvedQuestions: unresolved,
+    confidencePercent: normalizedPercent(
+      rating.confidencePercent,
+    ),
+    evidenceCoveragePercent: normalizedPercent(
+      rating.evidenceCoveragePercent,
+    ),
+    requiresHumanReview,
+    validationIssues: conclusion.validationIssues,
+    warningTemplateId: conclusion.warningTemplateId,
+    publicTags: conclusion.publicTags,
     recommendedNextAction:
       researchStatus === 'needs_more_research'
         ? '继续补充研究资料'
         : requiresHumanReview
           ? '等待人工复核'
           : '机器评级已通过人工复核',
+    recommendedNextQueue,
     importedAt: assessedAt,
   }
 
