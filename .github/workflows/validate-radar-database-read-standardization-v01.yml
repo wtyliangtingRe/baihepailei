@@ -1,0 +1,32 @@
+name: Validate Radar database read standardization v01
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-radar-database-read-standardization-v01.yml'
+      - 'src/lib/radar/readStandardization.ts'
+      - 'src/lib/radar/effectiveWorkGrade.ts'
+      - 'src/app/(frontend)/_lib/radar-read-repository.ts'
+      - 'docs/RADAR_DATABASE_READ_STANDARDIZATION_V01.md'
+      - 'tests/radar-database-read-standardization.test.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-read-standardization:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run authority and exact-identity regression tests
+        run: node --experimental-strip-types --test tests/radar-database-read-standardization.test.mjs
+      - name: Check diff whitespace
+        run: git diff --check origin/main...HEAD
