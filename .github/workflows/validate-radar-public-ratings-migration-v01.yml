@@ -4,14 +4,19 @@ on:
   pull_request:
     paths:
       - "src/collections/RadarPublicRatings.ts"
+      - "src/collections/RadarPublicConclusions.ts"
+      - "src/lib/radar/conclusionNormalizer.mjs"
       - "payload.config.ts"
       - ".env.example"
       - "src/migrations/**"
       - "config/radar-public-ratings-schema-v01.json"
+      - "scripts/radar/lib/unified-rating-release-plan-v01.mjs"
+      - "scripts/radar/run-unified-rating-incremental-production-import-9988-v01.mjs"
       - "scripts/radar/prepare-radar-public-ratings-migration-v01.ps1"
       - "tests/radar-public-ratings-schema.test.mjs"
       - "tests/radar-public-ratings-migration-preparation.test.mjs"
       - "tests/radar-unified-rating-release-plan-v01.test.mjs"
+      - "tests/radar-v05-persistence-standardization.test.mjs"
       - "docs/guides/radar-public-ratings-migration-v01.md"
       - ".github/workflows/validate-radar-public-ratings-migration-v01.yml"
   workflow_dispatch:
@@ -46,7 +51,8 @@ jobs:
           node --test \
             tests/radar-unified-rating-release-plan-v01.test.mjs \
             tests/radar-public-ratings-schema.test.mjs \
-            tests/radar-public-ratings-migration-preparation.test.mjs
+            tests/radar-public-ratings-migration-preparation.test.mjs \
+            tests/radar-v05-persistence-standardization.test.mjs
       - name: Enforce preparation-only boundary
         shell: bash
         run: |
