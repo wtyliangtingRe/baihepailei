@@ -1,7 +1,8 @@
 {
   "schemaVersion": "radar-public-tag-contract-v0.5",
   "policyId": "radar-rating-policy-v0.5",
-  "status": "approved_active_on_dual_repository_merge",
+  "status": "approved_pending_activation_gates",
+  "activationCondition": "Active only when radar-rating-policy-v0.5 satisfies all activation gates in the research-data docs/RADAR_RATING_POLICY_V0.5.md Section 13",
   "tags": {
     "accelerated-radar-matching-conflict": {"group": "加速排雷", "value": "匹配冲突", "warningTemplateId": "identity-conflict", "changesCoreGradeByItself": false},
     "accelerated-radar-setting-ts": {"group": "加速排雷", "value": "TS / 性别转换设定", "warningTemplateId": "setting-profile-ts", "changesCoreGradeByItself": false},
