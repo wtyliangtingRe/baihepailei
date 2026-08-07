@@ -136,6 +136,10 @@ export function normalizeRadarConclusion(input = {}) {
   const completeRange = Boolean(bestGrade && likelyGrade && worstGrade)
   const legalRange = completeRange && isLegalRadarRange(bestGrade, likelyGrade, worstGrade)
   const allEqual = legalRange && bestGrade === likelyGrade && likelyGrade === worstGrade
+  const explicitMachineX = suggestedGrade === 'X'
+    || bestGrade === 'X'
+    || likelyGrade === 'X'
+    || worstGrade === 'X'
   const classificationLabels = values([
     input.classificationRule,
     ...(input.matchedClasses || []),
@@ -154,7 +158,10 @@ export function normalizeRadarConclusion(input = {}) {
   } else if (explicitMode === 'labels_only') {
     conclusionMode = 'labels_only'
   } else if (explicitMode === 'bounded_range') {
-    if (legalRange && !allEqual) {
+    if (explicitMachineX) {
+      conclusionMode = 'labels_only'
+      validationIssues.push('machine_x_not_allowed')
+    } else if (legalRange && !allEqual) {
       conclusionMode = 'bounded_range'
       if (suggestedGrade && suggestedGrade !== likelyGrade) validationIssues.push('core_likely_mismatch')
     } else {
@@ -162,7 +169,10 @@ export function normalizeRadarConclusion(input = {}) {
       validationIssues.push(completeRange ? 'bounded_range_not_distinct' : 'invalid_bounded_range')
     }
   } else if (explicitMode === 'fixed_grade') {
-    if (!suggestedGrade || rangeFieldCount !== 3 || !completeRange) {
+    if (explicitMachineX) {
+      conclusionMode = 'labels_only'
+      validationIssues.push('machine_x_not_allowed')
+    } else if (!suggestedGrade || rangeFieldCount !== 3 || !completeRange) {
       conclusionMode = 'labels_only'
       validationIssues.push(!suggestedGrade ? 'invalid_fixed_grade' : 'incomplete_fixed_grade_range')
     } else if (!legalRange || !allEqual || suggestedGrade !== likelyGrade) {

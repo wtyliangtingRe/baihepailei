@@ -62,6 +62,16 @@ test('explicit blocked never promotes a valid grade', () => {
   assert.deepEqual([x.conclusionMode, x.fixedGrade, x.display], ['blocked', '', '已阻塞'])
 })
 
+test('explicit machine X is never rendered as a grade or range', () => {
+  const fixed = normalize({ conclusionMode: 'fixed_grade', coreGrade: 'X', bestGrade: 'X', likelyGrade: 'X', worstGrade: 'X' })
+  const bounded = normalize({ conclusionMode: 'bounded_range', coreGrade: 'F', bestGrade: 'E', likelyGrade: 'F', worstGrade: 'X' })
+  assert.equal(fixed.conclusionMode, 'labels_only')
+  assert.equal(fixed.fixedGrade, '')
+  assert.ok(fixed.validationIssues.includes('machine_x_not_allowed'))
+  assert.equal(bounded.conclusionMode, 'labels_only')
+  assert.ok(bounded.validationIssues.includes('machine_x_not_allowed'))
+})
+
 test('explicit malformed bounded range degrades to labels_only', () => {
   const x = normalize({ conclusionMode: 'bounded_range', bestGrade: 'B', likelyGrade: 'B', worstGrade: 'B' })
   assert.equal(x.conclusionMode, 'labels_only')

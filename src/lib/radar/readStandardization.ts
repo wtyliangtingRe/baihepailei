@@ -167,6 +167,24 @@ function emptyGradeState(reason: string): RadarGradeState {
   }
 }
 
+function invalidExplicitState(
+  mode: 'fixed_grade' | 'bounded_range',
+  rawMode: string,
+  rawGrade: string,
+  reason: string,
+  range: RadarGradeRange | null = null,
+): RadarGradeState {
+  return {
+    mode,
+    grade: null,
+    range,
+    valid: false,
+    rawMode,
+    rawGrade,
+    reason,
+  }
+}
+
 export function normalizeRadarConclusion(
   input?: RadarConclusionInput | null,
 ): RadarGradeState {
@@ -185,17 +203,21 @@ export function normalizeRadarConclusion(
   }
 
   if (mode === 'bounded_range') {
+    const compatibilityGrade = normalizeRadarGrade(rawGrade)
     const range = normalizeRadarGradeRange(input)
     if (!range) {
-      return {
-        mode,
-        grade: null,
-        range: null,
-        valid: false,
-        rawMode,
-        rawGrade,
-        reason: 'invalid_bounded_range',
-      }
+      return invalidExplicitState(mode, rawMode, rawGrade, 'invalid_bounded_range')
+    }
+    if (
+      compatibilityGrade === 'X'
+      || range.bestGrade === 'X'
+      || range.likelyGrade === 'X'
+      || range.worstGrade === 'X'
+    ) {
+      return invalidExplicitState(mode, rawMode, rawGrade, 'machine_x_not_allowed', range)
+    }
+    if (!compatibilityGrade || compatibilityGrade !== range.likelyGrade) {
+      return invalidExplicitState(mode, rawMode, rawGrade, 'bounded_core_likely_mismatch', range)
     }
 
     return {
@@ -210,14 +232,27 @@ export function normalizeRadarConclusion(
 
   if (mode === 'fixed_grade') {
     const grade = normalizeRadarGrade(rawGrade)
+    const range = normalizeRadarGradeRange(input)
+    if (grade === 'X' || range?.bestGrade === 'X' || range?.likelyGrade === 'X' || range?.worstGrade === 'X') {
+      return invalidExplicitState(mode, rawMode, rawGrade, 'machine_x_not_allowed', range)
+    }
+    if (!grade || !range) {
+      return invalidExplicitState(mode, rawMode, rawGrade, 'invalid_fixed_grade_contract', range)
+    }
+    const allEqual = grade === range.bestGrade
+      && grade === range.likelyGrade
+      && grade === range.worstGrade
+    if (!allEqual) {
+      return invalidExplicitState(mode, rawMode, rawGrade, 'fixed_grade_conflict', range)
+    }
+
     return {
       mode,
       grade,
       range: null,
-      valid: Boolean(grade),
+      valid: true,
       rawMode,
       rawGrade,
-      reason: grade ? undefined : 'invalid_fixed_grade',
     }
   }
 
