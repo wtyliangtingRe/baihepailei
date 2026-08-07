@@ -1,0 +1,40 @@
+name: Validate Radar v0.5 runtime policy selection
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/lib/radar/ratingPolicy.ts'
+      - 'tests/radar-policy-v05-runtime-selection.test.mjs'
+      - 'config/radar-policy-status-registry-v05.json'
+      - '.github/workflows/validate-radar-policy-v0.5-runtime-selection.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-radar-policy-v05-runtime-selection:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run runtime policy selection regression
+        run: node --experimental-strip-types --test tests/radar-policy-v05-runtime-selection.test.mjs
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: TypeScript
+        run: pnpm exec tsc --noEmit
+
+      - name: Production build
+        env:
+          PAYLOAD_SECRET: ci-readonly-radar-v05-policy-selection
+          DATABASE_URI: postgresql://readonly:readonly@127.0.0.1:5432/not-used
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+        run: pnpm build
+
+      - name: Check whitespace
+        run: git diff --check origin/main...HEAD
