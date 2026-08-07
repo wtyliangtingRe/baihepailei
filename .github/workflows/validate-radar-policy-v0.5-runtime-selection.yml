@@ -7,6 +7,8 @@ on:
       - 'src/lib/radar/ratingPolicy.ts'
       - 'tests/radar-policy-v05-runtime-selection.test.mjs'
       - 'config/radar-policy-status-registry-v05.json'
+      - 'config/radar-policy-activation-record-v05.json'
+      - 'docs/RADAR_RATING_POLICY_V0.5_WEBSITE_CONTRACT.md'
       - '.github/workflows/validate-radar-policy-v0.5-runtime-selection.yml'
   workflow_dispatch:
 

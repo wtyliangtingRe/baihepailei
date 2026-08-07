@@ -1,9 +1,15 @@
 {
   "schemaVersion": "radar-policy-status-registry-v0.5",
   "registryId": "radar-policy-status-registry-v0.5",
-  "status": "approved_pending_activation_gates",
+  "status": "active",
   "approvedDate": "2026-08-07",
-  "activationCondition": "All activation gates in the research-data docs/RADAR_RATING_POLICY_V0.5.md Section 13 must be satisfied; dual-repository merge is necessary but not sufficient",
+  "activatedDate": "2026-08-07",
+  "activationEpochId": "radar-rating-policy-v0.5-activation-20260807-01",
+  "activationRecord": "config/radar-policy-activation-record-v05.json",
+  "activationRecordSha256": "c707ed1f093e4c3db92663ef8d72ed376053b88537f72b9da20416732a1ad102",
+  "activationStateAuthority": true,
+  "componentEmbeddedStatusSemantics": "frozen_approval_provenance_not_runtime_activation_authority",
+  "activationCondition": "Satisfied by the shared activation epoch and research-data Activation Amendment 01; research activation merge 6a45eacde0cc31bce34f95da2b6b11624dffe9ad precedes website activation merge; the website final activation PR must be owner-validated at its exact head before merge",
   "activeOnActivation": [
     "radar-website-policy-bundle-v0.5",
     "radar-public-tag-contract-v0.5"
