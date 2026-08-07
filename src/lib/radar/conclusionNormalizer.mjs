@@ -17,6 +17,7 @@ const pendingAliases = new Set([
   'ai-pending-review',
   'accelerated-radar-ai-review',
 ])
+const explicitModes = new Set(['fixed_grade', 'bounded_range', 'labels_only', 'blocked'])
 
 function clean(value) {
   return String(value ?? '').trim()
@@ -142,12 +143,35 @@ export function normalizeRadarConclusion(input = {}) {
   const riskSignals = values(input.riskSignals)
   const unresolved = values(input.unresolvedDimensions || input.unresolvedQuestions)
   const validationIssues = []
+  const requestedMode = clean(input.conclusionMode).toLowerCase()
+  const explicitMode = explicitModes.has(requestedMode) ? requestedMode : ''
 
   let conclusionMode = 'unscanned'
   let fixedGrade = ''
 
-  if (isBlocked(input)) {
+  if (explicitMode === 'blocked' || isBlocked(input)) {
     conclusionMode = 'blocked'
+  } else if (explicitMode === 'labels_only') {
+    conclusionMode = 'labels_only'
+  } else if (explicitMode === 'bounded_range') {
+    if (legalRange && !allEqual) {
+      conclusionMode = 'bounded_range'
+      if (suggestedGrade && suggestedGrade !== likelyGrade) validationIssues.push('core_likely_mismatch')
+    } else {
+      conclusionMode = 'labels_only'
+      validationIssues.push(completeRange ? 'bounded_range_not_distinct' : 'invalid_bounded_range')
+    }
+  } else if (explicitMode === 'fixed_grade') {
+    if (!suggestedGrade) {
+      conclusionMode = 'labels_only'
+      validationIssues.push('invalid_fixed_grade')
+    } else if (completeRange && (!legalRange || !allEqual || suggestedGrade !== likelyGrade)) {
+      conclusionMode = 'labels_only'
+      validationIssues.push('fixed_grade_conflict')
+    } else {
+      conclusionMode = 'fixed_grade'
+      fixedGrade = suggestedGrade
+    }
   } else if (rangeFieldCount > 0 && !completeRange) {
     conclusionMode = 'labels_only'
     validationIssues.push('missing_range_grade')
@@ -159,9 +183,7 @@ export function normalizeRadarConclusion(input = {}) {
     validationIssues.push('range_order_invalid')
   } else if (legalRange && !allEqual) {
     conclusionMode = 'bounded_range'
-    if (suggestedGrade && suggestedGrade !== likelyGrade) {
-      validationIssues.push('core_likely_mismatch')
-    }
+    if (suggestedGrade && suggestedGrade !== likelyGrade) validationIssues.push('core_likely_mismatch')
   } else if (allEqual) {
     if (suggestedGrade && suggestedGrade !== likelyGrade) {
       conclusionMode = 'labels_only'

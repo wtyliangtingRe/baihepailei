@@ -2,6 +2,7 @@ export type RadarConclusionMode = 'fixed_grade' | 'bounded_range' | 'labels_only
 export type RadarPublicTagContract = { key: string; group: string; value: string; warningTemplateId: string }
 export type RadarPublicTagInput = { key?: string | null; group?: string | null; value?: string | null; warningTemplateId?: string | null }
 export type RadarConclusionInput = Record<string, unknown> & {
+  conclusionMode?: RadarConclusionMode | string | null
   suggestedGrade?: string | null
   coreGrade?: string | null
   fixedGrade?: string | null

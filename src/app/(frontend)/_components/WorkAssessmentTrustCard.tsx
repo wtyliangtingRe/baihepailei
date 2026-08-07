@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 import { buildRadarAssessmentPresentation, type RadarAssessmentMetrics } from '@/lib/radar/assessmentPresentation'
 import { radarGradeLabels, type RadarGrade } from '@/lib/radar/ratingPolicy'
+import type { RadarAuthority } from '@/lib/radar/readStandardization'
 import type { RadarConclusionMode, RadarPublicTagContract } from '@/lib/radar/conclusionNormalizer.mjs'
 
 import type { DetailItem, RadarResearchPreview } from '../_lib/detail-index'
@@ -9,6 +10,8 @@ import StewardshipNoticeBlock from './StewardshipNoticeBlock'
 
 type AssessmentItem = DetailItem & {
   radarAssessment?: RadarAssessmentMetrics
+  radarAuthority?: RadarAuthority
+  radarAuthorityPending?: boolean
   ratingNotice?: string
   reviewStatus?: string
   evidenceStrength?: string
@@ -29,6 +32,13 @@ const grades = new Set<RadarGrade>(['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X'])
 const riskLabels: Record<string, string> = {
   male_involvement: '男性介入', ntr: 'NTR', futa: '扶她', otokonoko: '男娘 / 伪娘',
   ts: 'TS / 性别转换', prior_male_relationship: '既往男性关系', abo: 'ABO', other: '其他风险',
+}
+const authorityLabels: Partial<Record<RadarAuthority, string>> = {
+  published: '已发布 AI 评级',
+  candidate: 'AI 候选结论（待发布）',
+  research: '仅有研究资料',
+  legacy: '旧兼容投影',
+  unassessed: '尚未评估',
 }
 
 function normalizeGrade(value?: string | null): RadarGrade | '' {
@@ -67,8 +77,19 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
 
   const assessmentItem = item as AssessmentItem
   const research = item.researchPreview as Research | undefined
-  const controlledRadarAssessment = assessmentItem.radarAssessment?.assessedAt ? assessmentItem.radarAssessment : undefined
-  const researchAssessment: RadarAssessmentMetrics | undefined = research ? {
+  const runtimeAuthority = assessmentItem.radarAuthority
+  const researchOnly = runtimeAuthority === 'research'
+  const exactMachineAuthority = runtimeAuthority === 'published' || runtimeAuthority === 'candidate'
+  const controlledRadarAssessment = exactMachineAuthority
+    ? assessmentItem.radarAssessment
+    : researchOnly
+      ? undefined
+      : assessmentItem.radarAssessment?.assessedAt
+        ? assessmentItem.radarAssessment
+        : undefined
+  // Static index Research is retained only as a degraded compatibility fallback.
+  // Exact Research never becomes an AI public grade/range.
+  const researchAssessment: RadarAssessmentMetrics | undefined = !runtimeAuthority && research ? {
     confidencePercent: research.confidencePercent,
     evidenceCoveragePercent: research.evidenceCoveragePercent,
     sourceSummary: research.sourceSummary,
@@ -85,12 +106,14 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
     warningTemplateId: research.warningTemplateId,
     publicTags: research.publicTags,
   } : undefined
-  const hasAI = Boolean(controlledRadarAssessment || research)
+  const hasAI = Boolean(controlledRadarAssessment || (!runtimeAuthority && researchAssessment))
   const presentation = buildRadarAssessmentPresentation({
     radarAssessment: controlledRadarAssessment || researchAssessment,
-    ratingNotice: assessmentItem.ratingNotice === 'manual_reviewed'
-      ? 'manual_reviewed'
-      : hasAI ? assessmentItem.ratingNotice || 'ai_synthesized_pending_review' : 'none',
+    ratingNotice: researchOnly
+      ? 'insufficient_information'
+      : assessmentItem.ratingNotice === 'manual_reviewed'
+        ? 'manual_reviewed'
+        : hasAI ? assessmentItem.ratingNotice || 'ai_synthesized_pending_review' : 'none',
     reviewStatus: assessmentItem.reviewStatus,
     evidenceStrength: assessmentItem.evidenceStrength,
   })
@@ -102,21 +125,56 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
   const legacyHumanGrade = assessmentItem.ratingNotice === 'manual_reviewed' || assessmentItem.reviewStatus === 'reviewed' ? recordedGrade : ''
   const humanGrade = explicitHumanGrade || legacyHumanGrade
   const fixedAIGrade = normalizeGrade(presentation.fixedGrade)
+  const publishedLikelyProjection = runtimeAuthority === 'published'
+    ? normalizeGrade(presentation.likelyGrade)
+    : ''
   const legacyManualAIPlaceholder = Boolean(
-    assessmentItem.radarAssessment && !assessmentItem.radarAssessment.assessedAt
-    && assessmentItem.ratingNotice === 'ai_synthesized_pending_review' && humanStatus === 'pending',
+    !runtimeAuthority
+    && assessmentItem.radarAssessment
+    && !assessmentItem.radarAssessment.assessedAt
+    && assessmentItem.ratingNotice === 'ai_synthesized_pending_review'
+    && humanStatus === 'pending',
   )
-  const fallbackRecordedGrade = legacyManualAIPlaceholder || presentation.conclusionMode !== 'fixed_grade' ? '' : recordedGrade
-  const catalogGrade = humanGrade || fixedAIGrade || fallbackRecordedGrade
+  const fallbackRecordedGrade = !runtimeAuthority
+    && !legacyManualAIPlaceholder
+    && presentation.conclusionMode === 'fixed_grade'
+      ? recordedGrade
+      : ''
+  const publishedCatalogGrade = runtimeAuthority === 'published'
+    ? fixedAIGrade || publishedLikelyProjection
+    : ''
+  const catalogGrade = humanGrade || publishedCatalogGrade || fallbackRecordedGrade
   const bounded = presentation.conclusionMode === 'bounded_range'
-  const aiHeading = bounded ? 'AI 暂定评级范围' : presentation.conclusionMode === 'fixed_grade' ? 'AI 暂定等级' : presentation.conclusionTitle
-  const aiSummary = bounded
-    ? `${presentation.conclusionDisplay} · ${presentation.likelyLabel}`
-    : fixedAIGrade ? `${fixedAIGrade} 级` : presentation.conclusionDisplay
+  const aiHeading = researchOnly
+    ? '仅有研究资料'
+    : bounded
+      ? 'AI 暂定评级范围'
+      : presentation.conclusionMode === 'fixed_grade'
+        ? runtimeAuthority === 'published' ? '固定 AI 等级' : 'AI 暂定等级'
+        : presentation.conclusionTitle
+  const aiSummary = researchOnly
+    ? '尚未形成公开 AI 评级'
+    : bounded
+      ? `${presentation.conclusionDisplay} · ${presentation.likelyLabel}`
+      : fixedAIGrade ? `${fixedAIGrade} 级` : presentation.conclusionDisplay
   const acceleratedTag = presentation.publicTags.find((tag) => tag.key === 'accelerated-radar-ai-review')
   const unresolved = research?.unresolvedQuestions || presentation.unresolvedDimensions
   const risks = (research?.riskSignals || []).map((value) => riskLabels[value] || value)
   const sources = sourceCount(item, presentation.sourceCount)
+  const authorityLabel = runtimeAuthority
+    ? authorityLabels[runtimeAuthority] || runtimeAuthority
+    : '静态兼容展示'
+  const catalogGradeDisplay = humanGrade
+    ? `${humanGrade} 级`
+    : runtimeAuthority === 'candidate'
+      ? '待发布，不进入目录'
+      : researchOnly
+        ? '尚未形成公开评级'
+        : publishedLikelyProjection && !fixedAIGrade
+          ? `${publishedLikelyProjection} 级（范围兼容投影）`
+          : catalogGrade
+            ? `${catalogGrade} 级`
+            : '尚未填入'
 
   return <>
     {stewardship}
@@ -133,7 +191,8 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
 
       <dl className="work-assessment-statuses work-assessment-statuses-primary">
         <div><dt>人工轨道状态</dt><dd>{humanStatus === 'reviewed' ? '已记录' : humanStatus === 'disputed' ? '有争议' : '未提交'}</dd></div>
-        <div><dt>目录采用等级</dt><dd>{catalogGrade ? `${catalogGrade} 级` : '尚未填入'}</dd></div>
+        <div><dt>目录采用等级</dt><dd>{catalogGradeDisplay}</dd></div>
+        <div><dt>Radar 数据层级</dt><dd>{authorityLabel}</dd></div>
         <div><dt>页面提示</dt><dd data-tone={presentation.pageNoticeTone}>{humanGrade ? '人工参考 + AI 双轨' : presentation.reviewLabel}</dd></div>
         <div><dt>证据强度</dt><dd data-tone={presentation.evidenceTone}>{presentation.evidenceLabel}</dd></div>
       </dl>
@@ -150,21 +209,23 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
         <summary><span>AI 建议与规则分析</span><strong>{aiSummary || '等待 AI Radar 管线'}</strong><small>独立展示，不覆盖人工评级</small></summary>
         <div className="work-assessment-ai-body">
           <header className="work-assessment-ai-heading">
-            <div className="work-assessment-ai-grade" data-grade={fixedAIGrade || presentation.likelyGrade || 'unknown'}>{bounded ? presentation.conclusionDisplay : fixedAIGrade || '?'}</div>
+            <div className="work-assessment-ai-grade" data-grade={fixedAIGrade || presentation.likelyGrade || 'unknown'}>{researchOnly ? '?' : bounded ? presentation.conclusionDisplay : fixedAIGrade || '?'}</div>
             <div>
               <span>{aiHeading}</span>
               <h3>{aiSummary || '尚未形成可展示的等级建议'}</h3>
-              <p>{bounded
-                ? '资料尚不完整；最可能等级不是固定等级，也不是人工最终结论。'
-                : fixedAIGrade ? '该单等级来自当前规则或 AI 研究整理，仍可由人工证据修正，不等于不可改变的最终结论。'
-                  : '当前只有规则、标签或研究状态线索，不能展示为固定等级。'}</p>
+              <p>{researchOnly
+                ? '当前只有与该作品 exact identity 绑定的研究资料；研究建议等级不会自动提升为 Candidate、Published 或固定 AI 等级。'
+                : bounded
+                  ? '资料尚不完整；最可能等级不是固定等级，也不是人工最终结论。'
+                  : fixedAIGrade ? '该单等级来自当前规则或 AI 研究整理，仍可由人工证据修正，不等于不可改变的最终结论。'
+                    : '当前只有规则、标签或研究状态线索，不能展示为固定等级。'}</p>
             </div>
           </header>
 
           {acceleratedTag ? <p className="work-assessment-pending-grade-note"><strong>{acceleratedTag.group} · {acceleratedTag.value}</strong>：资料覆盖、待查问题或人工复核条件仍未完成。</p> : null}
           <dl className="work-assessment-statuses">
-            <div><dt>结论模式</dt><dd>{presentation.conclusionMode}</dd></div>
-            <div><dt>需要人工复核</dt><dd>{presentation.requiresHumanReview ? '是' : '否'}</dd></div>
+            <div><dt>结论模式</dt><dd>{researchOnly ? 'research_only' : presentation.conclusionMode}</dd></div>
+            <div><dt>需要人工复核</dt><dd>{researchOnly || presentation.requiresHumanReview ? '是' : '否'}</dd></div>
             <div><dt>AI 证据状态</dt><dd data-tone={presentation.evidenceTone}>{presentation.evidenceLabel}</dd></div>
             <div><dt>可追溯来源</dt><dd>{sources === null ? '尚未统计' : `${sources} 条`}</dd></div>
           </dl>
@@ -172,7 +233,7 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
           {research ? <section className="work-assessment-research-preview" aria-label="AI 研究档案 · 资料摘要">
             <span>AI 研究档案 · 资料摘要</span>
             <h3>{research.recommendedNextAction || '等待进一步资料或人工复核'}</h3>
-            <p>汇总资料覆盖、未解决问题、已知风险与来源，不再重复展示第二个等级。</p>
+            <p>汇总资料覆盖、未解决问题、已知风险与来源；Research 提议等级只作为研究线索，不会在这里重复展示成第二个公开评级。</p>
             <dl>
               <div><dt>研究置信度</dt><dd>{typeof research.confidencePercent === 'number' ? `${Math.round(research.confidencePercent)}%` : '尚未计算'}</dd></div>
               <div><dt>资料覆盖度</dt><dd>{typeof research.evidenceCoveragePercent === 'number' ? `${Math.round(research.evidenceCoveragePercent)}%` : '尚未计算'}</dd></div>

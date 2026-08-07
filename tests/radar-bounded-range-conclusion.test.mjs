@@ -23,7 +23,23 @@ test('bounded C/D/E never becomes fixed D', () => {
   assert.deepEqual([x.conclusionMode, x.fixedGrade, x.suggestedGrade, x.display, x.likelyLabel], ['bounded_range', '', '', 'C ～ E', '最可能 D'])
 })
 
-test('malformed range is labels_only', () => {
+test('explicit labels_only never promotes a valid grade', () => {
+  const x = normalize({ conclusionMode: 'labels_only', coreGrade: 'A' })
+  assert.deepEqual([x.conclusionMode, x.fixedGrade, x.suggestedGrade], ['labels_only', '', ''])
+})
+
+test('explicit blocked never promotes a valid grade', () => {
+  const x = normalize({ conclusionMode: 'blocked', coreGrade: 'A' })
+  assert.deepEqual([x.conclusionMode, x.fixedGrade, x.display], ['blocked', '', '已阻塞'])
+})
+
+test('explicit malformed bounded range degrades to labels_only', () => {
+  const x = normalize({ conclusionMode: 'bounded_range', bestGrade: 'B', likelyGrade: 'B', worstGrade: 'B' })
+  assert.equal(x.conclusionMode, 'labels_only')
+  assert.ok(x.validationIssues.includes('bounded_range_not_distinct'))
+})
+
+test('malformed inferred range is labels_only', () => {
   const x = normalize({ bestGrade: 'C', likelyGrade: 'E', worstGrade: 'D' })
   assert.equal(x.conclusionMode, 'labels_only')
   assert.deepEqual(x.validationIssues, ['range_order_invalid'])
@@ -59,13 +75,14 @@ test('fixture audit covers requested buckets', () => {
 test('bridge/UI preserve human priority and split fixed from bounded', () => {
   const bridge = read('src/app/(frontend)/_lib/radar-public-rating-bridge.ts')
   const card = read('src/app/(frontend)/_components/WorkAssessmentTrustCard.tsx')
-  assert.match(bridge, /suggestedGrade: conclusion\.fixedGrade \|\| undefined/u)
-  assert.doesNotMatch(bridge, /coreGrade\)[\s\S]*\|\|[\s\S]*likelyGrade/u)
+  assert.match(bridge, /withAuthorityGradeState/u)
   assert.doesNotMatch(bridge, /payload\.(create|update|delete)/u)
-  assert.match(card, /const catalogGrade = humanGrade \|\| fixedAIGrade \|\| fallbackRecordedGrade/u)
+  assert.match(card, /const catalogGrade = humanGrade \|\| publishedCatalogGrade \|\| fallbackRecordedGrade/u)
   assert.match(card, /AI 暂定评级范围/u)
   assert.match(card, /最可能等级不是固定等级/u)
-  assert.match(card, /AI 暂定等级/u)
+  assert.match(card, /固定 AI 等级/u)
+  assert.match(card, /待发布，不进入目录/u)
+  assert.match(card, /Research 提议等级只作为研究线索/u)
   assert.match(card, /补充资料 \/ 提交纠错/u)
 })
 

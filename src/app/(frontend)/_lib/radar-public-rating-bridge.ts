@@ -1,13 +1,18 @@
-import configPromise from '@payload-config'
-import { getPayload, type Where } from 'payload'
-
 import type { RadarAssessmentMetrics } from '@/lib/radar/assessmentPresentation'
 import {
-  normalizeRadarConclusion,
-  type RadarConclusionMode,
-  type RadarPublicTagContract,
+  selectRadarAuthority,
+  type RadarAuthority,
+  type RadarGradeState,
+} from '@/lib/radar/readStandardization'
+import type {
+  RadarConclusionMode,
+  RadarPublicTagContract,
 } from '@/lib/radar/conclusionNormalizer.mjs'
 
+import {
+  readRadarSnapshotForWork,
+  type RadarSourceDocument,
+} from './radar-read-repository'
 import type { RadarResearchPreview } from './detail-index'
 
 type ValueRow = {
@@ -28,172 +33,123 @@ type PublicEvidence = {
   exactIdentityBound?: boolean | null
 }
 
-type PublicRecord = {
-  publicationKey?: string | null
-  publicState?: string | null
-  researchStatus?: string | null
-  pageNotice?: string | null
-  evidence?: PublicEvidence[] | null
-  recordStatus?: string | null
-}
-
-type PublicRating = {
-  id: string | number
-  publicationKey?: string | null
-  coreGrade?: string | null
-  bestGrade?: string | null
-  likelyGrade?: string | null
-  worstGrade?: string | null
-  confidence?: string | null
-  confidencePercent?: number | null
-  evidenceCoveragePercent?: number | null
-  metricsPolicyVersion?: string | null
-  sourceMetricsPolicyVersion?: string | null
-  relationshipEvidenceState?: string | null
-  metricsSourceReleaseId?: string | null
-  metricsCalculationBasisSha256?: string | null
-  requiresMetricReview?: boolean | null
-  matchedClasses?: ValueRow[] | null
-  factRefs?: ValueRow[] | null
-  evidenceRefs?: ValueRow[] | null
-  reasoningSummary?: string | null
-  unresolvedDimensions?: ValueRow[] | null
-  classificationRule?: string | null
-  publicTagHints?: PublicTagHint[] | null
-  publicWarningTemplateIds?: ValueRow[] | null
-  humanReview?: {
-    status?: string | null
-    blocksAnalysis?: boolean | null
-    blocksPublication?: boolean | null
-  } | null
-  sourcePolicyVersion?: string | null
-  importedAt?: string | null
-  recordStatus?: string | null
-}
-
 type ExtendedResearchPreview = RadarResearchPreview & {
-  conclusionMode?: RadarConclusionMode
-  fixedGrade?: string
   evidenceCoveragePercent?: number
   unresolvedQuestions?: string[]
   requiresHumanReview?: boolean
   validationIssues?: string[]
-  warningTemplateId?: string
-  publicTags?: RadarPublicTagContract[]
 }
 
 export type RadarPublicRatingBridge = {
-  publicationKey: string
-  ratingId: string | number
-  radarAssessment: RadarAssessmentMetrics
-  researchPreview: ExtendedResearchPreview
+  authority: RadarAuthority
+  pending: boolean
+  publicationKey?: string
+  ratingId?: string | number
+  radarAssessment?: RadarAssessmentMetrics
+  researchPreview?: ExtendedResearchPreview
+  ratingNotice?: string
+  evidenceStrength?: string
 }
 
 type BridgeableWorkItem = {
   radarAssessment?: RadarAssessmentMetrics
   researchPreview?: ExtendedResearchPreview
+  ratingNotice?: string
+  evidenceStrength?: string
 }
 
 function clean(value: unknown) {
-  return String(value || '').trim()
-}
-
-function normalizedGrade(value: unknown) {
-  const grade = clean(value).toUpperCase()
-
-  if (
-    !['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X'].includes(
-      grade,
-    )
-  ) {
-    return ''
-  }
-
-  return grade
+  return String(value ?? '').trim()
 }
 
 function normalizedPercent(value: unknown) {
   if (
     typeof value !== 'number'
-    || !Number.isInteger(value)
+    || !Number.isFinite(value)
     || value < 0
     || value > 100
   ) {
     return undefined
   }
 
-  return value
+  return Math.round(value)
 }
 
-function rowValues(rows?: ValueRow[] | null) {
-  return (rows || [])
-    .map((row) => clean(row?.value))
+function normalizedNonNegativeNumber(value: unknown) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return undefined
+  return Math.round(value)
+}
+
+function arrayOf(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : []
+}
+
+function objectOf(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {}
+}
+
+function rowValues(value: unknown) {
+  return arrayOf(value)
+    .map((row) => clean((row as ValueRow)?.value ?? row))
     .filter(Boolean)
 }
 
 function unique(values: string[]) {
-  return [
-    ...new Set(
-      values
-        .map(clean)
-        .filter(Boolean),
-    ),
-  ]
+  return [...new Set(values.map(clean).filter(Boolean))]
+}
+
+function publicTags(value: unknown): RadarPublicTagContract[] {
+  return arrayOf(value)
+    .map((raw) => raw as PublicTagHint)
+    .map((tag) => ({
+      key: clean(tag.key),
+      group: clean(tag.group),
+      value: clean(tag.value),
+      warningTemplateId: clean(tag.warningTemplateId),
+    }))
+    .filter((tag) => tag.key || tag.group || tag.value)
 }
 
 function relevantEvidence(
-  rating: PublicRating,
-  record?: PublicRecord,
+  rating: RadarSourceDocument,
+  record?: RadarSourceDocument | null,
 ) {
-  const evidence = (record?.evidence || []).filter(
-    (item) => item?.exactIdentityBound !== false,
-  )
+  const evidence = arrayOf(record?.evidence)
+    .map((item) => item as PublicEvidence)
+    .filter((item) => item?.exactIdentityBound !== false)
 
   const refs = new Set(rowValues(rating.evidenceRefs))
-
   if (refs.size === 0) return evidence
 
-  return evidence.filter((item) =>
-    refs.has(clean(item?.sourceRef)),
-  )
+  return evidence.filter((item) => refs.has(clean(item?.sourceRef)))
 }
 
 function sourceReferenceCount(
-  rating: PublicRating,
-  record?: PublicRecord,
+  rating: RadarSourceDocument,
+  record?: RadarSourceDocument | null,
 ) {
   const evidence = relevantEvidence(rating, record)
-
   if (evidence.length > 0) {
-    return unique(
-      evidence.map((item) => clean(item?.sourceRef)),
-    ).length
+    return unique(evidence.map((item) => clean(item?.sourceRef))).length
   }
-
   return unique(rowValues(rating.evidenceRefs)).length
 }
 
 function evidenceStatus(
-  rating: PublicRating,
-  record?: PublicRecord,
+  rating: RadarSourceDocument,
+  record?: RadarSourceDocument | null,
 ) {
-  if (!record) return 'unknown'
+  const publicState = clean(record?.publicState)
+  const researchStatus = clean(record?.researchStatus)
 
-  const publicState = clean(record.publicState)
-  const researchStatus = clean(record.researchStatus)
-
-  if (
-    publicState === 'needs_more_research'
-    || researchStatus === 'needs_more_research'
-  ) {
+  if (publicState === 'needs_more_research' || researchStatus === 'needs_more_research') {
     return 'insufficient_evidence'
   }
 
   const evidence = relevantEvidence(rating, record)
-
-  if (
-    evidence.some((item) => clean(item?.tier) === 'A')
-  ) {
+  if (evidence.some((item) => clean(item?.tier) === 'A')) {
     return 'primary_material_confirmed'
   }
 
@@ -201,329 +157,162 @@ function evidenceStatus(
     ['B', 'C'].includes(clean(item?.tier)),
   ).length
 
-  if (secondaryCount >= 2) {
-    return 'multiple_secondary_supported'
-  }
-
-  if (secondaryCount === 1) {
-    return 'single_secondary_supported'
-  }
-
-  return evidence.length > 0
-    ? 'insufficient_evidence'
-    : 'unknown'
+  if (secondaryCount >= 2) return 'multiple_secondary_supported'
+  if (secondaryCount === 1) return 'single_secondary_supported'
+  return evidence.length > 0 ? 'insufficient_evidence' : 'unknown'
 }
 
-function bridgeResearchStatus(
-  record: PublicRecord | undefined,
-  unresolvedCount: number,
-) {
-  if (!record) {
-    return unresolvedCount > 0 ? 'partial' : 'unknown'
-  }
-
-  const publicState = clean(record.publicState)
-  const researchStatus = clean(record.researchStatus)
-
-  if (
-    publicState === 'needs_more_research'
-    || researchStatus === 'needs_more_research'
-  ) {
-    return 'needs_more_research'
-  }
-
-  if (
-    publicState === 'partial'
-    || researchStatus === 'partially_verified'
-    || unresolvedCount > 0
-  ) {
-    return 'partial'
-  }
-
-  if (
-    publicState === 'verified'
-    || researchStatus === 'ready_for_publication'
-  ) {
-    return 'resolved'
-  }
-
-  return 'unknown'
+function normalizedMode(state: RadarGradeState): RadarConclusionMode {
+  return state.mode === 'legacy' ? 'labels_only' : state.mode
 }
 
-function mergeResearchPreview(
-  current?: ExtendedResearchPreview,
-  incoming?: ExtendedResearchPreview,
-): ExtendedResearchPreview | undefined {
-  if (!current) return incoming
-  if (!incoming) return current
-
-  const currentSourceCount =
-    typeof current.sourceCount === 'number'
-      ? current.sourceCount
-      : null
-
-  const incomingSourceCount =
-    typeof incoming.sourceCount === 'number'
-      ? incoming.sourceCount
-      : null
-
-  const currentUnresolved =
-    typeof current.unresolvedQuestionCount === 'number'
-      ? current.unresolvedQuestionCount
-      : null
-
-  const incomingUnresolved =
-    typeof incoming.unresolvedQuestionCount === 'number'
-      ? incoming.unresolvedQuestionCount
-      : null
+function withAuthorityGradeState(
+  base: RadarAssessmentMetrics,
+  state: RadarGradeState,
+  pending: boolean,
+): RadarAssessmentMetrics {
+  const mode = normalizedMode(state)
+  const validationIssues = unique([
+    ...(base.validationIssues || []),
+    !state.valid ? clean(state.reason) : '',
+  ])
 
   return {
-    ...current,
-    conclusionMode:
-      incoming.conclusionMode || current.conclusionMode,
-    fixedGrade:
-      incoming.fixedGrade || current.fixedGrade,
-    researchStatus:
-      incoming.researchStatus || current.researchStatus,
-    riskSignals: unique([
-      ...(current.riskSignals || []),
-      ...(incoming.riskSignals || []),
-    ]),
-    likelyGrade:
-      incoming.likelyGrade || current.likelyGrade,
-    bestGrade:
-      incoming.bestGrade || current.bestGrade,
-    worstGrade:
-      incoming.worstGrade || current.worstGrade,
-    sourceSummary:
-      incoming.sourceSummary || current.sourceSummary,
-    sourceCount:
-      currentSourceCount === null
-      && incomingSourceCount === null
-        ? undefined
-        : Math.max(
-            currentSourceCount || 0,
-            incomingSourceCount || 0,
-          ),
-    unresolvedQuestionCount:
-      currentUnresolved === null
-      && incomingUnresolved === null
-        ? undefined
-        : Math.max(
-            currentUnresolved || 0,
-            incomingUnresolved || 0,
-          ),
-    unresolvedQuestions: unique([
-      ...(current.unresolvedQuestions || []),
-      ...(incoming.unresolvedQuestions || []),
-    ]),
-    confidencePercent:
-      typeof current.confidencePercent === 'number'
-        ? current.confidencePercent
-        : incoming.confidencePercent,
-    evidenceCoveragePercent:
-      typeof current.evidenceCoveragePercent === 'number'
-        ? current.evidenceCoveragePercent
-        : incoming.evidenceCoveragePercent,
-    recommendedNextAction:
-      incoming.recommendedNextAction
-      || current.recommendedNextAction,
-    recommendedNextQueue:
-      incoming.recommendedNextQueue
-      || current.recommendedNextQueue,
+    ...base,
+    conclusionMode: mode,
+    suggestedGrade: mode === 'fixed_grade' ? state.grade : undefined,
+    fixedGrade: mode === 'fixed_grade' ? state.grade : undefined,
+    bestGrade: mode === 'bounded_range' ? state.range?.bestGrade : undefined,
+    likelyGrade: mode === 'bounded_range' ? state.range?.likelyGrade : undefined,
+    worstGrade: mode === 'bounded_range' ? state.range?.worstGrade : undefined,
+    validationIssues,
     requiresHumanReview:
-      current.requiresHumanReview === true
-      || incoming.requiresHumanReview === true,
-    validationIssues: unique([
-      ...(current.validationIssues || []),
-      ...(incoming.validationIssues || []),
-    ]),
-    warningTemplateId:
-      incoming.warningTemplateId || current.warningTemplateId,
-    publicTags:
-      incoming.publicTags?.length
-        ? incoming.publicTags
-        : current.publicTags,
-    importedAt:
-      incoming.importedAt || current.importedAt,
+      base.requiresHumanReview === true
+      || pending
+      || !state.valid,
   }
 }
 
-export function mapPublicRatingToWorksAI(
-  rating: PublicRating,
-  record?: PublicRecord,
-): RadarPublicRatingBridge | null {
-  const publicationKey = clean(rating.publicationKey)
-
-  if (!publicationKey.startsWith('work:')) {
-    return null
-  }
-
-  const usableRecord =
-    clean(record?.publicationKey) === publicationKey
-      ? record
-      : undefined
-
+function publishedAssessment(
+  rating: RadarSourceDocument,
+  record: RadarSourceDocument | null,
+  state: RadarGradeState,
+): RadarAssessmentMetrics {
   const matchedClasses = unique([
     clean(rating.classificationRule),
     ...rowValues(rating.matchedClasses),
   ])
-
-  const unresolved = unique(
-    rowValues(rating.unresolvedDimensions),
-  )
-
-  const sourceCount = sourceReferenceCount(
-    rating,
-    usableRecord,
-  )
-  const sourceSummary = clean(rating.reasoningSummary)
-  const policyVersion =
-    clean(rating.metricsPolicyVersion)
-    || clean(rating.sourcePolicyVersion)
-  const assessedAt = clean(rating.importedAt)
-
-  const humanReviewStatus = clean(
-    rating.humanReview?.status,
-  )
-
+  const unresolved = unique(rowValues(rating.unresolvedDimensions))
+  const humanReview = objectOf(rating.humanReview)
+  const humanReviewStatus = clean(humanReview.status)
   const requiresHumanReview =
     humanReviewStatus !== 'reviewed'
-    || rating.humanReview?.blocksAnalysis === true
-    || rating.humanReview?.blocksPublication === true
+    || humanReview.blocksAnalysis === true
+    || humanReview.blocksPublication === true
 
-  const bridgedEvidenceStatus = evidenceStatus(
-    rating,
-    usableRecord,
-  )
-  const researchStatus = bridgeResearchStatus(
-    usableRecord,
-    unresolved.length,
-  )
-  const recommendedNextQueue =
-    researchStatus === 'needs_more_research'
-      ? 'more_research'
-      : ''
-
-  const conclusion = normalizeRadarConclusion({
-    coreGrade: rating.coreGrade,
-    bestGrade: rating.bestGrade,
-    likelyGrade: rating.likelyGrade,
-    worstGrade: rating.worstGrade,
-    classificationRule: rating.classificationRule,
-    matchedClasses,
-    unresolvedDimensions: unresolved,
-    requiresHumanReview,
-    recommendedNextQueue,
-    evidenceStatus: bridgedEvidenceStatus,
-    publicState: usableRecord?.publicState,
-    researchStatus: usableRecord?.researchStatus,
-    pageNotice: usableRecord?.pageNotice,
-    publicTagHints: rating.publicTagHints,
-    publicWarningTemplateIds:
-      rating.publicWarningTemplateIds,
-  })
-
-  const ruleGrade =
-    normalizedGrade(rating.coreGrade)
-    || conclusion.likelyGrade
-    || conclusion.fixedGrade
-
-  const radarAssessment: RadarAssessmentMetrics = {
-    evidenceStatus: bridgedEvidenceStatus,
-    confidencePercent: normalizedPercent(
-      rating.confidencePercent,
-    ),
-    evidenceCoveragePercent: normalizedPercent(
-      rating.evidenceCoveragePercent,
-    ),
-    sourceSummary,
-    sourceCount,
-    policyVersion,
-    conclusionMode: conclusion.conclusionMode,
-    suggestedGrade:
-      conclusion.fixedGrade || undefined,
-    fixedGrade:
-      conclusion.fixedGrade || undefined,
-    bestGrade:
-      conclusion.bestGrade || undefined,
-    likelyGrade:
-      conclusion.likelyGrade || undefined,
-    worstGrade:
-      conclusion.worstGrade || undefined,
+  const base: RadarAssessmentMetrics = {
+    confidencePercent: normalizedPercent(rating.confidencePercent),
+    evidenceCoveragePercent: normalizedPercent(rating.evidenceCoveragePercent),
+    evidenceStatus: evidenceStatus(rating, record),
+    sourceSummary: clean(rating.reasoningSummary),
+    sourceCount: sourceReferenceCount(rating, record),
+    policyVersion:
+      clean(rating.metricsPolicyVersion)
+      || clean(rating.sourcePolicyVersion),
     decisiveRuleCode:
       clean(rating.classificationRule)
       || matchedClasses[0],
-    decisiveRuleReason: sourceSummary,
+    decisiveRuleReason: clean(rating.reasoningSummary),
     matchedRules: matchedClasses.map((code) => ({
       code,
-      grade: ruleGrade || undefined,
+      grade: undefined,
     })),
     contradictions: [],
     unresolvedDimensions: unresolved,
-    validationIssues: conclusion.validationIssues,
     requiresHumanReview,
-    recommendedNextQueue,
-    warningTemplateId: conclusion.warningTemplateId,
-    publicTags: conclusion.publicTags,
-    assessedAt,
+    recommendedNextQueue:
+      clean(record?.publicState) === 'needs_more_research'
+      || clean(record?.researchStatus) === 'needs_more_research'
+        ? 'more_research'
+        : undefined,
+    warningTemplateId: rowValues(rating.publicWarningTemplateIds)[0],
+    publicTags: publicTags(rating.publicTagHints),
+    assessedAt: clean(rating.importedAt),
   }
 
-  const riskSignals = unique([
-    ...matchedClasses,
-    ...(rating.publicTagHints || [])
-      .map((hint) => clean(hint?.value))
-      .filter(Boolean),
-  ])
+  return withAuthorityGradeState(base, state, false)
+}
 
-  const researchPreview: ExtendedResearchPreview = {
-    conclusionMode: conclusion.conclusionMode,
-    fixedGrade:
-      conclusion.fixedGrade || undefined,
-    researchStatus,
-    riskSignals,
-    likelyGrade:
-      conclusion.likelyGrade
-      || conclusion.fixedGrade
-      || undefined,
-    bestGrade:
-      conclusion.bestGrade
-      || conclusion.fixedGrade
-      || undefined,
-    worstGrade:
-      conclusion.worstGrade
-      || conclusion.fixedGrade
-      || undefined,
-    sourceSummary,
-    sourceCount,
-    unresolvedQuestionCount: unresolved.length,
-    unresolvedQuestions: unresolved,
-    confidencePercent: normalizedPercent(
-      rating.confidencePercent,
-    ),
-    evidenceCoveragePercent: normalizedPercent(
-      rating.evidenceCoveragePercent,
-    ),
-    requiresHumanReview,
-    validationIssues: conclusion.validationIssues,
-    warningTemplateId: conclusion.warningTemplateId,
-    publicTags: conclusion.publicTags,
-    recommendedNextAction:
-      researchStatus === 'needs_more_research'
-        ? '继续补充研究资料'
-        : requiresHumanReview
-          ? '等待人工复核'
-          : '机器评级已通过人工复核',
-    recommendedNextQueue,
-    importedAt: assessedAt,
+function candidateAssessment(
+  candidate: RadarSourceDocument,
+  state: RadarGradeState,
+): RadarAssessmentMetrics {
+  const raw = objectOf(candidate.radarAssessment)
+  const matchedRules = arrayOf(raw.matchedRules)
+    .map((item) => objectOf(item))
+    .map((rule) => ({
+      code: clean(rule.code),
+      grade: clean(rule.grade),
+      confidencePercent: normalizedPercent(rule.confidencePercent),
+      reason: clean(rule.reason),
+    }))
+    .filter((rule) => rule.code || rule.reason)
+
+  const base: RadarAssessmentMetrics = {
+    confidencePercent: normalizedPercent(raw.confidencePercent),
+    evidenceCoveragePercent: normalizedPercent(raw.evidenceCoveragePercent),
+    evidenceStatus: clean(raw.evidenceStatus) || 'unknown',
+    sourceSummary: clean(raw.sourceSummary),
+    sourceCount: normalizedNonNegativeNumber(raw.sourceCount),
+    policyVersion: clean(raw.policyVersion),
+    decisiveRuleCode: clean(raw.decisiveRuleCode),
+    decisiveRuleReason: clean(raw.decisiveRuleReason),
+    matchedRules,
+    contradictions: rowValues(raw.contradictions),
+    unresolvedDimensions: rowValues(raw.unresolvedDimensions),
+    requiresHumanReview: true,
+    assessedAt: clean(raw.assessedAt) || clean(candidate.publishedAt),
   }
+
+  return withAuthorityGradeState(base, state, true)
+}
+
+function researchPreview(
+  research?: RadarSourceDocument | null,
+): ExtendedResearchPreview | undefined {
+  if (!research) return undefined
+
+  const unresolvedQuestions = unique(rowValues(research.unresolvedQuestions))
+  const sources = arrayOf(research.sources)
+    .map((item) => objectOf(item))
+    .filter((item) => clean(item.url))
 
   return {
-    publicationKey,
-    ratingId: rating.id,
-    radarAssessment,
-    researchPreview,
+    researchStatus: clean(research.researchStatus),
+    yuriRelevance: clean(research.yuriRelevance),
+    riskSignals: unique(arrayOf(research.riskSignals).map(clean)),
+    likelyGrade: clean(research.proposedLikelyGrade).toUpperCase() || undefined,
+    bestGrade: clean(research.proposedBestGrade).toUpperCase() || undefined,
+    worstGrade: clean(research.proposedWorstGrade).toUpperCase() || undefined,
+    sourceSummary: clean(research.sourceSummary),
+    sourceCount: sources.length,
+    unresolvedQuestionCount: unresolvedQuestions.length,
+    unresolvedQuestions,
+    confidencePercent: normalizedPercent(research.confidencePercent),
+    recommendedNextAction: clean(research.recommendedNextAction),
+    recommendedNextQueue: clean(research.recommendedNextQueue),
+    requiresHumanReview: true,
+    importedAt: clean(research.importedAt),
   }
+}
+
+function publishedNotice(rating: RadarSourceDocument) {
+  const humanReview = objectOf(rating.humanReview)
+  return clean(humanReview.status) === 'reviewed'
+    && humanReview.blocksAnalysis !== true
+    && humanReview.blocksPublication !== true
+    ? 'none'
+    : 'ai_synthesized_pending_review'
 }
 
 export function applyPublicRatingBridge<
@@ -534,100 +323,86 @@ export function applyPublicRatingBridge<
 ): T {
   if (!bridge) return item
 
-  const hasCanonicalWorksAssessment = Boolean(
-    clean(item.radarAssessment?.assessedAt),
-  )
-
-  const currentAssessment = item.radarAssessment
-  const bridgedAssessment = bridge.radarAssessment
-
-  const mergedAssessment = hasCanonicalWorksAssessment
-    ? {
-        ...bridgedAssessment,
-        ...currentAssessment,
-        confidencePercent:
-          normalizedPercent(
-            currentAssessment?.confidencePercent,
-          )
-          ?? bridgedAssessment.confidencePercent,
-        evidenceCoveragePercent:
-          normalizedPercent(
-            currentAssessment?.evidenceCoveragePercent,
-          )
-          ?? bridgedAssessment.evidenceCoveragePercent,
-      }
-    : bridgedAssessment
-
   return {
     ...item,
-    radarAssessment: mergedAssessment,
-    researchPreview: mergeResearchPreview(
-      item.researchPreview,
-      bridge.researchPreview,
-    ),
+    radarAuthority: bridge.authority,
+    radarAuthorityPending: bridge.pending,
+    radarAssessment:
+      bridge.authority === 'research'
+        ? undefined
+        : bridge.radarAssessment,
+    // Once the exact repository is available, never mix an older workId-only
+    // static Research preview back into the exact runtime lineage.
+    researchPreview: bridge.researchPreview,
+    ratingNotice: bridge.ratingNotice || item.ratingNotice,
+    evidenceStrength: bridge.evidenceStrength || item.evidenceStrength,
   } as T
 }
 
 export async function readPublicRatingBridge(
   workId?: string | number,
 ): Promise<RadarPublicRatingBridge | null> {
-  const normalizedWorkId = clean(workId)
+  const snapshot = await readRadarSnapshotForWork(workId)
+  if (!snapshot) return null
 
-  if (!normalizedWorkId) return null
+  const selection = selectRadarAuthority(snapshot)
+  const exactResearchPreview = researchPreview(
+    snapshot.sourceDocuments.research.latest,
+  )
 
-  try {
-    const payload = await getPayload({
-      config: configPromise,
-    })
-
-    const publicationKey = `work:${normalizedWorkId}`
-    const where: Where = {
-      and: [
-        {
-          publicationKey: {
-            equals: publicationKey,
-          },
-        },
-        {
-          recordStatus: {
-            equals: 'current',
-          },
-        },
-      ],
-    }
-
-    const [ratingResult, recordResult] = await Promise.all([
-      payload.find({
-        collection: 'radar-public-ratings',
-        depth: 0,
-        limit: 1,
-        page: 1,
-        pagination: true,
-        overrideAccess: true,
-        where,
-      }),
-      payload.find({
-        collection: 'radar-public-records',
-        depth: 0,
-        limit: 1,
-        page: 1,
-        pagination: true,
-        overrideAccess: true,
-        where,
-      }),
-    ])
-
-    const rating =
-      ratingResult.docs[0] as unknown as PublicRating | undefined
-    const record =
-      recordResult.docs[0] as unknown as PublicRecord | undefined
-
+  if (selection.authority === 'published') {
+    const rating = snapshot.sourceDocuments.published.rating
+    const record = snapshot.sourceDocuments.published.record
     if (!rating) return null
 
-    return mapPublicRatingToWorksAI(rating, record)
-  } catch {
-    // Missing local schema or a temporarily unavailable projection
-    // must not make the canonical work detail page unavailable.
-    return null
+    return {
+      authority: selection.authority,
+      pending: selection.pending,
+      publicationKey: clean(rating.publicationKey),
+      ratingId: rating.id,
+      radarAssessment: publishedAssessment(
+        rating,
+        record,
+        selection.gradeState,
+      ),
+      researchPreview: exactResearchPreview,
+      ratingNotice: publishedNotice(rating),
+    }
   }
+
+  if (selection.authority === 'candidate') {
+    const candidate = snapshot.sourceDocuments.candidate
+    if (!candidate) return null
+
+    return {
+      authority: selection.authority,
+      pending: true,
+      publicationKey: clean(candidate.publicationKey),
+      ratingId: candidate.id,
+      radarAssessment: candidateAssessment(
+        candidate,
+        selection.gradeState,
+      ),
+      researchPreview: exactResearchPreview,
+      ratingNotice:
+        clean(candidate.ratingNotice)
+        || 'ai_synthesized_pending_review',
+      evidenceStrength: clean(candidate.evidenceStrength),
+    }
+  }
+
+  if (selection.authority === 'research') {
+    return {
+      authority: 'research',
+      pending: false,
+      researchPreview: exactResearchPreview,
+      ratingNotice: 'insufficient_information',
+      evidenceStrength: 'unassessed',
+    }
+  }
+
+  // Human authority is rendered from Works independently. Legacy/unassessed
+  // fall back to the existing static compatibility projection when no exact
+  // Radar lineage is available.
+  return null
 }

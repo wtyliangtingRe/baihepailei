@@ -190,6 +190,7 @@ export function buildRadarAssessmentPresentation(input: RadarAssessmentPresentat
     || reviewStatus === 'disputed'
 
   const conclusion = normalizeRadarConclusion({
+    conclusionMode: assessment?.conclusionMode,
     suggestedGrade: assessment?.suggestedGrade ?? assessment?.fixedGrade,
     bestGrade: assessment?.bestGrade,
     likelyGrade: assessment?.likelyGrade,
