@@ -1,8 +1,9 @@
 {
   "schemaVersion": "radar-policy-status-registry-v0.5",
   "registryId": "radar-policy-status-registry-v0.5",
-  "status": "approved_active_on_dual_repository_merge",
+  "status": "approved_pending_activation_gates",
   "approvedDate": "2026-08-07",
+  "activationCondition": "All activation gates in the research-data docs/RADAR_RATING_POLICY_V0.5.md Section 13 must be satisfied; dual-repository merge is necessary but not sufficient",
   "activeOnActivation": [
     "radar-website-policy-bundle-v0.5",
     "radar-public-tag-contract-v0.5"
