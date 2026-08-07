@@ -1,15 +1,13 @@
 import assert from 'node:assert/strict'
-import fs from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import test from 'node:test'
 
 import { buildDesiredPublicRating } from '../scripts/radar/lib/unified-rating-release-plan-v01.mjs'
 import { payloadDocument } from '../scripts/radar/run-unified-rating-incremental-production-import-9988-v01.mjs'
 
-const candidateSource = fs.readFileSync('src/collections/RadarPublicConclusions.ts', 'utf8')
-const publishedSource = fs.readFileSync('src/collections/RadarPublicRatings.ts', 'utf8')
-const contract = JSON.parse(fs.readFileSync('config/radar-public-ratings-schema-v01.json', 'utf8'))
-const migrationSource = fs.readFileSync('src/migrations/20260808_060000_radar_v05_persistence_standardization_v01.ts', 'utf8')
-const migrationIndex = fs.readFileSync('src/migrations/index.ts', 'utf8')
+const candidateSource = readFileSync('src/collections/RadarPublicConclusions.ts', 'utf8')
+const publishedSource = readFileSync('src/collections/RadarPublicRatings.ts', 'utf8')
+const contract = JSON.parse(readFileSync('config/radar-public-ratings-schema-v01.json', 'utf8'))
 
 const importedAt = '2026-08-08T00:00:00.000Z'
 const work = { id: '42', siteId: 'SITE-42', title: 'Example' }
@@ -71,6 +69,13 @@ function fieldBlock(source, name) {
 
 function desired(overrides = {}) {
   return buildDesiredPublicRating(rating(overrides), work, release, importedAt)
+}
+
+function generatedV05MigrationPairs() {
+  const names = readdirSync('src/migrations')
+  const ts = names.filter((name) => name.endsWith('_radar_v05_persistence_standardization_v01.ts'))
+  const json = names.filter((name) => name.endsWith('_radar_v05_persistence_standardization_v01.json'))
+  return { ts, json }
 }
 
 test('Candidate persistence natively supports all v0.5 conclusion modes without a required compatibility grade', () => {
@@ -150,14 +155,28 @@ test('new machine X cannot be persisted as an explicit fixed grade', () => {
   assert.deepEqual([document.coreGrade, document.bestGrade, document.likelyGrade, document.worstGrade], [null, null, null, null])
 })
 
-test('migration expands Candidate, adds Published mode, relaxes grade constraints, and refuses destructive rollback', () => {
-  assert.match(migrationSource, /enum_radar_public_conclusion_mode[^;]+ADD VALUE IF NOT EXISTS 'labels_only'/u)
-  assert.match(migrationSource, /enum_radar_public_conclusion_mode[^;]+ADD VALUE IF NOT EXISTS 'blocked'/u)
-  assert.match(migrationSource, /radar_public[^;]+compatibility_grade[^;]+DROP NOT NULL/u)
-  assert.match(migrationSource, /enum_radar_public_ratings_conclusion_mode[^;]+fixed_grade[^;]+bounded_range[^;]+labels_only[^;]+blocked/u)
-  for (const column of ['core_grade', 'best_grade', 'likely_grade', 'worst_grade']) {
-    assert.match(migrationSource, new RegExp(`radar_public_ratings[^;]+${column}[^;]+DROP NOT NULL`, 'u'))
+test('a generated v0.5 Payload migration, when present, is paired with its schema snapshot', () => {
+  const { ts, json } = generatedV05MigrationPairs()
+  assert.ok(ts.length <= 1, `expected at most one v0.5 migration TS, got ${ts.join(', ')}`)
+  assert.ok(json.length <= 1, `expected at most one v0.5 migration snapshot, got ${json.join(', ')}`)
+  assert.equal(ts.length, json.length, 'v0.5 migration TS and JSON snapshot must be a pair')
+  if (ts.length === 0) return
+
+  const tsStem = ts[0].replace(/\.ts$/u, '')
+  const jsonStem = json[0].replace(/\.json$/u, '')
+  assert.equal(tsStem, jsonStem)
+  assert.ok(existsSync(`src/migrations/${json[0]}`))
+
+  const migrationSource = readFileSync(`src/migrations/${ts[0]}`, 'utf8')
+  const migrationSnapshot = readFileSync(`src/migrations/${json[0]}`, 'utf8')
+  const migrationIndex = readFileSync('src/migrations/index.ts', 'utf8')
+
+  for (const token of ['radar_public', 'radar_public_ratings', 'compatibility_grade', 'conclusion_mode', 'labels_only', 'blocked']) {
+    assert.match(migrationSource, new RegExp(token, 'u'))
   }
-  assert.match(migrationSource, /Cannot safely roll back Radar v0\.5 persistence/u)
-  assert.match(migrationIndex, /20260808_060000_radar_v05_persistence_standardization_v01/u)
+  for (const token of ['public.radar_public', 'public.radar_public_ratings', 'public.radar_public_records', 'public.works']) {
+    assert.match(migrationSnapshot, new RegExp(token.replace('.', '\\.'), 'u'))
+  }
+  assert.equal((migrationIndex.match(new RegExp(`name: '${tsStem}'`, 'gu')) || []).length, 1)
+  assert.match(migrationIndex, new RegExp(`from './${tsStem}'`, 'u'))
 })

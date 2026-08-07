@@ -13,10 +13,12 @@ on:
       - "scripts/radar/lib/unified-rating-release-plan-v01.mjs"
       - "scripts/radar/run-unified-rating-incremental-production-import-9988-v01.mjs"
       - "scripts/radar/prepare-radar-public-ratings-migration-v01.ps1"
+      - "scripts/radar/prepare-radar-v05-persistence-migration-v01.ps1"
       - "tests/radar-public-ratings-schema.test.mjs"
       - "tests/radar-public-ratings-migration-preparation.test.mjs"
       - "tests/radar-unified-rating-release-plan-v01.test.mjs"
       - "tests/radar-v05-persistence-standardization.test.mjs"
+      - "tests/radar-v05-persistence-migration-preparation.test.mjs"
       - "docs/guides/radar-public-ratings-migration-v01.md"
       - ".github/workflows/validate-radar-public-ratings-migration-v01.yml"
   workflow_dispatch:
@@ -33,18 +35,23 @@ jobs:
           fetch-depth: 0
       - name: Parse locked schema contract
         run: node -e "JSON.parse(require('node:fs').readFileSync('config/radar-public-ratings-schema-v01.json','utf8'))"
-      - name: Parse PowerShell preparer
+      - name: Parse PowerShell preparers
         shell: pwsh
         run: |
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path '.\scripts\radar\prepare-radar-public-ratings-migration-v01.ps1'),
-            [ref]$null,
-            [ref]$errors
-          ) | Out-Null
-          if ($errors.Count -gt 0) {
-            $errors | ForEach-Object { Write-Error $_.Message }
-            exit 1
+          foreach ($script in @(
+            '.\scripts\radar\prepare-radar-public-ratings-migration-v01.ps1',
+            '.\scripts\radar\prepare-radar-v05-persistence-migration-v01.ps1'
+          )) {
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $script),
+              [ref]$null,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error $_.Message }
+              exit 1
+            }
           }
       - name: Run Release planner and ratings migration tests
         run: |
@@ -52,16 +59,28 @@ jobs:
             tests/radar-unified-rating-release-plan-v01.test.mjs \
             tests/radar-public-ratings-schema.test.mjs \
             tests/radar-public-ratings-migration-preparation.test.mjs \
-            tests/radar-v05-persistence-standardization.test.mjs
-      - name: Enforce preparation-only boundary
+            tests/radar-v05-persistence-standardization.test.mjs \
+            tests/radar-v05-persistence-migration-preparation.test.mjs
+      - name: Enforce preparation-only boundaries
         shell: bash
         run: |
           set -euo pipefail
-          ! grep -RInE 'pnpm[[:space:]]+(install|i)([[:space:]]|$)|payload[[:space:]]+migrate([[:space:]]|$)|docker[[:space:]]+compose|pg_dump|psql' \
-            scripts/radar/prepare-radar-public-ratings-migration-v01.ps1
-          grep -q 'default_transaction_read_only=on' scripts/radar/prepare-radar-public-ratings-migration-v01.ps1
-          grep -q 'DatabaseMigrate : False' scripts/radar/prepare-radar-public-ratings-migration-v01.ps1
-          grep -q 'PayloadWrite    : False' scripts/radar/prepare-radar-public-ratings-migration-v01.ps1
-          grep -q 'WorksMutation   : False' scripts/radar/prepare-radar-public-ratings-migration-v01.ps1
+          legacy='scripts/radar/prepare-radar-public-ratings-migration-v01.ps1'
+          v05='scripts/radar/prepare-radar-v05-persistence-migration-v01.ps1'
+
+          ! grep -RInE 'pnpm[[:space:]]+(install|i)([[:space:]]|$)|payload[[:space:]]+migrate([[:space:]]|$)|docker[[:space:]]+compose|pg_dump|psql' "$legacy"
+          grep -q 'default_transaction_read_only=on' "$legacy"
+          grep -q 'DatabaseMigrate : False' "$legacy"
+          grep -q 'PayloadWrite    : False' "$legacy"
+          grep -q 'WorksMutation   : False' "$legacy"
+
+          ! grep -RInE 'pnpm[[:space:]]+(install|i)([[:space:]]|$)|pnpm[[:space:]]+(exec[[:space:]]+)?payload[[:space:]]+migrate([[:space:]]|$)|docker[[:space:]]+compose|pg_dump|psql' "$v05"
+          grep -q 'default_transaction_read_only=on' "$v05"
+          grep -q "PAYLOAD_DB_PUSH = 'false'" "$v05"
+          grep -q 'pnpm payload migrate:create $MigrationName --skip-empty' "$v05"
+          grep -Eq 'DatabaseMigrate[[:space:]]+: False' "$v05"
+          grep -Eq 'PayloadWrite[[:space:]]+: False' "$v05"
+          grep -Eq 'ProductionApply[[:space:]]+: False' "$v05"
+          grep -q '预期只生成 1 个 TypeScript 迁移和 1 个 JSON schema snapshot' "$v05"
       - name: Check patch whitespace
         run: git diff --check origin/${{ github.base_ref }}...HEAD
