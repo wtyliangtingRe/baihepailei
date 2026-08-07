@@ -15,10 +15,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Enable repository pnpm
+        run: |
+          corepack enable
+          pnpm --version
 
       - name: Run runtime policy selection regression
         run: node --experimental-strip-types --test tests/radar-policy-v05-runtime-selection.test.mjs
@@ -37,4 +44,4 @@ jobs:
         run: pnpm build
 
       - name: Check whitespace
-        run: git diff --check origin/main...HEAD
+        run: git diff --check HEAD^1..HEAD
