@@ -1,4 +1,4 @@
-export type WorkGradeSource = 'human' | 'ai' | 'ai_legacy' | 'unassessed'
+export type WorkGradeSource = 'human' | 'ai' | 'ai_legacy' | 'research' | 'unassessed'
 
 export type WorkGradeInput = {
   rank?: string | null
@@ -51,11 +51,19 @@ export function effectiveWorkGrade(item: WorkGradeInput): EffectiveWorkGrade {
   // Legacy reviewed records remain compatible until their humanAssessment is backfilled.
   if (humanReviewed) return { grade: storedGrade, source: 'human', humanReviewed: true }
 
-  const suggestedGrade = normalizeWorkGrade(
-    item.radarAssessment?.suggestedGrade || item.researchPreview?.likelyGrade,
-  )
+  // Only the AI/candidate projection can supply an AI suggestion. Research
+  // proposedLikelyGrade / researchPreview.likelyGrade is evidence context and
+  // must never be promoted into the candidate lineage through a fallback.
+  const suggestedGrade = normalizeWorkGrade(item.radarAssessment?.suggestedGrade)
   if (suggestedGrade !== 'unknown') {
     return { grade: suggestedGrade, source: 'ai', humanReviewed: false }
+  }
+
+  // A research-only work may expose that research exists, but it has no public
+  // grade authority. Returning unknown prevents callers from presenting its
+  // proposed range as a machine rating.
+  if (normalizeWorkGrade(item.researchPreview?.likelyGrade) !== 'unknown') {
+    return { grade: 'unknown', source: 'research', humanReviewed: false }
   }
 
   // Before formal human confirmation, historical rank values are recommendations,
@@ -71,5 +79,6 @@ export function effectiveWorkGradeLabel(source: WorkGradeSource) {
   if (source === 'human') return '人工参考'
   if (source === 'ai') return 'AI 建议'
   if (source === 'ai_legacy') return 'AI / 历史建议'
+  if (source === 'research') return '仅有研究资料'
   return '尚未评级'
 }
