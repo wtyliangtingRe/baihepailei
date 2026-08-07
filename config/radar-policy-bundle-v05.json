@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "radar-website-policy-bundle-v0.5",
+  "bundleId": "radar-website-policy-bundle-v0.5",
+  "policyId": "radar-rating-policy-v0.5",
+  "status": "approved_active_on_dual_repository_merge",
+  "approvedDate": "2026-08-07",
+  "activationCondition": "Both repository v0.5 PRs merged to main",
+  "humanReadableContract": "docs/RADAR_RATING_POLICY_V0.5_WEBSITE_CONTRACT.md",
+  "researchAuthority": {
+    "repository": "wtyliangtingRe/baihepailei-research-data",
+    "path": "policies/radar-policy-bundle-v0.5.json",
+    "bundleId": "radar-policy-bundle-v0.5"
+  },
+  "sourceBaselines": {
+    "researchMain": "14a14c27721470e859c56ca871a4f3029b57bb2c",
+    "websiteMain": "84ecc074a8ffd6065ace52301954382806a5c990"
+  },
+  "presentation": {
+    "fixed_grade": {"label": "AI 暂定等级", "showRange": false},
+    "bounded_range": {"label": "AI 暂定评级范围", "showRange": true, "showBestLikelyWorst": true, "coreGradeIsLikelyCompatibilityProjection": true, "mustNotDisplayCoreGradeAloneAsFixed": true},
+    "labels_only": {"label": "研究记录 / 暂无可负责的评级", "showGrade": false},
+    "blocked": {"label": "未完成 AI 评估", "showGrade": false}
+  },
+  "legacyRowFallback": {
+    "allFourGradesEqual": "fixed_grade",
+    "validOrderedNonEqualGrades": "bounded_range",
+    "missingOrInvalidGrades": "legacy_unresolved_do_not_claim_fixed_grade"
+  },
+  "tags": {
+    "accelerated-radar-matching-conflict": {"group": "加速排雷", "value": "匹配冲突", "warningTemplateId": "identity-conflict", "changesCoreGradeByItself": false},
+    "accelerated-radar-setting-ts": {"group": "加速排雷", "value": "TS / 性别转换设定", "warningTemplateId": "setting-profile-ts", "changesCoreGradeByItself": false},
+    "accelerated-radar-setting-futa": {"group": "加速排雷", "value": "扶她设定", "warningTemplateId": "setting-profile-futa", "changesCoreGradeByItself": false},
+    "accelerated-radar-setting-abo": {"group": "加速排雷", "value": "ABO 设定", "warningTemplateId": "setting-profile-abo", "changesCoreGradeByItself": false},
+    "accelerated-radar-setting-otokonoko-crossdressing": {"group": "加速排雷", "value": "男娘 / 女装设定", "warningTemplateId": "setting-profile-otokonoko-crossdressing", "changesCoreGradeByItself": false},
+    "accelerated-radar-setting-queer-general": {"group": "加速排雷", "value": "泛 queer 设定", "warningTemplateId": "setting-profile-queer-general", "changesCoreGradeByItself": false},
+    "accelerated-radar-core-identity-boundary": {"group": "加速排雷", "value": "核心身份边界", "warningTemplateId": "core-identity-boundary", "changesCoreGradeByItself": false},
+    "accelerated-radar-x-risk-candidate": {"group": "加速排雷", "value": "X 风险候选", "warningTemplateId": "x-risk-candidate", "changesCoreGradeByItself": false, "isNotXGrade": true, "requiresHumanAdjudication": true},
+    "content-unsuitable": {"group": "内容提示", "value": "不适内容", "warningTemplateId": "adult-visibility-warning", "changesCoreGradeByItself": false}
+  },
+  "warningTemplates": {
+    "setting-profile-ts": "本作含 TS / 性别转换设定。该提示不等于低评级或欺诈，请结合角色身份与关系证据判断是否符合个人偏好。",
+    "setting-profile-futa": "本作含扶她设定。该提示不等于低评级或欺诈，请结合角色身份与关系证据判断是否符合个人偏好。",
+    "setting-profile-abo": "本作含 ABO 设定。该提示不等于低评级或欺诈，请结合角色身份与关系证据判断是否符合个人偏好。",
+    "setting-profile-otokonoko-crossdressing": "本作含男娘、女装或相关身份呈现设定。该提示不等于低评级或欺诈。",
+    "setting-profile-queer-general": "本作含泛 queer 设定或身份语境。该提示不等于低评级或欺诈。",
+    "core-identity-boundary": "本作的中心参与者存在会影响核心女性—女性偏好判断的身份、身体、转换或角色边界；请结合详情阅读。",
+    "x-risk-candidate": "存在需要人工核验的严重欺诈或恶意风险候选；当前并非 X 评级。"
+  },
+  "ui": {
+    "groupLabel": "加速排雷",
+    "displayAlongsideGrade": true,
+    "doNotHideBehindExpandableEvidenceByDefault": true,
+    "priority": {"accelerated-radar-x-risk-candidate": 100, "accelerated-radar-core-identity-boundary": 90, "settingProfiles": 80}
+  },
+  "x": {"machineAssignable": false, "riskCandidateIsNotX": true, "riskCandidateDoesNotChangeGrade": true},
+  "supersession": {
+    "historicalSuperseded": ["radar-rating-policy-v0.2-draft", "radar-rating-policy-v0.4-draft", "radar-public-tag-contract-v01", "radar-machine-rating-analysis-v01", "radar-machine-rating-response-v01", "radar-machine-rating-presumption-v02"],
+    "partiallySuperseded": {"radar-internal-processing-policy-v03": ["D-UNCLEAR fallback", "core grade semantics", "public warning mapping"]},
+    "historicalFilesDeleted": false,
+    "releaseBoundFilesModified": false
+  },
+  "creatorPolicy": {"S-CREATOR-SAFE": "retired", "creatorAttitudeSafety": "deferred_to_future_creator_management_policy"},
+  "databaseMigrationAuthorized": false,
+  "payloadWriteAuthorized": false,
+  "postgresqlWriteAuthorized": false,
+  "productionAuthorization": false
+}
