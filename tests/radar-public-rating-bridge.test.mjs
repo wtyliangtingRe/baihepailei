@@ -21,6 +21,7 @@ test('exact repository feeds the existing Works AI panel without a second detail
 
   assert.match(bridge, /readRadarSnapshotForWork/u)
   assert.match(bridge, /selectRadarAuthority/u)
+  assert.match(bridge, /if \(!state\.valid\) return 'labels_only'/u)
   assert.doesNotMatch(bridge, /@payload-config|getPayload|payload\.find|collection: 'radar-public-ratings'|collection: 'radar-public-records'/u)
   assert.doesNotMatch(bridge, /title:\s*\{ equals:/u)
   assert.doesNotMatch(bridge, /hasCanonicalWorksAssessment/u)
@@ -61,5 +62,6 @@ test('explicit conclusion modes flow into presentation', () => {
   assert.match(normalizer, /explicitMode === 'bounded_range'/u)
   assert.match(normalizer, /explicitMode === 'fixed_grade'/u)
   assert.match(normalizer, /bounded_range_not_distinct/u)
-  assert.match(normalizer, /invalid_fixed_grade/u)
+  assert.match(normalizer, /incomplete_fixed_grade_range/u)
+  assert.match(normalizer, /machine_x_not_allowed/u)
 })

@@ -163,6 +163,7 @@ function evidenceStatus(
 }
 
 function normalizedMode(state: RadarGradeState): RadarConclusionMode {
+  if (!state.valid) return 'labels_only'
   return state.mode === 'legacy' ? 'labels_only' : state.mode
 }
 
