@@ -11,6 +11,11 @@ test('runtime policy selector points to v0.5 bundle and class registry', () => {
   assert.equal(policy.RADAR_RATING_POLICY_ID, 'radar-rating-policy-v0.5')
   assert.equal(policy.RADAR_CLASS_REGISTRY_ID, 'radar-class-registry-v0.5')
   assert.equal(policy.RADAR_POLICY_BUNDLE_ID, 'radar-policy-bundle-v0.5')
+
+  const websiteBundle = JSON.parse(fs.readFileSync('config/radar-policy-bundle-v05.json', 'utf8'))
+  assert.equal(websiteBundle.policyId, policy.RADAR_RATING_POLICY_ID)
+  assert.equal(websiteBundle.researchAuthority.bundleId, policy.RADAR_POLICY_BUNDLE_ID)
+  assert.equal(websiteBundle.bundleId, 'radar-website-policy-bundle-v0.5')
 })
 
 test('v0.5 runtime class registry excludes retired classes', () => {
@@ -57,6 +62,12 @@ test('setting profiles are separate from core-grade classes', () => {
 
 test('policy activation status remains pending until every gate passes', () => {
   const status = JSON.parse(fs.readFileSync('config/radar-policy-status-registry-v05.json', 'utf8'))
+  const websiteBundle = JSON.parse(fs.readFileSync('config/radar-policy-bundle-v05.json', 'utf8'))
   assert.equal(status.status, 'approved_pending_activation_gates')
   assert.equal(status.productionAuthorization, false)
+  assert.equal(websiteBundle.status, 'approved_pending_activation_gates')
+  assert.equal(websiteBundle.databaseMigrationAuthorized, false)
+  assert.equal(websiteBundle.payloadWriteAuthorized, false)
+  assert.equal(websiteBundle.postgresqlWriteAuthorized, false)
+  assert.equal(websiteBundle.productionAuthorization, false)
 })
