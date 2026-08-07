@@ -1,22 +1,9 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import ts from 'typescript'
 
-async function importTypeScript(path) {
-  const source = readFileSync(path, 'utf8')
-  const output = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.ES2022,
-      target: ts.ScriptTarget.ES2022,
-    },
-    fileName: path,
-  }).outputText
-  return import(`data:text/javascript;base64,${Buffer.from(output).toString('base64')}`)
-}
-
-const standardization = await importTypeScript('src/lib/radar/readStandardization.ts')
-const effective = await importTypeScript('src/lib/radar/effectiveWorkGrade.ts')
+const standardization = await import('../src/lib/radar/readStandardization.ts')
+const effective = await import('../src/lib/radar/effectiveWorkGrade.ts')
 
 const identity = { workId: '42', siteId: 'BGM-100' }
 const exact = { workIdSnapshot: '42', workSiteId: 'BGM-100' }
