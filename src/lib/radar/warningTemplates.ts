@@ -77,7 +77,7 @@ export const warningTemplates: WarningTemplate[] = [
     tagGroup: '排雷协作-站务提示',
     tagValue: '小作品',
     text: '本页面短得只剩蛆！您可以帮助补充剧情、角色关系、雷点与来源依据，或者说几句垃圾话来改进本页面。',
-    relatedRatingClasses: ['B-LIGHT', 'D-UNCLEAR'],
+    relatedRatingClasses: ['B-LIGHT'],
   },
   {
     id: 'external-source-pending-review',
@@ -114,7 +114,6 @@ export const warningTemplates: WarningTemplate[] = [
     tagGroup: '关系提示',
     tagValue: '需要排雷',
     text: '本页面描述的作品是神必作品，我们对其所知无几。为了更详实地记载资料，成为更揭露事实真相的排雷网站，本站需要您的帮助。',
-    relatedRatingClasses: ['D-UNCLEAR'],
   },
   {
     id: 'heavy-radar-warning',
