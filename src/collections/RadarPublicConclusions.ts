@@ -106,17 +106,18 @@ export const RadarPublicConclusions: CollectionConfig = {
       options: [
         { label: '固定等级', value: 'fixed_grade' },
         { label: '有界范围', value: 'bounded_range' },
+        { label: '仅规则 / 标签', value: 'labels_only' },
+        { label: '阻塞', value: 'blocked' },
       ],
     },
     {
       name: 'compatibilityGrade',
       type: 'select',
       label: '目录兼容等级',
-      required: true,
       index: true,
       options: gradeOptions,
       admin: {
-        description: '固定等级直接使用该等级；有界范围使用最可能等级。人工轨道仍在前台优先。',
+        description: '固定等级直接使用该等级；有界范围使用最可能等级；labels_only / blocked 必须留空。人工轨道仍在前台优先。',
       },
     },
     {
