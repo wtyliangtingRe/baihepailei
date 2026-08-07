@@ -61,10 +61,11 @@ function rating(overrides = {}) {
 }
 
 function fieldBlock(source, name) {
-  const start = source.indexOf(`      name: '${name}',`)
+  const normalized = source.replace(/\r\n?/gu, '\n')
+  const start = normalized.indexOf(`      name: '${name}',`)
   assert.notEqual(start, -1, `missing field ${name}`)
-  const next = source.indexOf("\n    },\n    {\n      name: '", start)
-  return source.slice(start, next === -1 ? source.length : next + 7)
+  const next = normalized.indexOf("\n    },\n    {\n      name: '", start)
+  return normalized.slice(start, next === -1 ? normalized.length : next + 7)
 }
 
 function desired(overrides = {}) {
