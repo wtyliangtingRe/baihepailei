@@ -1,9 +1,9 @@
 # Radar 数据库读取标准化 v01
 
-> 状态：网站读取层长期规范。  
-> 日期：2026-08-07。  
-> 适用仓库：`wtyliangtingRe/baihepailei`。  
-> 上游结构审计：`docs/RADAR_DATABASE_STRUCTURE_AND_STANDARDIZATION_V01.md`。  
+> 状态：网站读取层长期规范。
+> 日期：2026-08-07。
+> 适用仓库：`wtyliangtingRe/baihepailei`。
+> 上游结构审计：`docs/RADAR_DATABASE_STRUCTURE_AND_STANDARDIZATION_V01.md`。
 > 本文定义**如何读取和选择展示权威**；不授权数据库迁移、重评级、删除、历史 Release 改写或生产写入。
 
 ## 1. 目标
@@ -75,10 +75,12 @@ Published 查询允许先使用 `publicationKey = work:<Works id>`，但返回�
 
 旧 Published Release 不因为新 selector 上线而被重解释。旧行没有 `conclusionMode` 时：
 
-- 若保存了合法且非单点的 `best / likely / worst`，读取层保留为 bounded range；
-- 否则 `coreGrade` 只作为 legacy Published grade 投影；
+- 若 `core / best / likely / worst` 四个合法等级完全相同，按 v0.5 fallback 读取为 `fixed_grade`；
+- 若 `best / likely / worst` 合法有序、彼此并非全相同，且 `coreGrade == likelyGrade`，读取为 `bounded_range`；
+- 若缺失、非法、顺序错误或 `coreGrade` 与 `likelyGrade` 不一致，保留 Published authority，但 grade 处于 unresolved；
 - 不回写数据库；
-- 不把历史 `D-UNCLEAR` 等模糊 token 强制转成固定 `D`。
+- 不把历史 `D-UNCLEAR` 等模糊 token 强制转成固定 `D`；
+- 不能因为 Published grade 当前不可解释，就让较低 authority 的 Candidate 越级覆盖。
 
 ### 3.3 AI Candidate
 
@@ -288,21 +290,23 @@ where: { title: { equals: title } }
 `tests/radar-database-read-standardization.test.mjs` 至少覆盖：
 
 1. Published + Candidate -> Published authority，二者均保留；
-2. Candidate + Research -> Candidate pending，Research 保留；
-3. Research-only -> 无 public AI grade；
-4. same workId / different siteId -> 不匹配；
-5. same siteId / different workId -> 不匹配；
-6. identityKey 不一致 -> 不匹配；
-7. publicationKey 命中但 exact identity 错误 -> Published 被拒绝；
-8. bounded range 保留完整 endpoints；
-9. bounded range 缺失或逆序 -> 不发明 fixed grade；
-10. `labels_only` -> 无 grade；
-11. `blocked` -> 无 grade；
-12. `D-UNCLEAR` -> legacy raw value，不变成 D；
-13. valid Human -> Human authority；
-14. pending Human -> 不覆盖 Published；
-15. Research likely grade -> 不再成为 AI suggestion；
-16. repository 不做 title query。
+2. legacy Published 四等级全等 -> `fixed_grade`；
+3. malformed / unresolved legacy Published -> 仍保留 Published authority，不向 Candidate 降级；
+4. Candidate + Research -> Candidate pending，Research 保留；
+5. Research-only -> 无 public AI grade；
+6. same workId / different siteId -> 不匹配；
+7. same siteId / different workId -> 不匹配；
+8. identityKey 不一致 -> 不匹配；
+9. publicationKey 命中但 exact identity 错误 -> Published 被拒绝；
+10. bounded range 保留完整 endpoints；
+11. bounded range 缺失或逆序 -> 不发明 fixed grade；
+12. `labels_only` -> 无 grade；
+13. `blocked` -> 无 grade；
+14. `D-UNCLEAR` -> legacy raw value，不变成 D；
+15. valid Human -> Human authority；
+16. pending Human -> 不覆盖 Published；
+17. Research likely grade -> 不再成为 AI suggestion；
+18. repository 不做 title query。
 
 CI：`.github/workflows/validate-radar-database-read-standardization-v01.yml`。
 
