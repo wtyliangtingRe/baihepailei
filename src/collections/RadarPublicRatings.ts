@@ -34,6 +34,7 @@ export const RadarPublicRatings: CollectionConfig = {
     defaultColumns: [
       'title',
       'workIdSnapshot',
+      'conclusionMode',
       'coreGrade',
       'confidence',
       'confidencePercent',
@@ -106,33 +107,55 @@ export const RadarPublicRatings: CollectionConfig = {
       required: true,
     },
     {
+      name: 'conclusionMode',
+      type: 'select',
+      label: '结论形态',
+      options: [
+        { label: '固定等级', value: 'fixed_grade' },
+        { label: '有界范围', value: 'bounded_range' },
+        { label: '仅规则 / 标签', value: 'labels_only' },
+        { label: '阻塞', value: 'blocked' },
+      ],
+      admin: {
+        description: 'v0.5 起的新发行必须显式保存四态；历史 Published 行允许为空，由 runtime 使用安全旧推断。',
+      },
+    },
+    {
       name: 'coreGrade',
       type: 'select',
       label: '核心等级',
-      required: true,
       index: true,
       options: gradeOptions,
+      admin: {
+        description: 'fixed_grade / bounded_range 使用；labels_only / blocked 必须留空。',
+      },
     },
     {
       name: 'bestGrade',
       type: 'select',
       label: '最好情况等级',
-      required: true,
       options: gradeOptions,
+      admin: {
+        description: 'fixed_grade / bounded_range 使用；labels_only / blocked 必须留空。',
+      },
     },
     {
       name: 'likelyGrade',
       type: 'select',
       label: '最可能等级',
-      required: true,
       options: gradeOptions,
+      admin: {
+        description: 'fixed_grade / bounded_range 使用；labels_only / blocked 必须留空。',
+      },
     },
     {
       name: 'worstGrade',
       type: 'select',
       label: '最坏情况等级',
-      required: true,
       options: gradeOptions,
+      admin: {
+        description: 'fixed_grade / bounded_range 使用；labels_only / blocked 必须留空。',
+      },
     },
     {
       name: 'confidence',

@@ -5,6 +5,17 @@
   "publicationKey": "work:<works-id>",
   "oneCurrentRatingPerWork": true,
   "workIdentityMatch": "exact_work_id_and_site_id",
+  "conclusionModes": [
+    "fixed_grade",
+    "bounded_range",
+    "labels_only",
+    "blocked"
+  ],
+  "legacyNullConclusionMode": true,
+  "gradeFieldsNullableFor": [
+    "labels_only",
+    "blocked"
+  ],
   "fields": {
     "identity": [
       "publicationKey",
@@ -15,6 +26,7 @@
       "title"
     ],
     "rating": [
+      "conclusionMode",
       "coreGrade",
       "bestGrade",
       "likelyGrade",

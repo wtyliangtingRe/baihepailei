@@ -1,5 +1,6 @@
 import crypto from 'node:crypto'
 
+import { normalizeRadarConclusion } from '../../../src/lib/radar/conclusionNormalizer.mjs'
 import {
   buildCurrentRecordIndexes,
   buildPlanRow,
@@ -9,6 +10,7 @@ import {
 } from './public-release-plan-v01.mjs'
 
 const val = (value) => String(value ?? '').trim()
+const EXPLICIT_CONCLUSION_MODES = new Set(['fixed_grade', 'bounded_range', 'labels_only', 'blocked'])
 
 const normalizeRelationship = (value) => {
   if (value && typeof value === 'object') return val(value.id)
@@ -16,6 +18,52 @@ const normalizeRelationship = (value) => {
 }
 
 const sha256Text = (value) => crypto.createHash('sha256').update(value).digest('hex')
+
+function publicConclusionProjection(rating) {
+  const requestedMode = val(rating?.conclusionMode).toLowerCase()
+  if (!EXPLICIT_CONCLUSION_MODES.has(requestedMode)) {
+    return {
+      conclusionMode: null,
+      coreGrade: val(rating?.coreGrade),
+      bestGrade: val(rating?.bestGrade),
+      likelyGrade: val(rating?.likelyGrade),
+      worstGrade: val(rating?.worstGrade),
+    }
+  }
+
+  const normalized = normalizeRadarConclusion({
+    ...rating,
+    suggestedGrade: rating?.coreGrade,
+  })
+
+  if (normalized.conclusionMode === 'fixed_grade') {
+    return {
+      conclusionMode: 'fixed_grade',
+      coreGrade: normalized.fixedGrade,
+      bestGrade: normalized.fixedGrade,
+      likelyGrade: normalized.fixedGrade,
+      worstGrade: normalized.fixedGrade,
+    }
+  }
+
+  if (normalized.conclusionMode === 'bounded_range') {
+    return {
+      conclusionMode: 'bounded_range',
+      coreGrade: normalized.likelyGrade,
+      bestGrade: normalized.bestGrade,
+      likelyGrade: normalized.likelyGrade,
+      worstGrade: normalized.worstGrade,
+    }
+  }
+
+  return {
+    conclusionMode: normalized.conclusionMode === 'blocked' ? 'blocked' : 'labels_only',
+    coreGrade: null,
+    bestGrade: null,
+    likelyGrade: null,
+    worstGrade: null,
+  }
+}
 
 export function parseJsonl(text, label = 'JSONL') {
   if (text.includes('\r')) throw new Error(`${label} must use LF line endings`)
@@ -80,6 +128,7 @@ export function buildCurrentRatingIndexes(ratings) {
 }
 
 export function buildDesiredPublicRating(rating, work, release, importedAt) {
+  const conclusion = publicConclusionProjection(rating)
   return {
     publicationKey: `work:${val(work.id)}`,
     work: val(work.id),
@@ -87,10 +136,11 @@ export function buildDesiredPublicRating(rating, work, release, importedAt) {
     workIdSnapshot: val(rating.workId),
     workSiteId: val(rating.siteId),
     title: val(rating.title),
-    coreGrade: val(rating.coreGrade),
-    bestGrade: val(rating.bestGrade),
-    likelyGrade: val(rating.likelyGrade),
-    worstGrade: val(rating.worstGrade),
+    conclusionMode: conclusion.conclusionMode,
+    coreGrade: conclusion.coreGrade,
+    bestGrade: conclusion.bestGrade,
+    likelyGrade: conclusion.likelyGrade,
+    worstGrade: conclusion.worstGrade,
     confidence: val(rating.confidence),
     matchedClasses: (rating.matchedClasses || []).map((value) => ({ value: val(value) })),
     factRefs: (rating.factRefs || []).map((value) => ({ value: val(value) })),
@@ -142,10 +192,11 @@ function comparableRating(record) {
     workIdSnapshot: val(record.workIdSnapshot),
     workSiteId: val(record.workSiteId),
     title: val(record.title),
-    coreGrade: val(record.coreGrade),
-    bestGrade: val(record.bestGrade),
-    likelyGrade: val(record.likelyGrade),
-    worstGrade: val(record.worstGrade),
+    conclusionMode: val(record.conclusionMode) || null,
+    coreGrade: val(record.coreGrade) || null,
+    bestGrade: val(record.bestGrade) || null,
+    likelyGrade: val(record.likelyGrade) || null,
+    worstGrade: val(record.worstGrade) || null,
     confidence: val(record.confidence),
     matchedClasses: (record.matchedClasses || []).map((item) => ({ value: val(item?.value ?? item) })),
     factRefs: (record.factRefs || []).map((item) => ({ value: val(item?.value ?? item) })),
