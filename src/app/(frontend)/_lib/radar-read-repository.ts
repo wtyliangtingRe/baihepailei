@@ -10,7 +10,7 @@ import {
   type RadarResearchInput,
 } from '@/lib/radar/readStandardization'
 
-type PayloadDocument = Record<string, unknown> & {
+export type RadarSourceDocument = Record<string, unknown> & {
   id?: string | number
   updatedAt?: string | null
 }
@@ -23,6 +23,17 @@ type WorkReadInput = {
 }
 
 export type RadarRepositoryReadResult = RadarReadSnapshot & {
+  sourceDocuments: {
+    published: {
+      record: RadarSourceDocument | null
+      rating: RadarSourceDocument | null
+    }
+    candidate: RadarSourceDocument | null
+    research: {
+      latest: RadarSourceDocument | null
+      history: RadarSourceDocument[]
+    }
+  }
   diagnostics: {
     publishedRecordRejected: boolean
     publishedRatingRejected: boolean
@@ -35,7 +46,7 @@ function clean(value: unknown) {
   return String(value ?? '').trim()
 }
 
-function asConclusion(doc?: PayloadDocument | null): RadarConclusionInput | null {
+function asConclusion(doc?: RadarSourceDocument | null): RadarConclusionInput | null {
   if (!doc) return null
   const humanReview = doc.humanReview as { blocksPublication?: boolean | null } | undefined
   return {
@@ -54,10 +65,11 @@ function asConclusion(doc?: PayloadDocument | null): RadarConclusionInput | null
   }
 }
 
-function asResearch(doc: PayloadDocument): RadarResearchInput {
+function asResearch(doc: RadarSourceDocument): RadarResearchInput {
   return {
     workIdSnapshot: doc.workIdSnapshot as string | number | null | undefined,
     workSiteId: doc.workSiteId as string | null | undefined,
+    identityKey: doc.identityKey as string | null | undefined,
     recordStatus: doc.recordStatus as string | null | undefined,
     proposedBestGrade: doc.proposedBestGrade as string | null | undefined,
     proposedLikelyGrade: doc.proposedLikelyGrade as string | null | undefined,
@@ -133,9 +145,9 @@ async function readWithPayload(
     }),
   ])
 
-  const rawRecord = recordResult.docs[0] as unknown as PayloadDocument | undefined
-  const rawRating = ratingResult.docs[0] as unknown as PayloadDocument | undefined
-  const rawCandidate = candidateResult.docs[0] as unknown as PayloadDocument | undefined
+  const rawRecord = recordResult.docs[0] as unknown as RadarSourceDocument | undefined
+  const rawRating = ratingResult.docs[0] as unknown as RadarSourceDocument | undefined
+  const rawCandidate = candidateResult.docs[0] as unknown as RadarSourceDocument | undefined
 
   const record = asConclusion(rawRecord)
   const rating = asConclusion(rawRating)
@@ -145,11 +157,10 @@ async function readWithPayload(
   const exactRating = rating && hasExactRadarIdentity(identity, rating) ? rating : null
   const exactCandidate = candidate && hasExactRadarIdentity(identity, candidate) ? candidate : null
 
-  const researchHistory = (researchResult.docs as unknown as PayloadDocument[])
-    .map(asResearch)
-    .filter((row) => hasExactRadarIdentity(identity, row))
-
-  const researchHistoryTruncated = researchResult.totalDocs > researchHistory.length
+  const exactResearchDocuments = (researchResult.docs as unknown as RadarSourceDocument[])
+    .filter((doc) => hasExactRadarIdentity(identity, asResearch(doc)))
+  const researchHistory = exactResearchDocuments.map(asResearch)
+  const researchHistoryTruncated = researchResult.totalDocs > exactResearchDocuments.length
 
   return {
     identity,
@@ -165,6 +176,17 @@ async function readWithPayload(
       truncated: researchHistoryTruncated,
     },
     legacyCompatibility: input.legacyCompatibility ?? null,
+    sourceDocuments: {
+      published: {
+        record: exactRecord && rawRecord ? rawRecord : null,
+        rating: exactRating && rawRating ? rawRating : null,
+      },
+      candidate: exactCandidate && rawCandidate ? rawCandidate : null,
+      research: {
+        latest: exactResearchDocuments[0] ?? null,
+        history: exactResearchDocuments,
+      },
+    },
     diagnostics: {
       publishedRecordRejected: Boolean(rawRecord && !exactRecord),
       publishedRatingRejected: Boolean(rawRating && !exactRating),
@@ -185,6 +207,34 @@ export async function readRadarSnapshot(
   } catch {
     // This read layer is optional for degraded/static deployments. A database
     // outage must not turn a work detail route into a server error.
+    return null
+  }
+}
+
+export async function readRadarSnapshotForWork(
+  workId?: string | number,
+): Promise<RadarRepositoryReadResult | null> {
+  const normalizedWorkId = clean(workId)
+  if (!normalizedWorkId) return null
+
+  try {
+    const payload = await getPayload({ config: configPromise })
+    const work = await payload.findByID({
+      collection: 'works',
+      id: normalizedWorkId,
+      depth: 0,
+      overrideAccess: true,
+    }) as unknown as RadarSourceDocument
+    const siteId = clean(work.siteId)
+    if (!siteId) return null
+
+    return await readWithPayload(payload, {
+      workId: normalizedWorkId,
+      siteId,
+    })
+  } catch {
+    // Resolve the internal compatibility siteId from the canonical Works row
+    // server-side. Never fall back to title matching or publicationKey alone.
     return null
   }
 }

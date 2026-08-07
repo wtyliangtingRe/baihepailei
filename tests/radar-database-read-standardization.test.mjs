@@ -29,6 +29,9 @@ function candidate(grade = 'B') {
     recordStatus: 'current',
     conclusionMode: 'fixed_grade',
     compatibilityGrade: grade,
+    bestGrade: grade,
+    likelyGrade: grade,
+    worstGrade: grade,
   }
 }
 
@@ -143,6 +146,56 @@ test('bounded ranges preserve best, likely and worst without midpoint collapse',
   assert.deepEqual(state.range, { bestGrade: 'S', likelyGrade: 'A', worstGrade: 'C' })
 })
 
+test('bounded range requires compatibility/core to equal likely', () => {
+  const state = standardization.normalizeRadarConclusion({
+    conclusionMode: 'bounded_range',
+    compatibilityGrade: 'B',
+    bestGrade: 'S',
+    likelyGrade: 'A',
+    worstGrade: 'C',
+  })
+  assert.equal(state.valid, false)
+  assert.equal(state.grade, null)
+  assert.equal(state.reason, 'bounded_core_likely_mismatch')
+})
+
+test('explicit fixed grade requires all four grades to agree', () => {
+  const valid = standardization.normalizeRadarConclusion(candidate('B'))
+  const incomplete = standardization.normalizeRadarConclusion({
+    ...exact,
+    recordStatus: 'current',
+    conclusionMode: 'fixed_grade',
+    compatibilityGrade: 'B',
+  })
+  const conflict = standardization.normalizeRadarConclusion({
+    ...candidate('B'),
+    worstGrade: 'C',
+  })
+  assert.equal(valid.valid, true)
+  assert.equal(valid.grade, 'B')
+  assert.equal(incomplete.valid, false)
+  assert.equal(incomplete.reason, 'invalid_fixed_grade_contract')
+  assert.equal(conflict.valid, false)
+  assert.equal(conflict.reason, 'fixed_grade_conflict')
+})
+
+test('explicit machine conclusions cannot assign X or include X in a range', () => {
+  const fixed = standardization.normalizeRadarConclusion(candidate('X'))
+  const bounded = standardization.normalizeRadarConclusion({
+    ...exact,
+    recordStatus: 'current',
+    conclusionMode: 'bounded_range',
+    compatibilityGrade: 'F',
+    bestGrade: 'E',
+    likelyGrade: 'F',
+    worstGrade: 'X',
+  })
+  assert.equal(fixed.valid, false)
+  assert.equal(fixed.reason, 'machine_x_not_allowed')
+  assert.equal(bounded.valid, false)
+  assert.equal(bounded.reason, 'machine_x_not_allowed')
+})
+
 test('invalid or incomplete bounded ranges do not invent a fixed grade', () => {
   const incomplete = standardization.normalizeRadarConclusion({
     conclusionMode: 'bounded_range',
@@ -195,6 +248,16 @@ test('a valid human override has authority over Published while lineages remain 
   assert.equal(selected.gradeState.grade, 'S')
   assert.ok(selected.snapshot.published.rating)
   assert.ok(selected.snapshot.candidate)
+})
+
+test('human override may use X while machine conclusions may not', () => {
+  const selected = standardization.selectRadarAuthority({
+    identity,
+    humanOverride: { grade: 'X', status: 'reviewed' },
+    candidate: candidate('A'),
+  })
+  assert.equal(selected.authority, 'human')
+  assert.equal(selected.gradeState.grade, 'X')
 })
 
 test('a pending human form is not an override', () => {

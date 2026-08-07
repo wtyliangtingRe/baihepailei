@@ -1,3 +1,10 @@
+import {
+  normalizeRadarConclusion,
+  normalizeRadarDatabaseStatus,
+  type RadarConclusionMode,
+  type RadarPublicTagContract,
+} from './conclusionNormalizer.mjs'
+
 export type RadarMatchedRuleMetrics = {
   code?: string | null
   grade?: string | null
@@ -12,12 +19,22 @@ export type RadarAssessmentMetrics = {
   sourceSummary?: string | null
   sourceCount?: number | null
   policyVersion?: string | null
+  conclusionMode?: RadarConclusionMode | null
   suggestedGrade?: string | null
+  fixedGrade?: string | null
+  bestGrade?: string | null
+  likelyGrade?: string | null
+  worstGrade?: string | null
   decisiveRuleCode?: string | null
   decisiveRuleReason?: string | null
   matchedRules?: RadarMatchedRuleMetrics[] | null
   contradictions?: Array<string | { value?: string | null }> | null
+  unresolvedDimensions?: Array<string | { value?: string | null }> | null
+  validationIssues?: string[] | null
   requiresHumanReview?: boolean | null
+  recommendedNextQueue?: string | null
+  warningTemplateId?: string | null
+  publicTags?: RadarPublicTagContract[] | null
   assessedAt?: string | null
 }
 
@@ -110,8 +127,7 @@ function metricBand(value: number | null) {
   return '偏低'
 }
 
-function reviewLabel(input: RadarAssessmentPresentationInput) {
-  const notice = cleanText(input.ratingNotice)
+function reviewLabel(input: RadarAssessmentPresentationInput, notice: string) {
   if (ratingNoticeLabels[notice]) return ratingNoticeLabels[notice]
   const status = cleanText(input.reviewStatus)
   return reviewStatusLabels[status] || status || '待复核'
@@ -158,19 +174,35 @@ function normalizeContradictions(value?: Array<string | { value?: string | null 
 }
 
 export function buildRadarAssessmentPresentation(input: RadarAssessmentPresentationInput) {
-  const confidence = normalizeRadarPercent(input.radarAssessment?.confidencePercent)
-  const coverage = normalizeRadarPercent(input.radarAssessment?.evidenceCoveragePercent)
-  const sourceSummary = cleanText(input.radarAssessment?.sourceSummary)
-  const sourceCount = normalizeSourceCount(input.radarAssessment?.sourceCount)
-  const policyVersion = cleanText(input.radarAssessment?.policyVersion)
-  const assessedAt = assessedDate(input.radarAssessment?.assessedAt)
-  const notice = cleanText(input.ratingNotice)
+  const assessment = input.radarAssessment
+  const confidence = normalizeRadarPercent(assessment?.confidencePercent)
+  const coverage = normalizeRadarPercent(assessment?.evidenceCoveragePercent)
+  const sourceSummary = cleanText(assessment?.sourceSummary)
+  const sourceCount = normalizeSourceCount(assessment?.sourceCount)
+  const policyVersion = cleanText(assessment?.policyVersion)
+  const assessedAt = assessedDate(assessment?.assessedAt)
   const reviewStatus = cleanText(input.reviewStatus)
-  const requiresHumanReview = input.radarAssessment?.requiresHumanReview === true
-    || notice === 'ai_synthesized_pending_review'
-    || notice === 'external_source_pending_review'
-    || reviewStatus === 'pending'
+  const rawNotice = normalizeRadarDatabaseStatus(input.ratingNotice)
+  const baseRequiresHumanReview = assessment?.requiresHumanReview === true
     || reviewStatus === 'disputed'
+
+  const conclusion = normalizeRadarConclusion({
+    conclusionMode: assessment?.conclusionMode,
+    suggestedGrade: assessment?.suggestedGrade ?? assessment?.fixedGrade,
+    bestGrade: assessment?.bestGrade,
+    likelyGrade: assessment?.likelyGrade,
+    worstGrade: assessment?.worstGrade,
+    classificationRule: assessment?.decisiveRuleCode,
+    matchedClasses: assessment?.matchedRules?.map((rule) => rule.code || ''),
+    unresolvedDimensions: assessment?.unresolvedDimensions,
+    requiresHumanReview: baseRequiresHumanReview,
+    recommendedNextQueue: assessment?.recommendedNextQueue,
+    evidenceStatus: assessment?.evidenceStatus,
+    ratingNotice: rawNotice,
+    warningTemplateId: assessment?.warningTemplateId,
+    publicTags: assessment?.publicTags,
+  })
+  const notice = conclusion.databaseStatus || rawNotice
 
   return {
     confidence,
@@ -181,19 +213,35 @@ export function buildRadarAssessmentPresentation(input: RadarAssessmentPresentat
     coverageBand: metricBand(coverage),
     evidenceLabel: evidenceLabel(input),
     evidenceTone: evidenceTone(input),
-    reviewLabel: reviewLabel(input),
+    reviewLabel: reviewLabel(input, notice),
     reviewStatusLabel: reviewStatusLabels[reviewStatus] || reviewStatus || '待复核',
     pageNoticeTone: pageNoticeTones[notice] || 'neutral',
     sourceSummary,
     sourceCount,
     policyVersion,
     assessedAt,
-    suggestedGrade: cleanText(input.radarAssessment?.suggestedGrade).toUpperCase(),
-    decisiveRuleCode: cleanText(input.radarAssessment?.decisiveRuleCode),
-    decisiveRuleReason: cleanText(input.radarAssessment?.decisiveRuleReason),
-    matchedRules: normalizeMatchedRules(input.radarAssessment?.matchedRules),
-    contradictions: normalizeContradictions(input.radarAssessment?.contradictions),
-    requiresHumanReview,
+    conclusionMode: conclusion.conclusionMode,
+    conclusionTitle: conclusion.title,
+    conclusionDisplay: conclusion.display,
+    likelyLabel: conclusion.likelyLabel,
+    fixedGrade: conclusion.fixedGrade,
+    bestGrade: conclusion.bestGrade,
+    likelyGrade: conclusion.likelyGrade,
+    worstGrade: conclusion.worstGrade,
+    suggestedGrade: conclusion.fixedGrade,
+    validationIssues: [...new Set([
+      ...(assessment?.validationIssues || []),
+      ...conclusion.validationIssues,
+    ])],
+    warningTemplateId: conclusion.warningTemplateId,
+    publicTags: conclusion.publicTags,
+    pendingReasons: conclusion.pendingReasons,
+    unresolvedDimensions: conclusion.unresolvedDimensions,
+    decisiveRuleCode: cleanText(assessment?.decisiveRuleCode),
+    decisiveRuleReason: cleanText(assessment?.decisiveRuleReason),
+    matchedRules: normalizeMatchedRules(assessment?.matchedRules),
+    contradictions: normalizeContradictions(assessment?.contradictions),
+    requiresHumanReview: conclusion.requiresHumanReview,
     hasCalculatedMetrics: confidence !== null || coverage !== null,
     confidenceExplanation: '表示当前排雷建议与现有证据的一致程度，不等同于作品安全概率。',
     coverageExplanation: '表示角色关系、剧情发展、结局、官方说明与来源材料等关键证据的完整度。',

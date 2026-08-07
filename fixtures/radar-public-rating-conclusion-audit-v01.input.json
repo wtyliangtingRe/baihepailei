@@ -1,0 +1,72 @@
+{
+  "records": [
+    {
+      "publicationKey": "work:fixed-b",
+      "coreGrade": "B",
+      "bestGrade": "B",
+      "likelyGrade": "B",
+      "worstGrade": "B",
+      "humanReview": { "status": "reviewed" }
+    },
+    {
+      "publicationKey": "work:bounded-cde",
+      "coreGrade": "D",
+      "bestGrade": "C",
+      "likelyGrade": "D",
+      "worstGrade": "E",
+      "humanReview": { "status": "unreviewed" },
+      "unresolvedDimensions": [{ "value": "结局仍待确认" }]
+    },
+    {
+      "publicationKey": "work:malformed",
+      "coreGrade": "D",
+      "bestGrade": "C",
+      "likelyGrade": "E",
+      "worstGrade": "D",
+      "humanReview": { "status": "unreviewed" }
+    },
+    {
+      "publicationKey": "work:d-unclear-bounded",
+      "coreGrade": "D",
+      "bestGrade": "C",
+      "likelyGrade": "D",
+      "worstGrade": "E",
+      "classificationRule": "D-UNCLEAR",
+      "ratingNotice": "ai-synthesized-pending-review",
+      "publicWarningTemplateIds": [{ "value": "ai_synthesized_pending_review" }],
+      "publicTagHints": [{
+        "key": "accelerated-radar-ai-review",
+        "group": "加速排雷",
+        "value": "AI 待补充",
+        "warningTemplateId": "ai-synthesized-pending-review"
+      }]
+    },
+    {
+      "publicationKey": "work:core-likely-mismatch",
+      "coreGrade": "A",
+      "bestGrade": "B",
+      "likelyGrade": "B",
+      "worstGrade": "B",
+      "humanReview": { "status": "reviewed" }
+    },
+    {
+      "publicationKey": "work:missing-range",
+      "coreGrade": "C",
+      "bestGrade": "C",
+      "likelyGrade": "C",
+      "humanReview": { "status": "unreviewed" },
+      "recommendedNextQueue": "more_research"
+    },
+    {
+      "publicationKey": "work:labels-only",
+      "classificationRule": "D-UNCLEAR",
+      "humanReview": { "status": "unreviewed" }
+    },
+    {
+      "publicationKey": "work:blocked",
+      "recordShape": "blocked",
+      "pageNotice": "identity_conflict",
+      "humanReview": { "status": "unreviewed" }
+    }
+  ]
+}

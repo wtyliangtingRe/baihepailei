@@ -1,0 +1,70 @@
+name: Validate Radar v0.5 UI integration v01
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-radar-bounded-range-ui-standardization-v01.yml'
+      - 'src/lib/radar/conclusionNormalizer.mjs'
+      - 'src/lib/radar/conclusionNormalizer.d.mts'
+      - 'src/lib/radar/assessmentPresentation.ts'
+      - 'src/lib/radar/readStandardization.ts'
+      - 'src/app/(frontend)/_lib/radar-read-repository.ts'
+      - 'src/app/(frontend)/_lib/radar-public-rating-bridge.ts'
+      - 'src/app/(frontend)/_components/WorkAssessmentTrustCard.tsx'
+      - 'scripts/radar/audit-radar-public-rating-conclusions-v01.mjs'
+      - 'fixtures/radar-public-rating-conclusion-audit-v01.*.json'
+      - 'tests/radar-bounded-range-conclusion.test.mjs'
+      - 'tests/radar-public-rating-bridge.test.mjs'
+      - 'tests/radar-database-read-standardization.test.mjs'
+      - 'tests/radar-assessment-presentation.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-v05-ui-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PAYLOAD_SECRET: ci-readonly-radar-v05-ui-integration
+      DATABASE_URI: postgresql://readonly:readonly@127.0.0.1:5432/not-used
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Enable pnpm
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+      - name: Run focused compatibility tests
+        run: >-
+          node --experimental-strip-types --test
+          tests/radar-bounded-range-conclusion.test.mjs
+          tests/radar-public-rating-bridge.test.mjs
+          tests/radar-database-read-standardization.test.mjs
+          tests/radar-assessment-presentation.test.mjs
+      - name: Reproduce read-only fixture audit
+        run: |
+          node scripts/radar/audit-radar-public-rating-conclusions-v01.mjs \
+            --input fixtures/radar-public-rating-conclusion-audit-v01.input.json \
+            --output /tmp/radar-public-rating-conclusion-audit-v01.report.json
+          diff -u \
+            fixtures/radar-public-rating-conclusion-audit-v01.report.json \
+            /tmp/radar-public-rating-conclusion-audit-v01.report.json
+      - name: TypeScript
+        run: pnpm exec tsc --noEmit
+      - name: Production build
+        run: pnpm build
+      - name: Confirm no production apply surface
+        run: |
+          ! grep -R -E "payload\.(create|update|delete)|DATABASE_URI|postgres" \
+            scripts/radar/audit-radar-public-rating-conclusions-v01.mjs
+      - name: Check diff whitespace
+        run: git diff --check origin/main...HEAD
