@@ -11,6 +11,7 @@ import {
 } from '../src/lib/radar/conclusionNormalizer.mjs'
 import { auditRadarPublicRatingConclusions as audit } from '../scripts/radar/audit-radar-public-rating-conclusions-v01.mjs'
 
+const { buildRadarAssessmentPresentation } = await import('../src/lib/radar/assessmentPresentation.ts')
 const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
 
 test('fixed B/B/B', () => {
@@ -18,9 +19,37 @@ test('fixed B/B/B', () => {
   assert.deepEqual([x.conclusionMode, x.fixedGrade, x.display, x.needsPendingTag], ['fixed_grade', 'B', 'B', false])
 })
 
+test('explicit fixed requires all four grades to agree', () => {
+  const valid = normalize({ conclusionMode: 'fixed_grade', coreGrade: 'B', bestGrade: 'B', likelyGrade: 'B', worstGrade: 'B' })
+  const incomplete = normalize({ conclusionMode: 'fixed_grade', coreGrade: 'B' })
+  const conflict = normalize({ conclusionMode: 'fixed_grade', coreGrade: 'B', bestGrade: 'B', likelyGrade: 'B', worstGrade: 'C' })
+  assert.deepEqual([valid.conclusionMode, valid.fixedGrade], ['fixed_grade', 'B'])
+  assert.equal(incomplete.conclusionMode, 'labels_only')
+  assert.ok(incomplete.validationIssues.includes('incomplete_fixed_grade_range'))
+  assert.equal(conflict.conclusionMode, 'labels_only')
+  assert.ok(conflict.validationIssues.includes('fixed_grade_conflict'))
+})
+
 test('bounded C/D/E never becomes fixed D', () => {
   const x = normalize({ coreGrade: 'D', bestGrade: 'C', likelyGrade: 'D', worstGrade: 'E' })
   assert.deepEqual([x.conclusionMode, x.fixedGrade, x.suggestedGrade, x.display, x.likelyLabel], ['bounded_range', '', '', 'C ～ E', '最可能 D'])
+})
+
+test('bounded uncertainty does not automatically require human review', () => {
+  const x = buildRadarAssessmentPresentation({
+    radarAssessment: {
+      conclusionMode: 'bounded_range',
+      bestGrade: 'C',
+      likelyGrade: 'D',
+      worstGrade: 'E',
+      requiresHumanReview: false,
+    },
+    ratingNotice: 'ai_synthesized_pending_review',
+    reviewStatus: 'pending',
+  })
+  assert.equal(x.conclusionMode, 'bounded_range')
+  assert.equal(x.requiresHumanReview, false)
+  assert.ok(x.publicTags.some((tag) => tag.key === TAG.key))
 })
 
 test('explicit labels_only never promotes a valid grade', () => {
@@ -76,6 +105,8 @@ test('bridge/UI preserve human priority and split fixed from bounded', () => {
   const bridge = read('src/app/(frontend)/_lib/radar-public-rating-bridge.ts')
   const card = read('src/app/(frontend)/_components/WorkAssessmentTrustCard.tsx')
   assert.match(bridge, /withAuthorityGradeState/u)
+  assert.match(bridge, /bestGrade: fixed \|\|/u)
+  assert.doesNotMatch(bridge, /\|\| pending/u)
   assert.doesNotMatch(bridge, /payload\.(create|update|delete)/u)
   assert.match(card, /const catalogGrade = humanGrade \|\| publishedCatalogGrade \|\| fallbackRecordedGrade/u)
   assert.match(card, /AI 暂定评级范围/u)

@@ -184,9 +184,6 @@ export function buildRadarAssessmentPresentation(input: RadarAssessmentPresentat
   const reviewStatus = cleanText(input.reviewStatus)
   const rawNotice = normalizeRadarDatabaseStatus(input.ratingNotice)
   const baseRequiresHumanReview = assessment?.requiresHumanReview === true
-    || rawNotice === 'ai_synthesized_pending_review'
-    || rawNotice === 'external_source_pending_review'
-    || reviewStatus === 'pending'
     || reviewStatus === 'disputed'
 
   const conclusion = normalizeRadarConclusion({
@@ -244,7 +241,7 @@ export function buildRadarAssessmentPresentation(input: RadarAssessmentPresentat
     decisiveRuleReason: cleanText(assessment?.decisiveRuleReason),
     matchedRules: normalizeMatchedRules(assessment?.matchedRules),
     contradictions: normalizeContradictions(assessment?.contradictions),
-    requiresHumanReview: conclusion.requiresHumanReview || conclusion.needsPendingTag,
+    requiresHumanReview: conclusion.requiresHumanReview,
     hasCalculatedMetrics: confidence !== null || coverage !== null,
     confidenceExplanation: '表示当前排雷建议与现有证据的一致程度，不等同于作品安全概率。',
     coverageExplanation: '表示角色关系、剧情发展、结局、官方说明与来源材料等关键证据的完整度。',

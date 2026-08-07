@@ -162,10 +162,10 @@ export function normalizeRadarConclusion(input = {}) {
       validationIssues.push(completeRange ? 'bounded_range_not_distinct' : 'invalid_bounded_range')
     }
   } else if (explicitMode === 'fixed_grade') {
-    if (!suggestedGrade) {
+    if (!suggestedGrade || rangeFieldCount !== 3 || !completeRange) {
       conclusionMode = 'labels_only'
-      validationIssues.push('invalid_fixed_grade')
-    } else if (completeRange && (!legalRange || !allEqual || suggestedGrade !== likelyGrade)) {
+      validationIssues.push(!suggestedGrade ? 'invalid_fixed_grade' : 'incomplete_fixed_grade_range')
+    } else if (!legalRange || !allEqual || suggestedGrade !== likelyGrade) {
       conclusionMode = 'labels_only'
       validationIssues.push('fixed_grade_conflict')
     } else {

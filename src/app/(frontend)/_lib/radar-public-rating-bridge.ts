@@ -169,9 +169,9 @@ function normalizedMode(state: RadarGradeState): RadarConclusionMode {
 function withAuthorityGradeState(
   base: RadarAssessmentMetrics,
   state: RadarGradeState,
-  pending: boolean,
 ): RadarAssessmentMetrics {
   const mode = normalizedMode(state)
+  const fixed = mode === 'fixed_grade' ? state.grade || undefined : undefined
   const validationIssues = unique([
     ...(base.validationIssues || []),
     !state.valid ? clean(state.reason) : '',
@@ -180,15 +180,14 @@ function withAuthorityGradeState(
   return {
     ...base,
     conclusionMode: mode,
-    suggestedGrade: mode === 'fixed_grade' ? state.grade : undefined,
-    fixedGrade: mode === 'fixed_grade' ? state.grade : undefined,
-    bestGrade: mode === 'bounded_range' ? state.range?.bestGrade : undefined,
-    likelyGrade: mode === 'bounded_range' ? state.range?.likelyGrade : undefined,
-    worstGrade: mode === 'bounded_range' ? state.range?.worstGrade : undefined,
+    suggestedGrade: fixed,
+    fixedGrade: fixed,
+    bestGrade: fixed || (mode === 'bounded_range' ? state.range?.bestGrade : undefined),
+    likelyGrade: fixed || (mode === 'bounded_range' ? state.range?.likelyGrade : undefined),
+    worstGrade: fixed || (mode === 'bounded_range' ? state.range?.worstGrade : undefined),
     validationIssues,
     requiresHumanReview:
       base.requiresHumanReview === true
-      || pending
       || !state.valid,
   }
 }
@@ -206,7 +205,7 @@ function publishedAssessment(
   const humanReview = objectOf(rating.humanReview)
   const humanReviewStatus = clean(humanReview.status)
   const requiresHumanReview =
-    humanReviewStatus !== 'reviewed'
+    humanReviewStatus === 'disputed'
     || humanReview.blocksAnalysis === true
     || humanReview.blocksPublication === true
 
@@ -218,6 +217,7 @@ function publishedAssessment(
     sourceCount: sourceReferenceCount(rating, record),
     policyVersion:
       clean(rating.metricsPolicyVersion)
+      || clean(rating.sourceMetricsPolicyVersion)
       || clean(rating.sourcePolicyVersion),
     decisiveRuleCode:
       clean(rating.classificationRule)
@@ -240,7 +240,7 @@ function publishedAssessment(
     assessedAt: clean(rating.importedAt),
   }
 
-  return withAuthorityGradeState(base, state, false)
+  return withAuthorityGradeState(base, state)
 }
 
 function candidateAssessment(
@@ -270,11 +270,11 @@ function candidateAssessment(
     matchedRules,
     contradictions: rowValues(raw.contradictions),
     unresolvedDimensions: rowValues(raw.unresolvedDimensions),
-    requiresHumanReview: true,
+    requiresHumanReview: raw.requiresHumanReview === true,
     assessedAt: clean(raw.assessedAt) || clean(candidate.publishedAt),
   }
 
-  return withAuthorityGradeState(base, state, true)
+  return withAuthorityGradeState(base, state)
 }
 
 function researchPreview(
@@ -301,18 +301,18 @@ function researchPreview(
     confidencePercent: normalizedPercent(research.confidencePercent),
     recommendedNextAction: clean(research.recommendedNextAction),
     recommendedNextQueue: clean(research.recommendedNextQueue),
-    requiresHumanReview: true,
+    requiresHumanReview: research.requiresHumanReview === true,
     importedAt: clean(research.importedAt),
   }
 }
 
 function publishedNotice(rating: RadarSourceDocument) {
   const humanReview = objectOf(rating.humanReview)
-  return clean(humanReview.status) === 'reviewed'
-    && humanReview.blocksAnalysis !== true
-    && humanReview.blocksPublication !== true
-    ? 'none'
-    : 'ai_synthesized_pending_review'
+  return clean(humanReview.status) === 'disputed'
+    || humanReview.blocksAnalysis === true
+    || humanReview.blocksPublication === true
+    ? 'ai_synthesized_pending_review'
+    : 'none'
 }
 
 export function applyPublicRatingBridge<

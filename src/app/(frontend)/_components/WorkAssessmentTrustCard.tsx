@@ -145,7 +145,12 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
   const acceleratedTag = presentation.publicTags.find((tag) => tag.key === 'accelerated-radar-ai-review')
   const unresolved = research?.unresolvedQuestions || presentation.unresolvedDimensions
   const risks = (research?.riskSignals || []).map((value) => riskLabels[value] || value)
-  const sources = sourceCount(item, presentation.sourceCount)
+  const sources = sourceCount(
+    item,
+    researchOnly && typeof research?.sourceCount === 'number'
+      ? research.sourceCount
+      : presentation.sourceCount,
+  )
   const authorityLabel = runtimeAuthority
     ? authorityLabels[runtimeAuthority] || runtimeAuthority
     : researchOnly
@@ -212,7 +217,7 @@ export default function WorkAssessmentTrustCard({ item }: { item: DetailItem }) 
           {acceleratedTag ? <p className="work-assessment-pending-grade-note"><strong>{acceleratedTag.group} · {acceleratedTag.value}</strong>：资料覆盖、待查问题或人工复核条件仍未完成。</p> : null}
           <dl className="work-assessment-statuses">
             <div><dt>结论模式</dt><dd>{researchOnly ? 'research_only' : presentation.conclusionMode}</dd></div>
-            <div><dt>需要人工复核</dt><dd>{researchOnly || presentation.requiresHumanReview ? '是' : '否'}</dd></div>
+            <div><dt>需要人工复核</dt><dd>{presentation.requiresHumanReview ? '是' : '否'}</dd></div>
             <div><dt>AI 证据状态</dt><dd data-tone={presentation.evidenceTone}>{presentation.evidenceLabel}</dd></div>
             <div><dt>可追溯来源</dt><dd>{sources === null ? '尚未统计' : `${sources} 条`}</dd></div>
           </dl>
