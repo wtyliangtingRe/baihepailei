@@ -95,7 +95,11 @@ test('policy activation status is hash-bound active while production remains clo
     'd1e616a11564375dde18d05762f970821af34077',
   )
   assert.equal(activation.researchAuthority.activationPr, 318)
-  assert.equal(activation.researchAuthority.peerActivationMergeRequiredBeforeWebsiteActivationMerge, true)
+  assert.equal(
+    activation.researchAuthority.activationMerge,
+    '6a45eacde0cc31bce34f95da2b6b11624dffe9ad',
+  )
+  assert.equal(activation.researchAuthority.peerActivationMergedBeforeWebsiteActivation, true)
   assert.equal(
     activation.websiteEvidence.finalActivationPrValidationRecord,
     'pull_request_body_exact_head_required_before_merge',
