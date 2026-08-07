@@ -1,6 +1,6 @@
 # 百合排雷网站 v0.5 展示与兼容合同
 
-状态：站主已批准；满足研究仓库 `docs/RADAR_RATING_POLICY_V0.5.md` 第十三编全部生效门槛后激活。双仓 policy PR 合并是必要条件，但不是充分条件。
+状态：**active**。Activation epoch：`radar-rating-policy-v0.5-activation-20260807-01`。运行时激活状态以 `config/radar-policy-status-registry-v05.json` 与其 SHA-256 绑定 activation record 为准；bundle/component 内嵌的 `approved_pending_activation_gates` 保留为组件获批时的冻结 provenance，不再作为运行时状态源。
 
 权威政策：`radar-rating-policy-v0.5`
 
