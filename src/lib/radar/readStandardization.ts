@@ -221,7 +221,7 @@ export function normalizeRadarConclusion(
     }
   }
 
-  // Legacy values remain legacy. In particular, D-UNCLEAR is not coerced to D.
+  // Generic legacy values remain legacy. In particular, D-UNCLEAR is not coerced to D.
   const grade = normalizeRadarGrade(rawGrade)
   return {
     mode: 'legacy',
@@ -246,6 +246,51 @@ function usableHuman(input?: RadarHumanInput | null) {
   return grade
 }
 
+function legacyPublishedState(rating: RadarConclusionInput): RadarGradeState {
+  const rawGrade = clean(rating.coreGrade).toUpperCase()
+  const coreGrade = normalizeRadarGrade(rating.coreGrade)
+  const range = normalizeRadarGradeRange(rating)
+
+  // v0.5 legacy fallback contract:
+  // - all four grades equal => fixed_grade
+  // - ordered non-equal range with core == likely => bounded_range
+  // - otherwise preserve the Published authority but expose no invented grade
+  if (coreGrade && range && coreGrade === range.likelyGrade) {
+    const grades = [coreGrade, range.bestGrade, range.likelyGrade, range.worstGrade]
+    if (new Set(grades).size === 1) {
+      return {
+        mode: 'fixed_grade',
+        grade: coreGrade,
+        range: null,
+        valid: true,
+        rawMode: '',
+        rawGrade,
+        reason: 'legacy_published_all_four_equal',
+      }
+    }
+
+    return {
+      mode: 'bounded_range',
+      grade: range.likelyGrade,
+      range,
+      valid: true,
+      rawMode: '',
+      rawGrade,
+      reason: 'legacy_published_ordered_range',
+    }
+  }
+
+  return {
+    mode: 'legacy',
+    grade: null,
+    range,
+    valid: false,
+    rawMode: '',
+    rawGrade,
+    reason: 'legacy_published_unresolved_do_not_claim_fixed_grade',
+  }
+}
+
 function publishedState(snapshot: RadarReadSnapshot): RadarGradeState | null {
   const record = snapshot.published?.record
   const rating = snapshot.published?.rating
@@ -255,35 +300,11 @@ function publishedState(snapshot: RadarReadSnapshot): RadarGradeState | null {
   if (!hasExactRadarIdentity(snapshot.identity, rating)) return null
   if (rating.blocksPublication === true) return null
 
-  // Older Published Releases do not carry conclusionMode. Preserve their range when
-  // it is meaningful; otherwise expose the core grade as a legacy projection.
-  if (!clean(rating.conclusionMode)) {
-    const range = normalizeRadarGradeRange(rating)
-    const coreGrade = normalizeRadarGrade(rating.coreGrade)
-    if (range && new Set([range.bestGrade, range.likelyGrade, range.worstGrade]).size > 1) {
-      return {
-        mode: 'bounded_range',
-        grade: range.likelyGrade,
-        range,
-        valid: true,
-        rawMode: '',
-        rawGrade: clean(rating.coreGrade).toUpperCase(),
-        reason: 'legacy_published_range_preserved',
-      }
-    }
-    return {
-      mode: 'legacy',
-      grade: coreGrade,
-      range: null,
-      valid: Boolean(coreGrade),
-      rawMode: '',
-      rawGrade: clean(rating.coreGrade).toUpperCase(),
-      reason: coreGrade ? 'legacy_published_grade' : 'legacy_published_unrecognized_grade',
-    }
-  }
+  if (!clean(rating.conclusionMode)) return legacyPublishedState(rating)
 
-  const state = normalizeRadarConclusion(rating)
-  return state.valid ? state : null
+  // Authority and grade interpretability are deliberately separate. A malformed
+  // current Published row must not silently yield to a lower-authority Candidate.
+  return normalizeRadarConclusion(rating)
 }
 
 function candidateState(snapshot: RadarReadSnapshot): RadarGradeState | null {
@@ -291,8 +312,9 @@ function candidateState(snapshot: RadarReadSnapshot): RadarGradeState | null {
   if (!candidate || !isCurrent(candidate)) return null
   if (!hasExactRadarIdentity(snapshot.identity, candidate)) return null
 
-  const state = normalizeRadarConclusion(candidate)
-  return state.valid ? state : null
+  // Candidate lineage remains pending even when its grade payload is unresolved.
+  // Research must never be used to repair the Candidate in this selector.
+  return normalizeRadarConclusion(candidate)
 }
 
 export function selectRadarAuthority(snapshot: RadarReadSnapshot): RadarAuthoritySelection {
