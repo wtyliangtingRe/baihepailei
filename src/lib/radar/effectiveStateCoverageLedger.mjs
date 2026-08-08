@@ -6,6 +6,13 @@ export const EFFECTIVE_BUCKET_ORDER = Object.freeze([
 ])
 const MODES = new Set(['fixed_grade', 'bounded_range', 'labels_only', 'blocked'])
 const HUMAN_STATUSES = new Set(['reviewed', 'disputed'])
+const RESEARCH_STATUS_RANK = Object.freeze({
+  resolved: 40,
+  partial: 30,
+  insufficient: 20,
+  identity_problem: 0,
+})
+const RESEARCH_SELECTION_REASON = 'quality/status-first: review>researchStatus>assessment-readiness>confidence>source-quality>milestone>timestamp>stable-key'
 const val = (value) => String(value ?? '').trim()
 const low = (value) => val(value).toLowerCase()
 const rel = (value) => value && typeof value === 'object' ? val(value.id ?? value.value) : val(value)
@@ -46,6 +53,66 @@ function newest(rows) {
   return [...rows].sort((a, b) => key(b).localeCompare(key(a)))[0] || null
 }
 
+function compareTuple(left, right) {
+  const size = Math.max(left.length, right.length)
+  for (let index = 0; index < size; index += 1) {
+    const a = left[index] ?? '', b = right[index] ?? ''
+    if (typeof a === 'number' && typeof b === 'number') {
+      if (a !== b) return a - b
+    } else {
+      const order = String(a).localeCompare(String(b))
+      if (order) return order
+    }
+  }
+  return 0
+}
+
+function researchReviewRank(row) {
+  const status = low(row?.reviewStatus ?? row?.qaStatus)
+  if (row?.humanReviewed === true || row?.reviewed === true || row?.qaAccepted === true || ['reviewed', 'accepted', 'approved'].includes(status)) return 2
+  if (row?.humanReviewed === false || row?.qaAccepted === false || ['rejected', 'blocked'].includes(status)) return 0
+  return 1
+}
+
+function researchSourceVector(row) {
+  const counts = { official: 0, primary: 0, secondary: 0, community: 0, other: 0 }
+  for (const source of Array.isArray(row?.sources) ? row.sources : []) {
+    const type = low(source?.sourceType)
+    if (Object.hasOwn(counts, type)) counts[type] += 1
+    else if (type) counts.other += 1
+  }
+  return [counts.official, counts.primary, counts.secondary, counts.community, counts.other]
+}
+
+function researchQualityPrefix(row) {
+  const confidence = Number(row?.confidencePercent)
+  const confidenceRank = Number.isFinite(confidence) && confidence >= 0 && confidence <= 100 ? confidence : -1
+  const assessmentReady = low(row?.recommendedNextQueue) === 'full_assessment' || low(row?.recommendedNextAction) === 'promote_for_reassessment' ? 1 : 0
+  const milestone = Number(row?.milestone)
+  const [official, primary, secondary, community, other] = researchSourceVector(row)
+  return [
+    researchReviewRank(row),
+    RESEARCH_STATUS_RANK[low(row?.researchStatus)] ?? -1,
+    assessmentReady,
+    confidenceRank,
+    official,
+    primary,
+    secondary,
+    community,
+    other,
+    Number.isFinite(milestone) ? milestone : 0,
+  ]
+}
+
+function researchSelectionKey(row) {
+  return [
+    ...researchQualityPrefix(row),
+    val(row?.importedAt ?? row?.updatedAt ?? row?.createdAt),
+    val(row?.researchKey ?? row?.programId ?? row?.batchId ?? row?.id),
+    sha256Json(row),
+  ]
+}
+
 function validateIdentity(row, work, layer) {
   const out = []
   const id = workId(work), site = siteId(work), expected = exactKey(work)
@@ -66,6 +133,41 @@ function validateIdentity(row, work, layer) {
     out.push(error('publication_key_mismatch', layer, `${row.publicationKey} != work:${id}`))
   }
   return out
+}
+
+function researchSemanticViolations(row) {
+  const out = [], status = low(row?.researchStatus)
+  if (!Object.hasOwn(RESEARCH_STATUS_RANK, status)) out.push(error('research_status_invalid', 'Research', `Unsupported researchStatus ${status || '(missing)'}.`))
+  else if (status === 'identity_problem') out.push(error('research_identity_problem', 'Research', 'Research observation reports identity_problem.'))
+  if (val(row?.confidencePercent)) {
+    const confidence = Number(row.confidencePercent)
+    if (!Number.isFinite(confidence) || confidence < 0 || confidence > 100) out.push(error('research_confidence_invalid', 'Research', `confidencePercent=${row.confidencePercent}`))
+  }
+  const range = [row?.proposedBestGrade, row?.proposedLikelyGrade, row?.proposedWorstGrade].map(val)
+  if (range.some(Boolean)) {
+    const normalized = normalizeRadarConclusion({ proposedBestGrade: range[0], proposedLikelyGrade: range[1], proposedWorstGrade: range[2] })
+    for (const issue of normalized.validationIssues || []) out.push(error(`research_${issue}`, 'Research', issue))
+  }
+  return out
+}
+
+function selectResearchObservation(work, rows) {
+  const evaluated = rows.map((row) => ({
+    row,
+    key: researchSelectionKey(row),
+    violations: [...validateIdentity(row, work, 'Research'), ...researchSemanticViolations(row)],
+  }))
+  const valid = evaluated.filter((item) => !hasError(item.violations))
+  const invalid = evaluated.filter((item) => hasError(item.violations))
+  const highest = (items) => [...items].sort((a, b) => compareTuple(b.key, a.key))[0] || null
+  const bestValid = highest(valid), bestInvalid = highest(invalid)
+  if (!bestValid) {
+    return { selected: bestInvalid, blocked: Boolean(bestInvalid), reason: bestInvalid ? 'no_valid_research_observation_highest_priority_malformed' : 'no_research_observation' }
+  }
+  if (bestInvalid && compareTuple(bestInvalid.key, bestValid.key) >= 0) {
+    return { selected: bestInvalid, blocked: true, reason: 'malformed_research_observation_at_or_above_best_valid_priority' }
+  }
+  return { selected: bestValid, blocked: false, reason: RESEARCH_SELECTION_REASON }
 }
 
 function conclusionInput(row, layer) {
@@ -164,18 +266,12 @@ function candidateState(work, rows, expectedPolicyVersion) {
 function researchState(work, history) {
   if (!history.length) return { present: false, violations: [], historicalObservationCount: 0, effectiveObservation: null }
   const current = history.filter((row) => statusIsPresence(row, 'archived')), pool = current.length ? current : history
-  const effective = newest(pool), out = []
+  const selection = selectResearchObservation(work, pool), effective = selection.selected?.row || null, out = []
   if (!current.length) out.push(error('research_no_current_observation', 'Research', 'History exists with no current Research observation.'))
   if (current.length > 1) out.push(error('duplicate_current_research_claim', 'Research', `${current.length} current Research rows.`))
   for (const observation of history) out.push(...validateIdentity(observation, work, 'Research'))
-  if (effective) {
-    if (low(effective.researchStatus) === 'identity_problem') out.push(error('research_identity_problem', 'Research', 'Effective Research observation reports identity_problem.'))
-    const range = [effective.proposedBestGrade, effective.proposedLikelyGrade, effective.proposedWorstGrade].map(val)
-    if (range.some(Boolean)) {
-      const normalized = normalizeRadarConclusion({ proposedBestGrade: range[0], proposedLikelyGrade: range[1], proposedWorstGrade: range[2] })
-      for (const issue of normalized.validationIssues || []) out.push(error(`research_${issue}`, 'Research', issue))
-    }
-  }
+  if (selection.blocked) out.push(error('research_effective_selection_blocked_by_malformed_observation', 'Research', selection.reason))
+  if (effective) out.push(...researchSemanticViolations(effective))
   return {
     present: true, violations: out, historicalObservationCount: history.length,
     effectiveObservation: effective ? {
@@ -186,6 +282,8 @@ function researchState(work, history) {
       proposedBestGrade: val(effective.proposedBestGrade) || null, proposedLikelyGrade: val(effective.proposedLikelyGrade) || null,
       proposedWorstGrade: val(effective.proposedWorstGrade) || null, importedAt: val(effective.importedAt) || null,
       updatedAt: val(effective.updatedAt) || null, sourceResponseSha256: val(effective.sourceResponseSha256) || null,
+      selectionReason: selection.reason,
+      selectionBlocked: selection.blocked,
     } : null,
   }
 }
