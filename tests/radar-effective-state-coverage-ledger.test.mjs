@@ -178,6 +178,34 @@ test('Research preserves history and selects deterministically; duplicate curren
   assert.ok(row.effectiveViolations.some((item) => item.code === 'duplicate_current_research_claim'))
 })
 
+test('archived Research identity drift remains visible and invalidates Research integrity', () => {
+  const current = exactClaim(1, {
+    id: 'r-current',
+    researchKey: 'p-current|1|site-1',
+    programId: 'p-current',
+    researchStatus: 'resolved',
+    importedAt: '2026-02-01T00:00:00Z',
+  })
+  const archived = exactClaim(1, {
+    id: 'r-archive-drift',
+    researchKey: 'p-archive|1|wrong-site',
+    programId: 'p-archive',
+    recordStatus: 'archived',
+    researchStatus: 'resolved',
+    workSiteId: 'wrong-site',
+    identityKey: '1|wrong-site',
+    importedAt: '2026-01-01T00:00:00Z',
+  })
+  const audit = auditEffectiveStateCoverage(snapshot({ radarResearchRecords: [archived, current] }))
+  const row = audit.ledger[0]
+  assert.equal(row.effectiveBucket, 'Research')
+  assert.equal(row.historicalObservationCount, 2)
+  assert.equal(row.effectiveResearchObservation.id, 'r-current')
+  assert.equal(row.effectiveValid, false)
+  assert.ok(row.effectiveViolations.some((item) => item.code === 'work_site_id_snapshot_mismatch'))
+  assert.ok(row.effectiveViolations.some((item) => item.code === 'identity_key_mismatch'))
+})
+
 test('Research history without a current observation remains Research and does not fall through to Legacy', () => {
   const audit = auditEffectiveStateCoverage(snapshot({
     works: [work(1, { rank: 'C' })],
