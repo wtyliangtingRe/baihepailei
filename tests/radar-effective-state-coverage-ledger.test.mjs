@@ -59,6 +59,18 @@ function fixedPublished(id, grade = 'B', overrides = {}) {
   })
 }
 
+function researchClaim(id, overrides = {}) {
+  return exactClaim(id, {
+    researchKey: `program|${id}|site-${id}`,
+    programId: 'program',
+    batchId: 'batch',
+    researchStatus: 'resolved',
+    confidencePercent: 80,
+    importedAt: '2026-01-01T00:00:00Z',
+    ...overrides,
+  })
+}
+
 function snapshot(overrides = {}) {
   return {
     works: [work(1)],
@@ -74,10 +86,7 @@ test('presence-first Published pair blocks lower valid Candidate and Research', 
   const audit = auditEffectiveStateCoverage(snapshot({
     radarPublicRecords: [exactClaim(1, { sourceReleaseId: 'release-1' })],
     radarPublicConclusions: [fixedCandidate(1, 'A')],
-    radarResearchRecords: [exactClaim(1, {
-      researchKey: 'program|1|site-1',
-      programId: 'program',
-      researchStatus: 'resolved',
+    radarResearchRecords: [researchClaim(1, {
       proposedBestGrade: 'A',
       proposedLikelyGrade: 'B',
       proposedWorstGrade: 'C',
@@ -99,11 +108,7 @@ test('malformed Candidate occupies Candidate instead of falling back to Research
       compatibilityGrade: 'B',
       radarAssessment: { policyVersion: 'radar-rating-policy-v0.5' },
     })],
-    radarResearchRecords: [exactClaim(1, {
-      researchKey: 'p|1|site-1',
-      programId: 'p',
-      researchStatus: 'resolved',
-    })],
+    radarResearchRecords: [researchClaim(1)],
   }))
   const row = audit.ledger[0]
   assert.equal(row.effectiveBucket, 'Candidate')
@@ -146,22 +151,23 @@ test('valid Published pair binds record/rating and uses canonical v0.5 conclusio
   assert.equal(row.effectiveConclusion.fixedGrade, 'B')
 })
 
-test('Research preserves history and selects deterministically; duplicate current observations fail closed', () => {
-  const older = exactClaim(1, {
+test('Research preserves history and prefers resolved quality over a newer partial observation', () => {
+  const older = researchClaim(1, {
     id: 'r-old',
     researchKey: 'p-old|1|site-1',
     programId: 'p-old',
     researchStatus: 'resolved',
     importedAt: '2026-01-01T00:00:00Z',
   })
-  const newer = exactClaim(1, {
+  const newer = researchClaim(1, {
     id: 'r-new',
     researchKey: 'p-new|1|site-1',
     programId: 'p-new',
     researchStatus: 'partial',
+    confidencePercent: 100,
     importedAt: '2026-02-01T00:00:00Z',
   })
-  const archived = exactClaim(1, {
+  const archived = researchClaim(1, {
     id: 'r-archive',
     researchKey: 'p-archive|1|site-1',
     programId: 'p-archive',
@@ -173,25 +179,73 @@ test('Research preserves history and selects deterministically; duplicate curren
   const row = audit.ledger[0]
   assert.equal(row.effectiveBucket, 'Research')
   assert.equal(row.historicalObservationCount, 3)
-  assert.equal(row.effectiveResearchObservation.id, 'r-new')
+  assert.equal(row.effectiveResearchObservation.id, 'r-old')
+  assert.match(row.effectiveResearchObservation.selectionReason, /^quality\/status-first:/)
+  assert.equal(row.effectiveResearchObservation.selectionBlocked, false)
   assert.equal(row.effectiveValid, false)
   assert.ok(row.effectiveViolations.some((item) => item.code === 'duplicate_current_research_claim'))
 })
 
+test('reviewed Research observation beats a newer unreviewed peer before recency tie-break', () => {
+  const reviewed = researchClaim(1, {
+    id: 'r-reviewed',
+    reviewed: true,
+    confidencePercent: 70,
+    importedAt: '2026-01-01T00:00:00Z',
+  })
+  const newer = researchClaim(1, {
+    id: 'r-newer',
+    confidencePercent: 100,
+    importedAt: '2026-03-01T00:00:00Z',
+  })
+  const row = auditEffectiveStateCoverage(snapshot({ radarResearchRecords: [reviewed, newer] })).ledger[0]
+  assert.equal(row.effectiveResearchObservation.id, 'r-reviewed')
+})
+
+test('equal-quality Research observations use recency only as a later deterministic tie-break', () => {
+  const older = researchClaim(1, { id: 'r-equal-old', importedAt: '2026-01-01T00:00:00Z' })
+  const newer = researchClaim(1, { id: 'r-equal-new', importedAt: '2026-02-01T00:00:00Z' })
+  const row = auditEffectiveStateCoverage(snapshot({ radarResearchRecords: [newer, older] })).ledger[0]
+  assert.equal(row.effectiveResearchObservation.id, 'r-equal-new')
+})
+
+test('malformed higher-priority Research observation blocks instead of falling back to lower valid observation', () => {
+  const valid = researchClaim(1, {
+    id: 'r-valid',
+    researchStatus: 'partial',
+    confidencePercent: 20,
+    importedAt: '2026-02-01T00:00:00Z',
+  })
+  const malformed = researchClaim(1, {
+    id: 'r-malformed',
+    researchStatus: 'resolved',
+    confidencePercent: 99,
+    proposedBestGrade: 'D',
+    proposedLikelyGrade: 'B',
+    proposedWorstGrade: 'A',
+    importedAt: '2026-01-01T00:00:00Z',
+  })
+  const row = auditEffectiveStateCoverage(snapshot({ radarResearchRecords: [valid, malformed] })).ledger[0]
+  assert.equal(row.effectiveBucket, 'Research')
+  assert.equal(row.effectiveResearchObservation.id, 'r-malformed')
+  assert.equal(row.effectiveResearchObservation.selectionBlocked, true)
+  assert.equal(row.effectiveValid, false)
+  assert.ok(row.effectiveViolations.some((item) => item.code === 'research_effective_selection_blocked_by_malformed_observation'))
+  assert.ok(row.effectiveViolations.some((item) => item.code === 'research_range_order_invalid'))
+})
+
 test('archived Research identity drift remains visible and invalidates Research integrity', () => {
-  const current = exactClaim(1, {
+  const current = researchClaim(1, {
     id: 'r-current',
     researchKey: 'p-current|1|site-1',
     programId: 'p-current',
-    researchStatus: 'resolved',
     importedAt: '2026-02-01T00:00:00Z',
   })
-  const archived = exactClaim(1, {
+  const archived = researchClaim(1, {
     id: 'r-archive-drift',
     researchKey: 'p-archive|1|wrong-site',
     programId: 'p-archive',
     recordStatus: 'archived',
-    researchStatus: 'resolved',
     workSiteId: 'wrong-site',
     identityKey: '1|wrong-site',
     importedAt: '2026-01-01T00:00:00Z',
@@ -209,12 +263,9 @@ test('archived Research identity drift remains visible and invalidates Research 
 test('Research history without a current observation remains Research and does not fall through to Legacy', () => {
   const audit = auditEffectiveStateCoverage(snapshot({
     works: [work(1, { rank: 'C' })],
-    radarResearchRecords: [exactClaim(1, {
+    radarResearchRecords: [researchClaim(1, {
       id: 'r-archive',
-      researchKey: 'p|1|site-1',
-      programId: 'p',
       recordStatus: 'archived',
-      researchStatus: 'resolved',
     })],
   }))
   const row = audit.ledger[0]
@@ -274,11 +325,7 @@ test('writer is byte deterministic for the same snapshot', () => {
 test('unknown recordStatus is treated as malformed authority presence, not as a fallback trigger', () => {
   const audit = auditEffectiveStateCoverage(snapshot({
     radarPublicConclusions: [fixedCandidate(1, 'B', { recordStatus: 'mystery' })],
-    radarResearchRecords: [exactClaim(1, {
-      researchKey: 'p|1|site-1',
-      programId: 'p',
-      researchStatus: 'resolved',
-    })],
+    radarResearchRecords: [researchClaim(1)],
   }))
   const row = audit.ledger[0]
   assert.equal(row.effectiveBucket, 'Candidate')
