@@ -167,8 +167,8 @@ function researchState(work, history) {
   const effective = newest(pool), out = []
   if (!current.length) out.push(error('research_no_current_observation', 'Research', 'History exists with no current Research observation.'))
   if (current.length > 1) out.push(error('duplicate_current_research_claim', 'Research', `${current.length} current Research rows.`))
+  for (const observation of history) out.push(...validateIdentity(observation, work, 'Research'))
   if (effective) {
-    out.push(...validateIdentity(effective, work, 'Research'))
     if (low(effective.researchStatus) === 'identity_problem') out.push(error('research_identity_problem', 'Research', 'Effective Research observation reports identity_problem.'))
     const range = [effective.proposedBestGrade, effective.proposedLikelyGrade, effective.proposedWorstGrade].map(val)
     if (range.some(Boolean)) {
