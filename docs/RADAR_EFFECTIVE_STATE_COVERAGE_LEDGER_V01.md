@@ -130,4 +130,4 @@ Focused regression command:
 node --test tests/radar-effective-state-coverage-ledger.test.mjs
 ```
 
-Website-wide TypeScript/build validation remains an owner-controlled exact-head gate when GitHub-hosted CI is unavailable because of billing/spending limits.
+The final website-wide gate is intentionally owner-controlled and exact-head-bound because GitHub-hosted CI is unavailable under the current billing/spending limitation. It must cover the focused ledger regressions, TypeScript no-emit, production build, and `git diff --check` before this Draft PR is eligible to merge.
