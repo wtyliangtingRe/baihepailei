@@ -1,0 +1,131 @@
+# Radar Effective-State Coverage Ledger v01
+
+This is a **read-only website coverage/integrity audit**. It does not migrate the production database, write Payload/PostgreSQL rows, rewrite historical releases, rerate existing Public Ratings, or generate new Research/Assessment data.
+
+## Canonical unit and authority
+
+The canonical unit is one `Works` row. Every Work is assigned exactly one effective bucket:
+
+```text
+Human
+  > Published
+  > Candidate
+  > Research
+  > Legacy
+  > TrulyUnassessed
+```
+
+Selection is **presence-first / validation-second / fail-closed**. A malformed higher-authority state still owns its bucket and produces `effectiveValid=false`; it is never repaired by silently falling through to Research or Legacy.
+
+`Published` is the paired current `RadarPublicRecords` + `RadarPublicRatings` projection. Any current half-pair counts as Published presence and therefore fails closed if the pair is incomplete or duplicated.
+
+`Candidate` is the current `RadarPublicConclusions` projection.
+
+`Research` preserves all matching `RadarResearchRecords` as history. `historicalObservationCount` counts those observations and `effectiveResearchObservation` is selected deterministically from current observations (or, if none is current, from history while emitting `research_no_current_observation`). Historical Research rows are not deduplicated away.
+
+`Legacy` is only the lower-authority compatibility state on `Works` (`radarAssessment` / `rank`).
+
+## Conclusion semantics
+
+The ledger imports and delegates conclusion interpretation to:
+
+```text
+src/lib/radar/conclusionNormalizer.mjs
+```
+
+It does **not** define a second grade/range semantics. The ledger adds persistence and lineage invariants around that normalizer, including:
+
+- explicit conclusion-mode mismatch;
+- invalid/missing bounded range;
+- fixed-grade conflicts;
+- `labels_only` / `blocked` ghost grades;
+- machine `X` protection on Candidate/Published state;
+- policy-version diagnostics;
+- Public Record/Public Rating pair binding consistency.
+
+## Identity and conservation checks
+
+The audit checks at least:
+
+- duplicate canonical Work ids;
+- duplicate `Works.siteId` bindings;
+- orphan relationship/snapshot references;
+- `workIdSnapshot` / `workSiteId` mismatch;
+- `identityKey` mismatch;
+- `publicationKey` mismatch;
+- duplicate current Published/Candidate/Research claims;
+- malformed higher-authority state;
+- Research history/effective projection separation;
+- strict conservation:
+
+```text
+Human
++ Published
++ Candidate
++ Research
++ Legacy
++ TrulyUnassessed
+= canonical Works universe
+```
+
+Strict conservation additionally requires one unique canonical Work id per ledger row.
+
+## Frozen snapshot input
+
+The CLI intentionally consumes a frozen read-only export instead of connecting to production by itself. This keeps production authorization separate from audit semantics and lets a later production preflight/exporter provide the data without giving this tool write capability.
+
+Snapshot JSON shape:
+
+```json
+{
+  "works": [],
+  "radarPublicRecords": [],
+  "radarPublicRatings": [],
+  "radarPublicConclusions": [],
+  "radarResearchRecords": []
+}
+```
+
+Run:
+
+```bash
+node scripts/radar/audit-radar-effective-state-coverage-v01.mjs \
+  --snapshot /path/to/read-only-snapshot.json \
+  --output-dir /path/to/audit-output \
+  --strict
+```
+
+Outputs are deterministic for identical parsed input:
+
+- `audit.json`
+- `ledger.jsonl`
+- `violations.jsonl`
+- `SUMMARY.md`
+- `SHA256SUMS`
+
+No wall-clock timestamp is inserted into these files.
+
+## Ledger row contract
+
+Each canonical Work row includes:
+
+- `effectiveBucket`
+- `effectiveValid`
+- `violations`
+- `effectiveViolations`
+- `authorityPresence`
+- `historicalObservationCount`
+- `effectiveResearchObservation`
+- `effectiveConclusion`
+
+`violations` keeps lower/shadowed defects visible. `effectiveViolations` contains the canonical + selected-authority defects that decide `effectiveValid`.
+
+## Validation
+
+Focused regression command:
+
+```bash
+node --test tests/radar-effective-state-coverage-ledger.test.mjs
+```
+
+Website-wide TypeScript/build validation remains an owner-controlled exact-head gate when GitHub-hosted CI is unavailable because of billing/spending limits.
