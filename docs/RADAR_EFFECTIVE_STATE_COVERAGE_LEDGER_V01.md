@@ -21,7 +21,9 @@ Selection is **presence-first / validation-second / fail-closed**. A malformed h
 
 `Candidate` is the current `RadarPublicConclusions` projection.
 
-`Research` preserves all matching `RadarResearchRecords` as history. `historicalObservationCount` counts those observations and `effectiveResearchObservation` is selected deterministically from current observations (or, if none is current, from history while emitting `research_no_current_observation`). Historical Research rows are not deduplicated away.
+`Research` preserves all matching `RadarResearchRecords` as immutable history. `historicalObservationCount` counts every observation and `effectiveResearchObservation` is a separate deterministic projection. Current observations are preferred as the selection pool; if none is current, history remains the Research authority while the ledger emits `research_no_current_observation`.
+
+Research selection is **quality/status-first, not latest-wins**. The deterministic priority is review state, research status, assessment readiness, confidence, source quality, milestone, then timestamp and stable identity/hash tie-breakers. A malformed observation whose priority is at or above the best valid observation blocks the effective Research selection instead of silently falling through to the lower valid observation. The chosen projection records `selectionReason` and `selectionBlocked`. Historical Research rows are never deduplicated away.
 
 `Legacy` is only the lower-authority compatibility state on `Works` (`radarAssessment` / `rank`).
 
