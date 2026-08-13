@@ -1,20 +1,5 @@
-import CollectionIndexPage from '../_components/CollectionIndexPage'
+import Link from 'next/link'
 
-type Args = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
-export default async function CreatorsIndexPage({ searchParams }: Args) {
-  const params = searchParams ? await searchParams : {}
-
-  return (
-    <CollectionIndexPage
-      collection="creators"
-      description="浏览创作者资料、别名与关联条目。创作者页面用于整理公开资料，不对创作者本人做单独评级。"
-      eyebrow="创作者"
-      title="创作者"
-      visualHeading
-      searchParams={params}
-    />
-  )
+export default function CreatorsPage() {
+  return <main className="page"><section className="empty-state small"><h1>创作者资料尚未正式导入</h1><p>迁移没有从旧字段或字段组合制造新的创作者实体。新流程建立正式关系后再开放此区。</p><Link className="back-link" href="/works">浏览正式作品</Link></section></main>
 }

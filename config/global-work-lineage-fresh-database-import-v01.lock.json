@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "global-work-lineage-fresh-database-import-lock-v01",
+  "packageId": "GLOBAL-WORK-LINEAGE-V01-TERMINAL-MIGRATION-PACKAGE-20260814-01",
+  "contractVersion": "global-work-lineage-v01",
+  "frozenBlockCount": 13,
+  "legacyModuleMode": "retired",
+  "formalPackage": {
+    "sha256SumsSha256": "e603381b729e2af703b01ebad436544c3f7097403959e76ca6e6e6557eaa6376",
+    "outputManifestHash": "sha256:4579ea518b58bb84bda65c39519e502d75efc60aed69fe594991a2be6628ef18",
+    "provenanceRootHash": "sha256:9da191a48e7b91a360329b731fc9b82d2ddbef0decf5f61fab96282855fa03d9",
+    "documentSetSha256": "407b60033d85cda0848238bfaba69c699b59099c5f054dcd9a4120bc0155600a",
+    "provenanceObjectSetSha256": "fc7b67954f0af0f96a07e6bb0c7a023aa029c07976dbc6069f65d94ce4abc465",
+    "counts": {
+      "formalWorkLineageRows": 35411,
+      "formalIdentityBindings": 34169,
+      "partialIdentityRows": 1242,
+      "provenanceObjects": 6
+    }
+  },
+  "target": {
+    "databaseMustBeEmpty": true,
+    "compatibilityBridges": 0,
+    "legacyRuntimeDependencies": 0,
+    "referenceRuntimeDependencies": 0
+  }
+}

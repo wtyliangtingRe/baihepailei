@@ -1,21 +1,22 @@
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: baihepailei-postgres
+    container_name: baihepailei-postgres-v01
     restart: unless-stopped
     ports:
       - "15432:5432"
     environment:
       POSTGRES_USER: baihe
       POSTGRES_PASSWORD: CHANGE_ME_DEV_PASSWORD
-      POSTGRES_DB: baihepailei
+      POSTGRES_DB: baihepailei_v01
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-v01-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U baihe -d baihepailei"]
+      test: ["CMD-SHELL", "pg_isready -U baihe -d baihepailei_v01"]
       interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
-  postgres-data:
+  postgres-v01-data:
+

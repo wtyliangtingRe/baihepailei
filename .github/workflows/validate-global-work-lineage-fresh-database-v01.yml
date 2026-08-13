@@ -1,0 +1,190 @@
+name: Validate Global Work Lineage fresh database v01
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-global-work-lineage-fresh-database-v01.yml'
+      - 'database/global-work-lineage-v01/**'
+      - 'scripts/work-lineage/**'
+      - 'tests/fixtures/global-work-lineage-fresh-database-v01/**'
+      - 'docs/GLOBAL-WORK-LINEAGE-FRESH-DATABASE-v01.md'
+      - 'config/global-work-lineage-fresh-database-import-v01.lock.json'
+      - 'src/lib/work-lineage/**'
+      - 'src/app/(frontend)/api/work-lineage/**'
+      - 'src/app/(frontend)/page.tsx'
+      - 'src/app/(frontend)/browse/page.tsx'
+      - 'src/app/(frontend)/works/**'
+      - 'src/app/(frontend)/search/page.tsx'
+      - 'src/app/(frontend)/ratings/page.tsx'
+      - 'src/app/(frontend)/radar/**'
+      - 'src/app/(frontend)/creators/**'
+      - 'src/app/(frontend)/organizations/**'
+      - 'src/app/(frontend)/evidence/**'
+      - 'src/app/(frontend)/recommendations/page.tsx'
+      - 'src/app/(frontend)/updates/page.tsx'
+      - 'src/app/(frontend)/rules/[slug]/page.tsx'
+      - 'src/app/(frontend)/terms/[slug]/page.tsx'
+      - 'tests/global-work-lineage-runtime-repository-v01.test.mjs'
+      - 'package.json'
+      - '.env.example'
+      - 'docker-compose.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: global-work-lineage-fresh-database-v01-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fixture-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Parse tools and check patch whitespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            scripts/work-lineage/prepare_fresh_global_work_lineage_database_v01.py \
+            scripts/work-lineage/run_fresh_global_work_lineage_cutover_v01.py \
+            scripts/work-lineage/validate_fresh_global_work_lineage_database_v01.py \
+            tests/fixtures/global-work-lineage-fresh-database-v01/build_fixture.py
+          node --experimental-strip-types --test \
+            tests/global-work-lineage-runtime-repository-v01.test.mjs
+          git diff --check origin/${{ github.base_ref }}...HEAD
+
+      - name: Build deterministic formal fixture and prepare twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture="$RUNNER_TEMP/formal"
+          lock="$RUNNER_TEMP/fixture.lock.json"
+          python3 tests/fixtures/global-work-lineage-fresh-database-v01/build_fixture.py \
+            --out "$fixture" --lock "$lock"
+          python3 scripts/work-lineage/prepare_fresh_global_work_lineage_database_v01.py \
+            --formal-package "$fixture" --lock "$lock" \
+            --out "$RUNNER_TEMP/prepared1" --proof "$RUNNER_TEMP/prepare1.json" >/dev/null
+          python3 scripts/work-lineage/prepare_fresh_global_work_lineage_database_v01.py \
+            --formal-package "$fixture" --lock "$lock" \
+            --out "$RUNNER_TEMP/prepared2" --proof "$RUNNER_TEMP/prepare2.json" >/dev/null
+          diff -ru "$RUNNER_TEMP/prepared1" "$RUNNER_TEMP/prepared2"
+          cmp "$RUNNER_TEMP/prepare1.json" "$RUNNER_TEMP/prepare2.json"
+
+      - name: Reject non-empty target, then import into a fresh database
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture="$RUNNER_TEMP/formal"
+          lock="$RUNNER_TEMP/fixture.lock.json"
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            -c 'CREATE DATABASE lineage_reject_nonempty'
+          psql -h localhost -U postgres -d lineage_reject_nonempty -v ON_ERROR_STOP=1 \
+            -c 'CREATE TABLE old_runtime_table (id integer PRIMARY KEY)'
+          if python3 scripts/work-lineage/prepare_fresh_global_work_lineage_database_v01.py \
+            --formal-package "$fixture" --lock "$lock" \
+            --out "$RUNNER_TEMP/reject-prepared" \
+            --execute --database-url 'postgresql://postgres:postgres@localhost:5432/lineage_reject_nonempty'; then
+            echo 'non-empty database was incorrectly accepted' >&2
+            exit 1
+          fi
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            -c 'CREATE DATABASE lineage_fresh'
+          python3 scripts/work-lineage/prepare_fresh_global_work_lineage_database_v01.py \
+            --formal-package "$fixture" --lock "$lock" \
+            --out "$RUNNER_TEMP/import-prepared" \
+            --execute --database-url 'postgresql://postgres:postgres@localhost:5432/lineage_fresh' \
+            --proof "$RUNNER_TEMP/import.json" >/dev/null
+
+      - name: Delete every package/input artifact and validate database alone
+        shell: bash
+        run: |
+          set -euo pipefail
+          lock="$RUNNER_TEMP/fixture.lock.json"
+          validator="$RUNNER_TEMP/validate-db.py"
+          cp scripts/work-lineage/validate_fresh_global_work_lineage_database_v01.py "$validator"
+          rm -rf \
+            "$RUNNER_TEMP/formal" \
+            "$RUNNER_TEMP/prepared1" \
+            "$RUNNER_TEMP/prepared2" \
+            "$RUNNER_TEMP/reject-prepared" \
+            "$RUNNER_TEMP/import-prepared"
+          test ! -e "$RUNNER_TEMP/formal"
+          test ! -e "$RUNNER_TEMP/import-prepared"
+          cd "$RUNNER_TEMP"
+          psql -h localhost -U postgres -d lineage_fresh -v ON_ERROR_STOP=1 \
+            -c 'CREATE VIEW global_work_lineage_v01.hidden_compatibility_bridge AS SELECT work_id FROM global_work_lineage_v01.work_lineages'
+          if python3 "$validator" \
+            --database-url 'postgresql://postgres:postgres@localhost:5432/lineage_fresh' \
+            --lock "$lock"; then
+            echo 'unexpected target-schema relation was incorrectly accepted' >&2
+            exit 1
+          fi
+          psql -h localhost -U postgres -d lineage_fresh -v ON_ERROR_STOP=1 \
+            -c 'DROP VIEW global_work_lineage_v01.hidden_compatibility_bridge'
+          python3 "$validator" \
+            --database-url 'postgresql://postgres:postgres@localhost:5432/lineage_fresh' \
+            --lock "$lock" --out "$RUNNER_TEMP/database-proof.json"
+
+      - name: Prove no compatibility or legacy runtime path
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find database/global-work-lineage-v01 -maxdepth 1 -type f -printf '%f\n' | sort)" = 'schema.sql'
+          test "$(grep -ciE '^[[:space:]]*CREATE TABLE ' database/global-work-lineage-v01/schema.sql)" = 2
+          if grep -RInE 'CREATE[[:space:]]+(VIEW|MATERIALIZED VIEW)|FOREIGN[[:space:]]+DATA|postgres_fdw|dblink|IF[[:space:]]+NOT[[:space:]]+EXISTS|ON[[:space:]]+CONFLICT|MERGE[[:space:]]+INTO' \
+            database/global-work-lineage-v01; then
+            echo 'forbidden database compatibility construct found' >&2
+            exit 1
+          fi
+          if grep -RInE '@payload-config|from .*payload|search-index|detail-index|radar-public-' \
+            'src/app/(frontend)/page.tsx' \
+            'src/app/(frontend)/browse/page.tsx' \
+            'src/app/(frontend)/works' \
+            'src/app/(frontend)/search/page.tsx' \
+            'src/app/(frontend)/ratings/page.tsx' \
+            'src/app/(frontend)/radar' \
+            'src/app/(frontend)/creators' \
+            'src/app/(frontend)/organizations' \
+            'src/app/(frontend)/evidence' \
+            'src/app/(frontend)/recommendations/page.tsx' \
+            'src/app/(frontend)/updates/page.tsx'; then
+            echo 'forbidden legacy public reader found' >&2
+            exit 1
+          fi
+          grep -q 'requiresEmptyDatabase' "$RUNNER_TEMP/database-proof.json"
+          sha256sum "$RUNNER_TEMP/database-proof.json"
+
+      - name: Upload integration proofs
+        uses: actions/upload-artifact@v4
+        with:
+          name: global-work-lineage-fresh-database-fixture-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/prepare1.json
+            ${{ runner.temp }}/import.json
+            ${{ runner.temp }}/database-proof.json
+          if-no-files-found: warn
+          retention-days: 30
