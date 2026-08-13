@@ -443,14 +443,17 @@ BEGIN;
 
 DO $$
 DECLARE
-  existing_tables integer;
+  existing_relations integer;
 BEGIN
-  SELECT count(*) INTO existing_tables
-  FROM information_schema.tables
-  WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
-    AND table_type = 'BASE TABLE';
-  IF existing_tables <> 0 THEN
-    RAISE EXCEPTION 'target database is not fresh: % user tables already exist', existing_tables;
+  SELECT count(*) INTO existing_relations
+  FROM pg_catalog.pg_class AS relation
+  JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = relation.relnamespace
+  WHERE namespace.nspname NOT IN ('pg_catalog', 'information_schema')
+    AND namespace.nspname NOT LIKE 'pg_toast%'
+    AND namespace.nspname NOT LIKE 'pg_temp_%'
+    AND relation.relkind IN ('r', 'p', 'v', 'm', 'f', 'S');
+  IF existing_relations <> 0 THEN
+    RAISE EXCEPTION 'target database is not fresh: % persistent user relations already exist', existing_relations;
   END IF;
 END
 $$;

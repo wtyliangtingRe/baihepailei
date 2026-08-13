@@ -95,11 +95,17 @@ def assert_empty_database(database_url: str, expected_name: str) -> None:
     query = r"""
 SELECT json_build_object(
   'database', current_database(),
-  'userTables', count(*)
+  'userRelations', (
+    SELECT count(*)
+    FROM pg_catalog.pg_class AS relation
+    JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = relation.relnamespace
+    WHERE namespace.nspname NOT IN ('pg_catalog', 'information_schema')
+      AND namespace.nspname NOT LIKE 'pg_toast%'
+      AND namespace.nspname NOT LIKE 'pg_temp_%'
+      AND relation.relkind IN ('r', 'p', 'v', 'm', 'f', 'S')
+  )
 )::text
-FROM information_schema.tables
-WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
-  AND table_type = 'BASE TABLE';
+;
 """
     env = os.environ.copy()
     env["PGOPTIONS"] = "-c default_transaction_read_only=on"
@@ -121,7 +127,7 @@ WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
     state = json.loads(payload)
     require(isinstance(state, dict), "database preflight did not return an object")
     require(state.get("database") == expected_name, "database name changed during preflight")
-    require(state.get("userTables") == 0, "target database is not empty")
+    require(state.get("userRelations") == 0, "target database is not empty")
 
 
 def main() -> int:

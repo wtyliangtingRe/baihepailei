@@ -135,6 +135,16 @@ jobs:
           test ! -e "$RUNNER_TEMP/formal"
           test ! -e "$RUNNER_TEMP/import-prepared"
           cd "$RUNNER_TEMP"
+          psql -h localhost -U postgres -d lineage_fresh -v ON_ERROR_STOP=1 \
+            -c 'CREATE VIEW global_work_lineage_v01.hidden_compatibility_bridge AS SELECT work_id FROM global_work_lineage_v01.work_lineages'
+          if python3 "$validator" \
+            --database-url 'postgresql://postgres:postgres@localhost:5432/lineage_fresh' \
+            --lock "$lock"; then
+            echo 'unexpected target-schema relation was incorrectly accepted' >&2
+            exit 1
+          fi
+          psql -h localhost -U postgres -d lineage_fresh -v ON_ERROR_STOP=1 \
+            -c 'DROP VIEW global_work_lineage_v01.hidden_compatibility_bridge'
           python3 "$validator" \
             --database-url 'postgresql://postgres:postgres@localhost:5432/lineage_fresh' \
             --lock "$lock" --out "$RUNNER_TEMP/database-proof.json"

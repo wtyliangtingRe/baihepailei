@@ -49,11 +49,11 @@ The production lock is bound to the complete deterministic package built from th
 | database document-set SHA-256 | `407b60033d85cda0848238bfaba69c699b59099c5f054dcd9a4120bc0155600a` |
 | database provenance-object-set SHA-256 | `fc7b67954f0af0f96a07e6bb0c7a023aa029c07976dbc6069f65d94ce4abc465` |
 
-The complete package was built twice and compared byte-for-byte. The real formal package was then prepared for the website twice and compared byte-for-byte. The website prepare proof SHA-256 is `113face0d014a564f6af74ae3ca529a1b6847b895f717b4dd629c4c7c3211d15`.
+The complete package was built twice and compared byte-for-byte. The real formal package was then prepared for the website twice and compared byte-for-byte. The website prepare proof SHA-256 is `ba636bfc0f759f15bb39ebda33ce6317c644df45eabb0aa485aa6dbf09f909ad`.
 
 ## Freshness guard
 
-`apply.sql` aborts before creating anything unless the target database contains zero user tables. The schema also uses no `IF NOT EXISTS`; accidental reuse cannot silently blend old and new state.
+`apply.sql` aborts before creating anything unless the target database contains zero persistent user relations (tables, partitioned tables, views, materialized views, foreign tables, and sequences). The schema also uses no `IF NOT EXISTS`; accidental reuse cannot silently blend old and new state.
 
 The old Payload database remains a separate database. Production cutover changes the website connection to the new database only after validation. It is never attached through foreign-data wrappers, views, cross-database links, or runtime APIs.
 
@@ -67,12 +67,13 @@ This UI cutover is deliberately lossy. It preserves the new formal data plane an
 
 ## Destructive-dependency proof
 
-CI performs two tests:
+CI performs three tests:
 
 1. a non-empty database is rejected;
-2. a fresh database is imported, then the formal package and prepared files are removed; the standalone validator is copied outside the checkout and runs from an isolated directory with no reference/drop/legacy input.
+2. an unexpected third relation inside the new schema is rejected, including a view that could act as a compatibility bridge;
+3. a fresh database is imported, then the formal package and prepared files are removed; the standalone validator is copied outside the checkout and runs from an isolated directory with no reference/drop/legacy input.
 
-The database validator reads only PostgreSQL and the tiny immutable lock. It proves exact row/digest conservation, zero retired legacy data, zero old conclusions, complete provenance closure, and no tables outside the new schema.
+The database validator reads only PostgreSQL and the tiny immutable lock. It proves exact row/digest conservation, zero retired legacy data, zero old conclusions, complete provenance closure, exactly the two intended target relations, and no persistent relations outside the new schema.
 
 This is the acceptance criterion behind the owner's requirement:
 

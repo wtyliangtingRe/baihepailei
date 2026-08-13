@@ -12,6 +12,12 @@ from pathlib import Path
 from typing import Any
 
 
+EXPECTED_TARGET_RELATIONS = [
+    {"kind": "r", "name": "provenance_objects"},
+    {"kind": "r", "name": "work_lineages"},
+]
+
+
 def fail(message: str) -> None:
     raise SystemExit(f"FRESH WORK LINEAGE DATABASE VALIDATION: FAIL: {message}")
 
@@ -98,6 +104,28 @@ stats AS (
     (SELECT count(*) FROM global_work_lineage_v01.provenance_objects) AS provenance_objects,
     (SELECT count(*) FROM global_work_lineage_v01.provenance_objects WHERE object_kind = 'observation') AS provenance_observations,
     (SELECT count(*) FROM global_work_lineage_v01.work_lineages AS work LEFT JOIN global_work_lineage_v01.provenance_objects AS provenance ON provenance.object_ref = work.audit_run_ref WHERE provenance.object_ref IS NULL) AS broken_audit_refs,
+    (
+      SELECT coalesce(
+        json_agg(
+          json_build_object('kind', relation.relkind::text, 'name', relation.relname)
+          ORDER BY relation.relname
+        ),
+        '[]'::json
+      )
+      FROM pg_catalog.pg_class AS relation
+      JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = relation.relnamespace
+      WHERE namespace.nspname = 'global_work_lineage_v01'
+        AND relation.relkind IN ('r', 'p', 'v', 'm', 'f', 'S')
+    ) AS target_relations,
+    (
+      SELECT count(*)
+      FROM pg_catalog.pg_class AS relation
+      JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = relation.relnamespace
+      WHERE namespace.nspname NOT IN ('pg_catalog', 'information_schema', 'global_work_lineage_v01')
+        AND namespace.nspname NOT LIKE 'pg_toast%'
+        AND namespace.nspname NOT LIKE 'pg_temp_%'
+        AND relation.relkind IN ('r', 'p', 'v', 'm', 'f', 'S')
+    ) AS outside_target_relations,
     (SELECT count(*) FROM information_schema.tables WHERE table_schema NOT IN ('pg_catalog', 'information_schema', 'global_work_lineage_v01') AND table_type = 'BASE TABLE') AS outside_target_tables
 )
 SELECT json_build_object(
@@ -117,6 +145,8 @@ SELECT json_build_object(
   'provenanceObjects', provenance_objects,
   'provenanceObservations', provenance_observations,
   'brokenAuditRefs', broken_audit_refs,
+  'targetRelations', target_relations,
+  'outsideTargetRelations', outside_target_relations,
   'outsideTargetTables', outside_target_tables
 )::text
 FROM stats;
@@ -205,7 +235,9 @@ def main() -> int:
         require(stats[key] == 0, f"forbidden database state: {key}={stats[key]}")
     require(stats["provenanceObjects"] == counts["provenanceObjects"], "provenance object count drift")
     require(stats["provenanceObservations"] == 2, "provenance Observation count drift")
+    require(stats["targetRelations"] == EXPECTED_TARGET_RELATIONS, "target schema relation set drift")
     if not args.allow_other_schemas:
+        require(stats["outsideTargetRelations"] == 0, "target database has outside persistent relations")
         require(stats["outsideTargetTables"] == 0, "target database is not isolated/fresh")
 
     document_rows, document_set_sha = query_document_set(args.database_url, "work_lineages", "work_id")
