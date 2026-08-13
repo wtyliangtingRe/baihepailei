@@ -149,7 +149,8 @@
     "test:radar-local-update": "node --test tests/local-ai-update-pipeline.test.mjs",
     "radar:plan-discovered-works": "node scripts/radar/prepare-discovered-work-candidates-v01.mjs",
     "test:radar-discovered-works": "node --test tests/discovered-work-candidate-plan.test.mjs",
-    "test:db-schema-repair": "node --test tests/database-schema-repair.test.mjs"
+    "test:db-schema-repair": "node --test tests/database-schema-repair.test.mjs",
+    "test:work-lineage-runtime": "node --experimental-strip-types --test tests/global-work-lineage-runtime-repository-v01.test.mjs"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "latest",
@@ -159,14 +160,17 @@
     "graphql": "latest",
     "next": "^16.2.6",
     "payload": "latest",
+    "pg": "latest",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "sharp": "latest"
   },
   "devDependencies": {
     "@types/node": "latest",
+    "@types/pg": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "typescript": "5.9.3"
   }
 }
+

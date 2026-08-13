@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "global-work-lineage-fresh-database-import-lock-v01",
+  "packageId": "PENDING_RESEARCH_DATA_PACKAGE_CI",
+  "contractVersion": "global-work-lineage-v01",
+  "frozenBlockCount": 13,
+  "legacyModuleMode": "retired",
+  "formalPackage": {
+    "sha256SumsSha256": "PENDING_RESEARCH_DATA_PACKAGE_CI",
+    "outputManifestHash": "PENDING_RESEARCH_DATA_PACKAGE_CI",
+    "provenanceRootHash": "PENDING_RESEARCH_DATA_PACKAGE_CI",
+    "documentSetSha256": "PENDING_RESEARCH_DATA_PACKAGE_CI",
+    "provenanceObjectSetSha256": "PENDING_RESEARCH_DATA_PACKAGE_CI",
+    "counts": {
+      "formalWorkLineageRows": 35411,
+      "formalIdentityBindings": 34169,
+      "partialIdentityRows": 1242,
+      "provenanceObjects": 6
+    }
+  },
+  "target": {
+    "databaseMustBeEmpty": true,
+    "compatibilityBridges": 0,
+    "legacyRuntimeDependencies": 0,
+    "referenceRuntimeDependencies": 0
+  }
+}

@@ -1,14 +1,9 @@
-import SearchClient from './search-client'
+import { redirect } from 'next/navigation'
 
-export default function SearchPage() {
-  return (
-    <main className="page search-page">
-      <section className="page-heading">
-        <p className="eyebrow">搜索</p>
-        <h1>搜索资料库</h1>
-        <p>输入关键词，搜索作品、创作者和机构。</p>
-      </section>
-      <SearchClient />
-    </main>
-  )
+type SearchParams = Promise<Record<string, string | string[] | undefined>>
+
+export default async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
+  const raw = (await searchParams).q
+  const q = (Array.isArray(raw) ? raw[0] : raw || '').trim().slice(0, 200)
+  redirect(q ? `/works?q=${encodeURIComponent(q)}` : '/works')
 }

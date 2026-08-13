@@ -1,20 +1,5 @@
-import CollectionIndexPage from '../_components/CollectionIndexPage'
+import Link from 'next/link'
 
-type Args = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
-
-export default async function OrganizationsIndexPage({ searchParams }: Args) {
-  const params = searchParams ? await searchParams : {}
-
-  return (
-    <CollectionIndexPage
-      collection="organizations"
-      eyebrow="机构"
-      title="机构"
-      description="浏览出版社、制作公司、动画公司、平台、品牌、制作委员会等相关机构。"
-      visualHeading
-      searchParams={params}
-    />
-  )
+export default function OrganizationsPage() {
+  return <main className="page"><section className="empty-state small"><h1>机构资料尚未正式导入</h1><p>迁移没有从旧字段或字段组合制造新的机构实体。新流程建立正式关系后再开放此区。</p><Link className="back-link" href="/works">浏览正式作品</Link></section></main>
 }

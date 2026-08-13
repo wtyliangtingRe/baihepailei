@@ -1,151 +1,67 @@
-import configPromise from '@payload-config'
 import Link from 'next/link'
-import { getPayload } from 'payload'
 
-import { readSearchIndex } from './_lib/search-index'
+import { getFormalWorkLineageList } from '@/lib/work-lineage/runtimeRepository'
 
 export const dynamic = 'force-dynamic'
 
-const sections = [
-  {
-    kind: 'works',
-    href: '/works',
-    eyebrow: '作品',
-    title: '作品',
-    description: '浏览作品条目、排雷分级、页面提示与资料状态。',
-  },
-  {
-    kind: 'ratings',
-    href: '/ratings',
-    eyebrow: '大众评级',
-    title: '作品排雷评级',
-    description: '公开查看机器等级、置信度、判断摘要、标签提示与人工复核状态。',
-  },
-  {
-    kind: 'radar',
-    href: '/radar',
-    eyebrow: '注册用户资料区',
-    title: 'Radar 研究档案',
-    description: '登录后只读查看事实、证据与来源绑定；只有编辑以上可以下载完整 JSON。',
-  },
-  {
-    kind: 'creators',
-    href: '/creators',
-    eyebrow: '创作者',
-    title: '创作者',
-    description: '查看创作者资料、别名与关联条目。创作者暂不做单独评级。',
-  },
-  {
-    kind: 'organizations',
-    href: '/organizations',
-    eyebrow: '机构',
-    title: '机构',
-    description: '查看出版社、制作公司、平台、品牌、制作委员会等机构资料。',
-  },
-  {
-    kind: 'site-explanation',
-    href: '/terms',
-    eyebrow: '站点说明',
-    title: '站点说明',
-    description: '查看页面提示、用语说明入口和完整排雷规则入口。',
-  },
-]
-
-function countLabel(count?: number) {
-  if (typeof count !== 'number') return '查看说明'
-  return `${count} 条`
-}
-
-async function currentRadarCounts() {
+async function formalWorkCount(): Promise<number | null> {
   try {
-    const payload = await getPayload({ config: configPromise })
-    const [records, ratings] = await Promise.all([
-      payload.find({
-        collection: 'radar-public-records',
-        depth: 0,
-        limit: 1,
-        page: 1,
-        pagination: true,
-        overrideAccess: true,
-        where: { recordStatus: { equals: 'current' } },
-      }),
-      payload.find({
-        collection: 'radar-public-ratings',
-        depth: 0,
-        limit: 1,
-        page: 1,
-        pagination: true,
-        overrideAccess: true,
-        where: { recordStatus: { equals: 'current' } },
-      }),
-    ])
-    return { records: records.totalDocs, ratings: ratings.totalDocs }
-  } catch {
-    return { records: undefined, ratings: undefined }
+    return (await getFormalWorkLineageList({ limit: 1, offset: 0 })).total
+  } catch (error) {
+    console.error('Formal WorkLineage count failed', error)
+    return null
   }
 }
 
 export default async function HomePage() {
-  const index = readSearchIndex()
-  const radarCounts = await currentRadarCounts()
+  const workCount = await formalWorkCount()
 
   return (
     <main className="home">
       <div className="home-stack">
         <section className="hero">
-          <p className="eyebrow">百合排雷 · 资料库</p>
-          <h1>百合作品排雷资料库</h1>
+          <p className="eyebrow">百合排雷 · 新资料库</p>
+          <h1>百合作品资料库</h1>
           <p>
-            这里整理作品、创作者、机构、排雷分级与页面提示。读者可以通过结构化条目、公开评级和证据说明，更快判断作品是否适合自己。
+            当前只展示已经独立导入新数据库的正式作品与身份信息。历史研究和旧评级没有进入正式库；新的发现、研究与评估会产生全新的当前记录。
           </p>
           <form action="/search" className="search-box" role="search">
-            <span>快速搜索</span>
-            <input id="home-search-input" name="q" placeholder="输入作品名、作者、机构、分级或关键词" type="search" />
-            <label className="home-search-scope" htmlFor="home-search-collection">
-              <span>搜索范围</span>
-              <select defaultValue="all" id="home-search-collection" name="collection">
-                <option value="all">全部资料</option>
-                <option value="works">只搜作品</option>
-                <option value="creators">只搜创作者</option>
-                <option value="organizations">只搜机构</option>
-              </select>
-            </label>
-            <button className="result-link" type="submit">搜索资料</button>
+            <span>搜索正式作品</span>
+            <input id="home-search-input" name="q" placeholder="输入作品名或精确 Work ID" type="search" />
+            <button className="result-link" type="submit">搜索</button>
           </form>
-          <div className="home-stats" aria-label="当前索引统计">
-            <span>{index ? `当前收录 ${index.total} 条` : '生成索引后显示条目数'}</span>
-            {typeof radarCounts.ratings === 'number' ? <span>公开评级：{radarCounts.ratings} 条</span> : null}
-            {typeof radarCounts.records === 'number' ? <span>注册用户研究档案：{radarCounts.records} 条</span> : null}
-            {index?.generatedAt ? <span>索引生成：{new Date(index.generatedAt).toLocaleString('zh-CN')}</span> : null}
+          <div className="home-stats" aria-label="新数据库统计">
+            <span>{workCount === null ? '正式作品库暂时不可用' : `正式作品：${workCount.toLocaleString('zh-CN')} 条`}</span>
+            <span>当前研究：0 条</span>
+            <span>当前评级：0 条</span>
           </div>
           <div className="actions">
-            <Link href="/browse">浏览资料库</Link>
-            <Link href="/works">浏览作品</Link>
-            <Link href="/ratings">查看大众评级</Link>
-            <Link href="/radar">登录后查看研究档案</Link>
-            <Link href="/search">开始搜索</Link>
-            <Link href="/me/lists">我的列表</Link>
+            <Link href="/works">浏览正式作品</Link>
+            <Link href="/browse">查看导入范围</Link>
+            <Link href="/ratings">当前评级状态</Link>
+            <Link href="/radar">当前研究状态</Link>
           </div>
         </section>
 
-        <section className="home-section-grid" aria-label="资料分类">
-          {sections.map((section) => {
-            const count = section.kind === 'ratings'
-              ? radarCounts.ratings
-              : section.kind === 'radar'
-                ? radarCounts.records
-                : index?.counts?.[section.kind]
-            return (
-              <Link className="home-section-card" href={section.href} key={section.href}>
-                <div className="home-section-card-header">
-                  <p>{section.eyebrow}</p>
-                  <span>{countLabel(count)}</span>
-                </div>
-                <h2>{section.title}</h2>
-                <span>{section.description}</span>
-              </Link>
-            )
-          })}
+        <section className="home-section-grid" aria-label="新资料库分区">
+          <Link className="home-section-card" href="/works">
+            <div className="home-section-card-header">
+              <p>正式数据</p>
+              <span>{workCount === null ? '不可用' : `${workCount.toLocaleString('zh-CN')} 条`}</span>
+            </div>
+            <h2>作品与身份</h2>
+            <span>读取新数据库中自包含的 Frozen WorkLineage 与 IdentityBinding。</span>
+          </Link>
+          <Link className="home-section-card" href="/ratings">
+            <div className="home-section-card-header"><p>新流程</p><span>0 条</span></div>
+            <h2>当前评级</h2>
+            <span>旧评级已丢弃；这里只会出现新研究与新评估产生的结论。</span>
+          </Link>
+          <Link className="home-section-card" href="/radar">
+            <div className="home-section-card-header"><p>新流程</p><span>0 条</span></div>
+            <h2>当前研究</h2>
+            <span>参考资料保持隔离，不能原地升级为正式研究对象。</span>
+          </Link>
         </section>
       </div>
     </main>
