@@ -35,6 +35,22 @@ Before writing, it verifies:
 
 It prepares deterministic TSV and SQL files twice identically. Execution uses plain INSERT inside one transaction. There is no upsert, merge, mapper, alias, or fallback.
 
+## Sealed production lock
+
+The production lock is bound to the complete deterministic package built from the accepted research-data migration package source:
+
+| Proof | Value |
+| --- | --- |
+| package ID | `GLOBAL-WORK-LINEAGE-V01-TERMINAL-MIGRATION-PACKAGE-20260814-01` |
+| formal `SHA256SUMS` SHA-256 | `e603381b729e2af703b01ebad436544c3f7097403959e76ca6e6e6557eaa6376` |
+| formal WorkLineage JSONL SHA-256 | `a88b14fb46ae981278374e33ad13b597ecb61527ef678fdf4ec241c27795c822` |
+| OutputManifest hash | `sha256:4579ea518b58bb84bda65c39519e502d75efc60aed69fe594991a2be6628ef18` |
+| provenance root | `sha256:9da191a48e7b91a360329b731fc9b82d2ddbef0decf5f61fab96282855fa03d9` |
+| database document-set SHA-256 | `407b60033d85cda0848238bfaba69c699b59099c5f054dcd9a4120bc0155600a` |
+| database provenance-object-set SHA-256 | `fc7b67954f0af0f96a07e6bb0c7a023aa029c07976dbc6069f65d94ce4abc465` |
+
+The complete package was built twice and compared byte-for-byte. The real formal package was then prepared for the website twice and compared byte-for-byte. The website prepare proof SHA-256 is `113face0d014a564f6af74ae3ca529a1b6847b895f717b4dd629c4c7c3211d15`.
+
 ## Freshness guard
 
 `apply.sql` aborts before creating anything unless the target database contains zero user tables. The schema also uses no `IF NOT EXISTS`; accidental reuse cannot silently blend old and new state.
@@ -64,15 +80,25 @@ This is the acceptance criterion behind the owner's requirement:
 
 ## Production procedure
 
-1. Download the exact sealed formal artifact from the accepted research-data package workflow.
+1. Download the exact sealed formal artifact from the accepted research-data package workflow, or rebuild it from the exact accepted research-data commit and require the committed lock to match every digest.
 2. Create a brand-new empty PostgreSQL database with new credentials.
-3. Run the preparer without `--execute` and archive its proof.
-4. Run the preparer with `--execute` against the new database.
-5. Move the formal package and every old/reference input out of reach.
-6. Run the standalone database validator.
-7. Point both `DATABASE_URL` and `WORK_LINEAGE_DATABASE_URL` at the new database. Keep `RADAR_PUBLIC_CONCLUSIONS_SCHEMA_READY`, `RADAR_PUBLIC_RECORDS_SCHEMA_READY`, and `RADAR_PUBLIC_RATINGS_SCHEMA_READY` false. With `PAYLOAD_DB_PUSH=true`, start Payload once to create the non-Radar site/account schema; stop it, set `PAYLOAD_DB_PUSH=false`, and never run the historical additive migration chain against this fresh database.
-8. Run website formal-read smoke tests. New-flow write smoke tests become mandatory when the first new Discover / Research / Assessment writer is introduced; this migration does not claim that those writers already exist.
-9. Cut over production traffic.
-10. After the rollback window, delete the old database and legacy/reference residues as a separate, explicitly targeted operation.
+3. Run the one-time cutover command below. It verifies the package, prepares twice, requires byte-identical outputs, imports with plain INSERT into the empty database, removes every generated import derivative, and runs the standalone database-only validator from an isolated temporary directory.
+4. Move the formal package and every old/reference input out of reach. The cutover command deliberately does not delete caller-owned package files or any database.
+5. Point both `DATABASE_URL` and `WORK_LINEAGE_DATABASE_URL` at the new database. Keep `RADAR_PUBLIC_CONCLUSIONS_SCHEMA_READY`, `RADAR_PUBLIC_RECORDS_SCHEMA_READY`, and `RADAR_PUBLIC_RATINGS_SCHEMA_READY` false. With `PAYLOAD_DB_PUSH=true`, start Payload once to create the non-Radar site/account schema; stop it, set `PAYLOAD_DB_PUSH=false`, and never run the historical additive migration chain against this fresh database.
+6. Run website formal-read smoke tests. New-flow write smoke tests become mandatory when the first new Discover / Research / Assessment writer is introduced; this migration does not claim that those writers already exist.
+7. Cut over production traffic.
+8. After the rollback window, delete the old database and legacy/reference residues as a separate, explicitly targeted operation.
+
+From PowerShell, with `WORK_LINEAGE_DATABASE_URL` already set to the newly created empty database:
+
+```powershell
+python scripts/work-lineage/run_fresh_global_work_lineage_cutover_v01.py `
+  --formal-package "D:\path\to\global-work-lineage-v01-terminal-migration-20260814\package\formal" `
+  --database-url $env:WORK_LINEAGE_DATABASE_URL `
+  --expected-database-name "baihepailei_v01" `
+  --proof-dir ".\artifacts\global-work-lineage-v01-cutover-proof"
+```
+
+Success is exactly `PASS_CUTOVER_COMPLETE`. The proof directory contains deterministic prepare/import proofs, the database-only proof, and a credential-free cutover summary.
 
 The repository scripts do not delete the old database. Database destruction remains a separate operational action because its target name and rollback window are deployment-specific.
