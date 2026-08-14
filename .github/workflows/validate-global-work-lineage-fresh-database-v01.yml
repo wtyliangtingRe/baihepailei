@@ -41,7 +41,7 @@ concurrency:
 
 jobs:
   fixture-integration:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, radar-private]
     timeout-minutes: 15
     services:
       postgres:
