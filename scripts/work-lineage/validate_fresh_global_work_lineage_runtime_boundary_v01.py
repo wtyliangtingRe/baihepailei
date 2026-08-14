@@ -93,7 +93,14 @@ def load_json(path: Path) -> dict[str, Any]:
     return value
 
 
-def tracked_paths(root: Path) -> set[str]:
+def tracked_paths(root: Path, source_archive: bool) -> set[str]:
+    if source_archive:
+        return {
+            path.relative_to(root).as_posix()
+            for path in root.rglob("*")
+            if path.is_file()
+            and not any(part in {".git", ".next", "node_modules"} for part in path.parts)
+        }
     try:
         raw = subprocess.check_output(
             ["git", "-C", str(root), "ls-files", "-z"],
@@ -107,11 +114,13 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo-root", type=Path, default=Path("."))
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--source-archive", action="store_true")
     args = parser.parse_args()
     root = args.repo_root.resolve()
 
-    require((root / ".git").exists(), "repo root must be a Git checkout")
-    paths = tracked_paths(root)
+    if not args.source_archive:
+        require((root / ".git").exists(), "repo root must be a Git checkout")
+    paths = tracked_paths(root, args.source_archive)
 
     for path in sorted(paths):
         require(path not in FORBIDDEN_FILES, f"retired runtime file remains: {path}")
