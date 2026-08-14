@@ -46,10 +46,9 @@ const navItems = [
   { href: '/organizations', label: '机构' },
   { href: '/terms', label: '站点说明' },
   { href: '/recommendations', label: '推荐' },
-  { href: '/me/lists', label: '我的列表' },
   { href: '/updates', label: '最近更新' },
   { href: '/search', label: '搜索' },
-  { href: '/account', label: '账户' },
+  { href: '/feedback', label: '发现线索' },
 ]
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

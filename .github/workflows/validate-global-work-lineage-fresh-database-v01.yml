@@ -6,12 +6,29 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/validate-global-work-lineage-fresh-database-v01.yml'
+      - '.github/workflows/validate-radar-*.yml'
+      - 'next.config.mjs'
+      - 'tsconfig.json'
+      - 'payload.config.ts'
+      - 'payload-types.ts'
       - 'database/global-work-lineage-v01/**'
       - 'scripts/work-lineage/**'
       - 'tests/fixtures/global-work-lineage-fresh-database-v01/**'
       - 'docs/GLOBAL-WORK-LINEAGE-FRESH-DATABASE-v01.md'
       - 'config/global-work-lineage-fresh-database-import-v01.lock.json'
       - 'src/lib/work-lineage/**'
+      - 'src/access/**'
+      - 'src/collections/**'
+      - 'src/migrations/**'
+      - 'src/app/(payload)/**'
+      - 'src/app/(frontend)/layout.tsx'
+      - 'src/app/(frontend)/feedback/**'
+      - 'src/app/(frontend)/account/**'
+      - 'src/app/(frontend)/me/**'
+      - 'src/app/(frontend)/api/account/**'
+      - 'src/app/(frontend)/api/comments/**'
+      - 'src/app/(frontend)/api/personnel/**'
+      - 'src/app/(frontend)/api/studio/**'
       - 'src/app/(frontend)/api/work-lineage/**'
       - 'src/app/(frontend)/page.tsx'
       - 'src/app/(frontend)/browse/page.tsx'
@@ -72,9 +89,12 @@ jobs:
             scripts/work-lineage/prepare_fresh_global_work_lineage_database_v01.py \
             scripts/work-lineage/run_fresh_global_work_lineage_cutover_v01.py \
             scripts/work-lineage/validate_fresh_global_work_lineage_database_v01.py \
+            scripts/work-lineage/validate_fresh_global_work_lineage_runtime_boundary_v01.py \
             tests/fixtures/global-work-lineage-fresh-database-v01/build_fixture.py
           node --experimental-strip-types --test \
             tests/global-work-lineage-runtime-repository-v01.test.mjs
+          python3 scripts/work-lineage/validate_fresh_global_work_lineage_runtime_boundary_v01.py \
+            --repo-root . --out "$RUNNER_TEMP/runtime-boundary.json"
           git diff --check origin/${{ github.base_ref }}...HEAD
 
       - name: Build deterministic formal fixture and prepare twice
@@ -186,5 +206,7 @@ jobs:
             ${{ runner.temp }}/prepare1.json
             ${{ runner.temp }}/import.json
             ${{ runner.temp }}/database-proof.json
+            ${{ runner.temp }}/runtime-boundary.json
           if-no-files-found: warn
           retention-days: 30
+
