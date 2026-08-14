@@ -59,19 +59,34 @@ The old Payload database remains a separate database. Production cutover changes
 
 For local development, `docker-compose.yml` uses a new `baihepailei_v01` database and a separate `postgres-v01-data` volume. The historical `postgres-data` volume is not mounted, so deleting it after the rollback window cannot affect the new database.
 
-The new runtime repository requires `WORK_LINEAGE_DATABASE_URL`; it has no default to the historical Payload/Radar readers. It exposes exact `workId` lookup and a title/Work-ID presentation search through `/api/work-lineage/works`. Search never constructs identity authority. Missing configuration or a malformed row fails closed with an unavailable response.
+## Terminal runtime severance
 
-The homepage, browse page, Work list, Work detail, and search read the new repository directly. Public legacy rating, Radar, evidence, recommendation, and update routes expose an explicit empty/retired state instead of reading the historical Payload collections or generated `search-index.json` / `detail-index.json`. Creator and organization routes remain empty until the new process creates formal entities; the migration does not infer them from old fields. Direct historical Radar downloads return `410 Gone`.
+The post-cutover website is plain Next.js plus the dedicated WorkLineage PostgreSQL repository:
+
+- `next.config.mjs` is not wrapped by Payload;
+- the Payload config, generated types, collections, migrations, admin routes, REST catch-all, and old Radar marker routes are absent;
+- old account, personal-list, comment, submission, review, studio, and personnel routes are absent;
+- the runtime package has no Payload, Payload adapter, GraphQL, or Payload editor dependency;
+- `WORK_LINEAGE_DATABASE_URL` is the only database environment key in the public runtime contract;
+- old Radar workflows are not executable GitHub Actions lanes;
+- the feedback page only exposes independent discovery-hint channels and cannot write the formal database.
+
+Historical scripts, fixtures, and reports may remain in Git history as audit material, but they have no package command, application route, database credential, workflow trigger, or runtime import. Removing those files cannot change the fresh database or public runtime.
+
+The runtime repository requires `WORK_LINEAGE_DATABASE_URL`; it has no fallback to a Payload URL or historical Radar reader. It exposes exact `workId` lookup and a title/Work-ID presentation search through `/api/work-lineage/works`. Search never constructs identity authority. Missing configuration or a malformed row fails closed with an unavailable response.
+
+The homepage, browse page, Work list, Work detail, and search read the new repository directly. Public legacy rating, Radar, evidence, recommendation, and update routes expose an explicit empty/retired state. Creator and organization routes remain empty until the new process creates formal entities. Direct historical Radar downloads return `410 Gone`.
 
 This UI cutover is deliberately lossy. It preserves the new formal data plane and removes old runtime conclusions instead of implementing a dual read, route alias, compatibility bridge, or fallback.
 
 ## Destructive-dependency proof
 
-CI performs three tests:
+CI performs four tests:
 
 1. a non-empty database is rejected;
 2. an unexpected third relation inside the new schema is rejected, including a view that could act as a compatibility bridge;
-3. a fresh database is imported, then the formal package and prepared files are removed; the standalone validator is copied outside the checkout and runs from an isolated directory with no reference/drop/legacy input.
+3. a fresh database is imported, then the formal package and prepared files are removed; the standalone validator runs from an isolated directory with no reference/drop/legacy input;
+4. the terminal runtime-boundary validator requires zero Payload routes/dependencies, zero old account/write routes, zero legacy Actions lanes, one fresh database key, and Frozen block count 13.
 
 The database validator reads only PostgreSQL and the tiny immutable lock. It proves exact row/digest conservation, zero retired legacy data, zero old conclusions, complete provenance closure, exactly the two intended target relations, and no persistent relations outside the new schema.
 
@@ -85,8 +100,8 @@ This is the acceptance criterion behind the owner's requirement:
 2. Create a brand-new empty PostgreSQL database with new credentials.
 3. Run the one-time cutover command below. It verifies the package, prepares twice, requires byte-identical outputs, imports with plain INSERT into the empty database, removes every generated import derivative, and runs the standalone database-only validator from an isolated temporary directory.
 4. Move the formal package and every old/reference input out of reach. The cutover command deliberately does not delete caller-owned package files or any database.
-5. Point both `DATABASE_URL` and `WORK_LINEAGE_DATABASE_URL` at the new database. Keep `RADAR_PUBLIC_CONCLUSIONS_SCHEMA_READY`, `RADAR_PUBLIC_RECORDS_SCHEMA_READY`, and `RADAR_PUBLIC_RATINGS_SCHEMA_READY` false. With `PAYLOAD_DB_PUSH=true`, start Payload once to create the non-Radar site/account schema; stop it, set `PAYLOAD_DB_PUSH=false`, and never run the historical additive migration chain against this fresh database.
-6. Run website formal-read smoke tests. New-flow write smoke tests become mandatory when the first new Discover / Research / Assessment writer is introduced; this migration does not claim that those writers already exist.
+5. Set only `WORK_LINEAGE_DATABASE_URL` to the fresh database. Do not set a Payload database URL and do not create a Payload schema in this database.
+6. Run the formal-read smoke and terminal runtime-boundary tests. New-flow write smoke becomes mandatory when the first Discover / Research / Assessment writer is introduced; this migration does not claim that those writers already exist.
 7. Cut over production traffic.
 8. After the rollback window, delete the old database and legacy/reference residues as a separate, explicitly targeted operation.
 
@@ -102,4 +117,4 @@ python scripts/work-lineage/run_fresh_global_work_lineage_cutover_v01.py `
 
 Success is exactly `PASS_CUTOVER_COMPLETE`. The proof directory contains deterministic prepare/import proofs, the database-only proof, and a credential-free cutover summary.
 
-The repository scripts do not delete the old database. Database destruction remains a separate operational action because its target name and rollback window are deployment-specific.
+The repository scripts do not delete the old database. Database destruction remains a separate operational action because its exact target and rollback window are deployment-specific.
