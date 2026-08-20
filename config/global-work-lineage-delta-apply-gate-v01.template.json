@@ -1,0 +1,8 @@
+{
+  "applyEnabled": false,
+  "baseSetSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "deltaSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "releaseRef": "replace-with-versioned-release-ref",
+  "rowCount": 0,
+  "schemaVersion": "global-work-lineage-delta-apply-gate-v01"
+}

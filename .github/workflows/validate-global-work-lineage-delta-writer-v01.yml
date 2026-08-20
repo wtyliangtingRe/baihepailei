@@ -1,0 +1,42 @@
+name: Validate Global Work Lineage delta writer v01
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-global-work-lineage-delta-writer-v01.yml'
+      - 'scripts/work-lineage/apply_global_work_lineage_delta_v01.py'
+      - 'tests/test_apply_global_work_lineage_delta_v01.py'
+      - 'config/global-work-lineage-delta-apply-gate-v01.template.json'
+      - 'docs/GLOBAL-WORK-LINEAGE-DELTA-WRITER-v01.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: global-work-lineage-delta-writer-v01-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-validation:
+    runs-on: [self-hosted, Linux, X64, radar-private]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compile and run offline unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            scripts/work-lineage/apply_global_work_lineage_delta_v01.py \
+            tests/test_apply_global_work_lineage_delta_v01.py
+          python3 -m unittest discover \
+            -s tests \
+            -p 'test_apply_global_work_lineage_delta_v01.py' \
+            -v
+          git diff --check origin/${{ github.base_ref }}...HEAD
