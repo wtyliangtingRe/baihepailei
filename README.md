@@ -2,6 +2,8 @@
 
 Baihepailei 是一个以作品、排雷分级、可追溯来源和人工复核为核心的百合资料库。项目采用 Next.js、Payload CMS 与 PostgreSQL；当前代码和数据模型均以本站自身规则为准。若旧本地数据库的 `_works_v.version_status` 仍残留 `archived`，先使用 `scripts/db/normalize-legacy-work-version-status.ps1` 的 dry-run/确认流程修复版本历史兼容值，再进行 Payload schema push。
 
+> **双仓日常操作统一从 [`baihepailei-research-data/OPERATIONS.md`](https://github.com/wtyliangtingRe/baihepailei-research-data/blob/main/OPERATIONS.md) 开始。** 其中包含两个 runner、五会话完整轮转、各阶段提示词、Research 三档、点单/复查和网站 delta/apply 边界；本站只保留网站侧实现文档，不复制第二套流程。
+
 ## 当前功能
 
 前台提供作品、创作者、机构、排雷规则、搜索、推荐、最近更新、注册账户、评论、我的列表和反馈入口。作品详情会分开显示人工审核参考与 AI Radar 参考；目录等级按“人工参考优先、否则 AI、再否则兼容旧字段”计算。两条轨道都保留来源、证据状态和审计边界，不互相覆盖。
