@@ -112,12 +112,10 @@ jobs:
               --file)
                 test "$#" -ge 2
                 input_file="$2"
-                psql_args+=('--file=-')
                 shift 2
                 ;;
               --file=*)
                 input_file="${1#--file=}"
-                psql_args+=('--file=-')
                 shift
                 ;;
               *)
@@ -127,10 +125,25 @@ jobs:
             esac
           done
           if [ -n "$input_file" ]; then
-            exec docker exec -i \
+            input_path="$(realpath "$input_file")"
+            input_dir="$(dirname "$input_path")"
+            input_name="$(basename "$input_path")"
+            container_dir="/tmp/psql-wrapper-$"
+            docker exec "$POSTGRES_SERVICE_CONTAINER" \
+              mkdir -p "$container_dir"
+            docker cp "$input_dir/." \
+              "$POSTGRES_SERVICE_CONTAINER:$container_dir/"
+            set +e
+            docker exec -i \
+              --workdir "$container_dir" \
               -e "PGPASSWORD=${PGPASSWORD:-}" \
               "$POSTGRES_SERVICE_CONTAINER" \
-              psql "${psql_args[@]}" < "$input_file"
+              psql "${psql_args[@]}" --file="$input_name"
+            status="$?"
+            set -e
+            docker exec "$POSTGRES_SERVICE_CONTAINER" \
+              rm -rf "$container_dir"
+            exit "$status"
           fi
           exec docker exec -i \
             -e "PGPASSWORD=${PGPASSWORD:-}" \
