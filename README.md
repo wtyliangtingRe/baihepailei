@@ -1,58 +1,43 @@
 # Baihepailei
 
-Baihepailei 是一个以作品、排雷分级、可追溯来源和人工复核为核心的百合资料库。项目采用 Next.js、Payload CMS 与 PostgreSQL；当前代码和数据模型均以本站自身规则为准。若旧本地数据库的 `_works_v.version_status` 仍残留 `archived`，先使用 `scripts/db/normalize-legacy-work-version-status.ps1` 的 dry-run/确认流程修复版本历史兼容值，再进行 Payload schema push。
+Baihepailei 是百合作品资料库的网站运行时。当前主线是 **plain Next.js + fresh Global Work Lineage v01 PostgreSQL**；旧 Payload/Radar、账户、评论、个人列表和旧兼容读取已经从可执行运行时切断，不再是当前架构。
 
-> **双仓日常操作统一从 [`baihepailei-research-data/OPERATIONS.md`](https://github.com/wtyliangtingRe/baihepailei-research-data/blob/main/OPERATIONS.md) 开始。** 其中包含两个 runner、五会话完整轮转、各阶段提示词、Research 三档、点单/复查和网站 delta/apply 边界；本站只保留网站侧实现文档，不复制第二套流程。
+## 两份总入口
 
-## 当前功能
+- 五会话、workers、两个 runner、各阶段提示词与生产边界：[`baihepailei-research-data/OPERATIONS.md`](https://github.com/wtyliangtingRe/baihepailei-research-data/blob/main/OPERATIONS.md)
+- 13 区块、两仓数据结构、25-Work Chunk、备份与最小重跑：[`baihepailei-research-data/DATA-STRUCTURE-AND-BACKUP.md`](https://github.com/wtyliangtingRe/baihepailei-research-data/blob/main/DATA-STRUCTURE-AND-BACKUP.md)
 
-前台提供作品、创作者、机构、排雷规则、搜索、推荐、最近更新、注册账户、评论、我的列表和反馈入口。作品详情会分开显示人工审核参考与 AI Radar 参考；目录等级按“人工参考优先、否则 AI、再否则兼容旧字段”计算。两条轨道都保留来源、证据状态和审计边界，不互相覆盖。
+本站不复制第二套 Research/Assessment/Publication 流程。批准网站导出之前的数据 authority 全部在 research-data 仓库。
 
-后台主要集合包括：
+## 当前运行时
 
-```text
-Users
-Media
-Works
-Creators
-Organizations
-Evidence
-RadarResearchRecords
-AuditEvents
-Comments
-UserLists
-FeedbackSubmissions
-Terms
-Warnings
-Tags
-Rules
-```
+- Next.js 16、React 19；
+- PostgreSQL 17；
+- `WORK_LINEAGE_DATABASE_URL` 是正式数据库连接键；
+- 首页、browse、Work 列表、Work 详情和搜索从 fresh WorkLineage repository 读取；
+- `/api/work-lineage/works` 提供 exact workId lookup 和 title/Work-ID presentation search；
+- creator/organization 等未来实体层在没有正式数据前保持空；
+- 历史 Radar download 返回 retired/`410 Gone`，不会 fallback 到旧索引；
+- feedback 只是独立 discovery hint 渠道，不能直接写 Formal WorkLineage。
 
-`Works.humanAssessment` 与 `Works.radarAssessment` 是两条独立评级轨道。AI 可刷新自身轨道而不改动人工轨道；正式批量更新使用 `pnpm radar:local-update` 生成可校验的输入、计划和 dry-run，详见 [本地 AI Radar 更新管道](docs/local-ai-radar-update-pipeline-v01.md)。目录展示优先采用人工轨道等级，没有人工等级时采用 AI 建议；`Works.rank` 只作为兼容旧记录的后备值。`RadarResearchRecords` 是独立内部研究档案，不能直接覆盖任一轨道。用户评论即时公开，但有重复发送限制、时间频率限制、用户举报与达到阈值后的自动保护隐藏；作者和工作人员仍可删除。用户反馈进入独立审核队列，不会自动修改条目。
+`next.config.mjs` 不包装 Payload，`package.json` 没有 Payload/GraphQL/editor 依赖。历史文件可能仍存在于 Git history 中作为审计材料，但没有当前 route、workflow、credential 或 runtime import。
 
-## 主要路由
+## 数据库
 
-```text
-/                  首页
-/browse            资料库总览
-/works             作品列表
-/creators          创作者列表
-/organizations     机构列表
-/rules             排雷规则
-/search            搜索
-/recommendations   推荐
-/me/lists          我的列表
-/me/review/public-catalog  内部条目审核工作台
-/me/review/content         作品、创作者、机构审核与编辑
-/me/studio                  站内内容工作台
-/me/personnel               人事任用、角色与封停
-/updates           最近更新
-/feedback          反馈
-/account           账户
-/admin             Payload 后台
-```
+当前 schema 只有两张表：
 
-## 本地开发
+| 表 | 用途 |
+| --- | --- |
+| `global_work_lineage_v01.work_lineages` | 每个 existing `work_id` 一行完整 current WorkLineage JSONB + document SHA |
+| `global_work_lineage_v01.provenance_objects` | Frozen Section 13 已定义的 Audit/Manifest/Provenance supporting objects |
+
+这不是第 14 个逻辑区块。网站 current document 保留 Frozen 13-block 合同的 12 个 active blocks；migration-only `legacy` 已 sunset 并省略。
+
+完整 fresh import/隔离证明：[`docs/GLOBAL-WORK-LINEAGE-FRESH-DATABASE-v01.md`](docs/GLOBAL-WORK-LINEAGE-FRESH-DATABASE-v01.md)。
+
+## 本地启动
+
+先复制 `.env.example` 为 `.env.local` 并更改开发密码，不要提交它：
 
 ```powershell
 docker compose up -d postgres
@@ -60,86 +45,63 @@ pnpm install
 pnpm dev
 ```
 
-打开 `http://localhost:3000` 和 `http://localhost:3000/admin`。
+默认本地数据库：
 
-联网自动扩库在 Windows/PowerShell 下的实际端口、`.env`、管理员密码临时输入、v2rayN 代理、来源故障判断和 35,615 条 Works 基线，统一记录在 [本地联网扩库运行手册](docs/local-controlled-online-refresh-runbook.md)。日常使用推荐通过 [统一 PowerShell 入口](docs/local-controlled-online-refresh-one-command.md) 调用内部抓取、审计、标准化与去重模块。不要把真实密码、token、cookie 或个人代理凭据提交到仓库。
-
-如需重新生成 Payload 类型或 Admin import map：
-
-```powershell
-pnpm generate:types
-pnpm generate:importmap
+```text
+host: localhost
+port: 15432
+database: baihepailei_v01
+volume: postgres-v01-data
 ```
 
-## 生成前台索引
+这是与旧 `postgres-data` 分离的 fresh volume。首次装载正式包时按 fresh database 文档执行；不要把旧 Payload 数据库接入、迁移或建立兼容 view。
 
-搜索和详情页读取本地导出的索引：
+## Existing-row CAS delta
 
-```powershell
-$env:PAYLOAD_EXPORT_EMAIL="你的后台邮箱"
-$env:PAYLOAD_EXPORT_PASSWORD="你的后台密码"
+正式增量写入器只允许替换已经存在的 exact `workId`：
 
-node scripts/export/build-full-public-index.mjs --url "http://localhost:3000"
-```
+- 默认完全离线，只生成 `apply.sql` 与 receipt；
+- 每行先 `FOR UPDATE`；
+- current `document_sha256` 必须等于 delta 的 base SHA；
+- 禁止 create、delete、insert、merge、upsert、whole-database lock 和 automatic retry；
+- `--apply`、enabled versioned gate、exact releaseRef/delta/base-set SHA/row count 和 confirm-release-ref 必须同时匹配；
+- production apply 前必须备份；开始后禁止自动 retry/rollback。
 
-请在另一个终端保持 `pnpm dev` 或生产服务器运行后再执行导出；默认每页读取 100 条，避免三万多条作品组成的超大请求超时。可用 `PUBLIC_INDEX_PAGE_LIMIT=200`（最大 250）调高批量大小。三万余条作品的完整导出会持续数分钟；保持开发服务器运行并等待它完成，不要同时重复启动第二次导出。
-
-该命令默认生成包含全部当前作品、创作者、机构、草稿和审核中记录的完整增强版，并保留封面；只有明确归档的记录会被排除。旧导入记录即使 status 或可见性字段为空也会进入完整版；只有低流量镜像才显式传入 `--profile lite --media-mode text` 并应用 Lite 可见性开关。生成的 `public/search-index.json` 和 `public/detail-index.json` 默认不提交。详见 `docs/deployment-profiles-and-feedback.md`。
-
-## 账户与邮件
-
-每个部署必须通过 `SITE_OWNER_EMAIL` 明确配置自己的最高权限账户。生产环境的注册验证和找回密码依赖真实 SMTP：
-
-```env
-SITE_OWNER_EMAIL=owner@example.com
-ACCOUNT_EMAIL_VERIFICATION_ENABLED=true
-SMTP_HOST=你的真实 SMTP 主机
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=你的 SMTP 用户名
-SMTP_PASS=你的 SMTP 密码
-SMTP_FROM_ADDRESS=你的发件地址
-```
-
-`SITE_OWNER_EMAIL` 只供服务端认证使用，不会回退成公开反馈地址。若要展示联系邮箱，请另设 `NEXT_PUBLIC_FEEDBACK_EMAIL`，并建议使用专门的站务邮箱。
-
-本地测试可设置 `ACCOUNT_EMAIL_VERIFICATION_ENABLED=false`，并把 `SMTP_HOST` 留空；完整变量见 `.env.example`。
-
-## Radar 数据边界
-
-两条数据线必须长期区分：
-
-- v0.6 评估包共有 10,805 条计划记录，其中 9,364 条具备受控写入资格，1,441 条因来源可追溯性不足保持阻断。
-- 研究归档共有 25,048 条，存放在 `radar-research-records`；完整前台索引会以“AI 研究档案 · 非正式评级”展示关联预览，但它们仍是研究建议，不是正式 Works 评级，也不会覆盖 `Works.rank`。
-
-后续网页功能不得把研究档案的建议等级批量写入 `Works.rank`。人工审核工作台只允许逐条、留痕操作。
-
-### AI 结论覆盖保证
-
-只要身份有效的作品已经完成 AI 扫描，就必须产生一种可展示、可审计的结论形态：证据足够时给出相对明确的固定等级；证据不足时给出由最好情况、最可能情况和最坏情况组成的有界区间，并同时说明置信度、证据覆盖率、已知风险和缺失信息。有效 AI 扫描不得只留下空等级、裸 `unknown` 或一句“资料不足”。只有身份冲突、来源损坏、输出不一致或政策无法表达等阻断情况可以保持无评级，并且必须标记为“扫描未完成”而非“已评估”。完整契约见 [AI Radar 结论覆盖保证](docs/ai-radar-coverage-guarantee-v01.md)。
-
-这项保证同时适用于新发现作品和站内历史作品。新作品若既没有合法固定等级，也没有合法有界区间，不得进入自动创建或 `auto_eligible`；资料不足本身不等于完全无评级，只要能形成有根据的风险范围，就应优先向人工审核者和用户提供暂定区间提醒。
-
-统计 AI 覆盖时不得直接把 `Works.evidenceStrength = unassessed` 解释为“没有 AI 评级”，也不得因为 Payload 返回了一个字段全空的 `radarAssessment` group 就视为已评估。覆盖审计必须直接检查 `radarAssessment.suggestedGrade`、评估时间、策略版本、批次，以及未来的固定等级/区间结论字段。
-
-## 安全与仓库边界
-
-- 不提交数据库 dump、真实 `.env`、私钥、token、密码或生产证书。
-- 不提交真实索引与受限研究输出。
-- 用户提交不会直接改变正式评级或发布状态。
-- 自建部署必须配置自己的 owner、邮件、数据库与密钥，不能继承其他部署的身份设置。
+完整格式与命令：[`docs/GLOBAL-WORK-LINEAGE-DELTA-WRITER-v01.md`](docs/GLOBAL-WORK-LINEAGE-DELTA-WRITER-v01.md)。
 
 ## 测试
 
+运行时与边界：
+
 ```powershell
-node scripts/test-frontend.mjs
-pnpm test:community
-pnpm test:radar-presentation
+pnpm test:work-lineage-runtime
+pnpm test:fresh-runtime-boundary
 pnpm build
 ```
 
-如果数据库已经存在 stewardship notices 表，保持 `STEWARDSHIP_NOTICES_SCHEMA_READY=true`，不要在开发启动时接受删除表的 schema 警告。新增集合字段后先运行 `pnpm generate:types`，再执行 TypeScript 与构建检查。
+delta writer：
 
-### 旧 XWiki 列清理
+```powershell
+python -m unittest discover -s tests -p "test_apply_global_work_lineage_delta_v01.py" -v
+```
 
-代码已不再读取或写入 XWiki 兼容字段。已有数据库第一次启动时如只提示删除 `legacy_x_wiki_page` / `version_legacy_x_wiki_page` 及其关系列，先建立数据库 checkpoint，再确认该提示以完成历史列清理；如果提示还包含当前集合或 stewardship notices 的表/列，不要确认，先核对环境变量和迁移状态。
+真实 PostgreSQL fixture integration 由 self-hosted `radar-private` runner 执行。Ubuntu 中 `docker version` 必须同时显示 Client 和 Server。
+
+## 两个 runner
+
+同一台电脑可以同时运行：
+
+- research-data 仓库 runner；
+- 本网站仓库 runner。
+
+它们必须在两个独立安装目录，各只启动一个进程。research control-plane job 不占宿主 5432，网站 fresh-database fixture 使用 5432，因此当前一边一个 runner 可以并行。
+
+不要启动同一 runner 目录两次。也不建议在同一主机同时开两个网站 repo runner：两个 fresh-database job 可能争用 5432，并让 PostgreSQL service-container 检测看到多个容器。
+
+## 安全边界
+
+- 不提交数据库 dump、`.env`、token、密码、Cookie、私钥或生产证书；
+- 不恢复旧 Payload/Radar runtime、表、route、workflow 或 fallback；
+- 不从 Candidate、TEMP、旧索引或聊天生成网站 truth；
+- production write 必须来自 exact accepted Published lineage 和显式网站 gate；
+- merge 普通 PR 不会自动 production apply。
