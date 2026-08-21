@@ -58,7 +58,7 @@ concurrency:
 
 jobs:
   fixture-integration:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, radar-private]
     timeout-minutes: 15
     services:
       postgres:
@@ -80,6 +80,82 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Expose PostgreSQL service client
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t postgres_containers < <(
+            docker ps \
+              --filter status=running \
+              --filter ancestor=postgres:17-alpine \
+              --format '{{.ID}}'
+          )
+          test "${#postgres_containers[@]}" -eq 1
+          postgres_container="${postgres_containers[0]}"
+          printf 'POSTGRES_SERVICE_CONTAINER=%s\n' "$postgres_container" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/bin"
+          cat > "$RUNNER_TEMP/bin/psql" <<'PSQL_WRAPPER'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          test -n "${POSTGRES_SERVICE_CONTAINER:-}"
+          input_file=''
+          psql_args=()
+          while [ "$#" -gt 0 ]; do
+            case "$1" in
+              --file)
+                test "$#" -ge 2
+                input_file="$2"
+                shift 2
+                ;;
+              --file=*)
+                input_file="${1#--file=}"
+                shift
+                ;;
+              *)
+                psql_args+=("$1")
+                shift
+                ;;
+            esac
+          done
+          if [ -n "$input_file" ]; then
+            input_path="$(realpath "$input_file")"
+            input_dir="$(dirname "$input_path")"
+            input_name="$(basename "$input_path")"
+            container_dir="/tmp/psql-wrapper-$"
+            docker exec "$POSTGRES_SERVICE_CONTAINER" \
+              mkdir -p "$container_dir"
+            docker cp "$input_dir/." \
+              "$POSTGRES_SERVICE_CONTAINER:$container_dir/"
+            set +e
+            docker exec -i \
+              --workdir "$container_dir" \
+              -e "PGPASSWORD=${PGPASSWORD:-}" \
+              "$POSTGRES_SERVICE_CONTAINER" \
+              psql "${psql_args[@]}" --file="$input_name"
+            status="$?"
+            set -e
+            docker exec "$POSTGRES_SERVICE_CONTAINER" \
+              rm -rf "$container_dir"
+            exit "$status"
+          fi
+          exec docker exec -i \
+            -e "PGPASSWORD=${PGPASSWORD:-}" \
+            "$POSTGRES_SERVICE_CONTAINER" \
+            psql "${psql_args[@]}"
+          PSQL_WRAPPER
+          chmod 0700 "$RUNNER_TEMP/bin/psql"
+          export POSTGRES_SERVICE_CONTAINER="$postgres_container"
+          "$RUNNER_TEMP/bin/psql" \
+            -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            -c 'SELECT 1'
+          printf '%s\n' "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       - name: Parse tools and check patch whitespace
         shell: bash
