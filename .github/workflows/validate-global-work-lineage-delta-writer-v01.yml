@@ -1,4 +1,4 @@
-name: Validate Global Work Lineage delta writer v01
+name: Validate Global Work Lineage write paths v01
 
 on:
   pull_request:
@@ -7,16 +7,22 @@ on:
     paths:
       - '.github/workflows/validate-global-work-lineage-delta-writer-v01.yml'
       - 'scripts/work-lineage/apply_global_work_lineage_delta_v01.py'
+      - 'scripts/work-lineage/provision_global_work_lineage_rows_v01.py'
       - 'tests/test_apply_global_work_lineage_delta_v01.py'
+      - 'tests/test_provision_global_work_lineage_rows_v01.py'
       - 'config/global-work-lineage-delta-apply-gate-v01.template.json'
+      - 'config/global-work-lineage-provision-apply-gate-v01.template.json'
+      - 'schemas/global-work-lineage-provision-package-v01.schema.json'
       - 'docs/GLOBAL-WORK-LINEAGE-DELTA-WRITER-v01.md'
+      - 'docs/GLOBAL-WORK-LINEAGE-PROVISION-WRITER-v01.md'
+      - 'README.md'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: global-work-lineage-delta-writer-v01-${{ github.event.pull_request.number || github.ref }}
+  group: global-work-lineage-write-paths-v01-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -34,9 +40,22 @@ jobs:
           set -euo pipefail
           python3 -m py_compile \
             scripts/work-lineage/apply_global_work_lineage_delta_v01.py \
-            tests/test_apply_global_work_lineage_delta_v01.py
-          python3 -m unittest discover \
-            -s tests \
-            -p 'test_apply_global_work_lineage_delta_v01.py' \
+            scripts/work-lineage/provision_global_work_lineage_rows_v01.py \
+            tests/test_apply_global_work_lineage_delta_v01.py \
+            tests/test_provision_global_work_lineage_rows_v01.py
+          python3 -m unittest \
+            tests.test_apply_global_work_lineage_delta_v01 \
+            tests.test_provision_global_work_lineage_rows_v01 \
             -v
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          for path in (
+              Path('config/global-work-lineage-delta-apply-gate-v01.template.json'),
+              Path('config/global-work-lineage-provision-apply-gate-v01.template.json'),
+              Path('schemas/global-work-lineage-provision-package-v01.schema.json'),
+          ):
+              json.loads(path.read_text(encoding='utf-8'))
+          PY
           git diff --check origin/${{ github.base_ref }}...HEAD

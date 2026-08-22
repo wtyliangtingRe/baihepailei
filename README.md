@@ -69,6 +69,19 @@ volume: postgres-v01-data
 
 完整格式与命令：[`docs/GLOBAL-WORK-LINEAGE-DELTA-WRITER-v01.md`](docs/GLOBAL-WORK-LINEAGE-DELTA-WRITER-v01.md)。
 
+## New-work / provenance insert-only provision
+
+新 `workId` 与新的 immutable provenance supporting object 使用另一条窄写入路径：
+
+- 输入必须绑定 research-data 已验收的 exact Published release；
+- `workId` 必须已经由 Identity authority 分配，网站 writer 不分配 ID；
+- 只允许 `INSERT`，禁止 update、delete、merge、upsert、`ON CONFLICT` 和自动重试；
+- package 中任一 object ref、document SHA 或 workId 已存在，整个事务失败；
+- 默认只生成离线 SQL 与 receipt；production apply 需要 disabled-by-default 的独立 exact gate、releaseRef 与 package SHA 双确认；
+- 可单独插入 provenance，也可在同一事务先插 provenance、再插依赖它的新 Work。
+
+完整 package、gate、离线与 apply 操作单：[`docs/GLOBAL-WORK-LINEAGE-PROVISION-WRITER-v01.md`](docs/GLOBAL-WORK-LINEAGE-PROVISION-WRITER-v01.md)。当前 v08 仍未开放 Publication/Website，因此代码存在不等于允许写库。
+
 ## 测试
 
 运行时与边界：
@@ -85,7 +98,13 @@ delta writer：
 python -m unittest discover -s tests -p "test_apply_global_work_lineage_delta_v01.py" -v
 ```
 
-真实 PostgreSQL fixture integration 由 self-hosted `radar-private` runner 执行。Ubuntu 中 `docker version` 必须同时显示 Client 和 Server。
+insert-only provision writer：
+
+```powershell
+python -m unittest discover -s tests -p "test_provision_global_work_lineage_rows_v01.py" -v
+```
+
+真实 PostgreSQL fixture integration 由 self-hosted `radar-private` runner 执行。它会在独立 disposable 数据库中证明新 provenance/new Work 可以插入、重复 package 必须失败、既有 Work 字节不变。Ubuntu 中 `docker version` 必须同时显示 Client 和 Server。
 
 ## 两个 runner
 
