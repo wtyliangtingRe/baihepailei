@@ -391,5 +391,3 @@ jobs:
             ${{ runner.temp }}/provision-apply/receipt.json
           if-no-files-found: warn
           retention-days: 30
-
-
