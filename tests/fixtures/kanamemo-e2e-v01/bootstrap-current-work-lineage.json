@@ -1,0 +1,240 @@
+{
+  "assessment": {
+    "attempts": [],
+    "derived": {},
+    "observation": {
+      "provenanceObservationRefs": [],
+      "state": "not_observed"
+    }
+  },
+  "candidate": {
+    "derived": {},
+    "generationAttempts": [],
+    "observation": {
+      "provenanceObservationRefs": [],
+      "state": "not_observed"
+    },
+    "records": []
+  },
+  "canonical": {
+    "classification": {
+      "workType": "unknown"
+    },
+    "lifecycle": {
+      "entityState": "unknown"
+    },
+    "naming": {
+      "canonicalTitle": "Kanamemo",
+      "names": [
+        "Kanamemo"
+      ]
+    },
+    "observation": {
+      "provenanceObservationRefs": [
+        "provenance-observation-v01:sha256:edda7c7eb49417e6b66b160c0c40a3847a0067d975f734a8a56661738133d73a"
+      ],
+      "state": "complete"
+    },
+    "record": {
+      "presenceState": "present",
+      "recordCardinality": 1,
+      "validityState": "valid"
+    },
+    "recordMetadata": {
+      "createdAt": null,
+      "updatedAt": null
+    },
+    "summary": null
+  },
+  "contractVersion": "global-work-lineage-v01",
+  "effectiveState": {
+    "ai": {
+      "assessmentHistoryState": "not_observed",
+      "candidate": {
+        "currentRefs": [],
+        "occupancyState": "unknown",
+        "usabilityState": "unknown"
+      },
+      "published": {
+        "currentRefs": [],
+        "occupancyState": "unknown",
+        "usabilityState": "unknown"
+      },
+      "researchHistoryState": "not_observed",
+      "selection": {
+        "conclusionRef": null,
+        "currentConclusionState": "unknown",
+        "failClosed": true,
+        "layer": "unknown",
+        "reasonCodes": [
+          "EFFECTIVE.CURRENT_AI_NOT_OBSERVED"
+        ]
+      }
+    },
+    "comparison": {},
+    "determinability": "partially_determinate",
+    "human": {
+      "currentJudgmentRefs": [],
+      "pluralityState": "unknown",
+      "preferredJudgmentRef": null,
+      "reasonCodes": [
+        "HUMAN.NOT_OBSERVED"
+      ],
+      "selectionEligibleRefs": []
+    },
+    "pipelineState": {
+      "state": "needs_current_discovery_or_research"
+    },
+    "presentation": {},
+    "recommendedActions": [
+      "RUN_CURRENT_DISCOVER_RESEARCH_ASSESSMENT"
+    ],
+    "search": {},
+    "systemDefaultReference": {
+      "basis": "no_current_conclusion",
+      "gradeProjection": null,
+      "mode": null,
+      "reasonCode": "EFFECTIVE.NO_CURRENT_AUTHORITY",
+      "sourceRef": null
+    },
+    "warnings": [
+      "MIGRATION.CANONICAL_ONLY_NO_CURRENT_RATING"
+    ]
+  },
+  "human": {
+    "derived": {},
+    "intakeReviews": [],
+    "judgments": [],
+    "observation": {
+      "provenanceObservationRefs": [],
+      "state": "not_observed"
+    },
+    "submissions": []
+  },
+  "identities": {
+    "bindings": [
+      {
+        "bindingId": "identity-binding-v01:sha256:f3f9093527bfb13f3b373b0eb2d56bf740c8ed8022e2fca043fb98899ea7e7a6",
+        "bindingState": "current",
+        "externalIdentity": {
+          "externalId": "5914",
+          "namespace": "media",
+          "provider": "anilist",
+          "providerIdentityKey": "anilist|media|5914"
+        },
+        "freshnessState": "unknown",
+        "scopeMatch": "exact",
+        "supersedesBindingId": null,
+        "validFrom": null,
+        "validUntil": null,
+        "validityState": "valid",
+        "verificationState": "confirmed"
+      }
+    ],
+    "derived": {
+      "currentConfirmedBindingIds": [
+        "identity-binding-v01:sha256:f3f9093527bfb13f3b373b0eb2d56bf740c8ed8022e2fca043fb98899ea7e7a6"
+      ],
+      "currentExactProviderCount": 1,
+      "unresolvedBindingIds": []
+    },
+    "observation": {
+      "provenanceObservationRefs": [
+        "provenance-observation-v01:sha256:53d398481bd74c19c0be9e71b23fc00d556731ac9733abf6e28ff685682f591e"
+      ],
+      "state": "complete"
+    }
+  },
+  "integrity": {
+    "checkSummary": {
+      "currentAssessment": "not_observed",
+      "currentResearch": "not_observed",
+      "migrationStructure": "pass"
+    },
+    "derived": {},
+    "determinability": "partially_determinate",
+    "issueProjection": [],
+    "issueRefs": []
+  },
+  "provenance": {
+    "auditRunRef": "global-audit-run-v01:terminal-migration-20260814-01",
+    "bindings": [
+      {
+        "lineageState": "complete",
+        "lineageType": "migrated",
+        "provenanceObservationRefs": [
+          "provenance-observation-v01:sha256:edda7c7eb49417e6b66b160c0c40a3847a0067d975f734a8a56661738133d73a"
+        ],
+        "target": {
+          "fieldPath": "canonical",
+          "targetObjectRef": "work:15117"
+        }
+      },
+      {
+        "lineageState": "complete",
+        "lineageType": "migrated",
+        "provenanceObservationRefs": [
+          "provenance-observation-v01:sha256:53d398481bd74c19c0be9e71b23fc00d556731ac9733abf6e28ff685682f591e"
+        ],
+        "target": {
+          "fieldPath": "identities",
+          "targetObjectRef": "work:15117"
+        }
+      }
+    ],
+    "outputRecordRef": "formal-work-lineage-v01:work:15117",
+    "summary": {
+      "legacyRatingImported": false,
+      "legacyResearchImported": false,
+      "legacyRuntimeDependency": false,
+      "packageId": "GLOBAL-WORK-LINEAGE-V01-TERMINAL-MIGRATION-PACKAGE-20260814-01"
+    }
+  },
+  "published": {
+    "derived": {},
+    "entries": [],
+    "observation": {
+      "artifactGroups": [],
+      "derivedOccupancy": "unknown",
+      "provenanceObservationRefs": [],
+      "state": "not_observed"
+    },
+    "publicationAttempts": []
+  },
+  "quarantine": {
+    "cases": [],
+    "derived": {},
+    "observation": {
+      "provenanceObservationRefs": [],
+      "state": "not_observed"
+    }
+  },
+  "research": {
+    "claims": [],
+    "conflicts": [],
+    "derived": {
+      "currentReadiness": "not_observed",
+      "effectiveClaimIds": [],
+      "hasResearchHistory": false,
+      "recommendedNextAction": "run_current_discovery_or_research"
+    },
+    "evidenceAnchors": [],
+    "observation": {
+      "provenanceObservationRefs": [],
+      "state": "not_observed"
+    },
+    "observations": [],
+    "retrievals": [],
+    "sources": [],
+    "unresolvedQuestions": []
+  },
+  "reservations": {
+    "derived": {},
+    "observation": {
+      "provenanceObservationRefs": [],
+      "state": "not_observed"
+    },
+    "records": []
+  },
+  "workId": "15117"
+}

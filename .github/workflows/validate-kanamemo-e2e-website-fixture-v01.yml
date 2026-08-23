@@ -1,0 +1,347 @@
+name: Validate Kanamemo E2E website fixture v01
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-kanamemo-e2e-website-fixture-v01.yml'
+      - 'database/global-work-lineage-v01/**'
+      - 'scripts/work-lineage/apply_global_work_lineage_delta_v01.py'
+      - 'scripts/work-lineage/prepare_fresh_global_work_lineage_database_v01.py'
+      - 'scripts/work-lineage/provision_global_work_lineage_rows_v01.py'
+      - 'tests/fixtures/global-work-lineage-fresh-database-v01/**'
+      - 'tests/fixtures/kanamemo-e2e-v01/**'
+      - 'tests/test_apply_global_work_lineage_delta_v01.py'
+      - 'tests/test_provision_global_work_lineage_rows_v01.py'
+      - 'tests/test_kanamemo_e2e_website_fixture_v01.py'
+      - 'docs/KANAMEMO-E2E-WEBSITE-FIXTURE-v01.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kanamemo-e2e-website-fixture-v01-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fixture-integration:
+    runs-on: [self-hosted, Linux, X64, radar-private]
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Expose PostgreSQL service client
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t postgres_containers < <(
+            docker ps \
+              --filter status=running \
+              --filter ancestor=postgres:17-alpine \
+              --format '{{.ID}}'
+          )
+          test "${#postgres_containers[@]}" -eq 1
+          postgres_container="${postgres_containers[0]}"
+          printf 'POSTGRES_SERVICE_CONTAINER=%s\n' "$postgres_container" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/bin"
+          cat > "$RUNNER_TEMP/bin/psql" <<'PSQL_WRAPPER'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          test -n "${POSTGRES_SERVICE_CONTAINER:-}"
+          input_file=''
+          psql_args=()
+          while [ "$#" -gt 0 ]; do
+            case "$1" in
+              --file)
+                test "$#" -ge 2
+                input_file="$2"
+                shift 2
+                ;;
+              --file=*)
+                input_file="${1#--file=}"
+                shift
+                ;;
+              *)
+                psql_args+=("$1")
+                shift
+                ;;
+            esac
+          done
+          if [ -n "$input_file" ]; then
+            input_path="$(realpath "$input_file")"
+            input_dir="$(dirname "$input_path")"
+            input_name="$(basename "$input_path")"
+            container_dir="/tmp/psql-wrapper-${RANDOM}"
+            docker exec "$POSTGRES_SERVICE_CONTAINER" mkdir -p "$container_dir"
+            docker cp "$input_dir/." "$POSTGRES_SERVICE_CONTAINER:$container_dir/"
+            set +e
+            docker exec -i \
+              --workdir "$container_dir" \
+              -e "PGPASSWORD=${PGPASSWORD:-}" \
+              "$POSTGRES_SERVICE_CONTAINER" \
+              psql "${psql_args[@]}" --file="$input_name"
+            status="$?"
+            set -e
+            docker exec "$POSTGRES_SERVICE_CONTAINER" rm -rf "$container_dir"
+            exit "$status"
+          fi
+          exec docker exec -i \
+            -e "PGPASSWORD=${PGPASSWORD:-}" \
+            "$POSTGRES_SERVICE_CONTAINER" \
+            psql "${psql_args[@]}"
+          PSQL_WRAPPER
+          chmod 0700 "$RUNNER_TEMP/bin/psql"
+          export POSTGRES_SERVICE_CONTAINER="$postgres_container"
+          "$RUNNER_TEMP/bin/psql" \
+            -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            -c 'SELECT 1'
+          printf '%s\n' "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: Validate exact fixture inputs and deterministic gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            scripts/work-lineage/apply_global_work_lineage_delta_v01.py \
+            scripts/work-lineage/prepare_fresh_global_work_lineage_database_v01.py \
+            scripts/work-lineage/provision_global_work_lineage_rows_v01.py \
+            tests/fixtures/kanamemo-e2e-v01/build_fixture.py \
+            tests/test_kanamemo_e2e_website_fixture_v01.py
+          python3 -m unittest -v \
+            tests.test_apply_global_work_lineage_delta_v01 \
+            tests.test_provision_global_work_lineage_rows_v01 \
+            tests.test_kanamemo_e2e_website_fixture_v01
+          python3 tests/fixtures/kanamemo-e2e-v01/build_fixture.py \
+            --out "$RUNNER_TEMP/kanamemo-first"
+          python3 tests/fixtures/kanamemo-e2e-v01/build_fixture.py \
+            --out "$RUNNER_TEMP/kanamemo-second"
+          diff -ru "$RUNNER_TEMP/kanamemo-first" "$RUNNER_TEMP/kanamemo-second"
+          if [ -n "${{ github.base_ref }}" ]; then
+            git diff --check "origin/${{ github.base_ref }}...HEAD"
+          fi
+
+      - name: Create disposable fresh database
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/fixtures/global-work-lineage-fresh-database-v01/build_fixture.py \
+            --out "$RUNNER_TEMP/formal" \
+            --lock "$RUNNER_TEMP/fixture.lock.json"
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            -c 'CREATE DATABASE lineage_kanamemo_e2e'
+          python3 scripts/work-lineage/prepare_fresh_global_work_lineage_database_v01.py \
+            --formal-package "$RUNNER_TEMP/formal" \
+            --lock "$RUNNER_TEMP/fixture.lock.json" \
+            --out "$RUNNER_TEMP/base-prepared" \
+            --execute \
+            --database-url 'postgresql://postgres:postgres@localhost:5432/lineage_kanamemo_e2e' \
+            --proof "$RUNNER_TEMP/base-import-receipt.json" >/dev/null
+          psql -h localhost -U postgres -d lineage_kanamemo_e2e \
+            -A -t -F '|' -v ON_ERROR_STOP=1 \
+            -c "SELECT work_id, document_sha256 FROM global_work_lineage_v01.work_lineages ORDER BY length(work_id), work_id" \
+            > "$RUNNER_TEMP/baseline-work-set.txt"
+
+      - name: Insert bootstrap Work and prove insert-only behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_ref='formal-single-work-e2e-pilot-20260823-0001:fixture-release-v01'
+          database_url='postgresql://postgres:postgres@localhost:5432/lineage_kanamemo_e2e'
+          generated="$RUNNER_TEMP/kanamemo-first"
+          package="$generated/provision-package.json"
+          gate="$generated/provision-gate.json"
+          package_sha="$(sha256sum "$package" | awk '{print $1}')"
+          before_count="$(
+            psql -h localhost -U postgres -d lineage_kanamemo_e2e \
+              -A -t -v ON_ERROR_STOP=1 \
+              -c 'SELECT count(*) FROM global_work_lineage_v01.work_lineages'
+          )"
+          python3 scripts/work-lineage/provision_global_work_lineage_rows_v01.py \
+            --package "$package" \
+            --release-ref "$release_ref" \
+            --out-dir "$RUNNER_TEMP/provision-apply" \
+            --gate "$gate" \
+            --apply \
+            --database-url "$database_url" \
+            --confirm-release-ref "$release_ref" \
+            --confirm-package-sha256 "$package_sha" >/dev/null
+          after_count="$(
+            psql -h localhost -U postgres -d lineage_kanamemo_e2e \
+              -A -t -v ON_ERROR_STOP=1 \
+              -c 'SELECT count(*) FROM global_work_lineage_v01.work_lineages'
+          )"
+          test "$after_count" -eq "$((before_count + 1))"
+          test "$(
+            psql -h localhost -U postgres -d lineage_kanamemo_e2e \
+              -A -t -v ON_ERROR_STOP=1 \
+              -c "SELECT document_sha256 FROM global_work_lineage_v01.work_lineages WHERE work_id = '15117'"
+          )" = '1f0eb1a8ed79d89aa4d6413dcedd8810826a47a6247bf7ff3c5ea6acbbadff79'
+          test "$(
+            psql -h localhost -U postgres -d lineage_kanamemo_e2e \
+              -A -t -v ON_ERROR_STOP=1 \
+              -c "SELECT count(*) FROM global_work_lineage_v01.provenance_objects WHERE object_ref = 'global-audit-run-v01:terminal-migration-20260814-01' AND object_kind = 'audit_run'"
+          )" = '1'
+          provisioned_set="$(
+            psql -h localhost -U postgres -d lineage_kanamemo_e2e \
+              -A -t -F '|' -v ON_ERROR_STOP=1 \
+              -c 'SELECT work_id, document_sha256 FROM global_work_lineage_v01.work_lineages ORDER BY length(work_id), work_id'
+          )"
+          if python3 scripts/work-lineage/provision_global_work_lineage_rows_v01.py \
+            --package "$package" \
+            --release-ref "$release_ref" \
+            --out-dir "$RUNNER_TEMP/provision-reapply" \
+            --gate "$gate" \
+            --apply \
+            --database-url "$database_url" \
+            --confirm-release-ref "$release_ref" \
+            --confirm-package-sha256 "$package_sha"; then
+            echo 'duplicate bootstrap provision was incorrectly accepted' >&2
+            exit 1
+          fi
+          test "$(
+            psql -h localhost -U postgres -d lineage_kanamemo_e2e \
+              -A -t -F '|' -v ON_ERROR_STOP=1 \
+              -c 'SELECT work_id, document_sha256 FROM global_work_lineage_v01.work_lineages ORDER BY length(work_id), work_id'
+          )" = "$provisioned_set"
+
+      - name: Apply exact CAS delta and verify semantic readback
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_ref='formal-single-work-e2e-pilot-20260823-0001:fixture-release-v01'
+          database_url='postgresql://postgres:postgres@localhost:5432/lineage_kanamemo_e2e'
+          fixture='tests/fixtures/kanamemo-e2e-v01'
+          python3 scripts/work-lineage/apply_global_work_lineage_delta_v01.py \
+            --delta "$fixture/work-lineage-delta.jsonl" \
+            --release-ref "$release_ref" \
+            --out-dir "$RUNNER_TEMP/delta-apply" \
+            --gate "$RUNNER_TEMP/kanamemo-first/delta-gate.json" \
+            --apply \
+            --database-url "$database_url" \
+            --confirm-release-ref "$release_ref" >/dev/null
+          test "$(
+            psql -h localhost -U postgres -d lineage_kanamemo_e2e \
+              -A -t -v ON_ERROR_STOP=1 \
+              -c "SELECT document_sha256 FROM global_work_lineage_v01.work_lineages WHERE work_id = '15117'"
+          )" = '02f228ec11448e10bd229b0ea85ee8a19131b519ee444917e15b909546c4d906'
+          psql -h localhost -U postgres -d lineage_kanamemo_e2e \
+            -A -t -v ON_ERROR_STOP=1 \
+            -c "SELECT document::text FROM global_work_lineage_v01.work_lineages WHERE work_id = '15117'" \
+            > "$RUNNER_TEMP/database-readback.json"
+          psql -h localhost -U postgres -d lineage_kanamemo_e2e \
+            -A -t -F '|' -v ON_ERROR_STOP=1 \
+            -c "SELECT work_id, document_sha256 FROM global_work_lineage_v01.work_lineages WHERE work_id <> '15117' ORDER BY length(work_id), work_id" \
+            > "$RUNNER_TEMP/unchanged-work-set.txt"
+          cmp "$RUNNER_TEMP/baseline-work-set.txt" "$RUNNER_TEMP/unchanged-work-set.txt"
+          python3 - \
+            "$fixture/work-lineage-delta.jsonl" \
+            "$RUNNER_TEMP/database-readback.json" \
+            "$RUNNER_TEMP/provision-apply/receipt.json" \
+            "$RUNNER_TEMP/delta-apply/receipt.json" <<'PY'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+
+          delta = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+          readback = json.loads(Path(sys.argv[2]).read_text(encoding='utf-8'))
+          provision = json.loads(Path(sys.argv[3]).read_text(encoding='utf-8'))
+          applied = json.loads(Path(sys.argv[4]).read_text(encoding='utf-8'))
+          canonical = lambda value: json.dumps(
+              value, ensure_ascii=False, sort_keys=True, separators=(',', ':')
+          ).encode('utf-8')
+          assert readback == delta['document']
+          assert hashlib.sha256(canonical(readback)).hexdigest() == (
+              '02f228ec11448e10bd229b0ea85ee8a19131b519ee444917e15b909546c4d906'
+          )
+          binding = readback['identities']['bindings'][0]['externalIdentity']
+          assert binding['providerIdentityKey'] == 'anilist|media|5914'
+          decision = readback['assessment']['attempts'][0]['decisions'][0]
+          conclusion = decision['conclusion']
+          assert [conclusion[key] for key in (
+              'coreGrade', 'bestGrade', 'likelyGrade', 'worstGrade'
+          )] == ['D', 'D', 'D', 'D']
+          assert [item['classId'] for item in decision['ratingClassAnalysis']['matches']] == [
+              'D-SIDE-YURI', 'D-SIDE-SEVERE-RADAR'
+          ]
+          assert readback['published']['entries'][0]['publicExplanation']['warnings'] == [
+              '含成年人对 7—15 岁女孩的性化、骚扰与不当幻想描写。'
+          ]
+          assert all(
+              item['productionWriteAuthorized'] is False
+              for item in readback['published']['publicationAttempts']
+          )
+          assert provision['status'] == 'PASS_APPLIED'
+          assert provision['execution']['insertWorkRows'] == 1
+          assert provision['execution']['insertProvenanceObjects'] == 1
+          assert provision['execution']['updateRows'] == 0
+          assert applied['status'] == 'PASS_APPLIED'
+          assert applied['execution']['databaseWrite'] is True
+          assert applied['execution']['operation'] == 'UPDATE_EXISTING_WORK_ID_ONLY'
+          assert applied['execution']['insertRows'] == 0
+          assert applied['execution']['deleteRows'] == 0
+          PY
+
+      - name: Reject CAS replay and preserve database state
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_ref='formal-single-work-e2e-pilot-20260823-0001:fixture-release-v01'
+          database_url='postgresql://postgres:postgres@localhost:5432/lineage_kanamemo_e2e'
+          stable_set="$(
+            psql -h localhost -U postgres -d lineage_kanamemo_e2e \
+              -A -t -F '|' -v ON_ERROR_STOP=1 \
+              -c 'SELECT work_id, document_sha256 FROM global_work_lineage_v01.work_lineages ORDER BY length(work_id), work_id'
+          )"
+          if python3 scripts/work-lineage/apply_global_work_lineage_delta_v01.py \
+            --delta tests/fixtures/kanamemo-e2e-v01/work-lineage-delta.jsonl \
+            --release-ref "$release_ref" \
+            --out-dir "$RUNNER_TEMP/delta-reapply" \
+            --gate "$RUNNER_TEMP/kanamemo-first/delta-gate.json" \
+            --apply \
+            --database-url "$database_url" \
+            --confirm-release-ref "$release_ref"; then
+            echo 'CAS replay was incorrectly accepted' >&2
+            exit 1
+          fi
+          test "$(
+            psql -h localhost -U postgres -d lineage_kanamemo_e2e \
+              -A -t -F '|' -v ON_ERROR_STOP=1 \
+              -c 'SELECT work_id, document_sha256 FROM global_work_lineage_v01.work_lineages ORDER BY length(work_id), work_id'
+          )" = "$stable_set"
+
+      - name: Upload exact fixture receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kanamemo-e2e-website-fixture-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/kanamemo-first/verification-summary.json
+            ${{ runner.temp }}/base-import-receipt.json
+            ${{ runner.temp }}/provision-apply/receipt.json
+            ${{ runner.temp }}/delta-apply/receipt.json
+            ${{ runner.temp }}/database-readback.json
+            ${{ runner.temp }}/baseline-work-set.txt
+            ${{ runner.temp }}/unchanged-work-set.txt
+          if-no-files-found: error
+          retention-days: 14

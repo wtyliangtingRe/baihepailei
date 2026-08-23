@@ -1,0 +1,32 @@
+{
+  "fixtureId": "kanamemo-e2e-website-fixture-20260823-0001",
+  "identity": {
+    "providerIdentityKey": "anilist|media|5914",
+    "siteId": "catalog-anilist-5914",
+    "workId": "15117"
+  },
+  "releaseRef": "formal-single-work-e2e-pilot-20260823-0001:fixture-release-v01",
+  "researchData": {
+    "bootstrapDocumentSha256": "1f0eb1a8ed79d89aa4d6413dcedd8810826a47a6247bf7ff3c5ea6acbbadff79",
+    "bootstrapFileSha256": "a17ea51e723e2e115621daa52adfca087c96c8d117143528c655f67dd95d4660",
+    "bootstrapPath": "datasets/formal-e2e-pilot-20260823-0001/v01/bootstrap/current-work-lineage.json",
+    "deltaPath": "datasets/formal-e2e-pilot-20260823-0001/v01/execution/stages/website_delta/artifacts/work-lineage-delta.jsonl",
+    "deltaRawSha256": "e9fb12675e137f5ddfe428a9a74da3038662ebd37757914e0c9508ab64ed99bb",
+    "executionRoot": "datasets/formal-e2e-pilot-20260823-0001/v01/execution",
+    "finalDocumentSha256": "02f228ec11448e10bd229b0ea85ee8a19131b519ee444917e15b909546c4d906",
+    "finalRowFileSha256": "915771770f825a790ea4d93b1bbbff6bdb86af5524accfc5501eb3bf2253c5e8",
+    "finalRowPath": "datasets/formal-e2e-pilot-20260823-0001/v01/execution/current/current-work-lineage.json",
+    "headCommit": "23fae2da1e7935ad8e1ba6da9c15b3ef891465a1",
+    "mergeCommit": "2ae5fbe11a51c8a17613b8d9beb2056fdbd77735",
+    "pullRequest": 372,
+    "repository": "wtyliangtingRe/baihepailei-research-data"
+  },
+  "schemaVersion": "kanamemo-e2e-website-fixture-binding-v01",
+  "website": {
+    "baseCommit": "ee2ddb1b7acdf6b0f581824b4778583925ce4bab",
+    "fixtureApplyAuthorized": true,
+    "fixtureTarget": "disposable_postgresql_only",
+    "productionWriteAuthorized": false,
+    "repository": "wtyliangtingRe/baihepailei"
+  }
+}
