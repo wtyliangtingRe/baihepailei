@@ -1,0 +1,76 @@
+{
+  "$id": "https://baihepailei.invalid/schemas/global-work-lineage-provision-package-v01.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "existingProvenanceRefs": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "provenanceObjects": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "type": "object"
+          },
+          "objectKind": {
+            "enum": [
+              "observation",
+              "audit_run",
+              "output_manifest",
+              "provenance_bundle",
+              "formal_package_manifest"
+            ]
+          },
+          "objectRef": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "objectRef",
+          "objectKind",
+          "document"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "schemaVersion": {
+      "const": "global-work-lineage-provision-package-v01"
+    },
+    "works": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "type": "object"
+          },
+          "workId": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "workId",
+          "document"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "existingProvenanceRefs",
+    "provenanceObjects",
+    "works"
+  ],
+  "title": "Global Work Lineage v01 insert-only provision package",
+  "type": "object"
+}

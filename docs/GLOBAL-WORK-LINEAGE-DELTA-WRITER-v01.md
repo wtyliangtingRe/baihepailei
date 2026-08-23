@@ -4,6 +4,11 @@ This is the narrow write path for replacing the current document of an existing
 `work_id` in `global_work_lineage_v01.work_lineages`. It is not an importer, a
 queue, a scheduler, a compatibility bridge, or a second state model.
 
+New Work IDs and new immutable provenance objects do not belong here. They use
+the separate insert-only path in
+[`GLOBAL-WORK-LINEAGE-PROVISION-WRITER-v01.md`](GLOBAL-WORK-LINEAGE-PROVISION-WRITER-v01.md).
+Neither writer can silently fall back to the other.
+
 The default command is offline. It reads no database and writes only a generated
 `apply.sql` and deterministic `receipt.json`. A database connection is made only
 when every apply control described below is present and consistent.
@@ -105,8 +110,10 @@ python3 scripts/work-lineage/apply_global_work_lineage_delta_v01.py \
 The implementation uses only the Python standard library and invokes `psql`
 with `--no-psqlrc` and `ON_ERROR_STOP=1`; it does not require a PostgreSQL Python
 driver. The database URL is neither stored in the receipt nor printed on
-success. Do not place apply-enabled gates or database credentials in CI. The
-provided workflow performs syntax and unit validation only.
+success. Do not commit production apply-enabled gates or database credentials.
+Repository workflows run offline unit validation and may generate an ephemeral
+enabled gate only against a disposable PostgreSQL service database for
+integration proof.
 
 ## Tests
 
