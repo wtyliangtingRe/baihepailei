@@ -39,7 +39,9 @@ docker compose up --build
 ```
 
 健康检查位于 <http://localhost:3000/api/health>。生产镜像使用 Next.js standalone 输出，
-数据快照随镜像一起冻结；AWS 部署时不会依赖研究仓库或外部数据库。
+数据快照随镜像一起冻结；AWS 部署时不会依赖研究仓库或外部数据库。Compose 默认仅监听
+`127.0.0.1:3000`，由服务器现有的 TLS 反向代理对外提供服务。部署交接见
+[`deploy/aws/README.md`](deploy/aws/README.md)。
 
 ## 数据边界
 
