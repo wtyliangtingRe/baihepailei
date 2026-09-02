@@ -5,13 +5,14 @@
   "type": "module",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 0.0.0.0",
     "dev:webpack": "next dev --webpack",
+    "preview": "pnpm validate:release && next dev --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start",
-    "dev:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev.ps1",
-    "test:work-lineage-runtime": "node --experimental-strip-types --test tests/global-work-lineage-runtime-repository-v01.test.mjs",
-    "test:fresh-runtime-boundary": "python scripts/work-lineage/validate_fresh_global_work_lineage_runtime_boundary_v01.py --repo-root ."
+    "typecheck": "next typegen && tsc --noEmit",
+    "validate:release": "node scripts/validate-public-release.mjs",
+    "check": "pnpm validate:release && pnpm typecheck && pnpm build"
   },
   "dependencies": {
     "next": "^16.2.6",

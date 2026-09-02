@@ -27,7 +27,8 @@ concurrency:
 
 jobs:
   offline-validation:
-    runs-on: [self-hosted, Linux, X64, radar-private]
+    # Offline checks have no private-runner dependency and should not queue behind large research audits.
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4

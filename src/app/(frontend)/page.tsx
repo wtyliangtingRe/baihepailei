@@ -1,67 +1,107 @@
 import Link from 'next/link'
 
-import { getFormalWorkLineageList } from '@/lib/work-lineage/runtimeRepository'
+import {
+  getPublicReleaseManifest,
+  getPublicWorkList,
+} from '@/lib/publicRelease'
+
+import { canonicalContentUrl } from './_lib/content-identity'
 
 export const dynamic = 'force-dynamic'
 
-async function formalWorkCount(): Promise<number | null> {
-  try {
-    return (await getFormalWorkLineageList({ limit: 1, offset: 0 })).total
-  } catch (error) {
-    console.error('Formal WorkLineage count failed', error)
-    return null
-  }
+function number(value: number): string {
+  return value.toLocaleString('zh-CN')
 }
 
-export default async function HomePage() {
-  const workCount = await formalWorkCount()
+export default function HomePage() {
+  const manifest = getPublicReleaseManifest()
+  const featured = getPublicWorkList({ grade: 'S', status: 'rated', limit: 6 }).items
 
   return (
-    <main className="home">
+    <main className="home release-home">
       <div className="home-stack">
-        <section className="hero">
-          <p className="eyebrow">百合排雷 · 新资料库</p>
-          <h1>百合作品资料库</h1>
-          <p>
-            当前只展示已经独立导入新数据库的正式作品与身份信息。历史研究和旧评级没有进入正式库；新的发现、研究与评估会产生全新的当前记录。
-          </p>
-          <form action="/search" className="search-box" role="search">
-            <span>搜索正式作品</span>
-            <input id="home-search-input" name="q" placeholder="输入作品名或精确 Work ID" type="search" />
-            <button className="result-link" type="submit">搜索</button>
-          </form>
-          <div className="home-stats" aria-label="新数据库统计">
-            <span>{workCount === null ? '正式作品库暂时不可用' : `正式作品：${workCount.toLocaleString('zh-CN')} 条`}</span>
-            <span>当前研究：0 条</span>
-            <span>当前评级：0 条</span>
+        <section className="hero release-hero">
+          <div className="release-kicker">
+            <span className="release-live-dot" aria-hidden="true" />
+            首发数据已冻结 · 不再等待增量
           </div>
+          <p className="eyebrow">百合作品评级与排雷资料库</p>
+          <h1>先把现在知道的，<br />诚实地摆出来。</h1>
+          <p className="release-hero-copy">
+            当前收录 {number(manifest.counts.catalogWorks)} 个作品身份；其中 {number(manifest.counts.auditedWorks)}
+            个进入本轮完整审计，{number(manifest.counts.ratedWorks)} 个已有 S–F 评级。
+            证据不够的项目会明确标成低置信、仅资料、冲突或阻断，不会被硬塞进一个看似确定的等级。
+          </p>
+          <form action="/search" className="search-box release-search" role="search">
+            <label htmlFor="home-search-input">搜索作品、Work ID 或外部站点 ID</label>
+            <div>
+              <input id="home-search-input" name="q" placeholder="例如：Work 4974、作品名、Bangumi ID" type="search" />
+              <button className="result-link" type="submit">开始搜索</button>
+            </div>
+          </form>
           <div className="actions">
-            <Link href="/works">浏览正式作品</Link>
-            <Link href="/browse">查看导入范围</Link>
-            <Link href="/ratings">当前评级状态</Link>
-            <Link href="/radar">当前研究状态</Link>
+            <Link className="release-primary-action" href="/works?status=rated">查看全部评级</Link>
+            <Link href="/ratings">评级分布</Link>
+            <Link href="/radar">数据缺口说明</Link>
           </div>
         </section>
 
-        <section className="home-section-grid" aria-label="新资料库分区">
-          <Link className="home-section-card" href="/works">
-            <div className="home-section-card-header">
-              <p>正式数据</p>
-              <span>{workCount === null ? '不可用' : `${workCount.toLocaleString('zh-CN')} 条`}</span>
+        <section className="release-stat-grid" aria-label="首发快照统计">
+          <article>
+            <span>公开目录</span>
+            <strong>{number(manifest.counts.catalogWorks)}</strong>
+            <small>当前可检索作品身份</small>
+          </article>
+          <article>
+            <span>完整审计</span>
+            <strong>{number(manifest.counts.auditedWorks)}</strong>
+            <small>全量去重后的研究集合</small>
+          </article>
+          <article>
+            <span>已评级</span>
+            <strong>{number(manifest.counts.ratedWorks)}</strong>
+            <small>S–F 当前结论</small>
+          </article>
+          <article>
+            <span>显式终态</span>
+            <strong>{number(manifest.counts.nonratingTerminalWorks)}</strong>
+            <small>仅资料 / 冲突 / 阻断 / 待研究</small>
+          </article>
+        </section>
+
+        <section className="release-section">
+          <div className="release-section-heading">
+            <div>
+              <p className="eyebrow">S 级样例</p>
+              <h2>当前最高等级作品</h2>
             </div>
-            <h2>作品与身份</h2>
-            <span>读取新数据库中自包含的 Frozen WorkLineage 与 IdentityBinding。</span>
-          </Link>
-          <Link className="home-section-card" href="/ratings">
-            <div className="home-section-card-header"><p>新流程</p><span>0 条</span></div>
-            <h2>当前评级</h2>
-            <span>旧评级已丢弃；这里只会出现新研究与新评估产生的结论。</span>
-          </Link>
-          <Link className="home-section-card" href="/radar">
-            <div className="home-section-card-header"><p>新流程</p><span>0 条</span></div>
-            <h2>当前研究</h2>
-            <span>参考资料保持隔离，不能原地升级为正式研究对象。</span>
-          </Link>
+            <Link className="back-link" href="/works?grade=S">查看 {number(manifest.gradeCounts.S)} 条 S 级</Link>
+          </div>
+          <div className="release-featured-grid">
+            {featured.map((work) => (
+              <Link className="release-featured-card" href={canonicalContentUrl('works', work.workId)} key={work.workId}>
+                <span className="rating-chip grade-S">S</span>
+                <div>
+                  <h3>{work.title}</h3>
+                  <p>Work {work.workId} · {work.identity.provider}</p>
+                </div>
+                <span aria-hidden="true">↗</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="release-method-note">
+          <div>
+            <p className="eyebrow">这版怎么处理不确定性</p>
+            <h2>当前数据先上线，边界原样保留。</h2>
+          </div>
+          <p>
+            {number(manifest.counts.dUnclearRatings)} 条证据不足型 D 会显示“低置信 / 待补证”；
+            {number(manifest.nonratingTerminalBreakdown.research_record_only)} 条没有 Assessment 的记录只作为资料；
+            剩余冲突、阻断与专项研究项也保留独立状态。后续补证通过新版本追加，不改写这次快照。
+          </p>
+          <Link className="result-link" href="/rules">阅读评级与发布规则</Link>
         </section>
       </div>
     </main>

@@ -42,10 +42,6 @@ function templateById(id: string) {
   return warningTemplates.find((template) => template.id === id)
 }
 
-function noticeImagePath(id: string) {
-  return `/ui/notices/${id}.webp`
-}
-
 export default function TermsIndexPage() {
   return (
     <main className="page collection-page">
@@ -93,13 +89,7 @@ export default function TermsIndexPage() {
 
                 return (
                   <article className="collection-card collection-card-compact notice-template-card" key={template.id}>
-                    <img
-                      alt=""
-                      aria-hidden="true"
-                      className="notice-template-icon"
-                      loading="lazy"
-                      src={noticeImagePath(template.id)}
-                    />
+                    <span aria-hidden="true" className="notice-template-icon notice-template-glyph">i</span>
                     <div className="notice-template-copy">
                       <p>{categoryLabels[template.category] || template.category}</p>
                       <h2>{template.title}</h2>

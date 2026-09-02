@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import React from 'react'
 
-import ContentScopeToggle from './_components/ContentScopeToggle'
 import ThemeToggle from './_components/ThemeToggle'
 import './styles.css'
 import './account.css'
@@ -28,26 +27,26 @@ import './detail-title-table.css'
 import './content-scope.css'
 import './theme.css'
 import './detail-layout-fixes.css'
-import './ui-visual-assets.css'
 import './ui-visual-polish.css'
 import './stewardship-notices.css'
 import './radar.css'
+import './release.css'
 
 export const metadata: Metadata = {
-  title: 'Baihepailei',
-  description: '百合排雷资料库。',
+  title: {
+    default: '百合排雷 · Baihepailei',
+    template: '%s · 百合排雷',
+  },
+  description: '基于可追溯研究资料的百合作品评级与排雷资料库。',
 }
 
 const navItems = [
-  { href: '/browse', label: '资料库' },
   { href: '/works', label: '作品' },
   { href: '/ratings', label: '评级' },
-  { href: '/creators', label: '创作者' },
-  { href: '/organizations', label: '机构' },
-  { href: '/terms', label: '站点说明' },
+  { href: '/radar', label: '数据状态' },
+  { href: '/rules', label: '规则' },
   { href: '/recommendations', label: '推荐' },
   { href: '/updates', label: '最近更新' },
-  { href: '/search', label: '搜索' },
   { href: '/feedback', label: '发现线索' },
 ]
 
@@ -59,9 +58,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header className="site-header">
             <div className="site-branding">
               <Link className="site-title" href="/">
-                Baihepailei
+                <span>百合排雷</span>
+                <small>Baihepailei</small>
               </Link>
-              <ContentScopeToggle />
             </div>
             <nav className="site-nav" aria-label="主导航">
               {navItems.map((item) => (
