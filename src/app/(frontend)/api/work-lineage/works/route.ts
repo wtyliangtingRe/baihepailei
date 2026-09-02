@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
-import { getFormalWorkLineageList } from '@/lib/work-lineage/runtimeRepository'
+import { getPublicWorkList } from '@/lib/publicRelease'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +11,7 @@ function integer(value: string | null): number | undefined {
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await getFormalWorkLineageList({
+    const result = getPublicWorkList({
       query: request.nextUrl.searchParams.get('q') || '',
       limit: integer(request.nextUrl.searchParams.get('limit')),
       offset: integer(request.nextUrl.searchParams.get('offset')),
@@ -20,9 +20,9 @@ export async function GET(request: NextRequest) {
       headers: { 'Cache-Control': 'no-store' },
     })
   } catch (error) {
-    console.error('WorkLineage list read failed', error)
+    console.error('Public release list read failed', error)
     return NextResponse.json(
-      { code: 'work_lineage_unavailable' },
+      { code: 'public_release_unavailable' },
       { status: 503, headers: { 'Cache-Control': 'no-store' } },
     )
   }

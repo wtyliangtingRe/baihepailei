@@ -1,0 +1,213 @@
+{
+  "schemaVersion": "baihepailei-public-release-manifest-v1",
+  "releaseId": "baihepailei-initial-site-release-20260902-v01",
+  "generatedAt": "2026-09-02T10:22:49Z",
+  "sourceOfTruth": {
+    "repository": "wtyliangtingRe/baihepailei-research-data",
+    "auditedAuthority": {
+      "branch": "agent/full-work-union-hold-audit-20260901-v01",
+      "commit": "ec51252213c5109e74d7f3952037fc6c9274beecb"
+    },
+    "newestOwnerCalibration": {
+      "pullRequest": 533,
+      "branch": "agent/railgun-f-male-romantic-axis-20260830-0001",
+      "headCommit": "79020a5c7aa997a274fe0f84a00f5672ea9821aa",
+      "railgunAssessmentBlobSha": "c46813eed2d0d2004598fbbdbb57a41fb44de6ff",
+      "calibrationAssessmentBlobSha": "8502dee8e1c4b32d45031f7157988073fee40b1e",
+      "newRatedWorks": [
+        "18556",
+        "26328",
+        "26923"
+      ],
+      "supersededRatingWorks": [
+        "4975"
+      ]
+    },
+    "identityRegistry": {
+      "path": "indexes/global-migration-v01/global-canonical-coverage-35610-v01.jsonl",
+      "blobSha": "45dd765e52a436ac1c4eb691b7925b3f8d44257e"
+    },
+    "baseAuditedUnion": {
+      "works": 4115,
+      "workLedgerBlobShas": [
+        "f91a21d982ce8c824016e12986b99a0ed1c028b3",
+        "792c0f92784e32ea255eb564cf46b1bd20c7f8fe",
+        "18ce04ece20aa69281335a6bec66a0b3e65d7e4d",
+        "a34b6277117588ecb55723fc717711b351151bb2",
+        "bef0ea0d8348ee1b0355290b85c9b4b2deffc6fc"
+      ]
+    },
+    "ratingAuthorityBlobShas": {
+      "unanimousNormalizationV12": "1a2bf1e5fbc6c5067458b1823a0d86e18f75fffe",
+      "conservativeDUnclearV18": "3919ba8fbe4911c554477c1000d58813e2229668",
+      "boundedEvidenceDUnclearV20": "3884e1a008a22ee165432faec265bbe6c8889fd9",
+      "tail42V23": "c9c3aed989382c5f101e0d9d57b321599b45e583",
+      "authoredConflictV24": "adfda315e7e57f850fdd78876acfdde2da442749",
+      "authoredRangeV26": "f8b79c8bb808d490ccea09f39de8f2aec2d64fdd",
+      "recordOnlyV27": "51cc7775f104979c0678715d494867d9c5ff9a83",
+      "finalTailV29": "c15001a9cb2b3224ca3e01be8c4448d14540f1e7"
+    }
+  },
+  "publicationAuthorization": {
+    "directive": "Use all current data and ratings, stop waiting, complete the rating projection, and make the website launch-ready.",
+    "newVersionedProjectionAuthorized": true,
+    "priorFrozenArtifactsRemainImmutable": true,
+    "awsDeploymentDeferredUntilLocalPreviewAccepted": true
+  },
+  "publicationPolicy": {
+    "currentDurableDataOnly": true,
+    "waitForAdditionalData": false,
+    "preserveFrozenHistory": true,
+    "forceGradesForNonratingTerminalStates": false,
+    "ownerCalibrationAppliedAsNewestExplicitAuthority": true,
+    "dUnclear": "Publish as grade D with low-confidence / needs-more-research metadata; it does not assert a specific negative trope.",
+    "catalogExclusions": [
+      {
+        "rows": 198,
+        "reason": "opaque Bangumi identities are not public-resolvable"
+      },
+      {
+        "rows": 1,
+        "reason": "feedback smoke-test record is not a real catalog work"
+      }
+    ]
+  },
+  "counts": {
+    "catalogWorks": 35411,
+    "publicIdentityBindings": 34170,
+    "partialIdentityBindings": 1241,
+    "identityRepairRequired": 531,
+    "baseAuditedUnionWorks": 4115,
+    "ownerCalibrationAdditions": 3,
+    "auditedWorks": 4118,
+    "ratedWorks": 4001,
+    "nonratingTerminalWorks": 117,
+    "notAssessedWorks": 31293,
+    "ratingsNeedingMoreResearch": 1127,
+    "dUnclearRatings": 1083
+  },
+  "ratingStatusCounts": {
+    "not_assessed": 31293,
+    "rated": 4001,
+    "blocked": 4,
+    "conflict": 12,
+    "research_required": 2,
+    "research_record_only": 99
+  },
+  "nonratingTerminalBreakdown": {
+    "research_record_only": 99,
+    "conflict": 12,
+    "blocked": 4,
+    "research_required": 2
+  },
+  "gradeCounts": {
+    "B": 737,
+    "S": 87,
+    "D": 2712,
+    "C": 106,
+    "E": 257,
+    "F": 32,
+    "A": 70
+  },
+  "invariants": {
+    "finalDecisionScopePartition": "4001 + 117 = 4118",
+    "baseAuditSourcePartitionsDisjoint": true,
+    "newestCalibrationNewWorks": 3,
+    "newestCalibrationExplicitSupersessions": 1,
+    "duplicateFinalWorkIds": 0,
+    "uncoveredDecisionScopeWorkIds": 0,
+    "frozenSourceBytesMutated": 0
+  },
+  "shards": [
+    {
+      "file": "catalog-0001.jsonl",
+      "rows": 2500,
+      "bytes": 770113,
+      "sha256": "269d5d830e93b51652dbe06cded434c9c5b7abeba96398b0f0a53485ce0a07e3"
+    },
+    {
+      "file": "catalog-0002.jsonl",
+      "rows": 2500,
+      "bytes": 747985,
+      "sha256": "d82fa5e760fb0c1d25e8728793e590b4240f201d4e2deb5a4c852024442c57d8"
+    },
+    {
+      "file": "catalog-0003.jsonl",
+      "rows": 2500,
+      "bytes": 866188,
+      "sha256": "5431fc14ca03bd9f4b1dcdb9f9d2408fa0d37ec58ca3ed8b460cf2a3c6427c18"
+    },
+    {
+      "file": "catalog-0004.jsonl",
+      "rows": 2500,
+      "bytes": 922963,
+      "sha256": "26bf3571d8336e56306f0200d28e88401aaf07b29e1615bcfa927ba802ab65f0"
+    },
+    {
+      "file": "catalog-0005.jsonl",
+      "rows": 2500,
+      "bytes": 814541,
+      "sha256": "4befb5a1f608bd406dc76df33dd496e33a5087b5e280802ab7f42b251b38d8bb"
+    },
+    {
+      "file": "catalog-0006.jsonl",
+      "rows": 2500,
+      "bytes": 764880,
+      "sha256": "0ee7c0b490b3aa30516f22387164f0bb30e1ea265cdbbec5a39f2dc53d59f72c"
+    },
+    {
+      "file": "catalog-0007.jsonl",
+      "rows": 2500,
+      "bytes": 748324,
+      "sha256": "30b2a7298f55f90f88a320d358367e019884bdd10159f2e84ac5f7b0d41f3347"
+    },
+    {
+      "file": "catalog-0008.jsonl",
+      "rows": 2500,
+      "bytes": 774205,
+      "sha256": "e1e9ea7102f887f3d05bacc921e7c168a29b7890f40f6a64894cc6ce60e023a0"
+    },
+    {
+      "file": "catalog-0009.jsonl",
+      "rows": 2500,
+      "bytes": 781219,
+      "sha256": "e428715c79ea9366cb5fcb00b17dacee3df04bf2f734721f9ef044f26bd3b862"
+    },
+    {
+      "file": "catalog-0010.jsonl",
+      "rows": 2500,
+      "bytes": 772426,
+      "sha256": "87d315c46a6eeb1585ef6762b1c7721f994ab45de8b7281ddafec671a8b60283"
+    },
+    {
+      "file": "catalog-0011.jsonl",
+      "rows": 2500,
+      "bytes": 769463,
+      "sha256": "21614635b034a4e8b7acf5d4636be5f6da63f6c0a77e2772f476698af5f91b4c"
+    },
+    {
+      "file": "catalog-0012.jsonl",
+      "rows": 2500,
+      "bytes": 730711,
+      "sha256": "c744060fa14d8e013be726c478ec445b37cf9487eb4e32ba7c3664250f087804"
+    },
+    {
+      "file": "catalog-0013.jsonl",
+      "rows": 2500,
+      "bytes": 715783,
+      "sha256": "cb5d450d0916183218b72f90c777bdc15df22065a9763269f9ec0d8ccf9dc04e"
+    },
+    {
+      "file": "catalog-0014.jsonl",
+      "rows": 2500,
+      "bytes": 1246617,
+      "sha256": "784e28413fba4fd0e9a00710592dc1beb278ffc09b00cb7b848a8e1ff592601f"
+    },
+    {
+      "file": "catalog-0015.jsonl",
+      "rows": 411,
+      "bytes": 126214,
+      "sha256": "754acfbff4bb1218ae37b4bd4c8bdd4061b31ba9e29fa195fb7254c3f5040074"
+    }
+  ]
+}

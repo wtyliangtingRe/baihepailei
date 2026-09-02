@@ -1,22 +1,20 @@
 services:
-  postgres:
-    image: postgres:17-alpine
-    container_name: baihepailei-postgres-v01
+  web:
+    build:
+      context: .
+    image: baihepailei:initial-release
     restart: unless-stopped
     ports:
-      - "15432:5432"
+      - "3000:3000"
     environment:
-      POSTGRES_USER: baihe
-      POSTGRES_PASSWORD: CHANGE_ME_DEV_PASSWORD
-      POSTGRES_DB: baihepailei_v01
-    volumes:
-      - postgres-v01-data:/var/lib/postgresql/data
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      NEXT_PUBLIC_SERVER_URL: http://localhost:3000
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U baihe -d baihepailei_v01"]
-      interval: 10s
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/health | grep -q '\"ok\":true'"]
+      interval: 15s
       timeout: 5s
       retries: 5
-
-volumes:
-  postgres-v01-data:
+      start_period: 20s
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { getFormalWorkLineageById } from '@/lib/work-lineage/runtimeRepository'
+import { getPublicWorkById } from '@/lib/publicRelease'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,10 +10,10 @@ export async function GET(
 ) {
   try {
     const { workId } = await context.params
-    const result = await getFormalWorkLineageById(workId)
+    const result = getPublicWorkById(workId)
     if (!result) {
       return NextResponse.json(
-        { code: 'work_lineage_not_found' },
+        { code: 'public_work_not_found' },
         { status: 404, headers: { 'Cache-Control': 'no-store' } },
       )
     }
@@ -21,9 +21,9 @@ export async function GET(
       headers: { 'Cache-Control': 'no-store' },
     })
   } catch (error) {
-    console.error('WorkLineage exact read failed', error)
+    console.error('Public release exact read failed', error)
     return NextResponse.json(
-      { code: 'work_lineage_unavailable' },
+      { code: 'public_release_unavailable' },
       { status: 503, headers: { 'Cache-Control': 'no-store' } },
     )
   }
