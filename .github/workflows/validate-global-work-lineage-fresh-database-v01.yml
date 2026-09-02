@@ -58,7 +58,8 @@ concurrency:
 
 jobs:
   fixture-integration:
-    runs-on: [self-hosted, Linux, X64, radar-private]
+    # Service containers require a Docker-capable runner; the long-lived WSL runner may not have Docker integration enabled.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
       postgres:
