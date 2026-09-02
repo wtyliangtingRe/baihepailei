@@ -30,4 +30,3 @@ COPY --from=builder --chown=nextjs:nodejs /app/data ./data
 USER nextjs
 EXPOSE 3000
 CMD ["node", "server.js"]
-

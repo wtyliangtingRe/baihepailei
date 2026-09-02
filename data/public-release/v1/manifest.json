@@ -128,26 +128,26 @@
     {
       "file": "catalog-0002.jsonl",
       "rows": 2500,
-      "bytes": 747985,
-      "sha256": "d82fa5e760fb0c1d25e8728793e590b4240f201d4e2deb5a4c852024442c57d8"
+      "bytes": 747984,
+      "sha256": "74783f8a2f181f13ecc610531a494b44f648e37a1eb4e3058dd6553819d37a3b"
     },
     {
       "file": "catalog-0003.jsonl",
       "rows": 2500,
-      "bytes": 866188,
-      "sha256": "5431fc14ca03bd9f4b1dcdb9f9d2408fa0d37ec58ca3ed8b460cf2a3c6427c18"
+      "bytes": 866187,
+      "sha256": "56875439677f4a56d06a9f40c505415dfeff737afd635a4438f57789ea3b48a8"
     },
     {
       "file": "catalog-0004.jsonl",
       "rows": 2500,
-      "bytes": 922963,
-      "sha256": "26bf3571d8336e56306f0200d28e88401aaf07b29e1615bcfa927ba802ab65f0"
+      "bytes": 922962,
+      "sha256": "ea16d228ca80a73af38c8d30b49fffd4c34a04a25350da80d014030ec555730d"
     },
     {
       "file": "catalog-0005.jsonl",
       "rows": 2500,
-      "bytes": 814541,
-      "sha256": "4befb5a1f608bd406dc76df33dd496e33a5087b5e280802ab7f42b251b38d8bb"
+      "bytes": 814540,
+      "sha256": "8b427633cf4e474dde19e1e58e295fa4a2ea615cc44ff98b77e173239d12fd6c"
     },
     {
       "file": "catalog-0006.jsonl",
@@ -158,20 +158,20 @@
     {
       "file": "catalog-0007.jsonl",
       "rows": 2500,
-      "bytes": 748324,
-      "sha256": "30b2a7298f55f90f88a320d358367e019884bdd10159f2e84ac5f7b0d41f3347"
+      "bytes": 748323,
+      "sha256": "d37182fd353dac639b7242875c4442aab388dc3d8632d11bf984eece6f11b43b"
     },
     {
       "file": "catalog-0008.jsonl",
       "rows": 2500,
-      "bytes": 774205,
-      "sha256": "e1e9ea7102f887f3d05bacc921e7c168a29b7890f40f6a64894cc6ce60e023a0"
+      "bytes": 774204,
+      "sha256": "92a289a2f5d4d3ba742cb95ee6bbb15d79c6371373590915afead1ee67e44660"
     },
     {
       "file": "catalog-0009.jsonl",
       "rows": 2500,
-      "bytes": 781219,
-      "sha256": "e428715c79ea9366cb5fcb00b17dacee3df04bf2f734721f9ef044f26bd3b862"
+      "bytes": 781218,
+      "sha256": "5034d13ff5d686bca2e1b8fe1ca08f61fac35d589b98ae71cd9f20f355af5f97"
     },
     {
       "file": "catalog-0010.jsonl",
@@ -182,32 +182,32 @@
     {
       "file": "catalog-0011.jsonl",
       "rows": 2500,
-      "bytes": 769463,
-      "sha256": "21614635b034a4e8b7acf5d4636be5f6da63f6c0a77e2772f476698af5f91b4c"
+      "bytes": 769462,
+      "sha256": "3143cc7e5f0d605f747726dab7b59f2d0796c77a0654640c259628c8b08b323b"
     },
     {
       "file": "catalog-0012.jsonl",
       "rows": 2500,
-      "bytes": 730711,
-      "sha256": "c744060fa14d8e013be726c478ec445b37cf9487eb4e32ba7c3664250f087804"
+      "bytes": 730710,
+      "sha256": "748886abce1fa9fa4faeda7e2bbc233bd71f2eabf8d30d3419e77cf31602e5e0"
     },
     {
       "file": "catalog-0013.jsonl",
       "rows": 2500,
-      "bytes": 715783,
-      "sha256": "cb5d450d0916183218b72f90c777bdc15df22065a9763269f9ec0d8ccf9dc04e"
+      "bytes": 715782,
+      "sha256": "ae1b93a6d540afc3e376ad28b563db5dd1a2a05f2b09f179a56439f7e49390ba"
     },
     {
       "file": "catalog-0014.jsonl",
       "rows": 2500,
-      "bytes": 1246617,
-      "sha256": "784e28413fba4fd0e9a00710592dc1beb278ffc09b00cb7b848a8e1ff592601f"
+      "bytes": 1246616,
+      "sha256": "ea6cebbcd7607ec8cce8786b2cfd935ff90dff414ceb6808aafefc302f199125"
     },
     {
       "file": "catalog-0015.jsonl",
       "rows": 411,
-      "bytes": 126214,
-      "sha256": "754acfbff4bb1218ae37b4bd4c8bdd4061b31ba9e29fa195fb7254c3f5040074"
+      "bytes": 126213,
+      "sha256": "ab518e5300c6259f405c6f33a326b71907a24a317b2689b2f5aee7e26ec8c0b9"
     }
   ]
 }

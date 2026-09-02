@@ -109,4 +109,3 @@ console.log(JSON.stringify({
   shards: manifest.shards.length,
   status: 'PASS',
 }, null, 2))
-
