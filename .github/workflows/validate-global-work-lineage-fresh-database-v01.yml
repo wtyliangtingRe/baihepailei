@@ -57,7 +57,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  runtime-mode:
+    runs-on: ubuntu-24.04
+    outputs:
+      legacy_database: ${{ steps.detect.outputs.legacy_database }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: detect
+        name: Detect versioned public-release runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -f data/public-release/v1/manifest.json \
+            && grep -q '"validate:release"' package.json; then
+            echo 'legacy_database=false' >> "$GITHUB_OUTPUT"
+            echo 'Versioned public-release runtime detected; legacy PostgreSQL fixture integration is retired for this branch.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'legacy_database=true' >> "$GITHUB_OUTPUT"
+          fi
+
   fixture-integration:
+    needs: runtime-mode
+    if: ${{ needs.runtime-mode.outputs.legacy_database == 'true' }}
     # Service containers require a Docker-capable runner; the long-lived WSL runner may not have Docker integration enabled.
     runs-on: ubuntu-24.04
     timeout-minutes: 15
