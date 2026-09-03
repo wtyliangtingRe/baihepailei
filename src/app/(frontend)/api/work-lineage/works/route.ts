@@ -13,6 +13,9 @@ export async function GET(request: NextRequest) {
   try {
     const result = getPublicWorkList({
       query: request.nextUrl.searchParams.get('q') || '',
+      grade: request.nextUrl.searchParams.get('grade') || '',
+      status: request.nextUrl.searchParams.get('status') || '',
+      media: request.nextUrl.searchParams.get('media') || '',
       limit: integer(request.nextUrl.searchParams.get('limit')),
       offset: integer(request.nextUrl.searchParams.get('offset')),
     })

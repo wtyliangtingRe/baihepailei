@@ -98,6 +98,126 @@ for (const [workId, [grade, ratingClass]] of Object.entries(expectedCalibration)
   invariant(record?.rating.class === ratingClass, `owner calibration class drift for Work ${workId}`)
 }
 
+const enrichmentManifest = JSON.parse(
+  readFileSync(join(releaseDir, 'enrichment-manifest.json'), 'utf8'),
+)
+invariant(
+  enrichmentManifest.schemaVersion === 'baihepailei-public-enrichment-manifest-v1',
+  'enrichment manifest schema drift',
+)
+invariant(enrichmentManifest.inheritedRatingsAllowed === false, 'legacy rating inheritance enabled')
+
+function readTrackedEnrichment(source, expectedFile) {
+  invariant(source.file === expectedFile, `${expectedFile} manifest path drift`)
+  const path = join(releaseDir, source.file)
+  const bytes = readFileSync(path)
+  invariant(statSync(path).size === source.bytes, `${source.file} byte-count drift`)
+  invariant(
+    createHash('sha256').update(bytes).digest('hex') === source.sha256,
+    `${source.file} SHA-256 drift`,
+  )
+  return bytes.toString('utf8')
+}
+
+const mediaDocument = JSON.parse(
+  readTrackedEnrichment(enrichmentManifest.sources.media, 'enrichment-media.json'),
+)
+invariant(
+  mediaDocument.schemaVersion === 'baihepailei-public-media-enrichment-v1',
+  'media enrichment schema drift',
+)
+const mediaWorkIds = mediaDocument.groups.flatMap((group) => group.workIds.map(String))
+invariant(mediaWorkIds.length === enrichmentManifest.sources.media.rows, 'media row-count drift')
+invariant(new Set(mediaWorkIds).size === mediaWorkIds.length, 'duplicate media Work ID')
+invariant(
+  mediaWorkIds.every((workId) => byWorkId.has(workId)),
+  'media enrichment contains a non-public Work ID',
+)
+invariant(
+  mediaWorkIds.length === records.length,
+  'public work missing exact media enrichment',
+)
+
+const workAssets = readTrackedEnrichment(
+  enrichmentManifest.sources.workAssets,
+  'enrichment-work-assets.jsonl',
+)
+  .split(/\r?\n/)
+  .filter((line) => line.trim())
+  .map((line) => JSON.parse(line))
+invariant(workAssets.length === enrichmentManifest.sources.workAssets.rows, 'work asset row-count drift')
+invariant(
+  new Set(workAssets.map((asset) => asset.workId)).size === workAssets.length,
+  'duplicate work asset Work ID',
+)
+invariant(
+  workAssets.every((asset) =>
+    asset.schemaVersion === 'baihepailei-public-work-asset-v1' &&
+    byWorkId.has(asset.workId)
+  ),
+  'invalid or non-public work asset',
+)
+invariant(
+  workAssets.filter((asset) => asset.summary?.text).length ===
+    enrichmentManifest.sources.workAssets.summaries,
+  'work summary count drift',
+)
+invariant(
+  workAssets.filter((asset) => asset.creators?.length).length ===
+    enrichmentManifest.sources.workAssets.creatorCreditWorks,
+  'creator credit count drift',
+)
+invariant(
+  workAssets.filter((asset) => asset.organizations?.length).length ===
+    enrichmentManifest.sources.workAssets.organizationCreditWorks,
+  'organization credit count drift',
+)
+invariant(
+  workAssets.every((asset) =>
+    (asset.sources || []).every((source) => /^https?:\/\//i.test(source.url))
+  ),
+  'work asset contains a non-web public source',
+)
+
+const ratingDetails = readTrackedEnrichment(
+  enrichmentManifest.sources.ratingDetails,
+  'enrichment-rating-details.jsonl',
+)
+  .split(/\r?\n/)
+  .filter((line) => line.trim())
+  .map((line) => JSON.parse(line))
+invariant(
+  ratingDetails.length === enrichmentManifest.sources.ratingDetails.uniqueRows,
+  'rating detail row-count drift',
+)
+invariant(
+  new Set(ratingDetails.map((detail) => detail.workId)).size === ratingDetails.length,
+  'duplicate rating detail Work ID',
+)
+const retiredOrUnknownClasses = new Set([
+  'A-STABLE',
+  'D-UNCLEAR',
+  'D-MULTI-ENDING',
+  'E-ACTIVE-MALE-ROMANCE',
+  'E-MALE-MARRIAGE',
+  'E-MALE-RELATIONSHIP',
+  'E-MALE-ENGAGEMENT',
+  'E-MIXED-LGBT-NON-YURI',
+])
+invariant(
+  ratingDetails.every((detail) => {
+    const current = byWorkId.get(detail.workId)
+    return detail.schemaVersion === 'baihepailei-public-rating-detail-v1' &&
+      current?.rating.state === 'rated' &&
+      current.rating.grade === detail.grade &&
+      (detail.classes || []).every((ratingClass) =>
+        ratingClass.startsWith(`${detail.grade}-`) &&
+        !retiredOrUnknownClasses.has(ratingClass)
+      )
+  }),
+  'rating detail escaped exact Work/grade/current-class boundary',
+)
+
 console.log(JSON.stringify({
   releaseId: manifest.releaseId,
   catalogWorks: records.length,
@@ -106,6 +226,9 @@ console.log(JSON.stringify({
   terminalWorks: terminal.length,
   gradeCounts: grades,
   dUnclear: dUnclear.length,
+  mediaEnrichments: mediaWorkIds.length,
+  workAssetEnrichments: workAssets.length,
+  ratingDetailEnrichments: ratingDetails.length,
   shards: manifest.shards.length,
   status: 'PASS',
 }, null, 2))

@@ -1,6 +1,11 @@
 import Link from 'next/link'
 
 import { getPublicWorkList } from '@/lib/publicRelease'
+import {
+  gradeLabel,
+  mediaLabel,
+  ratingClassEntries,
+} from '@/lib/radar/publicPresentation'
 
 import { canonicalContentUrl } from '../_lib/content-identity'
 
@@ -18,8 +23,8 @@ export default function RecommendationsPage() {
         <p className="eyebrow">从高等级开始</p>
         <h1>安心向浏览</h1>
         <p>
-          这里不另造“推荐分”。首版只从当前 S / A 评级中提供一个浏览入口；
-          具体版本边界、置信状态与补证标记仍以作品详情页为准。
+          这里不另造“推荐分”，只从当前 S / A 评级中提供浏览入口。
+          每部作品仍需结合细分类、连载边界与资料完整度阅读。
         </p>
         <div className="collection-actions">
           <Link className="back-link" href="/works?grade=S">全部 S 级</Link>
@@ -27,16 +32,21 @@ export default function RecommendationsPage() {
         </div>
       </section>
       <section className="release-featured-grid">
-        {works.map((work) => (
-          <Link className="release-featured-card" href={canonicalContentUrl('works', work.workId)} key={work.workId}>
-            <span className={`rating-chip grade-${work.rating.grade}`}>{work.rating.grade}</span>
-            <div>
-              <h3>{work.title}</h3>
-              <p>Work {work.workId} · {work.identity.provider}</p>
-            </div>
-            <span aria-hidden="true">↗</span>
-          </Link>
-        ))}
+        {works.map((work) => {
+          const firstClass = ratingClassEntries(work.rating)[0]
+          return (
+            <Link className="release-featured-card" href={canonicalContentUrl('works', work.workId)} key={work.workId}>
+              <span className={`rating-chip grade-${work.rating.grade}`}>{work.rating.grade}</span>
+              <div>
+                <h3>{work.title}</h3>
+                <p>
+                  {mediaLabel(work.media.group, work.media.type)} · {firstClass?.definition.label || gradeLabel(work.rating.grade!)}
+                </p>
+              </div>
+              <span aria-hidden="true">↗</span>
+            </Link>
+          )
+        })}
       </section>
     </main>
   )

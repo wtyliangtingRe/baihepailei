@@ -9,7 +9,7 @@
     "dev:webpack": "next dev --webpack",
     "preview": "pnpm validate:release && next dev --hostname 0.0.0.0",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/start-production.mjs",
     "typecheck": "next typegen && tsc --noEmit",
     "validate:release": "node scripts/validate-public-release.mjs",
     "check": "pnpm validate:release && pnpm typecheck && pnpm build"

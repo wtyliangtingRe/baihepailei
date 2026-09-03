@@ -37,17 +37,16 @@ export const metadata: Metadata = {
     default: '百合排雷 · Baihepailei',
     template: '%s · 百合排雷',
   },
-  description: '基于可追溯研究资料的百合作品评级与排雷资料库。',
+  description: '查询百合作品的 S–F 评级、具体警示、作者机构与可核验资料来源。',
 }
 
 const navItems = [
   { href: '/works', label: '作品' },
-  { href: '/ratings', label: '评级' },
-  { href: '/radar', label: '数据状态' },
-  { href: '/rules', label: '规则' },
-  { href: '/recommendations', label: '推荐' },
+  { href: '/ratings', label: '评级与警示' },
+  { href: '/rules', label: '完整规则' },
+  { href: '/recommendations', label: '安心向' },
   { href: '/updates', label: '最近更新' },
-  { href: '/feedback', label: '发现线索' },
+  { href: '/feedback', label: '补充纠错' },
 ]
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
