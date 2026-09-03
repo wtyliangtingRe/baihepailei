@@ -3,7 +3,9 @@ import 'server-only'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
-import { isRadarRatingClass } from '@/lib/radar/ratingPolicy'
+import { isRadarRatingClass, radarClassDefinitions } from '@/lib/radar/ratingPolicy'
+import { publicSearchTermsForRatingClass } from '@/lib/radar/publicSearchTerms'
+import { publicTagsFor, type PublicTagKey } from '@/lib/radar/publicTags'
 
 export const PUBLIC_GRADES = ['S', 'A', 'B', 'C', 'D', 'E', 'F'] as const
 export const PUBLIC_RATING_STATES = [
@@ -24,6 +26,20 @@ export type PublicCredit = {
   name: string
   role: string
   sourceUrl?: string
+}
+
+export type PublicLocalizedTitle = {
+  title: string
+  language?: string
+  region?: string
+  kind?: 'original' | 'official' | 'localized' | 'romanized' | 'alias'
+}
+
+export type PublicCover = {
+  url: string
+  alt?: string
+  width?: number
+  height?: number
 }
 
 export type PublicWorkSource = {
@@ -53,13 +69,19 @@ export type PublicWorkRecord = {
   workId: string
   title: string
   aliases: string[]
+  localizedTitles: PublicLocalizedTitle[]
   media: {
     group: PublicMediaGroup
     type: string
+    format?: string
   }
   firstPublished?: string
+  firstPublishedLabel?: string
+  firstPublishedPrecision?: 'day' | 'month' | 'year' | 'unknown'
+  cover?: PublicCover
   creators: PublicCredit[]
   organizations: PublicCredit[]
+  publicTags: ReturnType<typeof publicTagsFor>
   summary?: {
     kind: 'source_summary'
     text: string
@@ -111,9 +133,15 @@ type WorkAssetEnrichment = {
   schemaVersion: 'baihepailei-public-work-asset-v1'
   workId: string
   aliases?: string[]
+  localizedTitles?: PublicLocalizedTitle[]
+  format?: string
   firstPublished?: string
+  firstPublishedLabel?: string
+  firstPublishedPrecision?: PublicWorkRecord['firstPublishedPrecision']
+  cover?: PublicCover
   creators?: PublicCredit[]
   organizations?: PublicCredit[]
+  publicTags?: PublicTagKey[]
   summary?: PublicWorkRecord['summary']
   sources?: PublicWorkSource[]
 }
@@ -274,18 +302,24 @@ function toPublicRecord(
   asset: WorkAssetEnrichment | undefined,
   detail: RatingDetailEnrichment | undefined,
 ): PublicWorkRecord {
+  const rating = mergeRating(base.rating, detail)
   return {
     schemaVersion: 'baihepailei-public-work-view-v2',
     workId: base.workId,
     title: base.title,
     aliases: asset?.aliases || [],
-    media: media || { group: 'unknown', type: 'unknown' },
+    localizedTitles: asset?.localizedTitles || [],
+    media: { ...(media || { group: 'unknown', type: 'unknown' }), format: asset?.format },
     firstPublished: asset?.firstPublished,
+    firstPublishedLabel: asset?.firstPublishedLabel,
+    firstPublishedPrecision: asset?.firstPublishedPrecision,
+    cover: asset?.cover,
     creators: asset?.creators || [],
     organizations: asset?.organizations || [],
+    publicTags: publicTagsFor(asset?.publicTags, rating.classes),
     summary: asset?.summary,
     sources: asset?.sources || [],
-    rating: mergeRating(base.rating, detail),
+    rating,
   }
 }
 
@@ -423,10 +457,23 @@ export function getPublicWorkList(input: {
     const haystack = [
       record.title,
       ...record.aliases,
+      ...record.localizedTitles.flatMap((title) => [title.title, title.language || '', title.region || '']),
       ...record.creators.flatMap((credit) => [credit.name, credit.role]),
       ...record.organizations.flatMap((credit) => [credit.name, credit.role]),
+      ...record.publicTags.flatMap((tag) => [tag.label, tag.group, tag.description]),
+      ...record.rating.classes.flatMap((ratingClass) => {
+        if (!isRadarRatingClass(ratingClass)) return []
+        const definition = radarClassDefinitions[ratingClass]
+        return [
+          ratingClass,
+          definition.label,
+          definition.summary,
+          ...publicSearchTermsForRatingClass(ratingClass),
+        ]
+      }),
       record.media.group,
       record.media.type,
+      record.media.format || '',
       record.workId,
       `work ${record.workId}`,
     ].join('\n').toLocaleLowerCase('zh-CN')

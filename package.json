@@ -12,7 +12,9 @@
     "start": "node scripts/start-production.mjs",
     "typecheck": "next typegen && tsc --noEmit",
     "validate:release": "node scripts/validate-public-release.mjs",
-    "check": "pnpm validate:release && pnpm typecheck && pnpm build"
+    "validate:ui": "node scripts/validate-public-ui.mjs",
+    "smoke:public": "node scripts/smoke-public-site.mjs",
+    "check": "pnpm validate:release && pnpm validate:ui && pnpm typecheck && pnpm build"
   },
   "dependencies": {
     "next": "^16.2.6",

@@ -70,7 +70,7 @@ export default function RadarIndexPage() {
           <h2>另有 {manifest.counts.notAssessedWorks.toLocaleString('zh-CN')} 部目录作品。</h2>
         </div>
         <p>
-          这些作品目前只有可检索标题与类型，没有继承旧评级。你仍可以用作品名或 Work ID 找到页面并补充线索。
+          这些作品目前只有可检索标题与类型，没有继承旧评级。你仍可以用作品名或别名找到页面并补充线索。
         </p>
         <Link className="result-link" href="/works?status=not_assessed">浏览尚未评级作品</Link>
       </section>

@@ -93,7 +93,7 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
       ) : (
         <section className="detail-card">
           <h2>提交渠道尚未配置</h2>
-          <p>站务配置独立邮箱、外部表单或问题单后，这里才会出现入口。未配置时不会回退到旧数据库。</p>
+          <p>站务配置独立邮箱、外部表单或问题单后，这里才会出现可用入口。</p>
         </section>
       )}
 

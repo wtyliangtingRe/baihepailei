@@ -43,9 +43,9 @@ export default function HomePage() {
             以及当前已经核实的作者、创作机构、简介与来源。资料没有补齐的部分会明确留空。
           </p>
           <form action="/search" className="search-box release-search" role="search">
-            <label htmlFor="home-search-input">搜索作品、作者、制作机构或反馈编号</label>
+            <label htmlFor="home-search-input">搜索作品、作者、制作机构或警示</label>
             <div>
-              <input id="home-search-input" name="q" placeholder="例如：终将成为你、仲谷鳰、Work 4974" type="search" />
+              <input id="home-search-input" name="q" placeholder="例如：终将成为你、仲谷鳰、男性替身" type="search" />
               <button className="result-link" type="submit">查作品</button>
             </div>
           </form>

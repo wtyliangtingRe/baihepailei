@@ -26,7 +26,7 @@ export default function UpdatesPage() {
         <p>
           全目录补入作品类型；恢复 {enrichment.sources.workAssets.summaries.toLocaleString('zh-CN')} 条可核验来源摘要，
           并为 {enrichment.sources.ratingDetails.uniqueRows.toLocaleString('zh-CN')} 条评级补回具体理由或范围。
-          作品页不再把内部身份字段当成主要内容。
+          作品页优先展示读者需要的基本资料、创作信息、评级理由与具体警示。
         </p>
         <Link className="result-link" href="/works">查看新版作品页</Link>
       </article>

@@ -70,7 +70,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <ThemeToggle />
             </nav>
           </header>
+          <div className="site-review-notice" role="note">
+            <strong>AI 综合，待复核</strong>
+            <span>评级与资料会随核验结果更新；请结合具体警示、依据与资料完整度阅读。</span>
+          </div>
           {children}
+          <footer className="site-footer">
+            <div>
+              <strong>百合排雷</strong>
+              <span>核心等级、具体警示与资料来源分开呈现。</span>
+            </div>
+            <nav aria-label="页脚导航">
+              <Link href="/ratings">评级说明</Link>
+              <Link href="/rules">完整规则</Link>
+              <Link href="/radar">评级进度</Link>
+              <Link href="/feedback">补充纠错</Link>
+            </nav>
+          </footer>
         </div>
       </body>
     </html>

@@ -95,14 +95,14 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
         <p className="eyebrow">作品资料库</p>
         <h1>找作品，也先看清雷点。</h1>
         <p>
-          可按作品名、作者、制作机构或反馈编号检索。列表优先展示作品类型、当前等级与具体警示；
-          没有细分依据的条目会如实标出，不拿内部身份字段占用阅读位置。
+          可按作品名、别名、作者、制作机构或警示关键词检索。列表优先展示作品类型、当前等级与具体警示；
+          没有细分依据的条目会如实标出，不会凭印象补写理由。
         </p>
         <form action="/works" className="works-filter-panel release-filter-panel">
           <div className="works-filter-grid release-filter-grid">
             <label>
-              <span>作品、作者、机构或 Work ID</span>
-              <input defaultValue={q} name="q" placeholder="例如：终将成为你、仲谷鳰、Work 4974" type="search" />
+              <span>作品、别名、作者、机构或警示</span>
+              <input defaultValue={q} name="q" placeholder="例如：终将成为你、Bloom Into You、NTR" type="search" />
             </label>
             <label>
               <span>评级</span>
@@ -175,13 +175,15 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
                 <div className="release-work-body">
                   <div className="result-card-header release-public-meta">
                     <span>{mediaLabel(work.media.group, work.media.type)}</span>
-                    <span>反馈编号 Work {work.workId}</span>
                     {work.rating.state !== 'rated' ? <span>{publicStatusLabels[work.rating.state]}</span> : null}
                   </div>
                   <h2><Link href={canonicalContentUrl('works', work.workId)}>{work.title}</Link></h2>
                   {credits ? <p className="release-credit-line">{credits}</p> : null}
                   <p className="result-text">{ratingLead(work.rating)}</p>
                   <div className="release-warning-row" aria-label="评级依据与警示">
+                    {work.publicTags.slice(0, 2).map((tag) => (
+                      <span className="release-warning-chip warning-preference" key={tag.key}>{tag.label}</span>
+                    ))}
                     {classes.slice(0, 3).map(({ code, definition }) => (
                       <span className={`release-warning-chip warning-grade-${definition.grade}`} key={code}>
                         {definition.label}
@@ -209,7 +211,7 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
       ) : (
         <section className="empty-state small">
           <h2>没有匹配记录</h2>
-          <p>试试清除评级、类型或进度筛选，或者直接输入作品名与 Work ID。</p>
+          <p>试试清除评级、类型或进度筛选，或者输入作品名、别名、作者、制作机构或警示关键词。</p>
         </section>
       )}
 

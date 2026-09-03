@@ -10,6 +10,7 @@ import {
   gradeSummary,
 } from '@/lib/radar/publicPresentation'
 import { radarClassEntries } from '@/lib/radar/ratingPolicy'
+import { PUBLIC_TAG_KEYS, publicTagDefinitions } from '@/lib/radar/publicTags'
 
 export const dynamic = 'force-dynamic'
 
@@ -86,6 +87,31 @@ export default function RatingsPage() {
             </article>
           )
         })}
+      </section>
+
+      <section className="detail-card release-preference-layer">
+        <div className="release-section-heading release-section-heading-top">
+          <div>
+            <p className="eyebrow">独立偏好层</p>
+            <h2>设定与成人内容，不藏进一个字母里。</h2>
+          </div>
+        </div>
+        <p className="release-grade-explanation">
+          这些标签回答“作品是否包含我个人介意的设定或内容”，与核心关系评级分开展示。
+          只有逐作品资料已经确认时才会出现在作品页；没有标签不等于已经确认不存在。
+        </p>
+        <div className="release-preference-grid">
+          {PUBLIC_TAG_KEYS.map((key) => {
+            const tag = publicTagDefinitions[key]
+            return (
+              <article key={key}>
+                <span>{tag.group}</span>
+                <strong>{tag.label}</strong>
+                <p>{tag.description}</p>
+              </article>
+            )
+          })}
+        </div>
       </section>
 
       <section className="release-method-note release-d-unclear-note">

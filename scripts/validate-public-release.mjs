@@ -178,6 +178,24 @@ invariant(
   ),
   'work asset contains a non-web public source',
 )
+const publicTagKeys = new Set([
+  'setting-ts',
+  'setting-futa',
+  'setting-abo',
+  'setting-otokonoko-crossdressing',
+  'setting-queer-general',
+  'content-adult',
+])
+invariant(
+  workAssets.every((asset) =>
+    (asset.localizedTitles || []).every((title) =>
+      typeof title?.title === 'string' && title.title.trim().length > 0
+    ) &&
+    (asset.publicTags || []).every((tag) => publicTagKeys.has(tag)) &&
+    (!asset.cover || /^https?:\/\//i.test(asset.cover.url))
+  ),
+  'work asset contains invalid public display metadata',
+)
 
 const ratingDetails = readTrackedEnrichment(
   enrichmentManifest.sources.ratingDetails,
