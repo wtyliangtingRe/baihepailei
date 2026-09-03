@@ -72,4 +72,3 @@ export function publicTagsFor(
   }
   return [...keys].map((key) => ({ key, ...publicTagDefinitions[key] }))
 }
-
