@@ -225,4 +225,3 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
     </main>
   )
 }
-

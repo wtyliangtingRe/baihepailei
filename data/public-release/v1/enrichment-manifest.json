@@ -19,8 +19,8 @@
       "organizationCreditWorks": 6,
       "firstPublishedWorks": 6,
       "file": "enrichment-work-assets.jsonl",
-      "bytes": 411437,
-      "sha256": "1a5446cb37fd088038b9a1dbc4a47dc3e2520e8582d45b12022e6dc1fa937fb2"
+      "bytes": 411436,
+      "sha256": "b0373611e1673c255fa5b7d4b245a016b911db2ac0a4f9a5a67ceac4c0166ab0"
     },
     "ratingDetails": {
       "frozenAssessmentRows": 802,
@@ -28,8 +28,8 @@
       "uniqueRows": 1066,
       "authoredAuthorityBlobSha": "adfda315e7e57f850fdd78876acfdde2da442749",
       "file": "enrichment-rating-details.jsonl",
-      "bytes": 592698,
-      "sha256": "403e67e0e16892f0dff832c462fe05fc15a6edd2baf5049bf05fc045d098962c"
+      "bytes": 592697,
+      "sha256": "345a29e2a780e886bf445fba65470d09645d70f84ff554725ceebf9547c7d9fa"
     }
   },
   "displayRules": {
