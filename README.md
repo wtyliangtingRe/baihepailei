@@ -4,18 +4,25 @@
 
 ## 首发快照
 
-- 公开可检索作品：35,411
-- 当前决策范围：4,118
-- S–F 评级：4,001
-- 非评级终态：117
-- 尚未进入本轮评估的目录作品：31,293
-- 作品类型：35,411 条（全目录）
+- 源目录 Work 记录：35,411 条
+- 安全归并后的公开可浏览作品：35,344 部
+- 高把握自动归并：67 组 / 67 条重复记录
+- 因 exact-provider 身份歧义而禁止标题自动归并：197 个标题键
+- 当前决策范围：4,118 条源记录
+- S–F 评级：4,001 条源记录
+- 非评级终态：117 条源记录
+- 作品类型：35,411 条（全源目录）
 - 可核验来源摘要：524 条
 - 补回具体评级理由 / 范围：1,066 条，其中 971 条带现行细分类
 
-公开页面优先展示作品基本资料、各语言名称、作者/主创、创作机构、简介、核心等级、
+公开页面优先展示作品基本资料、译名与别名、作者/主创、创作机构、简介、核心等级、
 具体警示和资料来源。目录序号、外部提供方、身份状态与研究覆盖等内部治理字段不进入
 普通作品页；Work ID 只在反馈流程中作为自动携带的定位信息。
+
+公开目录不会仅因“去掉标点后标题相同”就合并作品。运行时先保留 exact provider identity，
+标题归并只消除 Unicode、大小写与空白差异，并跳过同一 provider 对应多个 exact site ID 的
+歧义标题；组件合并本身也会拒绝制造同 provider / 不同 site ID 的冲突。旧成员 Work ID
+仍可用于搜索与 API 定位，作品页会永久重定向到归并后的主 Work ID。
 
 本版使用完整去重审计的 4,115 个 Work ID，并叠加当前最新 owner 校准中的 3 个新评级；
 Work 4975 使用同一校准中的显式 successor 结论。额外研究不再阻塞首发。
@@ -28,6 +35,7 @@ Work 4975 使用同一校准中的显式 successor 结论。额外研究不再�
 corepack enable
 pnpm install --frozen-lockfile
 pnpm validate:release
+pnpm audit:merge
 pnpm dev
 ```
 
@@ -39,7 +47,8 @@ pnpm dev
 pnpm check
 ```
 
-生产构建完成后，可让脚本临时启动站点并检查关键页面、重定向、搜索词与公开字段边界：
+生产构建完成后，可让脚本临时启动站点并检查关键页面、重定向、搜索词、公开字段边界，
+以及已知的同名 / 标点标题误合并反例：
 
 ```bash
 pnpm smoke:public
@@ -52,8 +61,8 @@ pnpm build
 pnpm start
 ```
 
-然后打开 <http://127.0.0.1:3000>。项目使用 Next.js standalone 输出，因此请用
-`pnpm start`，不要再直接运行 `pnpm exec next start`。
+然后打开 <http://127.0.0.1:3000>。请统一使用 `pnpm start`；启动脚本会按平台选择合适的
+Next.js production server 入口。
 
 ## Docker
 
@@ -61,23 +70,28 @@ pnpm start
 docker compose up --build
 ```
 
-健康检查位于 <http://localhost:3000/api/health>。生产镜像使用 Next.js standalone 输出，
-数据快照随镜像一起冻结；AWS 部署时不会依赖研究仓库或外部数据库。Compose 默认仅监听
-`127.0.0.1:3000`，由服务器现有的 TLS 反向代理对外提供服务。部署交接见
+健康检查位于 <http://localhost:3000/api/health>。除了源目录和评级数，还会报告安全归并后的
+`visibleWorks`、`mergedAway`、`mergedGroups` 与 `largestMergedGroup`。生产镜像使用 Next.js
+standalone 输出，数据快照随镜像一起冻结；AWS 部署时不会依赖研究仓库或外部数据库。
+Compose 默认仅监听 `127.0.0.1:3000`，由服务器现有的 TLS 反向代理对外提供服务。部署交接见
 [`deploy/aws/README.md`](deploy/aws/README.md)。
 
 ## 数据边界
 
 公开快照位于 `data/public-release/v1/`，清单记录每个 shard 的 SHA-256、行数和字节数。
-`pnpm validate:release` 会验证：
+`pnpm validate:release` 验证源快照完整性，`pnpm audit:merge` 则独立验证公开归并边界：
 
-- 35,411 个 Work ID 全局唯一；
+- 35,411 个源 Work ID 全局唯一；
+- 当前固定快照安全归并后必须为 35,344 部公开作品、67 个双成员合并组；
+- 安全归并不得产生同一 exact provider 下不同 site ID 的冲突；
+- 安全归并不得跨已知媒体类别，也不得把 blocking terminal 状态藏在已评级合并结果中；
 - 4,001 个评级 + 117 个非评级终态 = 4,118 个当前决策范围；
 - 1,083 条证据不足型 D 必须同时保留低置信与待补证标记；
 - owner 校准的 Work 18556、26328、26923、4975 必须保持指定等级与类别；
-- 每个公开 shard 与清单哈希一致。
+- 每个公开 shard 与清单哈希一致；
 - 35,411 条媒体类型均按精确 Work ID 绑定；
 - 作品资料和评级细节只允许绑定公开 Work ID，评级细节还必须与当前等级一致；
 - 退役类别与旧评级不得进入补充层，补充文件的行数、字节数与 SHA-256 必须一致。
 
+每次 Release checks 都会保存一份 merge audit artifact，便于回看安全归并统计和旧宽松规则的对照。
 后续资料通过新的版本化快照追加，不回写当前快照或历史冻结研究。
