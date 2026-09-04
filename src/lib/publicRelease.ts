@@ -293,6 +293,13 @@ function normalizeMergeTitle(value: string): string {
     .replace(/[\p{P}\p{S}\s]+/gu, '')
 }
 
+function normalizeIdentityMergeTitle(value: string): string {
+  return String(value || '')
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/\s+/gu, '')
+}
+
 function mediaMergeBucket(group: PublicMediaGroup): string {
   if (group === 'game' || group === 'visual_novel') return 'game'
   if (group === 'other' || group === 'unknown') return 'unknown'
@@ -362,6 +369,23 @@ function uniqueStrings(values: string[], excludedTitle?: string): string[] {
     const value = String(raw || '').trim()
     const key = normalizeMergeTitle(value)
     if (!value || !key || key === excluded || seen.has(key)) continue
+    seen.add(key)
+    result.push(value)
+  }
+  return result
+}
+
+function uniqueIdentityMergeNames(record: PublicWorkRecord): string[] {
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const raw of [
+    record.title,
+    ...record.aliases,
+    ...record.localizedTitles.map((title) => title.title),
+  ]) {
+    const value = String(raw || '').trim()
+    const key = normalizeIdentityMergeTitle(value)
+    if (!value || key.length < 2 || seen.has(key)) continue
     seen.add(key)
     result.push(value)
   }
@@ -530,37 +554,86 @@ function deduplicateCatalog(
     }
     return cursor
   }
-  const union = (left: number, right: number) => {
+  const union = (left: number, right: number): number => {
     const leftRoot = find(left)
     const rightRoot = find(right)
-    if (leftRoot === rightRoot) return
-    parent[Math.max(leftRoot, rightRoot)] = Math.min(leftRoot, rightRoot)
+    if (leftRoot === rightRoot) return leftRoot
+    const root = Math.min(leftRoot, rightRoot)
+    parent[Math.max(leftRoot, rightRoot)] = root
+    return root
   }
 
   const identityOwner = new Map<string, number>()
-  const titleOwner = new Map<string, number>()
+  records.forEach((_, index) => {
+    const base = baseRecords[index]
+    if (base.identity.state !== 'exact' || !base.identity.provider || !base.identity.siteId) return
+    const key = `${base.identity.provider.toLowerCase()}|${base.identity.siteId}`
+    const owner = identityOwner.get(key)
+    if (owner === undefined) identityOwner.set(key, index)
+    else union(owner, index)
+  })
+
+  const ambiguousTitleClaims = new Map<string, Map<string, Set<string>>>()
   records.forEach((record, index) => {
     const base = baseRecords[index]
-    if (base.identity.state === 'exact' && base.identity.provider && base.identity.siteId) {
-      const key = `${base.identity.provider.toLowerCase()}|${base.identity.siteId}`
-      const owner = identityOwner.get(key)
-      if (owner === undefined) identityOwner.set(key, index)
-      else union(owner, index)
-    }
-
-    const names = uniqueStrings([
-      record.title,
-      ...record.aliases,
-      ...record.localizedTitles.map((title) => title.title),
-    ])
+    if (base.identity.state !== 'exact' || !base.identity.provider || !base.identity.siteId) return
+    const provider = base.identity.provider.toLowerCase()
     const bucket = mediaMergeBucket(record.media.group)
-    for (const name of names) {
-      const normalized = normalizeMergeTitle(name)
-      if (normalized.length < 2) continue
+    for (const name of uniqueIdentityMergeNames(record)) {
+      const normalized = normalizeIdentityMergeTitle(name)
       const key = `${bucket}|${normalized}`
+      const providerClaims = ambiguousTitleClaims.get(key) || new Map<string, Set<string>>()
+      const siteIds = providerClaims.get(provider) || new Set<string>()
+      siteIds.add(base.identity.siteId)
+      providerClaims.set(provider, siteIds)
+      ambiguousTitleClaims.set(key, providerClaims)
+    }
+  })
+  const ambiguousTitleKeys = new Set(
+    [...ambiguousTitleClaims.entries()]
+      .filter(([, providerClaims]) => [...providerClaims.values()].some((siteIds) => siteIds.size > 1))
+      .map(([key]) => key),
+  )
+
+  const exactClaimsByRoot = new Map<number, Map<string, string>>()
+  records.forEach((_, index) => {
+    const base = baseRecords[index]
+    if (base.identity.state !== 'exact' || !base.identity.provider || !base.identity.siteId) return
+    const root = find(index)
+    const claims = exactClaimsByRoot.get(root) || new Map<string, string>()
+    claims.set(base.identity.provider.toLowerCase(), base.identity.siteId)
+    exactClaimsByRoot.set(root, claims)
+  })
+
+  const unionTitleSafe = (left: number, right: number): boolean => {
+    const leftRoot = find(left)
+    const rightRoot = find(right)
+    if (leftRoot === rightRoot) return true
+    const leftClaims = exactClaimsByRoot.get(leftRoot) || new Map<string, string>()
+    const rightClaims = exactClaimsByRoot.get(rightRoot) || new Map<string, string>()
+    for (const [provider, siteId] of leftClaims) {
+      const otherSiteId = rightClaims.get(provider)
+      if (otherSiteId && otherSiteId !== siteId) return false
+    }
+    const root = union(leftRoot, rightRoot)
+    const mergedClaims = new Map<string, string>(leftClaims)
+    for (const [provider, siteId] of rightClaims) mergedClaims.set(provider, siteId)
+    exactClaimsByRoot.delete(leftRoot)
+    exactClaimsByRoot.delete(rightRoot)
+    exactClaimsByRoot.set(root, mergedClaims)
+    return true
+  }
+
+  const titleOwner = new Map<string, number>()
+  records.forEach((record, index) => {
+    const bucket = mediaMergeBucket(record.media.group)
+    for (const name of uniqueIdentityMergeNames(record)) {
+      const normalized = normalizeIdentityMergeTitle(name)
+      const key = `${bucket}|${normalized}`
+      if (ambiguousTitleKeys.has(key)) continue
       const owner = titleOwner.get(key)
       if (owner === undefined) titleOwner.set(key, index)
-      else union(owner, index)
+      else unionTitleSafe(owner, index)
     }
   })
 
