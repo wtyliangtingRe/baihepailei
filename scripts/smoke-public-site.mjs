@@ -87,6 +87,11 @@ try {
     { ok: health.ok, catalogWorks: health.catalogWorks, ratedWorks: health.ratedWorks },
     { ok: true, catalogWorks: 35_411, ratedWorks: 4_001 },
   )
+  assert.ok(Number.isInteger(health.visibleWorks) && health.visibleWorks > 0)
+  assert.ok(Number.isInteger(health.mergedAway) && health.mergedAway >= 0)
+  assert.equal(health.visibleWorks + health.mergedAway, health.catalogWorks)
+  assert.ok(Number.isInteger(health.mergedGroups) && health.mergedGroups >= 0)
+  assert.ok(Number.isInteger(health.largestMergedGroup) && health.largestMergedGroup >= 1)
 
   for (const query of ['男性替身', 'NTR', '岸 虎次郎']) {
     const result = await json(`/api/work-lineage/works?q=${encodeURIComponent(query)}&limit=2`)
@@ -137,6 +142,10 @@ try {
     pages: pages.length,
     redirects: redirects.size,
     searches: 3,
+    visibleWorks: health.visibleWorks,
+    mergedAway: health.mergedAway,
+    mergedGroups: health.mergedGroups,
+    largestMergedGroup: health.largestMergedGroup,
     enrichedWorkDetails: 'PASS',
     ratingWarnings: 'PASS',
     publicFieldBoundary: 'PASS',
