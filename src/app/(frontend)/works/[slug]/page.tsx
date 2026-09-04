@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 
 import { getPublicWorkById } from '@/lib/publicRelease'
 import {
@@ -17,7 +17,7 @@ import {
   ratingModeLabel,
 } from '@/lib/radar/publicPresentation'
 
-import { recordIdFromContentRoute } from '../../_lib/content-identity'
+import { canonicalContentUrl, recordIdFromContentRoute } from '../../_lib/content-identity'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,6 +39,14 @@ const languageLabels: Record<string, string> = {
   ko: '韩文',
 }
 
+const localizedTitleKindLabels: Record<string, string> = {
+  original: '原名',
+  official: '官方名',
+  localized: '译名',
+  romanized: '罗马字',
+  alias: '别名',
+}
+
 const publicationPrecisionLabels: Record<string, string> = {
   day: '精确到日',
   month: '精确到月',
@@ -46,9 +54,11 @@ const publicationPrecisionLabels: Record<string, string> = {
   unknown: '精度待确认',
 }
 
-function localizedTitleLabel(language?: string, region?: string): string {
+function localizedTitleLabel(language?: string, region?: string, kind?: string): string {
   const languageLabel = language ? languageLabels[language] || language : '其他名称'
-  return region ? `${languageLabel}（${region}）` : languageLabel
+  const regionalLabel = region ? `${languageLabel}（${region}）` : languageLabel
+  const kindLabel = kind ? localizedTitleKindLabels[kind] || kind : ''
+  return kindLabel ? `${regionalLabel} · ${kindLabel}` : regionalLabel
 }
 
 export async function generateMetadata(
@@ -70,6 +80,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
   if (!workId) notFound()
   const work = getPublicWorkById(workId)
   if (!work) notFound()
+  if (work.workId !== workId) permanentRedirect(canonicalContentUrl('works', work.workId))
 
   const rating = work.rating
   const classes = ratingClassEntries(rating)
@@ -153,7 +164,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
           <dl className="release-detail-list">
             {work.localizedTitles.map((title) => (
               <div key={`${title.language || 'und'}-${title.region || ''}-${title.kind || ''}-${title.title}`}>
-                <dt>{localizedTitleLabel(title.language, title.region)}</dt>
+                <dt>{localizedTitleLabel(title.language, title.region, title.kind)}</dt>
                 <dd>{title.title}</dd>
               </div>
             ))}
