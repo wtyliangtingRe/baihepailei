@@ -47,7 +47,7 @@ function mediaMergeBucket(group) {
   return group
 }
 
-function normalizeBroadTitle(value) {
+function normalizeLegacyBroadTitle(value) {
   return String(value || '')
     .normalize('NFKC')
     .toLowerCase()
@@ -286,29 +286,39 @@ function runMerge({ normalizeTitle, rejectAmbiguousTitleKeys }) {
   }
 }
 
-const broad = runMerge({
-  normalizeTitle: normalizeBroadTitle,
+const legacyBroad = runMerge({
+  normalizeTitle: normalizeLegacyBroadTitle,
   rejectAmbiguousTitleKeys: false,
 })
-const identitySafe = runMerge({
+const currentIdentitySafe = runMerge({
   normalizeTitle: normalizeIdentitySafeTitle,
   rejectAmbiguousTitleKeys: true,
 })
 
-for (const result of [broad, identitySafe]) {
+for (const result of [legacyBroad, currentIdentitySafe]) {
   assert.ok(result.visibleWorks > 0 && result.visibleWorks <= result.sourceWorks, 'invalid visible work count')
   assert.equal(result.mergedAway, result.sourceWorks - result.visibleWorks, 'merge accounting drift')
 }
-assert.equal(identitySafe.sameProviderExactIdConflictGroups, 0, 'identity-safe proposal still merges conflicting exact IDs')
+assert.equal(currentIdentitySafe.sameProviderExactIdConflictGroups, 0, 'current merge policy merges conflicting exact IDs')
+assert.equal(currentIdentitySafe.mixedKnownMediaGroups, 0, 'current merge policy crosses known media buckets')
+assert.equal(currentIdentitySafe.ratedWithBlockingTerminalGroups, 0, 'current merge policy hides a blocking terminal state behind a rating')
+
+// These are pinned to the current public-release v1 bytes. If the release data changes,
+// the audit report should be reviewed and these expectations intentionally advanced.
+assert.equal(currentIdentitySafe.sourceWorks, 35_411, 'unexpected public source-work count')
+assert.equal(currentIdentitySafe.visibleWorks, 35_344, 'unexpected identity-safe visible-work count')
+assert.equal(currentIdentitySafe.mergedAway, 67, 'unexpected identity-safe merged-row count')
+assert.equal(currentIdentitySafe.multiWorkGroups, 67, 'unexpected identity-safe merged-group count')
+assert.equal(currentIdentitySafe.largestGroup, 2, 'unexpected identity-safe largest merge group')
 
 const reportObject = {
-  currentBroadPolicy: broad,
-  proposedIdentitySafePolicy: identitySafe,
-  delta: {
-    recoveredWorks: identitySafe.visibleWorks - broad.visibleWorks,
-    fewerMergedRows: broad.mergedAway - identitySafe.mergedAway,
+  currentIdentitySafePolicy: currentIdentitySafe,
+  legacyBroadPolicy: legacyBroad,
+  improvementOverLegacy: {
+    recoveredWorks: currentIdentitySafe.visibleWorks - legacyBroad.visibleWorks,
+    fewerMergedRows: legacyBroad.mergedAway - currentIdentitySafe.mergedAway,
     exactConflictGroupsRemoved:
-      broad.sameProviderExactIdConflictGroups - identitySafe.sameProviderExactIdConflictGroups,
+      legacyBroad.sameProviderExactIdConflictGroups - currentIdentitySafe.sameProviderExactIdConflictGroups,
   },
 }
 const report = `${JSON.stringify(reportObject, null, 2)}\n`
@@ -321,29 +331,27 @@ if (process.env.GITHUB_OUTPUT) {
   appendFileSync(
     process.env.GITHUB_OUTPUT,
     [
-      `sourceWorks=${broad.sourceWorks}`,
-      `visibleWorks=${broad.visibleWorks}`,
-      `mergedAway=${broad.mergedAway}`,
-      `multiWorkGroups=${broad.multiWorkGroups}`,
-      `largestGroup=${broad.largestGroup}`,
-      `sameProviderExactIdConflictGroups=${broad.sameProviderExactIdConflictGroups}`,
-      `mixedKnownMediaGroups=${broad.mixedKnownMediaGroups}`,
-      `safeVisibleWorks=${identitySafe.visibleWorks}`,
-      `safeMergedAway=${identitySafe.mergedAway}`,
-      `safeMultiWorkGroups=${identitySafe.multiWorkGroups}`,
-      `safeLargestGroup=${identitySafe.largestGroup}`,
-      `safeExactConflictGroups=${identitySafe.sameProviderExactIdConflictGroups}`,
-      `safeAmbiguousTitleKeysSkipped=${identitySafe.ambiguousTitleKeysSkipped}`,
-      `safeRatedWithBlockingTerminalGroups=${identitySafe.ratedWithBlockingTerminalGroups}`,
+      `sourceWorks=${currentIdentitySafe.sourceWorks}`,
+      `visibleWorks=${currentIdentitySafe.visibleWorks}`,
+      `mergedAway=${currentIdentitySafe.mergedAway}`,
+      `multiWorkGroups=${currentIdentitySafe.multiWorkGroups}`,
+      `largestGroup=${currentIdentitySafe.largestGroup}`,
+      `ambiguousTitleKeysSkipped=${currentIdentitySafe.ambiguousTitleKeysSkipped}`,
+      `sameProviderExactIdConflictGroups=${currentIdentitySafe.sameProviderExactIdConflictGroups}`,
+      `mixedKnownMediaGroups=${currentIdentitySafe.mixedKnownMediaGroups}`,
+      `ratedWithBlockingTerminalGroups=${currentIdentitySafe.ratedWithBlockingTerminalGroups}`,
+      `legacyVisibleWorks=${legacyBroad.visibleWorks}`,
+      `legacyMergedAway=${legacyBroad.mergedAway}`,
+      `legacyExactConflictGroups=${legacyBroad.sameProviderExactIdConflictGroups}`,
     ].join('\n') + '\n',
   )
 }
 
 if (process.env.GITHUB_ACTIONS === 'true') {
   console.log(
-    `::notice title=Current public catalog merge::source=${broad.sourceWorks}, visible=${broad.visibleWorks}, mergedAway=${broad.mergedAway}, groups=${broad.multiWorkGroups}, exactConflicts=${broad.sameProviderExactIdConflictGroups}`,
+    `::notice title=Identity-safe public catalog merge::source=${currentIdentitySafe.sourceWorks}, visible=${currentIdentitySafe.visibleWorks}, mergedAway=${currentIdentitySafe.mergedAway}, groups=${currentIdentitySafe.multiWorkGroups}, ambiguousKeysSkipped=${currentIdentitySafe.ambiguousTitleKeysSkipped}, exactConflicts=${currentIdentitySafe.sameProviderExactIdConflictGroups}, blocking=${currentIdentitySafe.ratedWithBlockingTerminalGroups}`,
   )
   console.log(
-    `::notice title=Identity-safe merge proposal::visible=${identitySafe.visibleWorks}, mergedAway=${identitySafe.mergedAway}, groups=${identitySafe.multiWorkGroups}, ambiguousKeysSkipped=${identitySafe.ambiguousTitleKeysSkipped}, exactConflicts=${identitySafe.sameProviderExactIdConflictGroups}, ratedWithBlockingTerminal=${identitySafe.ratedWithBlockingTerminalGroups}`,
+    `::notice title=Legacy broad merge comparison::visible=${legacyBroad.visibleWorks}, mergedAway=${legacyBroad.mergedAway}, exactConflicts=${legacyBroad.sameProviderExactIdConflictGroups}`,
   )
 }
