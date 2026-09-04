@@ -126,7 +126,7 @@ function ambiguousExactProviderTitleKeys(normalizeTitle) {
   return ambiguous
 }
 
-function runMerge({ normalizeTitle, rejectAmbiguousTitleKeys }) {
+function runMerge({ normalizeTitle, rejectAmbiguousTitleKeys, includeMergedGroups = false }) {
   const parent = records.map((_, index) => index)
   const find = (index) => {
     let cursor = index
@@ -201,6 +201,7 @@ function runMerge({ normalizeTitle, rejectAmbiguousTitleKeys }) {
   let mixedRatedGradeGroups = 0
   let ratedWithBlockingTerminalGroups = 0
   const suspicious = []
+  const mergedGroups = []
 
   for (const indices of components.values()) {
     if (indices.length <= 1) continue
@@ -213,26 +214,50 @@ function runMerge({ normalizeTitle, rejectAmbiguousTitleKeys }) {
     const states = new Set()
     let sameProviderConflict = false
 
-    for (const index of indices) {
+    const members = indices.map((index) => {
       const record = records[index]
       if (record.media.group !== 'unknown' && record.media.group !== 'other') {
         knownMedia.add(mediaMergeBucket(record.media.group))
       }
       if (record.rating.state) states.add(record.rating.state)
       if (record.rating.state === 'rated' && record.rating.grade) grades.add(record.rating.grade)
-      if (record.identity.state !== 'exact' || !record.identity.provider || !record.identity.siteId) continue
-      const provider = String(record.identity.provider).toLowerCase()
-      const ids = providerIds.get(provider) || new Set()
-      ids.add(String(record.identity.siteId))
-      providerIds.set(provider, ids)
-      if (ids.size > 1) sameProviderConflict = true
-    }
+      if (record.identity.state === 'exact' && record.identity.provider && record.identity.siteId) {
+        const provider = String(record.identity.provider).toLowerCase()
+        const ids = providerIds.get(provider) || new Set()
+        ids.add(String(record.identity.siteId))
+        providerIds.set(provider, ids)
+        if (ids.size > 1) sameProviderConflict = true
+      }
+      return {
+        workId: record.workId,
+        title: record.title,
+        aliases: record.aliases,
+        localizedTitles: record.localizedTitles.map((title) => title.title),
+        media: record.media.group,
+        mediaType: record.media.type,
+        identityState: record.identity.state || null,
+        provider: record.identity.provider || null,
+        siteId: record.identity.siteId || null,
+        ratingState: record.rating.state || null,
+        grade: record.rating.grade || null,
+      }
+    })
 
     const hasBlockingTerminal = ['conflict', 'blocked', 'research_required'].some((state) => states.has(state))
     if (sameProviderConflict) sameProviderExactIdConflictGroups += 1
     if (knownMedia.size > 1) mixedKnownMediaGroups += 1
     if (grades.size > 1) mixedRatedGradeGroups += 1
     if (states.has('rated') && hasBlockingTerminal) ratedWithBlockingTerminalGroups += 1
+
+    const group = {
+      size: indices.length,
+      sameProviderConflict,
+      media: [...knownMedia],
+      grades: [...grades],
+      states: [...states],
+      members,
+    }
+    if (includeMergedGroups) mergedGroups.push(group)
 
     if (
       sameProviderConflict ||
@@ -241,30 +266,15 @@ function runMerge({ normalizeTitle, rejectAmbiguousTitleKeys }) {
       (states.has('rated') && hasBlockingTerminal) ||
       indices.length >= 8
     ) {
-      suspicious.push({
-        size: indices.length,
-        sameProviderConflict,
-        media: [...knownMedia],
-        grades: [...grades],
-        states: [...states],
-        members: indices.slice(0, 12).map((index) => {
-          const record = records[index]
-          return {
-            workId: record.workId,
-            title: record.title,
-            media: record.media.group,
-            provider: record.identity.provider || null,
-            siteId: record.identity.siteId || null,
-            state: record.rating.state || null,
-            grade: record.rating.grade || null,
-          }
-        }),
-      })
+      suspicious.push(group)
     }
   }
 
   suspicious.sort((left, right) =>
     Number(right.sameProviderConflict) - Number(left.sameProviderConflict) || right.size - left.size,
+  )
+  mergedGroups.sort((left, right) =>
+    String(left.members[0]?.title || '').localeCompare(String(right.members[0]?.title || '')),
   )
 
   return {
@@ -283,6 +293,7 @@ function runMerge({ normalizeTitle, rejectAmbiguousTitleKeys }) {
     mixedRatedGradeGroups,
     ratedWithBlockingTerminalGroups,
     suspiciousGroups: suspicious.slice(0, 20),
+    ...(includeMergedGroups ? { mergedGroups } : {}),
   }
 }
 
@@ -293,6 +304,7 @@ const legacyBroad = runMerge({
 const currentIdentitySafe = runMerge({
   normalizeTitle: normalizeIdentitySafeTitle,
   rejectAmbiguousTitleKeys: true,
+  includeMergedGroups: true,
 })
 
 for (const result of [legacyBroad, currentIdentitySafe]) {
@@ -310,6 +322,7 @@ assert.equal(currentIdentitySafe.visibleWorks, 35_344, 'unexpected identity-safe
 assert.equal(currentIdentitySafe.mergedAway, 67, 'unexpected identity-safe merged-row count')
 assert.equal(currentIdentitySafe.multiWorkGroups, 67, 'unexpected identity-safe merged-group count')
 assert.equal(currentIdentitySafe.largestGroup, 2, 'unexpected identity-safe largest merge group')
+assert.equal(currentIdentitySafe.mergedGroups.length, 67, 'merge-group review list must be complete')
 
 const reportObject = {
   currentIdentitySafePolicy: currentIdentitySafe,
