@@ -227,12 +227,22 @@ export type PublicReleaseManifest = {
   shards: Array<{ file: string; rows: number; bytes: number; sha256: string }>
 }
 
+export type PublicCatalogMergeStats = {
+  sourceWorks: number
+  visibleWorks: number
+  mergedAway: number
+  multiWorkGroups: number
+  largestGroup: number
+}
+
 type PublicReleaseCache = {
   manifest: PublicReleaseManifest
   enrichmentManifest: PublicEnrichmentManifest
   records: PublicWorkRecord[]
   displayRecords: PublicWorkRecord[]
   byWorkId: Map<string, PublicWorkRecord>
+  memberIdsByPrimary: Map<string, string[]>
+  mergeStats: PublicCatalogMergeStats
 }
 
 declare global {
@@ -241,6 +251,14 @@ declare global {
 
 const gradeOrder = new Map(PUBLIC_GRADES.map((grade, index) => [grade, index]))
 const stateOrder = new Map(PUBLIC_RATING_STATES.map((state, index) => [state, index]))
+const terminalSelectionOrder = new Map<PublicRatingState, number>([
+  ['conflict', 0],
+  ['blocked', 1],
+  ['research_required', 2],
+  ['research_record_only', 3],
+  ['not_assessed', 4],
+  ['rated', 5],
+])
 
 function releaseDirectory(): string {
   const configured = String(process.env.BAIHEPAILEI_RELEASE_DIR || '').trim()
@@ -266,6 +284,19 @@ function normalizeMediaGroup(value: string): PublicMediaGroup {
   }
   if (value === 'visual_novel') return 'visual_novel'
   return 'unknown'
+}
+
+function normalizeMergeTitle(value: string): string {
+  return String(value || '')
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[\p{P}\p{S}\s]+/gu, '')
+}
+
+function mediaMergeBucket(group: PublicMediaGroup): string {
+  if (group === 'game' || group === 'visual_novel') return 'game'
+  if (group === 'other' || group === 'unknown') return 'unknown'
+  return group
 }
 
 function mergeRating(
@@ -320,6 +351,254 @@ function toPublicRecord(
     summary: asset?.summary,
     sources: asset?.sources || [],
     rating,
+  }
+}
+
+function uniqueStrings(values: string[], excludedTitle?: string): string[] {
+  const seen = new Set<string>()
+  const excluded = normalizeMergeTitle(excludedTitle || '')
+  const result: string[] = []
+  for (const raw of values) {
+    const value = String(raw || '').trim()
+    const key = normalizeMergeTitle(value)
+    if (!value || !key || key === excluded || seen.has(key)) continue
+    seen.add(key)
+    result.push(value)
+  }
+  return result
+}
+
+function uniqueLocalizedTitles(values: PublicLocalizedTitle[]): PublicLocalizedTitle[] {
+  const seen = new Set<string>()
+  const result: PublicLocalizedTitle[] = []
+  for (const value of values) {
+    const title = String(value.title || '').trim()
+    const normalized = normalizeMergeTitle(title)
+    if (!normalized) continue
+    const key = [normalized, value.language || '', value.region || '', value.kind || ''].join('|')
+    if (seen.has(key)) continue
+    seen.add(key)
+    result.push({ ...value, title })
+  }
+  return result
+}
+
+function uniqueCredits(values: PublicCredit[]): PublicCredit[] {
+  const seen = new Set<string>()
+  return values.filter((credit) => {
+    const key = `${normalizeMergeTitle(credit.name)}|${normalizeMergeTitle(credit.role)}`
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+function uniqueSources(values: PublicWorkSource[]): PublicWorkSource[] {
+  const seen = new Set<string>()
+  return values.filter((source) => {
+    const key = String(source.url || '').trim() || `${source.title}|${source.tier || ''}`
+    if (!key || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+function recordRichness(record: PublicWorkRecord): number {
+  return (
+    (record.rating.state === 'rated' ? 10_000 : record.rating.state === 'not_assessed' ? 0 : 4_000) +
+    record.localizedTitles.length * 25 +
+    record.aliases.length * 15 +
+    record.creators.length * 80 +
+    record.organizations.length * 80 +
+    record.sources.length * 20 +
+    record.publicTags.length * 15 +
+    (record.summary?.text.length || 0) +
+    (record.cover ? 120 : 0) +
+    (record.firstPublished ? 80 : 0) +
+    record.rating.classes.length * 80 +
+    (record.rating.reasoningSummary?.length || 0)
+  )
+}
+
+function selectMergedRating(records: PublicWorkRecord[]): PublicWorkRating {
+  const rated = records.filter((record) => record.rating.state === 'rated' && record.rating.grade)
+  let candidates: PublicWorkRecord[]
+  if (rated.length) {
+    const worstIndex = Math.max(...rated.map((record) => gradeOrder.get(record.rating.grade as PublicGrade) ?? -1))
+    candidates = rated.filter((record) => (gradeOrder.get(record.rating.grade as PublicGrade) ?? -1) === worstIndex)
+  } else {
+    const bestTerminalRank = Math.min(...records.map((record) => terminalSelectionOrder.get(record.rating.state) ?? 99))
+    candidates = records.filter((record) => (terminalSelectionOrder.get(record.rating.state) ?? 99) === bestTerminalRank)
+  }
+
+  const selected = [...candidates].sort((left, right) => recordRichness(right) - recordRichness(left))[0] || records[0]
+  const selectedGrade = selected.rating.grade
+  const sameGrade = selectedGrade
+    ? records.filter((record) => record.rating.grade === selectedGrade)
+    : candidates
+  const classes = [...new Set(sameGrade.flatMap((record) => record.rating.classes))]
+    .filter((ratingClass) => {
+      if (!isRadarRatingClass(ratingClass)) return false
+      return !selectedGrade || radarClassDefinitions[ratingClass].grade === selectedGrade
+    })
+  const reasoningSummary = [...sameGrade]
+    .map((record) => record.rating.reasoningSummary)
+    .filter((value): value is string => Boolean(value))
+    .sort((left, right) => right.length - left.length)[0]
+  const evidenceUrl = sameGrade.find((record) => record.rating.evidenceUrl)?.rating.evidenceUrl
+
+  return {
+    ...selected.rating,
+    class: selected.rating.class && classes.includes(selected.rating.class)
+      ? selected.rating.class
+      : classes[0],
+    classes,
+    reasoningSummary: reasoningSummary || selected.rating.reasoningSummary,
+    evidenceUrl: selected.rating.evidenceUrl || evidenceUrl,
+    needsMoreResearch: records.some((record) => record.rating.needsMoreResearch),
+    uncertaintyKind: selectedGrade === 'D' && records.some((record) => record.rating.uncertaintyKind)
+      ? 'evidence_insufficient'
+      : selected.rating.uncertaintyKind,
+  }
+}
+
+function selectPublishedMetadata(records: PublicWorkRecord[]) {
+  const dated = records.filter((record) => record.firstPublished).sort((left, right) =>
+    String(left.firstPublished).localeCompare(String(right.firstPublished)),
+  )[0]
+  return {
+    firstPublished: dated?.firstPublished || records.find((record) => record.firstPublished)?.firstPublished,
+    firstPublishedLabel: dated?.firstPublishedLabel || records.find((record) => record.firstPublishedLabel)?.firstPublishedLabel,
+    firstPublishedPrecision: dated?.firstPublishedPrecision || records.find((record) => record.firstPublishedPrecision)?.firstPublishedPrecision,
+  }
+}
+
+function mergeRecordGroup(records: PublicWorkRecord[], ordinals: Map<string, number>): PublicWorkRecord {
+  const primary = [...records].sort((left, right) => {
+    const richness = recordRichness(right) - recordRichness(left)
+    if (richness) return richness
+    return (ordinals.get(left.workId) ?? Number.MAX_SAFE_INTEGER) -
+      (ordinals.get(right.workId) ?? Number.MAX_SAFE_INTEGER)
+  })[0]
+  const localizedTitles = uniqueLocalizedTitles(records.flatMap((record) => record.localizedTitles))
+  const aliases = uniqueStrings([
+    ...records.flatMap((record) => [record.title, ...record.aliases]),
+  ], primary.title)
+  const mediaSource = primary.media.group !== 'unknown' && primary.media.group !== 'other'
+    ? primary
+    : records.find((record) => record.media.group !== 'unknown' && record.media.group !== 'other') || primary
+  const summary = [...records]
+    .map((record) => record.summary)
+    .filter((value): value is NonNullable<PublicWorkRecord['summary']> => Boolean(value))
+    .sort((left, right) => right.text.length - left.text.length)[0]
+  const cover = primary.cover || records.find((record) => record.cover)?.cover
+  const publication = selectPublishedMetadata(records)
+  const publicTags = [...new Map(
+    records.flatMap((record) => record.publicTags).map((tag) => [tag.key, tag]),
+  ).values()]
+
+  return {
+    ...primary,
+    aliases,
+    localizedTitles,
+    media: {
+      ...mediaSource.media,
+      format: primary.media.format || records.find((record) => record.media.format)?.media.format,
+    },
+    ...publication,
+    cover,
+    creators: uniqueCredits(records.flatMap((record) => record.creators)),
+    organizations: uniqueCredits(records.flatMap((record) => record.organizations)),
+    publicTags,
+    summary,
+    sources: uniqueSources(records.flatMap((record) => record.sources)),
+    rating: selectMergedRating(records),
+  }
+}
+
+function deduplicateCatalog(
+  records: PublicWorkRecord[],
+  baseRecords: BasePublicWorkRecord[],
+  ordinals: Map<string, number>,
+) {
+  const parent = records.map((_, index) => index)
+  const find = (index: number): number => {
+    let cursor = index
+    while (parent[cursor] !== cursor) {
+      parent[cursor] = parent[parent[cursor]]
+      cursor = parent[cursor]
+    }
+    return cursor
+  }
+  const union = (left: number, right: number) => {
+    const leftRoot = find(left)
+    const rightRoot = find(right)
+    if (leftRoot === rightRoot) return
+    parent[Math.max(leftRoot, rightRoot)] = Math.min(leftRoot, rightRoot)
+  }
+
+  const identityOwner = new Map<string, number>()
+  const titleOwner = new Map<string, number>()
+  records.forEach((record, index) => {
+    const base = baseRecords[index]
+    if (base.identity.state === 'exact' && base.identity.provider && base.identity.siteId) {
+      const key = `${base.identity.provider.toLowerCase()}|${base.identity.siteId}`
+      const owner = identityOwner.get(key)
+      if (owner === undefined) identityOwner.set(key, index)
+      else union(owner, index)
+    }
+
+    const names = uniqueStrings([
+      record.title,
+      ...record.aliases,
+      ...record.localizedTitles.map((title) => title.title),
+    ])
+    const bucket = mediaMergeBucket(record.media.group)
+    for (const name of names) {
+      const normalized = normalizeMergeTitle(name)
+      if (normalized.length < 2) continue
+      const key = `${bucket}|${normalized}`
+      const owner = titleOwner.get(key)
+      if (owner === undefined) titleOwner.set(key, index)
+      else union(owner, index)
+    }
+  })
+
+  const components = new Map<number, number[]>()
+  records.forEach((_, index) => {
+    const root = find(index)
+    const component = components.get(root) || []
+    component.push(index)
+    components.set(root, component)
+  })
+
+  const mergedRecords: PublicWorkRecord[] = []
+  const byWorkId = new Map<string, PublicWorkRecord>()
+  const memberIdsByPrimary = new Map<string, string[]>()
+  let multiWorkGroups = 0
+  let largestGroup = 1
+  for (const indices of components.values()) {
+    const members = indices.map((index) => records[index])
+    const merged = mergeRecordGroup(members, ordinals)
+    mergedRecords.push(merged)
+    const memberIds = members.map((record) => record.workId)
+    memberIdsByPrimary.set(merged.workId, memberIds)
+    for (const workId of memberIds) byWorkId.set(workId, merged)
+    if (members.length > 1) multiWorkGroups += 1
+    largestGroup = Math.max(largestGroup, members.length)
+  }
+
+  return {
+    records: mergedRecords,
+    byWorkId,
+    memberIdsByPrimary,
+    stats: {
+      sourceWorks: records.length,
+      visibleWorks: mergedRecords.length,
+      mergedAway: records.length - mergedRecords.length,
+      multiWorkGroups,
+      largestGroup,
+    } satisfies PublicCatalogMergeStats,
   }
 }
 
@@ -381,7 +660,7 @@ function loadRelease(): PublicReleaseCache {
   const assetByWorkId = new Map(assets.map((asset) => [asset.workId, asset]))
   const detailByWorkId = new Map(details.map((detail) => [detail.workId, detail]))
   const ordinals = new Map(baseRecords.map((record) => [record.workId, record.ordinal]))
-  const records = baseRecords.map((record) =>
+  const rawRecords = baseRecords.map((record) =>
     toPublicRecord(
       record,
       mediaByWorkId.get(record.workId),
@@ -389,21 +668,24 @@ function loadRelease(): PublicReleaseCache {
       detailByWorkId.get(record.workId),
     ),
   )
-  const byWorkId = new Map(records.map((record) => [record.workId, record]))
+  const rawByWorkId = new Map(rawRecords.map((record) => [record.workId, record]))
 
-  if (records.length !== manifest.counts.catalogWorks) {
-    throw new Error(`Public release row-count drift: ${records.length}`)
+  if (rawRecords.length !== manifest.counts.catalogWorks) {
+    throw new Error(`Public release row-count drift: ${rawRecords.length}`)
   }
-  if (byWorkId.size !== records.length) {
+  if (rawByWorkId.size !== rawRecords.length) {
     throw new Error('Public release contains duplicate Work IDs')
   }
 
+  const merged = deduplicateCatalog(rawRecords, baseRecords, ordinals)
   globalThis.__baihepaileiPublicRelease = {
     manifest,
     enrichmentManifest,
-    records,
-    displayRecords: [...records].sort((left, right) => compareForDisplay(left, right, ordinals)),
-    byWorkId,
+    records: merged.records,
+    displayRecords: [...merged.records].sort((left, right) => compareForDisplay(left, right, ordinals)),
+    byWorkId: merged.byWorkId,
+    memberIdsByPrimary: merged.memberIdsByPrimary,
+    mergeStats: merged.stats,
   }
   return globalThis.__baihepaileiPublicRelease
 }
@@ -424,6 +706,10 @@ export function getPublicReleaseManifest(): PublicReleaseManifest {
 
 export function getPublicEnrichmentManifest(): PublicEnrichmentManifest {
   return loadRelease().enrichmentManifest
+}
+
+export function getPublicCatalogMergeStats(): PublicCatalogMergeStats {
+  return loadRelease().mergeStats
 }
 
 export function getPublicWorkById(workId: string): PublicWorkRecord | null {
@@ -448,12 +734,16 @@ export function getPublicWorkList(input: {
   const media = PUBLIC_MEDIA_GROUPS.includes(input.media as PublicMediaGroup) ? input.media : ''
   const limit = normalizeLimit(input.limit)
   const offset = normalizeOffset(input.offset)
-  const source = loadRelease().displayRecords
+  const cache = loadRelease()
+  const exactWorkId = query.match(/^(?:work\s*)?(\d+)$/)?.[1]
+  const exactRecord = exactWorkId ? cache.byWorkId.get(exactWorkId) : undefined
+  const source = exactRecord ? [exactRecord] : cache.displayRecords
   const matched = source.filter((record) => {
     if (grade && record.rating.grade !== grade) return false
     if (status && record.rating.state !== status) return false
     if (media && record.media.group !== media) return false
-    if (!query) return true
+    if (!query || exactRecord) return true
+    const memberIds = cache.memberIdsByPrimary.get(record.workId) || [record.workId]
     const haystack = [
       record.title,
       ...record.aliases,
@@ -474,8 +764,7 @@ export function getPublicWorkList(input: {
       record.media.group,
       record.media.type,
       record.media.format || '',
-      record.workId,
-      `work ${record.workId}`,
+      ...memberIds.flatMap((workId) => [workId, `work ${workId}`]),
     ].join('\n').toLocaleLowerCase('zh-CN')
     return haystack.includes(query)
   })
