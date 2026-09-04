@@ -75,8 +75,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
   const classes = ratingClassEntries(rating)
   const range = rangeLabel(rating)
   const hasBasicMetadata = Boolean(
-    work.firstPublished || work.localizedTitles.length || work.aliases.length ||
-    work.creators.length || work.organizations.length,
+    work.firstPublished || work.creators.length || work.organizations.length,
   )
   const sources = [...work.sources]
   if (rating.evidenceUrl && !sources.some((source) => source.url === rating.evidenceUrl)) {
@@ -147,6 +146,29 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
         </section>
       ) : null}
 
+      <section className="detail-card release-title-alias-card" aria-label="译名与别名">
+        <p className="eyebrow">名称资料</p>
+        <h2>译名与别名</h2>
+        {work.localizedTitles.length || work.aliases.length ? (
+          <dl className="release-detail-list">
+            {work.localizedTitles.map((title) => (
+              <div key={`${title.language || 'und'}-${title.region || ''}-${title.kind || ''}-${title.title}`}>
+                <dt>{localizedTitleLabel(title.language, title.region)}</dt>
+                <dd>{title.title}</dd>
+              </div>
+            ))}
+            {work.aliases.length ? (
+              <div>
+                <dt>其他别名</dt>
+                <dd>{work.aliases.join('、')}</dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : (
+          <p className="muted">当前目录尚未收录其他可靠译名或别名。</p>
+        )}
+      </section>
+
       <div className="release-detail-grid release-public-info-grid">
         <section className="detail-card">
           <p className="eyebrow">作品基本资料</p>
@@ -160,21 +182,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
             {work.firstPublishedPrecision ? (
               <div><dt>日期精度</dt><dd>{publicationPrecisionLabels[work.firstPublishedPrecision]}</dd></div>
             ) : null}
-            {work.aliases.length ? <div><dt>别名 / 译名</dt><dd>{work.aliases.join('、')}</dd></div> : null}
           </dl>
-          {work.localizedTitles.length ? (
-            <div className="release-title-table" aria-label="各语言名称">
-              <h3>各语言名称</h3>
-              <dl>
-                {work.localizedTitles.map((title) => (
-                  <div key={`${title.language || 'und'}-${title.region || ''}-${title.title}`}>
-                    <dt>{localizedTitleLabel(title.language, title.region)}</dt>
-                    <dd>{title.title}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          ) : null}
           {!hasBasicMetadata ? (
             <p className="release-caution">
               当前快照只恢复了作品类型，作者、机构、日期等基本资料仍待补齐。
