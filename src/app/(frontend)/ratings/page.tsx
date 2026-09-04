@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 import {
   getPublicReleaseManifest,
+  getPublicWorkList,
   PUBLIC_GRADES,
   type PublicGrade,
 } from '@/lib/publicRelease'
@@ -26,7 +27,13 @@ const readingAdvice: Record<PublicGrade, string> = {
 
 export default function RatingsPage() {
   const manifest = getPublicReleaseManifest()
-  const total = manifest.counts.ratedWorks
+  const gradeCounts = Object.fromEntries(
+    PUBLIC_GRADES.map((grade) => [
+      grade,
+      getPublicWorkList({ grade, status: 'rated', limit: 1 }).total,
+    ]),
+  ) as Record<PublicGrade, number>
+  const total = PUBLIC_GRADES.reduce((sum, grade) => sum + gradeCounts[grade], 0)
 
   return (
     <main className="page collection-page ratings-public-page release-ratings-page">
@@ -38,7 +45,7 @@ export default function RatingsPage() {
           较低等级事实会拦截较高等级；“没查到”永远不等于“不存在”。
         </p>
         <div className="collection-actions">
-          <Link className="result-link" href="/works?status=rated">浏览 {total.toLocaleString('zh-CN')} 条评级</Link>
+          <Link className="result-link" href="/works?status=rated">浏览 {total.toLocaleString('zh-CN')} 部已评级作品</Link>
           <Link className="back-link" href="/rules">查看全部细则与判定边界</Link>
         </div>
       </section>
@@ -63,7 +70,7 @@ export default function RatingsPage() {
 
       <section className="release-grade-distribution" aria-label="评级分布">
         {PUBLIC_GRADES.map((grade) => {
-          const count = manifest.gradeCounts[grade]
+          const count = gradeCounts[grade]
           const percent = total ? (count / total) * 100 : 0
           const classCount = radarClassEntries.filter(([, definition]) => definition.grade === grade).length
           return (
@@ -72,7 +79,7 @@ export default function RatingsPage() {
               <div className="release-grade-copy">
                 <div>
                   <h2>{gradeLabel(grade)}</h2>
-                  <strong>{count.toLocaleString('zh-CN')} 条 · {percent.toFixed(1)}%</strong>
+                  <strong>{count.toLocaleString('zh-CN')} 部 · {percent.toFixed(1)}%</strong>
                 </div>
                 <p>{gradeSummary(grade)}</p>
                 <p className="release-reading-advice">{readingAdvice[grade]}</p>
@@ -117,11 +124,12 @@ export default function RatingsPage() {
       <section className="release-method-note release-d-unclear-note">
         <div>
           <p className="eyebrow">特别说明</p>
-          <h2>D 级中有 {manifest.counts.dUnclearRatings.toLocaleString('zh-CN')} 条资料不足记录</h2>
+          <h2>资料不足型 D 会单独标明，不把未知写成具体雷点</h2>
         </div>
         <p>
-          它们会显示“具体雷点未确认”，只代表现有资料还不能建立明确的女性关系拓扑。
-          不能据此推断男性结局、NTR、异性路线或任何其他具体情节；这也是为什么作品页把数据边界和规则警示分开。
+          当前发布源数据中有 {manifest.counts.dUnclearRatings.toLocaleString('zh-CN')} 条 D-UNCLEAR 评级记录；
+          去重后的作品页会显示“具体雷点未确认”。它只代表现有资料还不能建立明确的女性关系拓扑，
+          不能据此推断男性结局、NTR、异性路线或任何其他具体情节。
         </p>
         <Link className="result-link" href="/works?grade=D">查看 D 级作品</Link>
       </section>
