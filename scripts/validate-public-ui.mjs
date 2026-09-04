@@ -26,6 +26,10 @@ for (const source of [home, works, detail]) {
 }
 
 assert.ok(
+  detail.indexOf('译名与别名') < detail.indexOf('作品基本资料'),
+  'translated titles and aliases must have a dedicated reader-facing section before work basics',
+)
+assert.ok(
   detail.indexOf('作品基本资料') < detail.indexOf('排雷结论'),
   'basic work information must appear before the detailed rating section',
 )
@@ -39,8 +43,9 @@ assert.ok(
 )
 
 for (const expected of [
+  '译名与别名',
+  '其他别名',
   '作者与创作机构',
-  '各语言名称',
   'release-work-cover',
   '日期精度',
   '为什么这样评',
@@ -63,6 +68,10 @@ for (const expected of ['TS / 性别转换', '扶她设定', 'ABO 设定', '男�
 }
 
 assert.match(rules, /50 条细则，完整公开/)
+assert.match(publicRelease, /deduplicateCatalog\(/)
+assert.match(publicRelease, /base\.identity\.state === 'exact'/)
+assert.match(publicRelease, /normalizeMergeTitle\(/)
+assert.match(publicRelease, /memberIdsByPrimary/)
 assert.match(publicRelease, /radarClassDefinitions\[ratingClass\]/)
 assert.match(publicRelease, /record\.publicTags\.flatMap/)
 assert.match(publicRelease, /record\.localizedTitles\.flatMap/)
@@ -91,6 +100,8 @@ for (const path of [
 console.log(JSON.stringify({
   siteNotice: 'PASS',
   publicFieldBoundary: 'PASS',
+  translatedTitleAndAliasSection: 'PASS',
+  publicCatalogDeduplicationBoundary: 'PASS',
   detailInformationOrder: 'PASS',
   ratingAndWarningLayers: 'PASS',
   responsiveStructure: 'PASS',
