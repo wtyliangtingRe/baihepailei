@@ -74,8 +74,10 @@ for (const expected of ['TS / 性别转换', '扶她设定', 'ABO 设定', '男�
 
 assert.match(rules, /50 条细则，完整公开/)
 assert.match(publicRelease, /deduplicateCatalog\(/)
-assert.match(publicRelease, /base\.identity\.state === 'exact'/)
-assert.match(publicRelease, /normalizeMergeTitle\(/)
+assert.match(publicRelease, /normalizeIdentityMergeTitle\(/)
+assert.match(publicRelease, /ambiguousTitleKeys/)
+assert.match(publicRelease, /unionTitleSafe/)
+assert.match(publicRelease, /otherSiteId && otherSiteId !== siteId/)
 assert.match(publicRelease, /memberIdsByPrimary/)
 assert.match(publicRelease, /radarClassDefinitions\[ratingClass\]/)
 assert.match(publicRelease, /record\.publicTags\.flatMap/)
@@ -108,6 +110,7 @@ console.log(JSON.stringify({
   translatedTitleAndAliasSection: 'PASS',
   mergedWorkCanonicalRouting: 'PASS',
   mergedWorkPublicCounts: 'PASS',
+  identitySafeCatalogMerging: 'PASS',
   publicCatalogDeduplicationBoundary: 'PASS',
   detailInformationOrder: 'PASS',
   ratingAndWarningLayers: 'PASS',
