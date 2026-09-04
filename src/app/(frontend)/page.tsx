@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 import {
+  getPublicCatalogMergeStats,
   getPublicEnrichmentManifest,
   getPublicReleaseManifest,
   getPublicWorkList,
@@ -23,6 +24,12 @@ function number(value: number): string {
 export default function HomePage() {
   const manifest = getPublicReleaseManifest()
   const enrichment = getPublicEnrichmentManifest()
+  const merge = getPublicCatalogMergeStats()
+  const ratedVisible = getPublicWorkList({ status: 'rated', limit: 1 }).total
+  const safeVisible =
+    getPublicWorkList({ grade: 'S', status: 'rated', limit: 1 }).total +
+    getPublicWorkList({ grade: 'A', status: 'rated', limit: 1 }).total
+  const notAssessedVisible = getPublicWorkList({ status: 'not_assessed', limit: 1 }).total
   const featured = [
     ...getPublicWorkList({ grade: 'S', status: 'rated', limit: 4 }).items,
     ...getPublicWorkList({ grade: 'A', status: 'rated', limit: 2 }).items,
@@ -34,7 +41,7 @@ export default function HomePage() {
         <section className="hero release-hero">
           <div className="release-kicker">
             <span className="release-live-dot" aria-hidden="true" />
-            当前已有 {number(manifest.counts.ratedWorks)} 条公开评级
+            当前已有 {number(ratedVisible)} 部作品公开评级
           </div>
           <p className="eyebrow">百合作品评级与排雷资料库</p>
           <h1>先看关系结论，<br />再看具体雷点。</h1>
@@ -59,18 +66,18 @@ export default function HomePage() {
         <section className="release-stat-grid release-stat-grid-public" aria-label="公开资料概览">
           <article>
             <span>已有评级</span>
-            <strong>{number(manifest.counts.ratedWorks)}</strong>
-            <small>S–F 当前结论</small>
+            <strong>{number(ratedVisible)}</strong>
+            <small>去重后的 S–F 当前结论</small>
           </article>
           <article>
             <span>S / A 级</span>
-            <strong>{number(manifest.gradeCounts.S + manifest.gradeCounts.A)}</strong>
+            <strong>{number(safeVisible)}</strong>
             <small>安心向优先入口</small>
           </article>
           <article>
-            <span>可检索作品</span>
-            <strong>{number(manifest.counts.catalogWorks)}</strong>
-            <small>动画、漫画、小说与游戏</small>
+            <span>可浏览作品</span>
+            <strong>{number(merge.visibleWorks)}</strong>
+            <small>由 {number(merge.sourceWorks)} 条源目录记录归并</small>
           </article>
           <article>
             <span>已恢复来源摘要</span>
@@ -136,8 +143,8 @@ export default function HomePage() {
             <h2>有多少可靠资料，就展示多少。</h2>
           </div>
           <p>
-            {number(manifest.counts.dUnclearRatings)} 条资料不足型 D 会明确写“具体雷点未确认”；
-            {number(manifest.counts.notAssessedWorks)} 部作品尚未评级。缺少作者、机构或细分类时保持空缺，
+            发布源数据中有 {number(manifest.counts.dUnclearRatings)} 条资料不足型 D，会明确写“具体雷点未确认”；
+            去重后仍有 {number(notAssessedVisible)} 部作品尚未评级。缺少作者、机构或细分类时保持空缺，
             不用旧结论和标题猜测填满页面。
           </p>
           <Link className="result-link" href="/works">进入作品资料库</Link>
