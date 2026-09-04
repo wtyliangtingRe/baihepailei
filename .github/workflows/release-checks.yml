@@ -33,7 +33,7 @@ jobs:
       - name: Preserve merge audit report
         uses: actions/upload-artifact@v4
         with:
-          name: public-merge-visible-${{ steps.merge_audit.outputs.visibleWorks }}-removed-${{ steps.merge_audit.outputs.mergedAway }}-groups-${{ steps.merge_audit.outputs.multiWorkGroups }}-largest-${{ steps.merge_audit.outputs.largestGroup }}-exactconflicts-${{ steps.merge_audit.outputs.sameProviderExactIdConflictGroups }}-mixedmedia-${{ steps.merge_audit.outputs.mixedKnownMediaGroups }}
+          name: public-merge-current-${{ steps.merge_audit.outputs.visibleWorks }}-removed-${{ steps.merge_audit.outputs.mergedAway }}-exactconflicts-${{ steps.merge_audit.outputs.sameProviderExactIdConflictGroups }}-safe-${{ steps.merge_audit.outputs.safeVisibleWorks }}-removed-${{ steps.merge_audit.outputs.safeMergedAway }}-ambiguous-${{ steps.merge_audit.outputs.safeAmbiguousTitleKeysSkipped }}-safeconflicts-${{ steps.merge_audit.outputs.safeExactConflictGroups }}-blocking-${{ steps.merge_audit.outputs.safeRatedWithBlockingTerminalGroups }}
           path: merge-audit.json
           if-no-files-found: error
           retention-days: 7
