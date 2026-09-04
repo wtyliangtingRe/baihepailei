@@ -224,3 +224,25 @@ assert.ok(result.visibleWorks > 0 && result.visibleWorks <= result.sourceWorks, 
 assert.equal(result.mergedAway, result.sourceWorks - result.visibleWorks, 'merge accounting drift')
 
 console.log(JSON.stringify(result, null, 2))
+
+if (process.env.GITHUB_ACTIONS === 'true') {
+  const summary = [
+    `source=${result.sourceWorks}`,
+    `visible=${result.visibleWorks}`,
+    `mergedAway=${result.mergedAway}`,
+    `groups=${result.multiWorkGroups}`,
+    `largest=${result.largestGroup}`,
+    `exactLinks=${result.exactIdentityLinks}`,
+    `titleLinks=${result.normalizedTitleLinks}`,
+    `shortTitleLinks=${result.shortTitleLinks}`,
+    `sameProviderExactConflicts=${result.sameProviderExactIdConflictGroups}`,
+    `mixedMedia=${result.mixedKnownMediaGroups}`,
+    `mixedRatedGrades=${result.mixedRatedGradeGroups}`,
+  ].join(', ')
+  console.log(`::notice title=Public catalog merge audit::${summary}`)
+  if (result.sameProviderExactIdConflictGroups > 0 || result.mixedKnownMediaGroups > 0) {
+    console.log(
+      `::warning title=Suspicious public catalog merge groups::same-provider exact-ID conflicts=${result.sameProviderExactIdConflictGroups}, mixed-known-media groups=${result.mixedKnownMediaGroups}`,
+    )
+  }
+}
