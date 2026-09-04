@@ -51,9 +51,14 @@ for (const expected of [
   '为什么这样评',
   '查看这条规则的判定边界',
   '独立设定与内容提示',
+  '官方名',
+  '罗马字',
 ]) {
   assert.match(detail, new RegExp(expected))
 }
+assert.match(detail, /permanentRedirect\(canonicalContentUrl\('works', work\.workId\)\)/)
+assert.match(home, /getPublicCatalogMergeStats/)
+assert.match(home, /merge\.visibleWorks/)
 
 for (const expected of [
   'S–F 核心等级',
@@ -101,6 +106,8 @@ console.log(JSON.stringify({
   siteNotice: 'PASS',
   publicFieldBoundary: 'PASS',
   translatedTitleAndAliasSection: 'PASS',
+  mergedWorkCanonicalRouting: 'PASS',
+  mergedWorkPublicCounts: 'PASS',
   publicCatalogDeduplicationBoundary: 'PASS',
   detailInformationOrder: 'PASS',
   ratingAndWarningLayers: 'PASS',
