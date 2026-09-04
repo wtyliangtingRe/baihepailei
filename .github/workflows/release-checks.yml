@@ -25,5 +25,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm validate:release
+      - run: pnpm validate:ui
       - run: pnpm typecheck
       - run: pnpm build
+      - run: pnpm smoke:public
