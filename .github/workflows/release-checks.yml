@@ -25,6 +25,18 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm validate:release
+      - name: Audit public catalog merge
+        id: merge_audit
+        run: pnpm audit:merge
+        env:
+          MERGE_AUDIT_REPORT: merge-audit.json
+      - name: Preserve merge audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-merge-visible-${{ steps.merge_audit.outputs.visibleWorks }}-removed-${{ steps.merge_audit.outputs.mergedAway }}-groups-${{ steps.merge_audit.outputs.multiWorkGroups }}-largest-${{ steps.merge_audit.outputs.largestGroup }}-exactconflicts-${{ steps.merge_audit.outputs.sameProviderExactIdConflictGroups }}-mixedmedia-${{ steps.merge_audit.outputs.mixedKnownMediaGroups }}
+          path: merge-audit.json
+          if-no-files-found: error
+          retention-days: 7
       - run: pnpm validate:ui
       - run: pnpm typecheck
       - run: pnpm build
