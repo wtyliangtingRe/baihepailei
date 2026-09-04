@@ -7,15 +7,15 @@
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
     "dev:webpack": "next dev --webpack",
-    "preview": "pnpm validate:release && next dev --hostname 0.0.0.0",
+    "preview": "pnpm validate:release && pnpm audit:merge && next dev --hostname 0.0.0.0",
     "build": "next build",
     "start": "node scripts/start-production.mjs",
     "typecheck": "next typegen && tsc --noEmit",
     "audit:merge": "node scripts/audit-public-catalog-merge.mjs",
-    "validate:release": "node scripts/validate-public-release.mjs && pnpm audit:merge",
+    "validate:release": "node scripts/validate-public-release.mjs",
     "validate:ui": "node scripts/validate-public-ui.mjs",
     "smoke:public": "node scripts/smoke-public-site.mjs",
-    "check": "pnpm validate:release && pnpm validate:ui && pnpm typecheck && pnpm build"
+    "check": "pnpm validate:release && pnpm audit:merge && pnpm validate:ui && pnpm typecheck && pnpm build"
   },
   "dependencies": {
     "next": "^16.2.6",
