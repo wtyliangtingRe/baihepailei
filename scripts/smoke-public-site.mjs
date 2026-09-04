@@ -84,14 +84,26 @@ try {
 
   const health = await json('/api/health')
   assert.deepEqual(
-    { ok: health.ok, catalogWorks: health.catalogWorks, ratedWorks: health.ratedWorks },
-    { ok: true, catalogWorks: 35_411, ratedWorks: 4_001 },
+    {
+      ok: health.ok,
+      catalogWorks: health.catalogWorks,
+      visibleWorks: health.visibleWorks,
+      mergedAway: health.mergedAway,
+      mergedGroups: health.mergedGroups,
+      largestMergedGroup: health.largestMergedGroup,
+      ratedWorks: health.ratedWorks,
+    },
+    {
+      ok: true,
+      catalogWorks: 35_411,
+      visibleWorks: 35_344,
+      mergedAway: 67,
+      mergedGroups: 67,
+      largestMergedGroup: 2,
+      ratedWorks: 4_001,
+    },
   )
-  assert.ok(Number.isInteger(health.visibleWorks) && health.visibleWorks > 0)
-  assert.ok(Number.isInteger(health.mergedAway) && health.mergedAway >= 0)
   assert.equal(health.visibleWorks + health.mergedAway, health.catalogWorks)
-  assert.ok(Number.isInteger(health.mergedGroups) && health.mergedGroups >= 0)
-  assert.ok(Number.isInteger(health.largestMergedGroup) && health.largestMergedGroup >= 1)
 
   for (const query of ['男性替身', 'NTR', '岸 虎次郎']) {
     const result = await json(`/api/work-lineage/works?q=${encodeURIComponent(query)}&limit=2`)
@@ -108,6 +120,24 @@ try {
   assert.equal(uncertainWork.rating.class, undefined)
   assert.equal(uncertainWork.rating.uncertaintyKind, 'evidence_insufficient')
   assert.equal(uncertainWork.rating.needsMoreResearch, true)
+
+  // Punctuation and exact-provider identity must keep distinct seasons/works distinct.
+  // These pairs were concrete false merges under the retired punctuation-stripping policy.
+  const yuruYuri = await json('/api/work-lineage/works/29857')
+  const yuruYuriSeason2 = await json('/api/work-lineage/works/29865')
+  assert.equal(yuruYuri.title, 'Yuru Yuri')
+  assert.equal(yuruYuri.rating.state, 'not_assessed')
+  assert.equal(yuruYuriSeason2.title, 'Yuru Yuri♪♪')
+  assert.equal(yuruYuriSeason2.rating.grade, 'D')
+  assert.notEqual(yuruYuri.workId, yuruYuriSeason2.workId)
+
+  const showByRock = await json('/api/work-lineage/works/25024')
+  const showByRockSeason2 = await json('/api/work-lineage/works/25027')
+  assert.equal(showByRock.title, 'SHOW BY ROCK!!')
+  assert.equal(showByRock.rating.state, 'not_assessed')
+  assert.equal(showByRockSeason2.title, 'SHOW BY ROCK!!#')
+  assert.equal(showByRockSeason2.rating.grade, 'D')
+  assert.notEqual(showByRock.workId, showByRockSeason2.workId)
 
   const enrichedDetail = await (await response('/works/w-36946')).text()
   for (const expected of ['岸 虎次郎', '集英社', '2011-03-18', '作品介绍']) {
@@ -146,6 +176,7 @@ try {
     mergedAway: health.mergedAway,
     mergedGroups: health.mergedGroups,
     largestMergedGroup: health.largestMergedGroup,
+    identitySafeFalseMergeRegressions: 'PASS',
     enrichedWorkDetails: 'PASS',
     ratingWarnings: 'PASS',
     publicFieldBoundary: 'PASS',
