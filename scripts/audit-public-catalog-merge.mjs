@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -217,13 +217,33 @@ const result = {
   suspiciousGroups: suspicious.slice(0, 20),
 }
 
-// Keep the first audit observational. These two invariants only catch implementation drift,
-// while the reported conflict counters tell us whether the deliberately broad title merge
-// needs a narrower second pass on the real 35k catalog.
+// Keep this audit observational for deliberately broad title merging. Accounting drift is fatal;
+// suspicious groups are preserved in the report so exact-identity conflicts can be reviewed
+// before the public merge policy is tightened.
 assert.ok(result.visibleWorks > 0 && result.visibleWorks <= result.sourceWorks, 'invalid visible work count')
 assert.equal(result.mergedAway, result.sourceWorks - result.visibleWorks, 'merge accounting drift')
 
-console.log(JSON.stringify(result, null, 2))
+const report = `${JSON.stringify(result, null, 2)}\n`
+console.log(report.trimEnd())
+
+const reportPath = String(process.env.MERGE_AUDIT_REPORT || '').trim()
+if (reportPath) writeFileSync(resolve(reportPath), report, 'utf8')
+
+if (process.env.GITHUB_OUTPUT) {
+  appendFileSync(
+    process.env.GITHUB_OUTPUT,
+    [
+      `sourceWorks=${result.sourceWorks}`,
+      `visibleWorks=${result.visibleWorks}`,
+      `mergedAway=${result.mergedAway}`,
+      `multiWorkGroups=${result.multiWorkGroups}`,
+      `largestGroup=${result.largestGroup}`,
+      `sameProviderExactIdConflictGroups=${result.sameProviderExactIdConflictGroups}`,
+      `mixedKnownMediaGroups=${result.mixedKnownMediaGroups}`,
+      `mixedRatedGradeGroups=${result.mixedRatedGradeGroups}`,
+    ].join('\n') + '\n',
+  )
+}
 
 if (process.env.GITHUB_ACTIONS === 'true') {
   const summary = [
