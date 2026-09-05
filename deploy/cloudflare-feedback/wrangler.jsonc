@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "baihepailei-feedback",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-09-05",
+  "workers_dev": true,
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+  "durable_objects": { "bindings": [{ "name": "INBOX", "class_name": "FeedbackInbox" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["FeedbackInbox"] }],
+  "ratelimits": [{ "name": "EDGE_LIMITER", "namespace_id": "202609051", "simple": { "limit": 10, "period": 60 } }],
+  "observability": { "enabled": false },
+  "vars": {
+    "ACCEPT_SUBMISSIONS": "false",
+    "PUBLIC_ORIGIN": "https://replace-with-your-feedback-hostname.example",
+    "TURNSTILE_SITE_KEY": ""
+  }
+}

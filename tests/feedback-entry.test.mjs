@@ -29,11 +29,17 @@ test('issue forms collect structured evidence while preserving moderation bounda
     assert.match(form, /id: sources/u)
     assert.match(form, /required: true/u)
     assert.match(form, /不会自动/u)
+    assert.match(form, /type: upload/u)
+    assert.match(form, /id: evidence_images/u)
+    assert.match(form, /accept: "\.png,\.jpg,\.jpeg,\.webp"/u)
   }
   assert.match(correctionForm, /id: work_id/u)
   assert.match(correctionForm, /id: feedback_kind/u)
   assert.match(correctionForm, /id: spoilers/u)
   assert.doesNotMatch(page, /\/api\/feedback-submissions/u)
+  assert.match(page, /不接收图片或任何附件/u)
+  assert.match(page, /anonymousSubmissionHref/u)
+  assert.match(page, /匿名入口暂未开放/u)
 })
 
 test('feedback entry remains visible in navigation and has responsive channel styling', () => {

@@ -2,6 +2,7 @@ import 'server-only'
 
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { addPublicMetadata, readPublicMetadata } from '@/lib/publicMetadata'
 
 import { isRadarRatingClass, radarClassDefinitions } from '@/lib/radar/ratingPolicy'
 import { publicSearchTermsForRatingClass } from '@/lib/radar/publicSearchTerms'
@@ -83,7 +84,7 @@ export type PublicWorkRecord = {
   organizations: PublicCredit[]
   publicTags: ReturnType<typeof publicTagsFor>
   summary?: {
-    kind: 'source_summary'
+    kind: 'source_summary' | 'identity_summary'
     text: string
     sourceUrl?: string
   }
@@ -845,12 +846,18 @@ function loadRelease(): PublicReleaseCache {
     equivalenceGroups,
     titleEvidenceByWorkId,
   )
+  const metadata = readPublicMetadata(directory, new Map(baseRecords.map(record => [record.workId, record.identity.siteId])))
+  const records = merged.records.map(record => addPublicMetadata(record,
+    (merged.memberIdsByPrimary.get(record.workId) || [record.workId]).map(id => metadata.get(id)!),
+  ))
+  const enhancedByPrimary = new Map(records.map(record => [record.workId, record]))
+  const byWorkId = new Map([...merged.byWorkId].map(([id, record]) => [id, enhancedByPrimary.get(record.workId)!]))
   globalThis.__baihepaileiPublicRelease = {
     manifest,
     enrichmentManifest,
-    records: merged.records,
-    displayRecords: [...merged.records].sort((left, right) => compareForDisplay(left, right, ordinals)),
-    byWorkId: merged.byWorkId,
+    records,
+    displayRecords: [...records].sort((left, right) => compareForDisplay(left, right, ordinals)),
+    byWorkId,
     memberIdsByPrimary: merged.memberIdsByPrimary,
     mergeStats: merged.stats,
   }

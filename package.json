@@ -14,8 +14,9 @@
     "audit:merge": "node scripts/audit-public-catalog-merge.mjs",
     "validate:release": "node scripts/validate-public-release.mjs",
     "validate:ui": "node scripts/validate-public-ui.mjs",
+    "validate:metadata": "node scripts/validate-public-metadata.mjs",
     "smoke:public": "node scripts/smoke-public-site.mjs",
-    "check": "pnpm validate:release && pnpm audit:merge && pnpm validate:ui && pnpm typecheck && pnpm build"
+    "check": "pnpm validate:release && pnpm audit:merge && pnpm validate:metadata && pnpm validate:ui && pnpm typecheck && pnpm build"
   },
   "dependencies": {
     "next": "^16.2.6",
