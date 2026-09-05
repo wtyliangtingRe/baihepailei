@@ -70,6 +70,25 @@ try {
     assert.equal(result.status, 200, `${path} should return 200`)
   }
 
+  const correctionFeedback = await (
+    await response('/feedback?workId=18556&title=%E5%AE%89%E9%81%94%E3%81%A8%E3%81%97%E3%81%BE%E3%82%80%E3%82%89')
+  ).text()
+  for (const expected of [
+    '填写并提交线索',
+    '打开作品补充与纠错表',
+    'github.com/wtyliangtingRe/baihepailei/issues/new',
+    'work-correction.yml',
+    'work_id=18556',
+    '不会获得任何数据库写入权限',
+  ]) {
+    assert.ok(correctionFeedback.includes(expected), `correction feedback should include ${expected}`)
+  }
+
+  const newWorkFeedback = await (await response('/feedback?type=new_work')).text()
+  for (const expected of ['打开新作品提交表', 'new-work.yml', '推荐收录新作品']) {
+    assert.ok(newWorkFeedback.includes(expected), `new-work feedback should include ${expected}`)
+  }
+
   const redirects = new Map([
     ['/browse', '/works'],
     ['/evidence', '/feedback'],
@@ -203,6 +222,8 @@ try {
     identitySafeFalseMergeRegressions: 'PASS',
     enrichedWorkDetails: 'PASS',
     ratingWarnings: 'PASS',
+    structuredFeedbackIssueForms: 'PASS',
+    anonymousWriteBoundary: 'PASS',
     publicFieldBoundary: 'PASS',
     status: 'PASS',
   }, null, 2))

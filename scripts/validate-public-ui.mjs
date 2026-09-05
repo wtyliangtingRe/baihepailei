@@ -11,6 +11,11 @@ const works = read('src/app/(frontend)/works/page.tsx')
 const detail = read('src/app/(frontend)/works/[slug]/page.tsx')
 const ratings = read('src/app/(frontend)/ratings/page.tsx')
 const rules = read('src/app/(frontend)/rules/page.tsx')
+const feedback = read('src/app/(frontend)/feedback/page.tsx')
+const feedbackCss = read('src/app/(frontend)/feedback.css')
+const deploymentProfile = read('src/lib/deploymentProfile.ts')
+const correctionIssueForm = read('.github/ISSUE_TEMPLATE/work-correction.yml')
+const newWorkIssueForm = read('.github/ISSUE_TEMPLATE/new-work.yml')
 const publicRelease = read('src/lib/publicRelease.ts')
 const publicTags = read('src/lib/radar/publicTags.ts')
 const publicSearchTerms = read('src/lib/radar/publicSearchTerms.ts')
@@ -85,6 +90,29 @@ assert.match(publicRelease, /record\.localizedTitles\.flatMap/)
 assert.match(publicRelease, /publicSearchTermsForRatingClass\(ratingClass\)/)
 assert.match(publicSearchTerms, /'E-MALE-SUBSTITUTE': \['男性替身'/)
 
+assert.match(deploymentProfile, /DEFAULT_PUBLIC_FEEDBACK_ISSUE_URL/)
+assert.match(deploymentProfile, /https:\/\/github\.com\/wtyliangtingRe\/baihepailei\/issues\/new/)
+assert.match(deploymentProfile, /parsed\.protocol === 'https:'/)
+assert.match(feedback, /issueSubmissionHref/)
+assert.match(feedback, /work-correction\.yml/)
+assert.match(feedback, /new-work\.yml/)
+assert.match(feedback, /work_id/)
+assert.match(feedback, /work_title/)
+assert.match(feedback, /slice\(0, maxLength\)/)
+assert.match(feedback, /\^\\d\{1,12\}\$/)
+assert.match(feedback, /不用注册或绑定本站账号/)
+assert.match(feedback, /不会获得任何数据库写入权限/)
+assert.doesNotMatch(feedback, /api\/feedback-submissions/)
+assert.match(feedbackCss, /\.feedback-channel-grid/)
+for (const issueForm of [correctionIssueForm, newWorkIssueForm]) {
+  assert.match(issueForm, /id: work_title/)
+  assert.match(issueForm, /id: sources/)
+  assert.match(issueForm, /required: true/)
+  assert.match(issueForm, /不会自动/)
+}
+assert.match(correctionIssueForm, /id: work_id/)
+assert.match(correctionIssueForm, /id: spoilers/)
+
 assert.match(releaseCss, /@media \(max-width: 680px\)/)
 for (const responsiveSelector of [
   '.site-footer',
@@ -114,6 +142,8 @@ console.log(JSON.stringify({
   publicCatalogDeduplicationBoundary: 'PASS',
   detailInformationOrder: 'PASS',
   ratingAndWarningLayers: 'PASS',
+  structuredFeedbackIssueForms: 'PASS',
+  anonymousWriteBoundary: 'PASS',
   responsiveStructure: 'PASS',
   retiredPublicRoutes: 'PASS',
   status: 'PASS',
