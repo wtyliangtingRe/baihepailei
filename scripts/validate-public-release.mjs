@@ -236,6 +236,96 @@ invariant(
   'rating detail escaped exact Work/grade/current-class boundary',
 )
 
+const equivalenceDir = join(releaseDir, 'equivalence')
+const equivalenceManifest = JSON.parse(readFileSync(join(equivalenceDir, 'manifest.json'), 'utf8'))
+invariant(
+  equivalenceManifest.schemaVersion === 'baihepailei-public-catalog-equivalence-manifest-v1',
+  'catalog equivalence manifest schema drift',
+)
+invariant(
+  equivalenceManifest.sourceCatalog.rows === records.length,
+  'catalog equivalence source-row binding drift',
+)
+
+function readEquivalenceRows(file) {
+  const tracked = equivalenceManifest.files[file]
+  invariant(tracked, `${file} is missing from the catalog equivalence manifest`)
+  const path = join(equivalenceDir, file)
+  const bytes = readFileSync(path)
+  invariant(bytes.length === tracked.bytes, `${file} byte-count drift`)
+  invariant(
+    createHash('sha256').update(bytes).digest('hex') === tracked.sha256,
+    `${file} SHA-256 drift`,
+  )
+  const rows = bytes.toString('utf8').split(/\r?\n/).filter((line) => line.trim()).map((line) => JSON.parse(line))
+  invariant(rows.length === tracked.rows, `${file} row-count drift`)
+  return rows
+}
+
+const equivalenceGroups = readEquivalenceRows('catalog-equivalence-groups.jsonl')
+const titleEvidence = readEquivalenceRows('catalog-title-evidence.jsonl')
+const equivalenceExclusions = readEquivalenceRows('catalog-equivalence-exclusions.jsonl')
+const groupIds = new Set()
+const explicitlyLinkedWorkIds = new Set()
+for (const group of equivalenceGroups) {
+  invariant(group.schemaVersion === 'baihepailei-public-catalog-equivalence-v1', 'equivalence group schema drift')
+  invariant(group.decision === 'merge', `${group.groupId} has a non-merge decision`)
+  invariant(!groupIds.has(group.groupId), `duplicate equivalence group ${group.groupId}`)
+  groupIds.add(group.groupId)
+  invariant(group.workIds.length >= 2 && new Set(group.workIds).size === group.workIds.length, `${group.groupId} has invalid members`)
+  invariant(group.workIds.every((workId) => byWorkId.has(String(workId))), `${group.groupId} references a non-public Work ID`)
+  invariant(
+    new Set((group.identities || []).map((identity) => String(identity.workId))).size === group.workIds.length &&
+      group.workIds.every((workId) => (group.identities || []).some((identity) => String(identity.workId) === String(workId))),
+    `${group.groupId} identity/member binding drift`,
+  )
+  const providerIds = new Map()
+  for (const identity of group.identities || []) {
+    const provider = String(identity.provider || '').toLowerCase()
+    const siteIds = providerIds.get(provider) || new Set()
+    siteIds.add(String(identity.siteId || ''))
+    providerIds.set(provider, siteIds)
+  }
+  invariant([...providerIds.values()].every((siteIds) => siteIds.size === 1), `${group.groupId} conflicts within one provider`)
+  invariant(group.checks?.noSameProviderConflict === true, `${group.groupId} lacks provider-conflict validation`)
+  invariant(group.checks?.noBlockingRatingConflict === true, `${group.groupId} lacks rating-conflict validation`)
+  for (const workId of group.workIds) {
+    invariant(!explicitlyLinkedWorkIds.has(String(workId)), `Work ${workId} appears in multiple equivalence groups`)
+    explicitlyLinkedWorkIds.add(String(workId))
+  }
+}
+invariant(new Set(titleEvidence.map((row) => String(row.workId))).size === titleEvidence.length, 'duplicate title-evidence Work ID')
+invariant(
+  titleEvidence.every((row) =>
+    row.schemaVersion === 'baihepailei-public-catalog-title-evidence-v1' &&
+    byWorkId.has(String(row.workId)) &&
+    Array.isArray(row.titles) && row.titles.length > 0 &&
+    row.titles.every((title) => typeof title.title === 'string' && title.title.trim()) &&
+    (row.sources || []).every((source) => /^https?:\/\//i.test(source.url))
+  ),
+  'invalid catalog title evidence',
+)
+invariant(
+  equivalenceExclusions.every((row) => row.schemaVersion === 'baihepailei-public-catalog-equivalence-exclusion-v1'),
+  'equivalence exclusion schema drift',
+)
+invariant(equivalenceGroups.length === 427, 'equivalence-group count drift')
+invariant(explicitlyLinkedWorkIds.size === 854, 'explicitly linked Work count drift')
+invariant(titleEvidence.length === 5_619, 'title-evidence row count drift')
+invariant(titleEvidence.reduce((sum, row) => sum + row.titles.length, 0) === 19_307, 'title-evidence value count drift')
+invariant(equivalenceExclusions.length === 31, 'equivalence-exclusion count drift')
+
+const checksumLines = readFileSync(join(equivalenceDir, 'SHA256SUMS'), 'utf8')
+  .split(/\r?\n/)
+  .filter((line) => line.trim())
+for (const line of checksumLines) {
+  const match = line.match(/^([a-f0-9]{64})  (.+)$/)
+  invariant(match, `invalid equivalence checksum line: ${line}`)
+  const [, expected, file] = match
+  const bytes = readFileSync(join(equivalenceDir, file))
+  invariant(createHash('sha256').update(bytes).digest('hex') === expected, `${file} release checksum drift`)
+}
+
 console.log(JSON.stringify({
   releaseId: manifest.releaseId,
   catalogWorks: records.length,
@@ -247,6 +337,9 @@ console.log(JSON.stringify({
   mediaEnrichments: mediaWorkIds.length,
   workAssetEnrichments: workAssets.length,
   ratingDetailEnrichments: ratingDetails.length,
+  equivalenceGroups: equivalenceGroups.length,
+  titleEvidenceRows: titleEvidence.length,
+  equivalenceExclusions: equivalenceExclusions.length,
   shards: manifest.shards.length,
   status: 'PASS',
 }, null, 2))

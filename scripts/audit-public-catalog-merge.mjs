@@ -20,6 +20,20 @@ const workAssets = readFileSync(join(releaseDir, 'enrichment-work-assets.jsonl')
   .split(/\r?\n/)
   .filter((line) => line.trim())
   .map((line) => JSON.parse(line))
+const equivalenceDir = join(releaseDir, 'equivalence')
+const equivalenceManifest = JSON.parse(readFileSync(join(equivalenceDir, 'manifest.json'), 'utf8'))
+const equivalenceGroups = readFileSync(join(equivalenceDir, 'catalog-equivalence-groups.jsonl'), 'utf8')
+  .split(/\r?\n/)
+  .filter((line) => line.trim())
+  .map((line) => JSON.parse(line))
+const titleEvidence = readFileSync(join(equivalenceDir, 'catalog-title-evidence.jsonl'), 'utf8')
+  .split(/\r?\n/)
+  .filter((line) => line.trim())
+  .map((line) => JSON.parse(line))
+const equivalenceExclusions = readFileSync(join(equivalenceDir, 'catalog-equivalence-exclusions.jsonl'), 'utf8')
+  .split(/\r?\n/)
+  .filter((line) => line.trim())
+  .map((line) => JSON.parse(line))
 
 const assetsByWorkId = new Map(workAssets.map((asset) => [String(asset.workId), asset]))
 const mediaByWorkId = new Map()
@@ -102,10 +116,10 @@ function titleKey(record, name, normalizeTitle) {
   return `${mediaMergeBucket(record.media.group)}|${normalizeTitle(name)}`
 }
 
-function ambiguousExactProviderTitleKeys(normalizeTitle) {
+function ambiguousProviderTitleKeys(normalizeTitle) {
   const claims = new Map()
   for (const record of records) {
-    if (record.identity.state !== 'exact' || !record.identity.provider || !record.identity.siteId) continue
+    if (!record.identity.provider || !record.identity.siteId) continue
     const provider = String(record.identity.provider).toLowerCase()
     for (const name of namesFor(record, normalizeTitle)) {
       const normalized = normalizeTitle(name)
@@ -126,7 +140,13 @@ function ambiguousExactProviderTitleKeys(normalizeTitle) {
   return ambiguous
 }
 
-function runMerge({ normalizeTitle, rejectAmbiguousTitleKeys, includeMergedGroups = false }) {
+function runMerge({
+  normalizeTitle,
+  rejectAmbiguousTitleKeys,
+  includeMergedGroups = false,
+  explicitGroups = [],
+  protectAllIdentityClaims = false,
+}) {
   const parent = records.map((_, index) => index)
   const find = (index) => {
     let cursor = index
@@ -154,8 +174,61 @@ function runMerge({ normalizeTitle, rejectAmbiguousTitleKeys, includeMergedGroup
     else if (union(owner, index)) exactIdentityLinks += 1
   })
 
+  const identityClaimsByRoot = new Map()
+  if (protectAllIdentityClaims) {
+    records.forEach((record, index) => {
+      if (!record.identity.provider || !record.identity.siteId) return
+      const root = find(index)
+      const claims = identityClaimsByRoot.get(root) || new Map()
+      claims.set(String(record.identity.provider).toLowerCase(), String(record.identity.siteId))
+      identityClaimsByRoot.set(root, claims)
+    })
+  }
+  const unionSafe = (left, right) => {
+    if (!protectAllIdentityClaims) return union(left, right)
+    const leftRoot = find(left)
+    const rightRoot = find(right)
+    if (leftRoot === rightRoot) return false
+    const leftClaims = identityClaimsByRoot.get(leftRoot) || new Map()
+    const rightClaims = identityClaimsByRoot.get(rightRoot) || new Map()
+    for (const [provider, siteId] of leftClaims) {
+      const otherSiteId = rightClaims.get(provider)
+      if (otherSiteId && otherSiteId !== siteId) return false
+    }
+    const changed = union(leftRoot, rightRoot)
+    const root = find(leftRoot)
+    const mergedClaims = new Map(leftClaims)
+    for (const [provider, siteId] of rightClaims) mergedClaims.set(provider, siteId)
+    identityClaimsByRoot.delete(leftRoot)
+    identityClaimsByRoot.delete(rightRoot)
+    identityClaimsByRoot.set(root, mergedClaims)
+    return changed
+  }
+
+  const indexByWorkId = new Map(records.map((record, index) => [record.workId, index]))
+  const resolvedMediaByWorkId = new Map()
+  let explicitEquivalenceLinks = 0
+  for (const group of explicitGroups) {
+    assert.equal(group.decision, 'merge', `${group.groupId} must be an explicit merge`)
+    const indices = group.workIds.map((workId) => {
+      const index = indexByWorkId.get(String(workId))
+      assert.notEqual(index, undefined, `${group.groupId} references missing Work ${workId}`)
+      return index
+    })
+    assert.ok(indices.length >= 2 && new Set(indices).size === indices.length, `${group.groupId} has invalid members`)
+    for (const index of indices.slice(1)) {
+      const alreadyTogether = find(indices[0]) === find(index)
+      const changed = unionSafe(indices[0], index)
+      assert.ok(alreadyTogether || changed, `${group.groupId} conflicts with a provider identity`)
+      if (changed) explicitEquivalenceLinks += 1
+    }
+    if (group.resolvedMedia) {
+      for (const workId of group.workIds) resolvedMediaByWorkId.set(String(workId), group.resolvedMedia)
+    }
+  }
+
   const ambiguousKeys = rejectAmbiguousTitleKeys
-    ? ambiguousExactProviderTitleKeys(normalizeTitle)
+    ? ambiguousProviderTitleKeys(normalizeTitle)
     : new Set()
   let normalizedTitleLinks = 0
   let shortTitleLinks = 0
@@ -179,7 +252,7 @@ function runMerge({ normalizeTitle, rejectAmbiguousTitleKeys, includeMergedGroup
         titleOwner.set(key, index)
         continue
       }
-      if (union(owner, index)) {
+      if (unionSafe(owner, index)) {
         normalizedTitleLinks += 1
         if (normalized.length <= 3) shortTitleLinks += 1
       }
@@ -213,15 +286,24 @@ function runMerge({ normalizeTitle, rejectAmbiguousTitleKeys, includeMergedGroup
     const grades = new Set()
     const states = new Set()
     let sameProviderConflict = false
+    const resolvedMediaValues = [...new Map(
+      indices
+        .map((index) => resolvedMediaByWorkId.get(records[index].workId))
+        .filter(Boolean)
+        .map((value) => [`${value.group}|${value.type}`, value]),
+    ).values()]
+    assert.ok(resolvedMediaValues.length <= 1, 'component has conflicting resolved media')
+    const componentResolvedMedia = resolvedMediaValues[0]
 
     const members = indices.map((index) => {
       const record = records[index]
-      if (record.media.group !== 'unknown' && record.media.group !== 'other') {
-        knownMedia.add(mediaMergeBucket(record.media.group))
+      const effectiveMedia = componentResolvedMedia || record.media
+      if (effectiveMedia.group !== 'unknown' && effectiveMedia.group !== 'other') {
+        knownMedia.add(mediaMergeBucket(effectiveMedia.group))
       }
       if (record.rating.state) states.add(record.rating.state)
       if (record.rating.state === 'rated' && record.rating.grade) grades.add(record.rating.grade)
-      if (record.identity.state === 'exact' && record.identity.provider && record.identity.siteId) {
+      if (record.identity.provider && record.identity.siteId) {
         const provider = String(record.identity.provider).toLowerCase()
         const ids = providerIds.get(provider) || new Set()
         ids.add(String(record.identity.siteId))
@@ -235,6 +317,7 @@ function runMerge({ normalizeTitle, rejectAmbiguousTitleKeys, includeMergedGroup
         localizedTitles: record.localizedTitles.map((title) => title.title),
         media: record.media.group,
         mediaType: record.media.type,
+        resolvedMedia: componentResolvedMedia || null,
         identityState: record.identity.state || null,
         provider: record.identity.provider || null,
         siteId: record.identity.siteId || null,
@@ -284,6 +367,7 @@ function runMerge({ normalizeTitle, rejectAmbiguousTitleKeys, includeMergedGroup
     multiWorkGroups,
     largestGroup,
     exactIdentityLinks,
+    explicitEquivalenceLinks,
     normalizedTitleLinks,
     shortTitleLinks,
     ambiguousTitleKeysSkipped: skippedAmbiguousKeys.size,
@@ -301,13 +385,20 @@ const legacyBroad = runMerge({
   normalizeTitle: normalizeLegacyBroadTitle,
   rejectAmbiguousTitleKeys: false,
 })
+const hardenedTitleBaseline = runMerge({
+  normalizeTitle: normalizeIdentitySafeTitle,
+  rejectAmbiguousTitleKeys: true,
+  protectAllIdentityClaims: true,
+})
 const currentIdentitySafe = runMerge({
   normalizeTitle: normalizeIdentitySafeTitle,
   rejectAmbiguousTitleKeys: true,
   includeMergedGroups: true,
+  explicitGroups: equivalenceGroups,
+  protectAllIdentityClaims: true,
 })
 
-for (const result of [legacyBroad, currentIdentitySafe]) {
+for (const result of [legacyBroad, hardenedTitleBaseline, currentIdentitySafe]) {
   assert.ok(result.visibleWorks > 0 && result.visibleWorks <= result.sourceWorks, 'invalid visible work count')
   assert.equal(result.mergedAway, result.sourceWorks - result.visibleWorks, 'merge accounting drift')
 }
@@ -318,20 +409,68 @@ assert.equal(currentIdentitySafe.ratedWithBlockingTerminalGroups, 0, 'current me
 // These are pinned to the current public-release v1 bytes. If the release data changes,
 // the audit report should be reviewed and these expectations intentionally advanced.
 assert.equal(currentIdentitySafe.sourceWorks, 35_411, 'unexpected public source-work count')
-assert.equal(currentIdentitySafe.visibleWorks, 35_344, 'unexpected identity-safe visible-work count')
-assert.equal(currentIdentitySafe.mergedAway, 67, 'unexpected identity-safe merged-row count')
-assert.equal(currentIdentitySafe.multiWorkGroups, 67, 'unexpected identity-safe merged-group count')
+assert.equal(hardenedTitleBaseline.visibleWorks, 35_346, 'unexpected hardened baseline visible-work count')
+assert.equal(hardenedTitleBaseline.mergedAway, 65, 'unexpected hardened baseline merged-row count')
+assert.equal(hardenedTitleBaseline.multiWorkGroups, 65, 'unexpected hardened baseline merge-group count')
+assert.equal(currentIdentitySafe.visibleWorks, 34_940, 'unexpected identity-safe visible-work count')
+assert.equal(currentIdentitySafe.mergedAway, 471, 'unexpected identity-safe merged-row count')
+assert.equal(currentIdentitySafe.multiWorkGroups, 471, 'unexpected identity-safe merged-group count')
 assert.equal(currentIdentitySafe.largestGroup, 2, 'unexpected identity-safe largest merge group')
-assert.equal(currentIdentitySafe.mergedGroups.length, 67, 'merge-group review list must be complete')
+assert.equal(currentIdentitySafe.mergedGroups.length, 471, 'merge-group review list must be complete')
+assert.equal(currentIdentitySafe.ambiguousTitleKeysSkipped, 199, 'unexpected ambiguous title-key count')
+assert.equal(equivalenceGroups.length, 427, 'explicit equivalence-group count drift')
+assert.equal(titleEvidence.length, 5_619, 'title-evidence row count drift')
+assert.equal(
+  titleEvidence.reduce((sum, row) => sum + row.titles.length, 0),
+  19_307,
+  'title-evidence value count drift',
+)
+assert.equal(equivalenceExclusions.length, 31, 'equivalence-exclusion count drift')
+assert.deepEqual(equivalenceManifest.counts.afterEquivalence, {
+  sourceWorks: 35_411,
+  visibleWorks: 34_940,
+  mergedAway: 471,
+  multiWorkGroups: 471,
+  largestGroup: 2,
+  ambiguousTitleKeys: 199,
+})
+
+const groupByWorkId = new Map()
+for (const group of currentIdentitySafe.mergedGroups) {
+  const ids = group.members.map((member) => member.workId)
+  for (const workId of ids) groupByWorkId.set(workId, new Set(ids))
+}
+const sameGroup = (left, right) => groupByWorkId.get(String(left))?.has(String(right)) === true
+for (const [left, right] of [
+  ['25236', '31618'], // Sky Girls 2007 TV
+  ['25237', '31619'], // Sky Girls 2006 OVA
+  ['17930', '31034'], // Lycoris Recoil: Friends are thieves of time.
+]) {
+  assert.ok(sameGroup(left, right), `validated aliases ${left}/${right} must merge`)
+}
+for (const [left, right] of [
+  ['25237', '31618'], // stale TV-to-OVA crosswalk
+  ['17926', '31034'], // stale Lycoris placeholder crosswalk
+  ['4142', '4978'], // same-provider partial IDs, generic title 雨眠
+  ['4918', '4979'], // same-provider partial IDs, generic title 少女
+]) {
+  assert.equal(sameGroup(left, right), false, `excluded pair ${left}/${right} must remain separate`)
+}
 
 const reportObject = {
   currentIdentitySafePolicy: currentIdentitySafe,
+  hardenedTitleBaseline,
   legacyBroadPolicy: legacyBroad,
   improvementOverLegacy: {
-    recoveredWorks: currentIdentitySafe.visibleWorks - legacyBroad.visibleWorks,
-    fewerMergedRows: legacyBroad.mergedAway - currentIdentitySafe.mergedAway,
+    recoveredWorks: hardenedTitleBaseline.visibleWorks - legacyBroad.visibleWorks,
+    fewerMergedRows: legacyBroad.mergedAway - hardenedTitleBaseline.mergedAway,
     exactConflictGroupsRemoved:
-      legacyBroad.sameProviderExactIdConflictGroups - currentIdentitySafe.sameProviderExactIdConflictGroups,
+      legacyBroad.sameProviderExactIdConflictGroups - hardenedTitleBaseline.sameProviderExactIdConflictGroups,
+  },
+  equivalenceReleaseImpact: {
+    additionalMergedRows: currentIdentitySafe.mergedAway - hardenedTitleBaseline.mergedAway,
+    titleOnlyFalseMergesRemoved: 2,
+    explicitEquivalenceGroups: equivalenceGroups.length,
   },
 }
 const report = `${JSON.stringify(reportObject, null, 2)}\n`

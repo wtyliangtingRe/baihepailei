@@ -159,6 +159,24 @@ type RatingDetailEnrichment = {
   evidenceUrl?: string
 }
 
+type CatalogEquivalenceGroup = {
+  schemaVersion: 'baihepailei-public-catalog-equivalence-v1'
+  groupId: string
+  decision: 'merge'
+  workIds: string[]
+  resolvedMedia?: {
+    group: PublicMediaGroup
+    type: string
+  }
+}
+
+type CatalogTitleEvidence = {
+  schemaVersion: 'baihepailei-public-catalog-title-evidence-v1'
+  workId: string
+  titles: Array<PublicLocalizedTitle & { source?: string }>
+  sources?: PublicWorkSource[]
+}
+
 export type PublicEnrichmentManifest = {
   schemaVersion: 'baihepailei-public-enrichment-manifest-v1'
   generatedAt: string
@@ -497,14 +515,31 @@ function selectPublishedMetadata(records: PublicWorkRecord[]) {
   }
 }
 
-function mergeRecordGroup(records: PublicWorkRecord[], ordinals: Map<string, number>): PublicWorkRecord {
+function mergeRecordGroup(
+  records: PublicWorkRecord[],
+  ordinals: Map<string, number>,
+  titleEvidenceByWorkId: Map<string, CatalogTitleEvidence>,
+  resolvedMedia?: CatalogEquivalenceGroup['resolvedMedia'],
+): PublicWorkRecord {
   const primary = [...records].sort((left, right) => {
     const richness = recordRichness(right) - recordRichness(left)
     if (richness) return richness
     return (ordinals.get(left.workId) ?? Number.MAX_SAFE_INTEGER) -
       (ordinals.get(right.workId) ?? Number.MAX_SAFE_INTEGER)
   })[0]
-  const localizedTitles = uniqueLocalizedTitles(records.flatMap((record) => record.localizedTitles))
+  const titleEvidence = records.flatMap((record) => {
+    const evidence = titleEvidenceByWorkId.get(record.workId)
+    return evidence ? [evidence] : []
+  })
+  const localizedTitles = uniqueLocalizedTitles([
+    ...records.flatMap((record) => record.localizedTitles),
+    ...titleEvidence.flatMap((evidence) => evidence.titles.map((title) => ({
+      title: title.title,
+      language: title.language,
+      region: title.region,
+      kind: title.kind,
+    }))),
+  ])
   const aliases = uniqueStrings([
     ...records.flatMap((record) => [record.title, ...record.aliases]),
   ], primary.title)
@@ -526,7 +561,7 @@ function mergeRecordGroup(records: PublicWorkRecord[], ordinals: Map<string, num
     aliases,
     localizedTitles,
     media: {
-      ...mediaSource.media,
+      ...(resolvedMedia || mediaSource.media),
       format: primary.media.format || records.find((record) => record.media.format)?.media.format,
     },
     ...publication,
@@ -535,7 +570,10 @@ function mergeRecordGroup(records: PublicWorkRecord[], ordinals: Map<string, num
     organizations: uniqueCredits(records.flatMap((record) => record.organizations)),
     publicTags,
     summary,
-    sources: uniqueSources(records.flatMap((record) => record.sources)),
+    sources: uniqueSources([
+      ...records.flatMap((record) => record.sources),
+      ...titleEvidence.flatMap((evidence) => evidence.sources || []),
+    ]),
     rating: selectMergedRating(records),
   }
 }
@@ -544,6 +582,8 @@ function deduplicateCatalog(
   records: PublicWorkRecord[],
   baseRecords: BasePublicWorkRecord[],
   ordinals: Map<string, number>,
+  equivalenceGroups: CatalogEquivalenceGroup[],
+  titleEvidenceByWorkId: Map<string, CatalogTitleEvidence>,
 ) {
   const parent = records.map((_, index) => index)
   const find = (index: number): number => {
@@ -576,7 +616,7 @@ function deduplicateCatalog(
   const ambiguousTitleClaims = new Map<string, Map<string, Set<string>>>()
   records.forEach((record, index) => {
     const base = baseRecords[index]
-    if (base.identity.state !== 'exact' || !base.identity.provider || !base.identity.siteId) return
+    if (!base.identity.provider || !base.identity.siteId) return
     const provider = base.identity.provider.toLowerCase()
     const bucket = mediaMergeBucket(record.media.group)
     for (const name of uniqueIdentityMergeNames(record)) {
@@ -595,22 +635,22 @@ function deduplicateCatalog(
       .map(([key]) => key),
   )
 
-  const exactClaimsByRoot = new Map<number, Map<string, string>>()
+  const identityClaimsByRoot = new Map<number, Map<string, string>>()
   records.forEach((_, index) => {
     const base = baseRecords[index]
-    if (base.identity.state !== 'exact' || !base.identity.provider || !base.identity.siteId) return
+    if (!base.identity.provider || !base.identity.siteId) return
     const root = find(index)
-    const claims = exactClaimsByRoot.get(root) || new Map<string, string>()
+    const claims = identityClaimsByRoot.get(root) || new Map<string, string>()
     claims.set(base.identity.provider.toLowerCase(), base.identity.siteId)
-    exactClaimsByRoot.set(root, claims)
+    identityClaimsByRoot.set(root, claims)
   })
 
   const unionTitleSafe = (left: number, right: number): boolean => {
     const leftRoot = find(left)
     const rightRoot = find(right)
     if (leftRoot === rightRoot) return true
-    const leftClaims = exactClaimsByRoot.get(leftRoot) || new Map<string, string>()
-    const rightClaims = exactClaimsByRoot.get(rightRoot) || new Map<string, string>()
+    const leftClaims = identityClaimsByRoot.get(leftRoot) || new Map<string, string>()
+    const rightClaims = identityClaimsByRoot.get(rightRoot) || new Map<string, string>()
     for (const [provider, siteId] of leftClaims) {
       const otherSiteId = rightClaims.get(provider)
       if (otherSiteId && otherSiteId !== siteId) return false
@@ -618,10 +658,34 @@ function deduplicateCatalog(
     const root = union(leftRoot, rightRoot)
     const mergedClaims = new Map<string, string>(leftClaims)
     for (const [provider, siteId] of rightClaims) mergedClaims.set(provider, siteId)
-    exactClaimsByRoot.delete(leftRoot)
-    exactClaimsByRoot.delete(rightRoot)
-    exactClaimsByRoot.set(root, mergedClaims)
+    identityClaimsByRoot.delete(leftRoot)
+    identityClaimsByRoot.delete(rightRoot)
+    identityClaimsByRoot.set(root, mergedClaims)
     return true
+  }
+
+  const indexByWorkId = new Map(records.map((record, index) => [record.workId, index]))
+  const resolvedMediaByWorkId = new Map<string, NonNullable<CatalogEquivalenceGroup['resolvedMedia']>>()
+  for (const group of equivalenceGroups) {
+    if (group.schemaVersion !== 'baihepailei-public-catalog-equivalence-v1' || group.decision !== 'merge') {
+      throw new Error(`Invalid catalog-equivalence group ${group.groupId || '(missing group ID)'}`)
+    }
+    const indices = group.workIds.map((workId) => {
+      const index = indexByWorkId.get(workId)
+      if (index === undefined) throw new Error(`${group.groupId} references missing Work ${workId}`)
+      return index
+    })
+    if (indices.length < 2 || new Set(indices).size !== indices.length) {
+      throw new Error(`${group.groupId} must contain at least two distinct Work IDs`)
+    }
+    for (const index of indices.slice(1)) {
+      if (!unionTitleSafe(indices[0], index)) {
+        throw new Error(`${group.groupId} conflicts with a same-provider identity claim`)
+      }
+    }
+    if (group.resolvedMedia) {
+      for (const workId of group.workIds) resolvedMediaByWorkId.set(workId, group.resolvedMedia)
+    }
   }
 
   const titleOwner = new Map<string, number>()
@@ -652,7 +716,16 @@ function deduplicateCatalog(
   let largestGroup = 1
   for (const indices of components.values()) {
     const members = indices.map((index) => records[index])
-    const merged = mergeRecordGroup(members, ordinals)
+    const mediaOverrides = [...new Map(
+      members
+        .map((record) => resolvedMediaByWorkId.get(record.workId))
+        .filter((value): value is NonNullable<CatalogEquivalenceGroup['resolvedMedia']> => Boolean(value))
+        .map((value) => [`${value.group}|${value.type}`, value]),
+    ).values()]
+    if (mediaOverrides.length > 1) {
+      throw new Error(`Conflicting resolved media for Work IDs ${members.map((record) => record.workId).join(', ')}`)
+    }
+    const merged = mergeRecordGroup(members, ordinals, titleEvidenceByWorkId, mediaOverrides[0])
     mergedRecords.push(merged)
     const memberIds = members.map((record) => record.workId)
     memberIdsByPrimary.set(merged.workId, memberIds)
@@ -730,6 +803,14 @@ function loadRelease(): PublicReleaseCache {
     readFileSync(join(directory, 'enrichment-rating-details.jsonl'), 'utf8'),
     'enrichment-rating-details.jsonl',
   )
+  const equivalenceGroups = parseJsonLines<CatalogEquivalenceGroup>(
+    readFileSync(join(directory, 'equivalence', 'catalog-equivalence-groups.jsonl'), 'utf8'),
+    'equivalence/catalog-equivalence-groups.jsonl',
+  )
+  const titleEvidence = parseJsonLines<CatalogTitleEvidence>(
+    readFileSync(join(directory, 'equivalence', 'catalog-title-evidence.jsonl'), 'utf8'),
+    'equivalence/catalog-title-evidence.jsonl',
+  )
   const assetByWorkId = new Map(assets.map((asset) => [asset.workId, asset]))
   const detailByWorkId = new Map(details.map((detail) => [detail.workId, detail]))
   const ordinals = new Map(baseRecords.map((record) => [record.workId, record.ordinal]))
@@ -742,6 +823,7 @@ function loadRelease(): PublicReleaseCache {
     ),
   )
   const rawByWorkId = new Map(rawRecords.map((record) => [record.workId, record]))
+  const titleEvidenceByWorkId = new Map(titleEvidence.map((evidence) => [evidence.workId, evidence]))
 
   if (rawRecords.length !== manifest.counts.catalogWorks) {
     throw new Error(`Public release row-count drift: ${rawRecords.length}`)
@@ -749,8 +831,20 @@ function loadRelease(): PublicReleaseCache {
   if (rawByWorkId.size !== rawRecords.length) {
     throw new Error('Public release contains duplicate Work IDs')
   }
+  if (titleEvidenceByWorkId.size !== titleEvidence.length) {
+    throw new Error('Catalog title evidence contains duplicate Work IDs')
+  }
+  if (titleEvidence.some((evidence) => !rawByWorkId.has(evidence.workId))) {
+    throw new Error('Catalog title evidence references a non-public Work ID')
+  }
 
-  const merged = deduplicateCatalog(rawRecords, baseRecords, ordinals)
+  const merged = deduplicateCatalog(
+    rawRecords,
+    baseRecords,
+    ordinals,
+    equivalenceGroups,
+    titleEvidenceByWorkId,
+  )
   globalThis.__baihepaileiPublicRelease = {
     manifest,
     enrichmentManifest,

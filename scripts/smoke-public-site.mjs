@@ -96,16 +96,16 @@ try {
     {
       ok: true,
       catalogWorks: 35_411,
-      visibleWorks: 35_344,
-      mergedAway: 67,
-      mergedGroups: 67,
+      visibleWorks: 34_940,
+      mergedAway: 471,
+      mergedGroups: 471,
       largestMergedGroup: 2,
       ratedWorks: 4_001,
     },
   )
   assert.equal(health.visibleWorks + health.mergedAway, health.catalogWorks)
 
-  for (const query of ['男性替身', 'NTR', '岸 虎次郎']) {
+  for (const query of ['男性替身', 'NTR', '岸 虎次郎', '安達としまむら', 'Adachi and Shimamura', '安达与岛村']) {
     const result = await json(`/api/work-lineage/works?q=${encodeURIComponent(query)}&limit=2`)
     assert.ok(result.total > 0, `${query} should return matching works`)
   }
@@ -139,6 +139,30 @@ try {
   assert.equal(showByRockSeason2.rating.grade, 'D')
   assert.notEqual(showByRock.workId, showByRockSeason2.workId)
 
+  // Evidence-backed cross-provider aliases resolve to one public work from every old Work ID.
+  for (const [left, right] of [
+    ['5409', '30268'], // Adachi and Shimamura / 安達としまむら
+    ['25236', '31618'], // Sky Girls 2007 TV
+    ['25237', '31619'], // Sky Girls 2006 OVA
+    ['17930', '31034'], // Lycoris Recoil WEB shorts
+  ]) {
+    const leftWork = await json(`/api/work-lineage/works/${left}`)
+    const rightWork = await json(`/api/work-lineage/works/${right}`)
+    assert.equal(leftWork.workId, rightWork.workId, `${left}/${right} should resolve to one public work`)
+  }
+
+  // Stale crosswalks and same-provider partial identities stay separate.
+  for (const [left, right] of [
+    ['25237', '31618'],
+    ['17926', '31034'],
+    ['4142', '4978'],
+    ['4918', '4979'],
+  ]) {
+    const leftWork = await json(`/api/work-lineage/works/${left}`)
+    const rightWork = await json(`/api/work-lineage/works/${right}`)
+    assert.notEqual(leftWork.workId, rightWork.workId, `${left}/${right} should remain separate`)
+  }
+
   const enrichedDetail = await (await response('/works/w-36946')).text()
   for (const expected of ['岸 虎次郎', '集英社', '2011-03-18', '作品介绍']) {
     assert.ok(enrichedDetail.includes(expected), `enriched detail should include ${expected}`)
@@ -171,7 +195,7 @@ try {
   console.log(JSON.stringify({
     pages: pages.length,
     redirects: redirects.size,
-    searches: 3,
+    searches: 6,
     visibleWorks: health.visibleWorks,
     mergedAway: health.mergedAway,
     mergedGroups: health.mergedGroups,

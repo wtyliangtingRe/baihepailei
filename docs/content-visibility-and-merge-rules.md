@@ -53,3 +53,18 @@ For complex authors:
 
 - Pure romanization/native-script equivalence may support low-risk `searchText` enrichment.
 - Multiple unproven creator groups, source roles such as original author plus artist, circles, anthology authors, or doujinshi-like creator sets remain manual review.
+
+## Cross-language work equivalence
+
+The public catalog keeps historical Work IDs stable while presenting one reader-facing entry for a work that was imported separately under Japanese, Chinese, or English names.
+
+- Explicit cross-provider equivalence evidence is applied before title matching.
+- Provider-ID crosswalks must be one-to-one inside the current catalog.
+- Inferred anime matches require a strict official title/alias match, the same year, and exact TV / OVA / ONA / movie format agreement.
+- Inferred Bangumi / VNDB matches require a strict official title/alias match, the same release year, Bangumi subject type 4, and one-to-one cardinality.
+- Same-provider different-site-ID claims are never merged automatically, including partial identities.
+- External aliases enrich search and display after grouping; they are never title-merge inputs.
+- Punctuation remains significant. Sequel and season markers such as `!!`, `♪♪`, `+`, and `Re:` are not stripped.
+- Ambiguous, stale, unavailable, or media-conflicting candidates remain in the versioned exclusion ledger for later review.
+
+Every member Work ID continues to resolve through search and the API. A resolved media override is allowed only when the evidence proves that an older catalog classification was wrong, such as a Bangumi game previously classified as a novel.
