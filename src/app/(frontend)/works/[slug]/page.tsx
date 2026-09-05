@@ -1,61 +1,64 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 
+import { getPublicWorkById } from '@/lib/publicRelease'
 import {
-  getPublicReleaseManifest,
-  getPublicWorkById,
-  type PublicRatingState,
-  type PublicWorkRecord,
-} from '@/lib/publicRelease'
+  classTone,
+  confidenceLabel,
+  gradeLabel,
+  gradeSummary,
+  mediaLabel,
+  publicStatusDescriptions,
+  publicStatusLabels,
+  rangeLabel,
+  ratingClassEntries,
+  ratingLead,
+  ratingModeLabel,
+} from '@/lib/radar/publicPresentation'
 
-import { recordIdFromContentRoute } from '../../_lib/content-identity'
+import { canonicalContentUrl, recordIdFromContentRoute } from '../../_lib/content-identity'
 
 export const dynamic = 'force-dynamic'
 
-const statusLabels: Record<PublicRatingState, string> = {
-  rated: '已有评级',
-  research_record_only: '仅资料记录',
-  conflict: '评级冲突',
-  blocked: '身份 / 数据阻断',
-  research_required: '待专项研究',
-  not_assessed: '尚未评估',
+function feedbackHref(workId: string, title: string): string {
+  const params = new URLSearchParams({ workId, title })
+  return `/feedback?${params.toString()}`
 }
 
-const statusDescriptions: Record<PublicRatingState, string> = {
-  rated: '已有当前可发布的 S–F 结论。',
-  research_record_only: '找到研究或资料记录，但没有可发布的 Assessment；本版不强行评级。',
-  conflict: '现有评级权威互相冲突；冲突被保留，等待后续版本裁决。',
-  blocked: '身份或数据包边界仍阻断评级权威；本版只公布阻断状态。',
-  research_required: '现有材料不足以完成专项判断，已明确进入待研究队列。',
-  not_assessed: '作品身份已进入公开目录，但不属于本轮 4,115 个完整审计作品。',
+function likelyEnglish(value: string): boolean {
+  const latin = (value.match(/[A-Za-z]/g) || []).length
+  return latin > Math.max(20, value.length * 0.35)
 }
 
-const sourceLabels: Record<string, string> = {
-  frozen_assessment: '冻结 Assessment 的唯一精确等级',
-  unanimous_authority_normalization_v12: '多来源一致等级归一化',
-  global_v18_successor_rating: '保守证据不足评级',
-  global_v20_successor_rating: '有限证据保守评级',
-  global_v23_successor_rating: '小尾部语义评估',
-  authored_assessment_authority_v24: '作者结论权威归一化',
-  authored_bounded_range_v26: '作者结论范围保留',
-  authority_locator_v27: '全引用 Assessment 定位审计',
-  final_tail_profile_v29: '最终小尾部状态审计',
-  owner_v06_calibration_pr533: '最新 owner v0.6 校准',
-  owner_railgun_successor_pr533: '最新 Railgun owner successor 校准',
+const languageLabels: Record<string, string> = {
+  'zh-Hans': '简体中文',
+  'zh-Hant': '繁体中文',
+  ja: '日文',
+  en: '英文',
+  ko: '韩文',
 }
 
-function identityLabel(state: PublicWorkRecord['identity']['state']): string {
-  if (state === 'exact') return '精确外部身份'
-  if (state === 'repair_required') return '外部身份待修复'
-  return '部分身份'
+const localizedTitleKindLabels: Record<string, string> = {
+  original: '原名',
+  official: '官方名',
+  localized: '译名',
+  romanized: '罗马字',
+  alias: '别名',
 }
 
-function confidenceLabel(value?: string): string {
-  if (value === 'low') return '低'
-  if (value === 'medium') return '中'
-  if (value === 'high' || value === 'established' || value === 'authored') return '已建立'
-  return '未单列'
+const publicationPrecisionLabels: Record<string, string> = {
+  day: '精确到日',
+  month: '精确到月',
+  year: '精确到年',
+  unknown: '精度待确认',
+}
+
+function localizedTitleLabel(language?: string, region?: string, kind?: string): string {
+  const languageLabel = language ? languageLabels[language] || language : '其他名称'
+  const regionalLabel = region ? `${languageLabel}（${region}）` : languageLabel
+  const kindLabel = kind ? localizedTitleKindLabels[kind] || kind : ''
+  return kindLabel ? `${regionalLabel} · ${kindLabel}` : regionalLabel
 }
 
 export async function generateMetadata(
@@ -64,7 +67,11 @@ export async function generateMetadata(
   const { slug } = await params
   const workId = recordIdFromContentRoute('works', slug)
   const work = workId ? getPublicWorkById(workId) : null
-  return work ? { title: work.title, description: `Work ${work.workId} 的当前百合排雷评级与数据状态。` } : {}
+  if (!work) return {}
+  const description = work.rating.grade
+    ? `${work.title}：${work.rating.grade} 级（${gradeLabel(work.rating.grade)}）及具体排雷警示。`
+    : `${work.title} 的作品资料与评级进度。`
+  return { title: work.title, description }
 }
 
 export default async function WorkDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -73,91 +80,304 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
   if (!workId) notFound()
   const work = getPublicWorkById(workId)
   if (!work) notFound()
-  const manifest = getPublicReleaseManifest()
+  if (work.workId !== workId) permanentRedirect(canonicalContentUrl('works', work.workId))
+
   const rating = work.rating
-  const hasRange = Boolean(
-    rating.bestGrade && rating.worstGrade && rating.bestGrade !== rating.worstGrade,
+  const classes = ratingClassEntries(rating)
+  const range = rangeLabel(rating)
+  const hasBasicMetadata = Boolean(
+    work.firstPublished || work.creators.length || work.organizations.length,
   )
+  const sources = [...work.sources]
+  if (rating.evidenceUrl && !sources.some((source) => source.url === rating.evidenceUrl)) {
+    sources.unshift({ title: '评级依据页面', url: rating.evidenceUrl })
+  }
 
   return (
     <main className="page collection-page release-detail-page">
-      <section className="release-detail-hero">
-        <div className="release-detail-grade">
-          {rating.grade ? (
-            <span className={`rating-chip rating-chip-large grade-${rating.grade}`}>{rating.grade}</span>
-          ) : (
-            <span className={`status-symbol status-symbol-large status-${rating.state}`}>—</span>
-          )}
+      <section className="release-detail-hero release-detail-hero-public">
+        <div className="release-detail-visual">
+          {work.cover ? (
+            <img
+              alt={work.cover.alt || `${work.title} 封面`}
+              className="release-work-cover"
+              height={work.cover.height || 360}
+              loading="eager"
+              src={work.cover.url}
+              width={work.cover.width || 240}
+            />
+          ) : null}
+          <div className="release-detail-grade">
+            {rating.grade ? (
+              <span className={`rating-chip rating-chip-large grade-${rating.grade}`}>{rating.grade}</span>
+            ) : (
+              <span className={`status-symbol status-symbol-large status-${rating.state}`}>—</span>
+            )}
+            <small>{rating.grade ? gradeLabel(rating.grade) : publicStatusLabels[rating.state]}</small>
+          </div>
         </div>
-        <div>
-          <p className="eyebrow">Work {work.workId} · {statusLabels[rating.state]}</p>
+        <div className="release-detail-heading">
+          <p className="eyebrow">
+            {mediaLabel(work.media.group, work.media.type)}
+          </p>
           <h1>{work.title}</h1>
-          <p>{statusDescriptions[rating.state]}</p>
-          <div className="work-card-badges">
-            <span className="work-type-chip">{identityLabel(work.identity.state)}</span>
-            <span className="work-type-chip">{work.audited ? '本轮完整审计' : '公开目录记录'}</span>
-            {rating.needsMoreResearch ? <span className="work-type-chip warning-chip">仍需补证</span> : null}
+          {work.localizedTitles.length || work.aliases.length ? (
+            <p className="release-aliases">
+              又名：{[
+                ...work.localizedTitles.map((title) => title.title),
+                ...work.aliases,
+              ].filter((title, index, values) => title !== work.title && values.indexOf(title) === index).join('、')}
+            </p>
+          ) : null}
+          <p className="release-detail-lead">{ratingLead(rating)}</p>
+          <div className="release-warning-row" aria-label="评级依据与警示">
+            {work.publicTags.map((tag) => (
+              <span className="release-warning-chip warning-preference" key={tag.key}>{tag.label}</span>
+            ))}
+            {classes.map(({ code, definition }) => (
+              <span className={`release-warning-chip warning-grade-${definition.grade}`} key={code}>
+                {definition.label}
+              </span>
+            ))}
+            {rating.uncertaintyKind ? <span className="release-warning-chip warning-data">具体雷点未确认</span> : null}
+            {rating.needsMoreResearch ? <span className="release-warning-chip warning-data">资料仍待补充</span> : null}
           </div>
           <div className="collection-actions">
             <Link className="back-link" href="/works">返回作品列表</Link>
             {rating.grade ? <Link className="back-link" href={`/works?grade=${rating.grade}`}>查看同级作品</Link> : null}
+            <Link className="back-link" href={feedbackHref(work.workId, work.title)}>补充或纠错</Link>
           </div>
         </div>
       </section>
 
-      <div className="release-detail-grid">
-        <section className="detail-card">
-          <p className="eyebrow">当前结论</p>
-          <h2>{rating.grade ? `${rating.grade} 级` : statusLabels[rating.state]}</h2>
+      {rating.grade === 'E' || rating.grade === 'F' ? (
+        <section className={`release-risk-banner risk-grade-${rating.grade}`} role="note">
+          <strong>{rating.grade === 'F' ? '高危排雷：建议先读完具体警示' : '重度排雷：可能明显影响观看体验'}</strong>
+          <p>{gradeSummary(rating.grade)}</p>
+        </section>
+      ) : null}
+
+      <section className="detail-card release-title-alias-card" aria-label="译名与别名">
+        <p className="eyebrow">名称资料</p>
+        <h2>译名与别名</h2>
+        {work.localizedTitles.length || work.aliases.length ? (
           <dl className="release-detail-list">
-            <div><dt>发布状态</dt><dd>{statusLabels[rating.state]}</dd></div>
-            {rating.grade ? <div><dt>核心等级</dt><dd>{rating.grade}</dd></div> : null}
-            {hasRange ? <div><dt>保留范围</dt><dd>{rating.bestGrade} – {rating.worstGrade}（最可能 {rating.likelyGrade}）</dd></div> : null}
-            {rating.class ? <div><dt>来源分类</dt><dd>{rating.class === 'D-UNCLEAR' ? 'D（证据不足型）' : rating.class}</dd></div> : null}
-            {rating.grade ? <div><dt>置信状态</dt><dd>{confidenceLabel(rating.confidence)}</dd></div> : null}
-            <div><dt>是否仍需补证</dt><dd>{rating.needsMoreResearch ? '是' : '否'}</dd></div>
-            {rating.source ? <div><dt>决策来源</dt><dd>{sourceLabels[rating.source] || rating.source}</dd></div> : null}
+            {work.localizedTitles.map((title) => (
+              <div key={`${title.language || 'und'}-${title.region || ''}-${title.kind || ''}-${title.title}`}>
+                <dt>{localizedTitleLabel(title.language, title.region, title.kind)}</dt>
+                <dd>{title.title}</dd>
+              </div>
+            ))}
+            {work.aliases.length ? (
+              <div>
+                <dt>其他别名</dt>
+                <dd>{work.aliases.join('、')}</dd>
+              </div>
+            ) : null}
           </dl>
-          {rating.reasoningSummary ? (
-            <div className="release-reasoning">
-              <strong>结论摘要</strong>
-              <p>{rating.reasoningSummary}</p>
-            </div>
-          ) : null}
-          {rating.class === 'D-UNCLEAR' ? (
+        ) : (
+          <p className="muted">当前目录尚未收录其他可靠译名或别名。</p>
+        )}
+      </section>
+
+      <div className="release-detail-grid release-public-info-grid">
+        <section className="detail-card">
+          <p className="eyebrow">作品基本资料</p>
+          <h2>作品信息</h2>
+          <dl className="release-detail-list">
+            <div><dt>作品类型</dt><dd>{mediaLabel(work.media.group, work.media.type)}</dd></div>
+            {work.media.format ? <div><dt>作品形态</dt><dd>{work.media.format}</dd></div> : null}
+            {work.firstPublished || work.firstPublishedLabel ? (
+              <div><dt>首次发行</dt><dd>{work.firstPublishedLabel || work.firstPublished}</dd></div>
+            ) : null}
+            {work.firstPublishedPrecision ? (
+              <div><dt>日期精度</dt><dd>{publicationPrecisionLabels[work.firstPublishedPrecision]}</dd></div>
+            ) : null}
+          </dl>
+          {!hasBasicMetadata ? (
             <p className="release-caution">
-              这里的 D 只表示当前资料没有建立足够明确的百合 / 女性关系拓扑；
-              它不推断男性结局、NTR 或其他具体雷点。
+              当前快照只恢复了作品类型，作者、机构、日期等基本资料仍待补齐。
             </p>
           ) : null}
         </section>
 
         <section className="detail-card">
-          <p className="eyebrow">身份与目录</p>
-          <h2>公开身份</h2>
-          <dl className="release-detail-list">
-            <div><dt>Work ID</dt><dd><code>{work.workId}</code></dd></div>
-            <div><dt>目录序号</dt><dd>{work.ordinal.toLocaleString('zh-CN')}</dd></div>
-            <div><dt>身份状态</dt><dd>{identityLabel(work.identity.state)}</dd></div>
-            <div><dt>外部提供方</dt><dd>{work.identity.provider}</dd></div>
-            <div><dt>外部站点 ID</dt><dd><code>{work.identity.siteId}</code></dd></div>
-            <div><dt>研究覆盖</dt><dd>{work.identity.coverage}</dd></div>
-          </dl>
-          {work.identity.state !== 'exact' ? (
-            <p className="release-caution">身份边界会原样公开；站点不会用标题模糊匹配制造一个“看起来精确”的外部身份。</p>
-          ) : null}
+          <p className="eyebrow">作者与创作机构</p>
+          <h2>创作信息</h2>
+          {work.creators.length || work.organizations.length ? (
+            <div className="release-credit-groups">
+              {work.creators.length ? (
+                <section>
+                  <h3>作者 / 主创</h3>
+                  <ul>
+                    {work.creators.map((credit) => (
+                      <li key={`${credit.role}-${credit.name}`}>
+                        {credit.sourceUrl ? <a href={credit.sourceUrl} rel="noreferrer" target="_blank">{credit.name}</a> : credit.name}
+                        <span>{credit.role}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+              {work.organizations.length ? (
+                <section>
+                  <h3>制作 / 出版机构</h3>
+                  <ul>
+                    {work.organizations.map((credit) => (
+                      <li key={`${credit.role}-${credit.name}`}>
+                        {credit.sourceUrl ? <a href={credit.sourceUrl} rel="noreferrer" target="_blank">{credit.name}</a> : credit.name}
+                        <span>{credit.role}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+            </div>
+          ) : (
+            <div className="release-missing-detail compact">
+              <strong>现有资料尚未结构化作者或机构</strong>
+              <p>字段保留在这里，后续只从可核验来源按精确作品补充。</p>
+            </div>
+          )}
         </section>
       </div>
 
-      <section className="release-snapshot-note">
+      <section className="detail-card release-summary-card">
+        <p className="eyebrow">作品介绍</p>
+        <h2>{work.summary ? '来源摘要' : '简介待补充'}</h2>
+        {work.summary ? (
+          <>
+            <p className="release-source-summary">{work.summary.text}</p>
+            {work.summary.sourceUrl ? (
+              <a className="back-link" href={work.summary.sourceUrl} rel="noreferrer" target="_blank">查看摘要来源 ↗</a>
+            ) : null}
+          </>
+        ) : (
+          <p className="muted">这部作品的简介还没有完成来源核验，暂不展示未经核实的内容。</p>
+        )}
+      </section>
+
+      <section className="detail-card release-conclusion-card">
+        <div className="release-section-heading release-section-heading-top">
+          <div>
+            <p className="eyebrow">排雷结论</p>
+            <h2>{rating.grade ? `${rating.grade} 级 · ${gradeLabel(rating.grade)}` : publicStatusLabels[rating.state]}</h2>
+          </div>
+          {rating.grade ? <span className={`release-grade-pill grade-outline-${rating.grade}`}>{ratingModeLabel(rating.mode)}</span> : null}
+        </div>
+
+        <p className="release-grade-explanation">
+          {rating.grade ? gradeSummary(rating.grade) : publicStatusDescriptions[rating.state]}
+        </p>
+
+        {work.publicTags.length ? (
+          <section className="release-preference-notices" aria-label="独立设定与内容提示">
+            <div>
+              <p className="eyebrow">独立设定与内容提示</p>
+              <h3>这些提示与核心等级分开阅读</h3>
+            </div>
+            <div className="release-preference-grid">
+              {work.publicTags.map((tag) => (
+                <article key={tag.key}>
+                  <span>{tag.group}</span>
+                  <strong>{tag.label}</strong>
+                  <p>{tag.description}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {classes.length ? (
+          <div className="release-class-grid">
+            {classes.map(({ code, definition }) => (
+              <article className={`release-class-card class-tone-${classTone(code)}`} key={code}>
+                <div>
+                  <span>{definition.grade} 级细则</span>
+                  <code>{code}</code>
+                </div>
+                <h3>{definition.label}</h3>
+                <p>{definition.summary}</p>
+                <details>
+                  <summary>查看这条规则的判定边界</summary>
+                  <div className="release-rule-boundaries">
+                    <section>
+                      <strong>需要满足</strong>
+                      <ul>{definition.inclusionCriteria.map((item) => <li key={item}>{item}</li>)}</ul>
+                    </section>
+                    <section>
+                      <strong>不应误判为</strong>
+                      <ul>{definition.exclusionCriteria.map((item) => <li key={item}>{item}</li>)}</ul>
+                    </section>
+                  </div>
+                </details>
+              </article>
+            ))}
+          </div>
+        ) : rating.state === 'rated' ? (
+          <div className="release-missing-detail">
+            <strong>{rating.uncertaintyKind ? '当前没有确认具体雷点' : '当前只保留了等级结论'}</strong>
+            <p>
+              {rating.uncertaintyKind
+                ? '这是一条资料不足型 D：不能据此推断男性结局、NTR 或其他具体情节。'
+                : '现存资料没有保留可安全复用的细分类；本站不会用旧标签或模型猜测补上。'}
+            </p>
+          </div>
+        ) : null}
+
+        <dl className="release-detail-list release-rating-facts">
+          <div><dt>评级状态</dt><dd>{publicStatusLabels[rating.state]}</dd></div>
+          {rating.grade ? <div><dt>核心等级</dt><dd>{rating.grade} · {gradeLabel(rating.grade)}</dd></div> : null}
+          {range ? <div><dt>结论范围</dt><dd>{range}</dd></div> : null}
+          {rating.grade ? <div><dt>资料把握</dt><dd>{confidenceLabel(rating.confidence)}</dd></div> : null}
+          <div><dt>仍需补充</dt><dd>{rating.needsMoreResearch ? '是' : '否'}</dd></div>
+        </dl>
+
+        {rating.reasoningSummary ? (
+          <div className="release-reasoning">
+            <strong>为什么这样评</strong>
+            <p lang={likelyEnglish(rating.reasoningSummary) ? 'en' : 'zh-CN'}>{rating.reasoningSummary}</p>
+            {likelyEnglish(rating.reasoningSummary) ? (
+              <small>此段保留现有资料的原文，避免翻译改变结论。</small>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="detail-card release-sources-card">
+        <div className="release-section-heading release-section-heading-top">
+          <div>
+            <p className="eyebrow">可核验资料</p>
+            <h2>资料来源</h2>
+          </div>
+          <span>{sources.length} 条</span>
+        </div>
+        {sources.length ? (
+          <ul className="release-source-list">
+            {sources.map((source) => (
+              <li key={source.url}>
+                <a href={source.url} rel="noreferrer" target="_blank">
+                  <span>{source.title}</span>
+                  <small>{source.tier ? `资料层级 ${source.tier} · ` : ''}打开来源 ↗</small>
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="muted">当前没有可直接展示的来源链接；这不代表资料不存在，只表示来源仍待整理。</p>
+        )}
+      </section>
+
+      <section className="release-snapshot-note release-snapshot-note-public">
         <div>
-          <p className="eyebrow">可追溯快照</p>
-          <h2>{manifest.releaseId}</h2>
+          <p className="eyebrow">补充与纠错</p>
+          <h2>发现遗漏或错误？告诉我们。</h2>
         </div>
         <p>
-          此页读取同一份冻结首发快照。后续发现只会通过新版本追加；
-          当前版本的 Work ID、等级与非评级终态不会被静默改写。
+          缺少作者、简介或细分类时会保持空缺，不使用标题相似度猜测补齐。
+          从这里提交反馈时会自动关联当前作品，不需要另外查找编号。
         </p>
+        <Link className="result-link" href={feedbackHref(work.workId, work.title)}>为这部作品补充资料</Link>
       </section>
     </main>
   )

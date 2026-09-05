@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "baihepailei-public-enrichment-manifest-v1",
+  "generatedAt": "2026-09-03T00:00:00Z",
+  "bindingPolicy": "All enrichments bind by exact Work ID; rating detail additionally requires the current published grade to match.",
+  "inheritedRatingsAllowed": false,
+  "sources": {
+    "media": {
+      "blobSha": "c0fe377bb9ac8bd62fbbd9e680d1f3cf269bb10f",
+      "rows": 35411,
+      "file": "enrichment-media.json",
+      "bytes": 277714,
+      "sha256": "90a19f1131fc5cab95ea5d88567fdeb3d9411b357ec690b744d7c9a9d7826b2d"
+    },
+    "workAssets": {
+      "blobSha": "71f7408ecc5eac42cb1865012fa38aa547170501",
+      "rows": 575,
+      "summaries": 524,
+      "creatorCreditWorks": 6,
+      "organizationCreditWorks": 6,
+      "firstPublishedWorks": 6,
+      "file": "enrichment-work-assets.jsonl",
+      "bytes": 411436,
+      "sha256": "b0373611e1673c255fa5b7d4b245a016b911db2ac0a4f9a5a67ceac4c0166ab0"
+    },
+    "ratingDetails": {
+      "frozenAssessmentRows": 802,
+      "authoredV24Rows": 269,
+      "uniqueRows": 1066,
+      "authoredAuthorityBlobSha": "adfda315e7e57f850fdd78876acfdde2da442749",
+      "file": "enrichment-rating-details.jsonl",
+      "bytes": 592697,
+      "sha256": "345a29e2a780e886bf445fba65470d09645d70f84ff554725ceebf9547c7d9fa"
+    }
+  },
+  "displayRules": {
+    "internalIdentityHidden": true,
+    "unknownMetadataRemainsUnknown": true,
+    "retiredRatingClassesExcluded": true,
+    "reasoningTextPreservedInSourceLanguage": true
+  }
+}
