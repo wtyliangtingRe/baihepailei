@@ -50,6 +50,18 @@ function issueSubmissionHref(
   }
 }
 
+function anonymousSubmissionHref(base: string, workId: string, title: string, isNewWork: boolean): string {
+  if (!base) return ''
+  try {
+    const url = new URL(base)
+    if (url.protocol !== 'https:') return ''
+    if (workId) url.searchParams.set('workId', workId)
+    if (title) url.searchParams.set('title', title)
+    if (isNewWork) url.searchParams.set('type', 'new_work')
+    return url.toString()
+  } catch { return '' }
+}
+
 const feedbackTypes = [
   { title: '作品资料补充', text: '补充作者、主创、制作机构、发行日期、别名或作品简介。' },
   { title: '排雷材料', text: '提供官方页面、原作位置、访谈、截图出处或其他可核验来源。' },
@@ -89,6 +101,7 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
     targetTitle,
     targetWorkID,
   })
+  const anonymousHref = anonymousSubmissionHref(channels.externalForm, targetWorkID, targetTitle, isNewWork)
   const displayedTypes = isNewWork ? newWorkDataTypes : feedbackTypes
   const hasChannel = Boolean(issueHref || emailHref || channels.externalForm)
   const usesDefaultPrivateIssueTracker = channels.issueTracker === DEFAULT_PUBLIC_FEEDBACK_ISSUE_URL
@@ -125,21 +138,30 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
             <p className="muted">提交内容只进入待核实队列，确认作品对应与来源后才会更新公开页面。</p>
           </div>
           <div className="feedback-channel-grid">
+            <article className="detail-card feedback-channel-card feedback-channel-primary">
+              <p className="eyebrow">普通访客</p>
+              <h2>匿名文字表单</h2>
+              <p>无需登录，填写简短说明和最多三条来源链接。不接收图片或任何附件。</p>
+              {anonymousHref ? (
+                <a className="result-link" href={anonymousHref} rel="noreferrer" target="_blank">打开匿名投稿表 ↗</a>
+              ) : <p className="muted">匿名入口暂未开放。</p>}
+              <small>线索先进入独立待审区，核实后才会更新作品资料。</small>
+            </article>
             {issueHref ? (
-              <article className="detail-card feedback-channel-card feedback-channel-primary">
-                <p className="eyebrow">推荐 · GitHub</p>
-                <h2>结构化提交表</h2>
+              <article className="detail-card feedback-channel-card">
+                <p className="eyebrow">GitHub 贡献者</p>
+                <h2>投稿与图片证据</h2>
                 <p>
-                  打开后填写作品、补充或纠错内容及来源。需要登录 GitHub，但不用注册或绑定本站账号，
-                  也不会获得任何数据库写入权限。
+                  可附 PNG、JPG、JPEG 或 WebP 截图，并说明出处。需要登录 GitHub，但不用注册或绑定本站账号。
+                  请每张尽量压缩到 2 MB 以内，且不超过 GitHub 的 10 MB 限制。
                 </p>
                 <a className="result-link" href={issueHref} rel="noreferrer" target="_blank">
                   {isNewWork ? '打开新作品提交表 ↗' : '打开作品补充与纠错表 ↗'}
                 </a>
                 <small>
                   {usesDefaultPrivateIssueTracker
-                    ? '当前默认目标是私有源码仓库，只有已有仓库读取权限的协作者能打开。公开收集前请改配专用公开问题单仓库。'
-                    : '谁能打开与查看提交内容，由目标问题单仓库的可见性和权限决定。'}
+                    ? '此入口目前供已有仓库访问权限的协作者使用，公开投稿入口尚未开放。'
+                    : '公开投稿仓库中的文字和图片均可能被任何人查看，请勿上传私人或未获公开授权的材料。'}
                 </small>
               </article>
             ) : null}
@@ -149,14 +171,6 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
                 <h2>发送邮件</h2>
                 <p>适合少量文字、来源链接和需要继续沟通的材料。</p>
                 <a className="result-link" href={emailHref}>写一封线索邮件</a>
-              </article>
-            ) : null}
-            {channels.externalForm ? (
-              <article className="detail-card feedback-channel-card">
-                <p className="eyebrow">External form</p>
-                <h2>外部材料表单</h2>
-                <p>适合结构化资料、较多链接或图片材料。</p>
-                <a className="result-link" href={channels.externalForm} rel="noreferrer" target="_blank">打开材料表单</a>
               </article>
             ) : null}
           </div>
@@ -169,10 +183,11 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
       )}
 
       <section className="detail-card feedback-security-note" role="note">
-        <h2>提交安全边界</h2>
+        <h2>提交前请留意</h2>
         <p>
-          当前版本不开放“未登录即可直接写入本站数据库”的接口。GitHub 登录只用于提交渠道的身份与滥用控制；
-          所有线索仍需人工核验，且不会自动改作品资料或评级。请勿提交私人联系方式、未公开材料或无权公开的文件。
+          所有线索均需人工核实，提交不会自动更改作品资料或评级。匿名表单仅收文字；
+          GitHub 图片请注明作品版本和原作位置，不要附视频、压缩包或文档。
+          请勿提交私人联系方式、未公开材料或无权公开的文件。
         </p>
       </section>
 

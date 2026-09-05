@@ -79,7 +79,9 @@ try {
     'github.com/wtyliangtingRe/baihepailei/issues/new',
     'work-correction.yml',
     'work_id=18556',
-    '不会获得任何数据库写入权限',
+    '匿名文字表单',
+    '不接收图片或任何附件',
+    '投稿与图片证据',
   ]) {
     assert.ok(correctionFeedback.includes(expected), `correction feedback should include ${expected}`)
   }

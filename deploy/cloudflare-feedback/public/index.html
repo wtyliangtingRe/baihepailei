@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>提交作品线索 · 百合排雷</title>
+  <meta name="referrer" content="no-referrer">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/form.js" defer></script>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">百合排雷 · 资料补充</p>
+    <h1>把线索留给我们</h1>
+    <p class="lead">无需注册。写下确定的信息，资料会在核实后更新。</p>
+    <aside>这里只接收文字和最多 3 条来源链接。截图请通过网站的 GitHub 投稿入口提供。</aside>
+    <form id="feedback" novalidate>
+      <label for="kind">提交类型</label>
+      <select id="kind" name="kind"><option value="correction">已有作品补充与纠错</option><option value="new_work">推荐收录新作品</option></select>
+      <label for="title">作品标题 <span>必填</span></label>
+      <input id="title" name="title" maxlength="200" required autocomplete="off">
+      <label for="workId">作品编号 <span>选填；从作品页进入会自动带入</span></label>
+      <input id="workId" name="workId" maxlength="12" inputmode="numeric" pattern="[0-9]{1,12}" autocomplete="off">
+      <label for="description">希望补充或纠正什么？ <span>10–3000 字</span></label>
+      <textarea id="description" name="description" minlength="10" maxlength="3000" rows="7" required placeholder="例如：页面中的作者应为……；这个别名对应的是……版本。请把链接放到下面的来源栏。"></textarea>
+      <label for="sources">来源链接 <span>选填；每行 1 条 https 链接，最多 3 条</span></label>
+      <textarea id="sources" name="sources" maxlength="1502" rows="3" placeholder="https://..."></textarea>
+      <label for="location">版本、章节或发生位置 <span>选填，最多 240 字</span></label>
+      <input id="location" name="location" maxlength="240" autocomplete="off">
+      <label for="spoilers">是否包含剧透？</label>
+      <select id="spoilers" name="spoilers"><option value="none">不包含剧透</option><option value="minor">轻微剧透</option><option value="major">关键剧情或结局剧透</option></select>
+      <div class="honeypot" aria-hidden="true"><label for="website">请留空</label><input id="website" name="website" tabindex="-1" autocomplete="off" maxlength="80"></div>
+      <label class="consent"><input type="checkbox" id="consent" required>我没有填写私人联系方式、账号凭据或未公开的个人资料，并理解线索需要审核。</label>
+      <p class="privacy">提交内容保存在独立待审区，最多保留 30 天，过期清理每日运行。安全检查会使用 IP，待审区只保留按日变化的加密摘要。不会自动发送邮件或打开来源链接。</p>
+      <div id="challenge"></div>
+      <button type="submit" id="submit" disabled>提交线索</button>
+      <p id="status" role="status" aria-live="polite">正在连接投稿入口……</p>
+    </form>
+    <p class="footnote">请保存提交成功后显示的编号。投稿不会立即出现在作品页面上。</p>
+  </main>
+</body>
+</html>

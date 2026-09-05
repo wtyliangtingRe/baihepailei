@@ -1,0 +1,7 @@
+{
+  "name": "baihepailei-isolated-feedback",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test worker.test.mjs", "dev": "wrangler dev", "deploy": "wrangler deploy", "check": "wrangler deploy --dry-run" },
+  "devDependencies": { "wrangler": "4.129.0" }
+}

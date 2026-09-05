@@ -31,7 +31,12 @@ function likelyEnglish(value: string): boolean {
   return latin > Math.max(20, value.length * 0.35)
 }
 
+function normalizedTitle(value: string): string {
+  return value.normalize('NFKC').toLocaleLowerCase().replace(/\s+/gu, ' ').trim()
+}
+
 const languageLabels: Record<string, string> = {
+  zh: '中文',
   'zh-Hans': '简体中文',
   'zh-Hant': '繁体中文',
   ja: '日文',
@@ -83,6 +88,11 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
   if (work.workId !== workId) permanentRedirect(canonicalContentUrl('works', work.workId))
 
   const rating = work.rating
+  const localizedTitleKeys = new Set([
+    normalizedTitle(work.title),
+    ...work.localizedTitles.map((title) => normalizedTitle(title.title)),
+  ])
+  const displayAliases = work.aliases.filter((title) => !localizedTitleKeys.has(normalizedTitle(title)))
   const classes = ratingClassEntries(rating)
   const range = rangeLabel(rating)
   const hasBasicMetadata = Boolean(
@@ -121,11 +131,11 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
             {mediaLabel(work.media.group, work.media.type)}
           </p>
           <h1>{work.title}</h1>
-          {work.localizedTitles.length || work.aliases.length ? (
+          {work.localizedTitles.length || displayAliases.length ? (
             <p className="release-aliases">
               又名：{[
                 ...work.localizedTitles.map((title) => title.title),
-                ...work.aliases,
+                ...displayAliases,
               ].filter((title, index, values) => title !== work.title && values.indexOf(title) === index).join('、')}
             </p>
           ) : null}
@@ -160,7 +170,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
       <section className="detail-card release-title-alias-card" aria-label="译名与别名">
         <p className="eyebrow">名称资料</p>
         <h2>译名与别名</h2>
-        {work.localizedTitles.length || work.aliases.length ? (
+        {work.localizedTitles.length || displayAliases.length ? (
           <dl className="release-detail-list">
             {work.localizedTitles.map((title) => (
               <div key={`${title.language || 'und'}-${title.region || ''}-${title.kind || ''}-${title.title}`}>
@@ -168,15 +178,15 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
                 <dd>{title.title}</dd>
               </div>
             ))}
-            {work.aliases.length ? (
+            {displayAliases.length ? (
               <div>
                 <dt>其他别名</dt>
-                <dd>{work.aliases.join('、')}</dd>
+                <dd>{displayAliases.join('、')}</dd>
               </div>
             ) : null}
           </dl>
         ) : (
-          <p className="muted">当前目录尚未收录其他可靠译名或别名。</p>
+          <dl className="release-detail-list"><div><dt>当前收录名</dt><dd>{work.title}</dd></div></dl>
         )}
       </section>
 
@@ -196,7 +206,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
           </dl>
           {!hasBasicMetadata ? (
             <p className="release-caution">
-              当前快照只恢复了作品类型，作者、机构、日期等基本资料仍待补齐。
+              发行日期尚待核实。<Link href={feedbackHref(work.workId, work.title)}>补充作品资料</Link>
             </p>
           ) : null}
         </section>
@@ -221,7 +231,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
               ) : null}
               {work.organizations.length ? (
                 <section>
-                  <h3>制作 / 出版机构</h3>
+                  <h3>制作 / 出版方</h3>
                   <ul>
                     {work.organizations.map((credit) => (
                       <li key={`${credit.role}-${credit.name}`}>
@@ -235,8 +245,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
             </div>
           ) : (
             <div className="release-missing-detail compact">
-              <strong>现有资料尚未结构化作者或机构</strong>
-              <p>字段保留在这里，后续只从可核验来源按精确作品补充。</p>
+              <p>暂未查到可靠的主创资料。<Link href={feedbackHref(work.workId, work.title)}>补充作者或机构</Link></p>
             </div>
           )}
         </section>
@@ -244,7 +253,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
 
       <section className="detail-card release-summary-card">
         <p className="eyebrow">作品介绍</p>
-        <h2>{work.summary ? '来源摘要' : '简介待补充'}</h2>
+        <h2>{work.summary?.kind === 'identity_summary' ? '作品识别信息' : '简短介绍'}</h2>
         {work.summary ? (
           <>
             <p className="release-source-summary">{work.summary.text}</p>
@@ -253,7 +262,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
             ) : null}
           </>
         ) : (
-          <p className="muted">这部作品的简介还没有完成来源核验，暂不展示未经核实的内容。</p>
+          <p className="muted">暂缺能准确识别这部作品的简介。<Link href={feedbackHref(work.workId, work.title)}>补充一两句介绍</Link></p>
         )}
       </section>
 
