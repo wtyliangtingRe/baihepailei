@@ -78,6 +78,14 @@ standalone 输出，数据快照随镜像一起冻结；AWS 部署时不会依�
 Compose 默认仅监听 `127.0.0.1:3000`，由服务器现有的 TLS 反向代理对外提供服务。部署交接见
 [`deploy/aws/README.md`](deploy/aws/README.md)。
 
+## 反馈边界
+
+现行反馈入口使用私有源码仓库的 GitHub Issue Form，因此目前只对协作者开放。2026-09-05
+已经确定后续公开投稿采用两个并行渠道：普通访客使用匿名、纯文字、无附件的 Cloudflare
+表单；熟悉 GitHub 的贡献者使用独立公开投稿仓库的 Issue Form。两者都只产生待审线索，
+不得直接写入正式作品、研究或评级数据。决策记录见
+[`docs/public-feedback-intake-decision-20260905.md`](docs/public-feedback-intake-decision-20260905.md)。
+
 ## 数据边界
 
 公开快照位于 `data/public-release/v1/`，清单记录每个 shard 的 SHA-256、行数和字节数。
