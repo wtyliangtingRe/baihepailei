@@ -4,29 +4,41 @@ import fs from 'node:fs'
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 const page = read('src/app/(frontend)/feedback/page.tsx')
-const prompt = read('src/app/(frontend)/_components/FeedbackPrompt.tsx')
-const form = read('src/app/(frontend)/_components/FeedbackForm.tsx')
-const account = read('src/app/(frontend)/_components/AccountClient.tsx')
+const profile = read('src/lib/deploymentProfile.ts')
 const layout = read('src/app/(frontend)/layout.tsx')
 const styles = read('src/app/(frontend)/feedback.css')
+const correctionForm = read('.github/ISSUE_TEMPLATE/work-correction.yml')
+const newWorkForm = read('.github/ISSUE_TEMPLATE/new-work.yml')
 
-test('feedback page provides a first-party moderated submission form', () => {
-  assert.match(page, /FeedbackForm/u)
-  assert.match(page, /人工排雷/u)
-  assert.match(page, /规则与等级纠错/u)
-  assert.match(form, /\/api\/feedback-submissions/u)
-  assert.match(form, /证据链接/u)
-  assert.match(form, /站内作品 ID/u)
-  assert.doesNotMatch(form, /相关页面链接/u)
-  assert.match(prompt, /提交人工材料/u)
+test('feedback page always exposes a real authenticated submission link', () => {
+  assert.match(profile, /DEFAULT_PUBLIC_FEEDBACK_ISSUE_URL/u)
+  assert.match(page, /issueSubmissionHref/u)
+  assert.match(page, /打开作品补充与纠错表/u)
+  assert.match(page, /打开新作品提交表/u)
+  assert.match(page, /targetWorkID/u)
+  assert.match(page, /targetTitle/u)
+  assert.match(page, /work_id/u)
+  assert.match(page, /work_title/u)
+  assert.match(page, /slice\(0, maxLength\)/u)
+  assert.match(page, /\^\\d\{1,12\}\$/u)
 })
 
-test('feedback submissions remain available through account and content prompts without a duplicate top-nav item', () => {
-  assert.doesNotMatch(layout, /href: '\/feedback', label: '反馈'/u)
-  assert.match(account, /href="\/feedback"/u)
-  assert.match(account, /提交人工排雷/u)
-  assert.match(account, /提交新作品/u)
+test('issue forms collect structured evidence while preserving moderation boundaries', () => {
+  for (const form of [correctionForm, newWorkForm]) {
+    assert.match(form, /id: work_title/u)
+    assert.match(form, /id: sources/u)
+    assert.match(form, /required: true/u)
+    assert.match(form, /不会自动/u)
+  }
+  assert.match(correctionForm, /id: work_id/u)
+  assert.match(correctionForm, /id: feedback_kind/u)
+  assert.match(correctionForm, /id: spoilers/u)
+  assert.doesNotMatch(page, /\/api\/feedback-submissions/u)
+})
+
+test('feedback entry remains visible in navigation and has responsive channel styling', () => {
+  assert.match(layout, /href: '\/feedback', label: '补充纠错'/u)
   assert.match(layout, /feedback\.css/u)
-  assert.match(styles, /\.feedback-form/u)
-  assert.doesNotMatch(prompt, /issues\/new/u)
+  assert.match(styles, /\.feedback-channel-grid/u)
+  assert.match(styles, /\.feedback-channel-primary/u)
 })

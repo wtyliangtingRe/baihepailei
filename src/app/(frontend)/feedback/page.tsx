@@ -1,11 +1,53 @@
 import Link from 'next/link'
 
-import { publicFeedbackChannels } from '@/lib/deploymentProfile'
+import {
+  DEFAULT_PUBLIC_FEEDBACK_ISSUE_URL,
+  publicFeedbackChannels,
+} from '@/lib/deploymentProfile'
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>
 
-function first(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] || '' : value || ''
+function first(value: string | string[] | undefined, maxLength = 160) {
+  const candidate = Array.isArray(value) ? value[0] || '' : value || ''
+  return candidate.trim().slice(0, maxLength)
+}
+
+function workID(value: string | string[] | undefined): string {
+  const candidate = first(value, 24)
+  return /^\d{1,12}$/.test(candidate) ? candidate : ''
+}
+
+function issueSubmissionHref(
+  base: string,
+  options: { isNewWork: boolean; targetTitle: string; targetWorkID: string },
+): string {
+  if (!base) return ''
+
+  try {
+    const url = new URL(base)
+    if (url.protocol !== 'https:') return ''
+
+    if (url.hostname === 'github.com' && /\/issues\/new\/?$/.test(url.pathname)) {
+      if (!url.searchParams.has('template')) {
+        url.searchParams.set(
+          'template',
+          options.isNewWork ? 'new-work.yml' : 'work-correction.yml',
+        )
+      }
+      url.searchParams.set(
+        'title',
+        options.isNewWork
+          ? `[新作品] ${options.targetTitle}`.trim()
+          : `[作品纠错] ${options.targetTitle}${options.targetWorkID ? `（Work ${options.targetWorkID}）` : ''}`.trim(),
+      )
+      if (options.targetWorkID) url.searchParams.set('work_id', options.targetWorkID)
+      if (options.targetTitle) url.searchParams.set('work_title', options.targetTitle)
+    }
+
+    return url.toString()
+  } catch {
+    return ''
+  }
 }
 
 const feedbackTypes = [
@@ -26,26 +68,36 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
   const params = await searchParams
   const channels = publicFeedbackChannels()
   const targetTitle = first(params.title)
-  const targetWorkID = first(params.workId)
-  const isNewWork = first(params.type) === 'new_work'
-  const emailSubject = encodeURIComponent(targetTitle ? `Baihepailei 线索：${targetTitle}` : 'Baihepailei 发现线索')
+  const targetWorkID = workID(params.workId)
+  const isNewWork = first(params.type, 32) === 'new_work'
+  const submissionKind = isNewWork ? '推荐收录新作品' : '作品资料补充与纠错'
+  const emailSubject = encodeURIComponent(
+    targetTitle ? `Baihepailei ${submissionKind}：${targetTitle}` : `Baihepailei ${submissionKind}`,
+  )
   const emailBody = encodeURIComponent([
+    `提交类型：${submissionKind}`,
     targetTitle ? `相关条目：${targetTitle}` : '',
     targetWorkID ? `正式 Work ID：${targetWorkID}` : '',
     '',
-    '发现线索或希望核实的问题：',
+    '希望补充或纠正的内容：',
     '',
     '可核验来源：',
-  ].filter((line, index, values) => line || (index > 0 && values[index - 1])).join('\n'))
+  ].filter(Boolean).join('\n'))
   const emailHref = channels.email ? `mailto:${channels.email}?subject=${emailSubject}&body=${emailBody}` : ''
+  const issueHref = issueSubmissionHref(channels.issueTracker, {
+    isNewWork,
+    targetTitle,
+    targetWorkID,
+  })
   const displayedTypes = isNewWork ? newWorkDataTypes : feedbackTypes
-  const hasChannel = Boolean(emailHref || channels.externalForm || channels.issueTracker)
+  const hasChannel = Boolean(issueHref || emailHref || channels.externalForm)
+  const usesDefaultPrivateIssueTracker = channels.issueTracker === DEFAULT_PUBLIC_FEEDBACK_ISSUE_URL
 
   return (
     <main className="page feedback-page">
       <section className="page-heading collection-heading">
         <div>
-          <p className="eyebrow">{isNewWork ? '推荐收录新作品' : '作品资料补充与纠错'}</p>
+          <p className="eyebrow">{submissionKind}</p>
           <h1>{isNewWork ? '告诉我们还缺哪部作品' : '把可核验资料补到正确作品'}</h1>
           <p>
             如果从作品页进入，这里会自动带上反馈编号 Work ID，方便准确定位。
@@ -69,23 +121,42 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
       {hasChannel ? (
         <section>
           <div className="collection-heading">
-            <h2>提交发现线索</h2>
-            <p className="muted">提交内容会先进入待核实队列，确认作品对应与来源后再更新公开页面。</p>
+            <h2>填写并提交线索</h2>
+            <p className="muted">提交内容只进入待核实队列，确认作品对应与来源后才会更新公开页面。</p>
           </div>
           <div className="feedback-channel-grid">
+            {issueHref ? (
+              <article className="detail-card feedback-channel-card feedback-channel-primary">
+                <p className="eyebrow">推荐 · GitHub</p>
+                <h2>结构化提交表</h2>
+                <p>
+                  打开后填写作品、补充或纠错内容及来源。需要登录 GitHub，但不用注册或绑定本站账号，
+                  也不会获得任何数据库写入权限。
+                </p>
+                <a className="result-link" href={issueHref} rel="noreferrer" target="_blank">
+                  {isNewWork ? '打开新作品提交表 ↗' : '打开作品补充与纠错表 ↗'}
+                </a>
+                <small>
+                  {usesDefaultPrivateIssueTracker
+                    ? '当前默认目标是私有源码仓库，只有已有仓库读取权限的协作者能打开。公开收集前请改配专用公开问题单仓库。'
+                    : '谁能打开与查看提交内容，由目标问题单仓库的可见性和权限决定。'}
+                </small>
+              </article>
+            ) : null}
             {emailHref ? (
               <article className="detail-card feedback-channel-card">
-                <p className="eyebrow">Email</p><h2>发送邮件</h2><p>适合少量文字、来源链接和需要继续沟通的材料。</p><a className="result-link" href={emailHref}>写一封线索邮件</a>
+                <p className="eyebrow">Email</p>
+                <h2>发送邮件</h2>
+                <p>适合少量文字、来源链接和需要继续沟通的材料。</p>
+                <a className="result-link" href={emailHref}>写一封线索邮件</a>
               </article>
             ) : null}
             {channels.externalForm ? (
               <article className="detail-card feedback-channel-card">
-                <p className="eyebrow">External form</p><h2>材料表单</h2><p>适合结构化资料、较多链接或图片材料。</p><a className="result-link" href={channels.externalForm} rel="noreferrer" target="_blank">打开材料表单</a>
-              </article>
-            ) : null}
-            {channels.issueTracker ? (
-              <article className="detail-card feedback-channel-card">
-                <p className="eyebrow">Issue tracker</p><h2>公开问题单</h2><p>适合页面错误、失效链接和可公开讨论的资料问题；涉及剧透或隐私时不要使用。</p><a className="result-link" href={channels.issueTracker} rel="noreferrer" target="_blank">提交公开问题</a>
+                <p className="eyebrow">External form</p>
+                <h2>外部材料表单</h2>
+                <p>适合结构化资料、较多链接或图片材料。</p>
+                <a className="result-link" href={channels.externalForm} rel="noreferrer" target="_blank">打开材料表单</a>
               </article>
             ) : null}
           </div>
@@ -96,6 +167,14 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
           <p>站务配置独立邮箱、外部表单或问题单后，这里才会出现可用入口。</p>
         </section>
       )}
+
+      <section className="detail-card feedback-security-note" role="note">
+        <h2>提交安全边界</h2>
+        <p>
+          当前版本不开放“未登录即可直接写入本站数据库”的接口。GitHub 登录只用于提交渠道的身份与滥用控制；
+          所有线索仍需人工核验，且不会自动改作品资料或评级。请勿提交私人联系方式、未公开材料或无权公开的文件。
+        </p>
+      </section>
 
       <section className="feedback-grid" aria-label={isNewWork ? '建议提供的新作品线索' : '可提交的线索类型'}>
         {displayedTypes.map((item) => (

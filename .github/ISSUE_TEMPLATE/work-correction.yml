@@ -1,0 +1,84 @@
+name: 作品资料补充与纠错
+description: 补充作品资料、译名别名与来源，或报告评级、警示、链接及页面错误。
+title: "[作品纠错] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢补充。提交内容只进入待核实队列，不会自动写入作品资料或改变评级。
+        请勿填写私人联系方式、未公开材料或无权公开的文件；涉及剧透时请在下方标明。
+  - type: input
+    id: work_id
+    attributes:
+      label: Work ID
+      description: 从作品页进入时会自动带入；不知道可以留空。
+      placeholder: 例如 18556
+    validations:
+      required: false
+  - type: input
+    id: work_title
+    attributes:
+      label: 作品标题
+      description: 请写当前页面标题、原名或最容易定位的名称。
+      placeholder: 例如 安達としまむら
+    validations:
+      required: true
+  - type: dropdown
+    id: feedback_kind
+    attributes:
+      label: 补充或纠错类型
+      options:
+        - 译名、别名或作品对应
+        - 作者、主创或制作机构
+        - 发行日期、类型或简介
+        - 评级、警示或排雷材料
+        - 失效链接或页面显示
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: correction
+    attributes:
+      label: 希望补充或纠正的内容
+      description: 请尽量同时说明“页面现在是什么”和“建议改成什么”。
+      placeholder: |
+        当前内容：
+        建议内容：
+        说明：
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: 可核验来源
+      description: 每行一条 URL，并说明它能证明什么；优先官方页面、原作位置或可靠出版资料。
+      placeholder: |
+        - https://example.com — 证明……
+    validations:
+      required: true
+  - type: textarea
+    id: version_location
+    attributes:
+      label: 版本、路线、章节或发生位置
+      description: 同名作品、改编版、不同路线或剧情材料请尽量写清楚；不适用可留空。
+    validations:
+      required: false
+  - type: dropdown
+    id: spoilers
+    attributes:
+      label: 是否包含剧透
+      options:
+        - 不包含剧透
+        - 包含轻微剧透
+        - 包含关键剧情或结局剧透
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 提交确认
+      options:
+        - label: 我确认没有提交私人联系方式、未公开材料或无权公开的文件。
+          required: true
+        - label: 我理解此线索需要核实，不会自动修改作品资料或评级。
+          required: true

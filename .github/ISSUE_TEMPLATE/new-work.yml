@@ -1,0 +1,81 @@
+name: 推荐收录新作品
+description: 推荐资料库尚未收录的百合作品，并提供可核验的基础资料。
+title: "[新作品] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢推荐。请只填写确定的信息，不知道的字段可以留空或写“不确定”。
+        提交内容只进入待核实队列，不会自动创建公开作品或生成评级。
+  - type: input
+    id: work_title
+    attributes:
+      label: 常用标题
+      description: 请写最容易识别的中文、日文或英文标题。
+    validations:
+      required: true
+  - type: input
+    id: original_title
+    attributes:
+      label: 原始标题
+      description: 与常用标题相同或不知道时可以留空。
+    validations:
+      required: false
+  - type: textarea
+    id: aliases
+    attributes:
+      label: 其他译名与别名
+      description: 每行一个，并尽量注明语言或地区。
+      placeholder: |
+        - 简体中文：
+        - 繁体中文：
+        - 日文：
+        - 英文：
+    validations:
+      required: false
+  - type: input
+    id: media
+    attributes:
+      label: 作品类型与形态
+      description: 例如漫画、小说、TV 动画、OVA、游戏；不确定可以写“不确定”。
+    validations:
+      required: false
+  - type: input
+    id: first_published
+    attributes:
+      label: 首次发行时间
+      description: 可填写日、月或年份，并说明精度。
+    validations:
+      required: false
+  - type: textarea
+    id: creators
+    attributes:
+      label: 作者、主创与制作方
+      description: 请注明姓名或机构与其角色；不知道可以留空。
+    validations:
+      required: false
+  - type: textarea
+    id: summary
+    attributes:
+      label: 作品简介或收录理由
+      description: 简要说明作品内容以及为何属于本资料库范围。
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: 可核验来源
+      description: 每行一条 URL，并说明它能证明什么；至少提供一条。
+      placeholder: |
+        - https://example.com — 官方作品页
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 提交确认
+      options:
+        - label: 我确认没有提交私人联系方式、未公开材料或无权公开的文件。
+          required: true
+        - label: 我理解此线索需要核实，不会自动创建作品或生成评级。
+          required: true

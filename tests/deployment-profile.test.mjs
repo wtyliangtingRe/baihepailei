@@ -18,11 +18,17 @@ test('complete enhanced mode is the default and text mode remains an explicit lo
   assert.match(fallback, /showImages && item\.collection/u)
 })
 
-test('feedback page offers configurable non-account channels without file upload', () => {
-  assert.match(feedback, /NEXT_PUBLIC_FEEDBACK_EMAIL|publicFeedbackChannels/u)
+test('feedback page has an authenticated default channel and no first-party anonymous write', () => {
+  assert.match(profile, /DEFAULT_PUBLIC_FEEDBACK_ISSUE_URL/u)
+  assert.match(profile, /\/baihepailei\/issues\/new/u)
+  assert.match(profile, /parsed\.protocol === 'https:'/u)
+  assert.match(feedback, /publicFeedbackChannels/u)
+  assert.match(feedback, /work-correction\.yml/u)
+  assert.match(feedback, /new-work\.yml/u)
   assert.match(feedback, /mailto:/u)
   assert.match(feedback, /外部材料表单/u)
-  assert.doesNotMatch(read('src/app/(frontend)/_components/FeedbackForm.tsx'), /type="file"/u)
+  assert.match(feedback, /不用注册或绑定本站账号/u)
+  assert.doesNotMatch(feedback, /\/api\/feedback-submissions/u)
   assert.doesNotMatch(profile, /NEXT_PUBLIC_FEEDBACK_EMAIL'\] \|\| process\.env\['SITE_OWNER_EMAIL/u)
 })
 
