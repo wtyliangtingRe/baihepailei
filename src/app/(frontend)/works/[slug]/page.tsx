@@ -31,6 +31,10 @@ function likelyEnglish(value: string): boolean {
   return latin > Math.max(20, value.length * 0.35)
 }
 
+function normalizedTitle(value: string): string {
+  return value.normalize('NFKC').toLocaleLowerCase().replace(/\s+/gu, ' ').trim()
+}
+
 const languageLabels: Record<string, string> = {
   zh: '中文',
   'zh-Hans': '简体中文',
@@ -84,6 +88,11 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
   if (work.workId !== workId) permanentRedirect(canonicalContentUrl('works', work.workId))
 
   const rating = work.rating
+  const localizedTitleKeys = new Set([
+    normalizedTitle(work.title),
+    ...work.localizedTitles.map((title) => normalizedTitle(title.title)),
+  ])
+  const displayAliases = work.aliases.filter((title) => !localizedTitleKeys.has(normalizedTitle(title)))
   const classes = ratingClassEntries(rating)
   const range = rangeLabel(rating)
   const hasBasicMetadata = Boolean(
@@ -122,11 +131,11 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
             {mediaLabel(work.media.group, work.media.type)}
           </p>
           <h1>{work.title}</h1>
-          {work.localizedTitles.length || work.aliases.length ? (
+          {work.localizedTitles.length || displayAliases.length ? (
             <p className="release-aliases">
               又名：{[
                 ...work.localizedTitles.map((title) => title.title),
-                ...work.aliases,
+                ...displayAliases,
               ].filter((title, index, values) => title !== work.title && values.indexOf(title) === index).join('、')}
             </p>
           ) : null}
@@ -161,7 +170,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
       <section className="detail-card release-title-alias-card" aria-label="译名与别名">
         <p className="eyebrow">名称资料</p>
         <h2>译名与别名</h2>
-        {work.localizedTitles.length || work.aliases.length ? (
+        {work.localizedTitles.length || displayAliases.length ? (
           <dl className="release-detail-list">
             {work.localizedTitles.map((title) => (
               <div key={`${title.language || 'und'}-${title.region || ''}-${title.kind || ''}-${title.title}`}>
@@ -169,10 +178,10 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
                 <dd>{title.title}</dd>
               </div>
             ))}
-            {work.aliases.length ? (
+            {displayAliases.length ? (
               <div>
                 <dt>其他别名</dt>
-                <dd>{work.aliases.join('、')}</dd>
+                <dd>{displayAliases.join('、')}</dd>
               </div>
             ) : null}
           </dl>

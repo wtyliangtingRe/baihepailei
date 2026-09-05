@@ -49,22 +49,21 @@ for (const row of all) {
   }
   for (const source of row.sources)url(source.url)
 }
-// Compare the actual runtime with the same code before its metadata overlay.
-// No hand-maintained copy of deduplication or rating selection is involved.
-const entry=join(root,'src/lib/publicRelease.ts')
-const source=readFileSync(entry,'utf8')
-const start=source.indexOf('  const metadata = readPublicMetadata(')
-const end=source.indexOf('  globalThis.__baihepaileiPublicRelease = {',start)
-assert.ok(start>=0 && end>start)
-const baselineSource=source.slice(0,start)+'  const records = merged.records\n  const byWorkId = merged.byWorkId\n'+source.slice(end)
-const baseline=loadPublicRelease(root,{[entry]:baselineSource})
+// This baseline was exported from main 19a6885 BEFORE any runtime edits.
+// A change to deduplication itself cannot silently redefine this expectation.
+const baselineBytes=readFileSync(join(directory,'baseline-bindings.json.gz'))
+assert.equal(createHash('sha256').update(baselineBytes).digest('hex'),manifest.baseline.sha256)
+assert.equal(manifest.baseline.sourceCommit,'19a6885d250f6c54c1722002798912ac08f3ddb3')
+const baselineRows=JSON.parse(gunzipSync(baselineBytes).toString('utf8'))
+const baseline=new Map(baselineRows.map(row=>[row.sourceWorkId,row]))
+assert.equal(baseline.size,base.length)
 const current=loadPublicRelease(root)
 const publicWorks=new Map()
 for(const record of base){
-  const before=baseline.getPublicWorkById(record.workId),after=current.getPublicWorkById(record.workId)
-  assert.equal(after.workId,before.workId,`Stable canonical route ${record.workId}`)
+  const before=baseline.get(record.workId),after=current.getPublicWorkById(record.workId)
+  assert.equal(after.workId,before.primaryWorkId,`Stable canonical route ${record.workId}`)
   assert.equal(JSON.stringify(after.rating),JSON.stringify(before.rating),`Stable rating ${record.workId}`)
-  assert.equal(after.media.group,before.media.group,`Stable media identity ${record.workId}`)
+  assert.equal(after.media.group,before.media,`Stable media identity ${record.workId}`)
   publicWorks.set(after.workId,after)
 }
 const works=[...publicWorks.values()]

@@ -55,7 +55,10 @@ export async function boundedJson(request) {
   const bytes = new Uint8Array(size)
   let offset = 0
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length }
-  return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
+  let decoded
+  try { decoded = new TextDecoder('utf-8', { fatal: true }).decode(bytes) }
+  catch { throw new Error('fields') }
+  return JSON.parse(decoded)
 }
 
 export function validateSubmission(value) {
@@ -79,7 +82,8 @@ export function validateSubmission(value) {
   if (!Array.isArray(value.sources) || value.sources.length > 3) throw new Error('sources')
   const sources = value.sources.map(source => {
     if (typeof source !== 'string' || source.length > 500 || /\s/.test(source)) throw new Error('sources')
-    const url = new URL(source)
+    let url
+    try { url = new URL(source) } catch { throw new Error('sources') }
     if (url.protocol !== 'https:' || url.username || url.password || !url.hostname.includes('.') ||
         /^(?:localhost|.*\.local|127\.|10\.|192\.168\.|169\.254\.|0\.|\[)/i.test(url.hostname) ||
         /^172\.(?:1[6-9]|2\d|3[01])\./.test(url.hostname)) throw new Error('sources')

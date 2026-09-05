@@ -56,7 +56,7 @@ export function addPublicMetadata(record: PublicWorkRecord, members: PublicMetad
   const aliases = unique([...record.aliases, ...ordered.flatMap(row => row.aliases)], normalized)
     .filter(title => normalized(title) !== normalized(record.title))
   const summaries = ordered.flatMap(row => row.summary ? [row.summary] : [])
-  const summary = summaries.find(row => row.kind === 'source_summary') || summaries[0]
+  const summary = summaries.find(row => row.kind === 'source_summary') || record.summary || summaries[0]
   const dated = ordered.find(row => row.firstPublished)
   return {
     ...record,
