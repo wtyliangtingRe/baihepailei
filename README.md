@@ -31,6 +31,12 @@ Work 4975 使用同一校准中的显式 successor 结论。额外研究不再�
 
 ## 本地预览
 
+作者与创作机构现在拥有稳定的 CreatorId 和站内作品页。作品详情中的署名可点击，
+创作者页只列出本站已有 WorkId 的作品，按年份排列并可筛选；已有外链保留为编号注释，
+明确标识资料来源或购买／游玩入口。当前注册 18,608 个实体，关联 15,117 部收录作品。
+实现与验证记录见 [`docs/creator-pages-checkpoint-20260906.md`](docs/creator-pages-checkpoint-20260906.md)。
+后续数据更新需同时运行 `pnpm validate:creators`，该检查已纳入 `pnpm check`。
+
 需要 Node.js 24（Node.js 22 也可）和 Corepack：
 
 ```bash

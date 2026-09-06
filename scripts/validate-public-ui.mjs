@@ -128,11 +128,14 @@ for (const responsiveSelector of [
 for (const path of [
   'src/app/(frontend)/browse/page.tsx',
   'src/app/(frontend)/evidence/page.tsx',
-  'src/app/(frontend)/creators/page.tsx',
-  'src/app/(frontend)/organizations/page.tsx',
 ]) {
   assert.match(read(path), /redirect\('/)
 }
+
+assert.match(read('src/app/(frontend)/creators/page.tsx'), /CreatorDirectory kind="person"/)
+assert.match(read('src/app/(frontend)/organizations/page.tsx'), /CreatorDirectory kind="organization"/)
+assert.match(read('src/app/(frontend)/_components/CreatorDetail.tsx'), /canonicalContentUrl\('works', work\.workId\)/)
+assert.match(detail, /role="doc-noteref"/)
 
 console.log(JSON.stringify({
   siteNotice: 'PASS',
