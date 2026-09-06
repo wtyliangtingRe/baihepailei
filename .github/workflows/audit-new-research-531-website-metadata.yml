@@ -1,0 +1,71 @@
+name: Audit 531 new-Research website metadata
+on:
+  push:
+    branches: [worker/identity-audit-new-research-531-20260906]
+    paths:
+      - '.github/workflows/audit-new-research-531-website-metadata.yml'
+permissions:
+  contents: write
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: worker/identity-audit-new-research-531-20260906
+          fetch-depth: 1
+      - name: Extract WorkId 32590 through 33120 from frozen metadata
+        run: |
+          python3 - <<'PY'
+          import gzip,json,collections
+          from pathlib import Path
+          root=Path('data/public-release/v1/metadata-20260905-v01')
+          rows=[]
+          source_files=[]
+          for p in sorted(root.glob('metadata-*.jsonl.gz')):
+              source_files.append(p.name)
+              with gzip.open(p,'rt',encoding='utf-8') as f:
+                  for line in f:
+                      if not line.strip(): continue
+                      r=json.loads(line)
+                      wid=str(r.get('workId',''))
+                      if wid.isdigit() and 32590 <= int(wid) <= 33120:
+                          rr={'_metadataFile':p.as_posix(),**r}
+                          rows.append(rr)
+          rows.sort(key=lambda r:int(r['workId']))
+          assert len(rows)==531, len(rows)
+          assert [int(r['workId']) for r in rows]==list(range(32590,33121)), (rows[0].get('workId'),rows[-1].get('workId'))
+          out=Path('tmp/new-research-531-identity-audit')
+          out.mkdir(parents=True,exist_ok=True)
+          (out/'website-metadata-32590-33120.jsonl').write_text(''.join(json.dumps(r,ensure_ascii=False,separators=(',',':'))+'\n' for r in rows),encoding='utf-8')
+          field_counts=collections.Counter()
+          nonempty=collections.Counter()
+          value_samples={}
+          for r in rows:
+              for k,v in r.items():
+                  field_counts[k]+=1
+                  if v not in (None,'',[],{}):
+                      nonempty[k]+=1
+                      if k not in value_samples:
+                          value_samples[k]=v
+          summary={
+              'schemaVersion':'website-metadata-identity-audit-v1',
+              'workIdRange':['32590','33120'],
+              'workCount':len(rows),
+              'sourceFiles':source_files,
+              'fieldsPresent':dict(sorted(field_counts.items())),
+              'nonEmptyCounts':dict(sorted(nonempty.items())),
+              'sampleValues':value_samples,
+              'state':'extracted_for_identity_resolution_only',
+              'websiteMutationAuthorized':False
+          }
+          (out/'summary.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps(summary,ensure_ascii=False,indent=2))
+          PY
+      - name: Commit audit only
+        run: |
+          git config user.name 'baihepailei-worker'
+          git config user.email 'actions@users.noreply.github.com'
+          git add tmp/new-research-531-identity-audit
+          git commit -m 'audit: extract metadata for WorkId 32590-33120'
+          git push origin HEAD:worker/identity-audit-new-research-531-20260906
