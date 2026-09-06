@@ -1,0 +1,21 @@
+{
+  "sourceCommit": "a773ea6c20d87be437405d581b79e0c824713bee",
+  "sourceRelease": "data/public-release/v1/metadata-20260905-v01",
+  "filter": "numeric workId >= 38850",
+  "scannedRows": 35411,
+  "matchedRows": 501,
+  "firstWorkId": "38850",
+  "lastWorkId": "39350",
+  "outputSha256": "cf559be34d81dc040b5ce43edc057fac6f415fc2d06812b9840ff7d38a9e6748",
+  "shards": [
+    {
+      "file": "data/public-release/v1/metadata-20260905-v01/metadata-0070.jsonl.gz",
+      "matched": 90
+    },
+    {
+      "file": "data/public-release/v1/metadata-20260905-v01/metadata-0071.jsonl.gz",
+      "matched": 411
+    }
+  ],
+  "authorityNote": "Temporary extraction from locked website metadata only; not Research Freeze authority."
+}
