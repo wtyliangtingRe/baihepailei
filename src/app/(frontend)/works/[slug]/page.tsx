@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound, permanentRedirect } from 'next/navigation'
 
 import { getPublicWorkById } from '@/lib/publicRelease'
+import { collectWorkReferences } from '@/lib/publicWorkReferences'
 import {
   classTone,
   confidenceLabel,
@@ -98,9 +99,15 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
   const hasBasicMetadata = Boolean(
     work.firstPublished || work.creators.length || work.organizations.length,
   )
-  const sources = [...work.sources]
-  if (rating.evidenceUrl && !sources.some((source) => source.url === rating.evidenceUrl)) {
-    sources.unshift({ title: '评级依据页面', url: rating.evidenceUrl })
+  const references = collectWorkReferences(work)
+  function referenceMarks(urls: Array<string | undefined>) {
+    const numbers = [...new Set(urls.flatMap(url => {
+      const reference = references.find(row => row.url === url?.trim())
+      return reference ? [reference.number] : []
+    }))].sort((a, b) => a - b)
+    return numbers.length ? <sup className="work-reference-marks">
+      {numbers.map(number => <a key={number} href={`#ref-${number}`} role="doc-noteref" aria-label={`查看注释 ${number}`}>[{number}]</a>)}
+    </sup> : null
   }
 
   return (
@@ -221,8 +228,11 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
                   <h3>作者 / 主创</h3>
                   <ul>
                     {work.creators.map((credit) => (
-                      <li key={`${credit.role}-${credit.name}`}>
-                        {credit.sourceUrl ? <a href={credit.sourceUrl} rel="noreferrer" target="_blank">{credit.name}</a> : credit.name}
+                      <li key={`${credit.creatorId}-${credit.role}-${credit.name}`}>
+                        <div>
+                          <Link href={canonicalContentUrl(credit.creatorKind === 'organization' ? 'organizations' : 'creators', credit.creatorId!)}>{credit.name}</Link>
+                          {referenceMarks([credit.sourceUrl, ...(credit.sourceUrls || [])])}
+                        </div>
                         <span>{credit.role}</span>
                       </li>
                     ))}
@@ -234,8 +244,11 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
                   <h3>制作 / 出版方</h3>
                   <ul>
                     {work.organizations.map((credit) => (
-                      <li key={`${credit.role}-${credit.name}`}>
-                        {credit.sourceUrl ? <a href={credit.sourceUrl} rel="noreferrer" target="_blank">{credit.name}</a> : credit.name}
+                      <li key={`${credit.creatorId}-${credit.role}-${credit.name}`}>
+                        <div>
+                          <Link href={canonicalContentUrl(credit.creatorKind === 'person' ? 'creators' : 'organizations', credit.creatorId!)}>{credit.name}</Link>
+                          {referenceMarks([credit.sourceUrl, ...(credit.sourceUrls || [])])}
+                        </div>
                         <span>{credit.role}</span>
                       </li>
                     ))}
@@ -256,10 +269,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
         <h2>{work.summary?.kind === 'identity_summary' ? '作品识别信息' : '简短介绍'}</h2>
         {work.summary ? (
           <>
-            <p className="release-source-summary">{work.summary.text}</p>
-            {work.summary.sourceUrl ? (
-              <a className="back-link" href={work.summary.sourceUrl} rel="noreferrer" target="_blank">查看摘要来源 ↗</a>
-            ) : null}
+            <p className="release-source-summary">{work.summary.text}{referenceMarks([work.summary.sourceUrl])}</p>
           </>
         ) : (
           <p className="muted">暂缺能准确识别这部作品的简介。<Link href={feedbackHref(work.workId, work.title)}>补充一两句介绍</Link></p>
@@ -335,7 +345,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
         ) : null}
 
         <dl className="release-detail-list release-rating-facts">
-          <div><dt>评级状态</dt><dd>{publicStatusLabels[rating.state]}</dd></div>
+          <div><dt>评级状态</dt><dd>{publicStatusLabels[rating.state]}{referenceMarks([rating.evidenceUrl])}</dd></div>
           {rating.grade ? <div><dt>核心等级</dt><dd>{rating.grade} · {gradeLabel(rating.grade)}</dd></div> : null}
           {range ? <div><dt>结论范围</dt><dd>{range}</dd></div> : null}
           {rating.grade ? <div><dt>资料把握</dt><dd>{confidenceLabel(rating.confidence)}</dd></div> : null}
@@ -356,22 +366,24 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
       <section className="detail-card release-sources-card">
         <div className="release-section-heading release-section-heading-top">
           <div>
-            <p className="eyebrow">可核验资料</p>
-            <h2>资料来源</h2>
+            <p className="eyebrow">注释与外部入口</p>
+            <h2>资料来源与获取方式</h2>
           </div>
-          <span>{sources.length} 条</span>
+          <span>{references.length} 条</span>
         </div>
-        {sources.length ? (
-          <ul className="release-source-list">
-            {sources.map((source) => (
-              <li key={source.url}>
-                <a href={source.url} rel="noreferrer" target="_blank">
-                  <span>{source.title}</span>
-                  <small>{source.tier ? `资料层级 ${source.tier} · ` : ''}打开来源 ↗</small>
-                </a>
+        {references.length ? (
+          <ol className="work-reference-list" role="doc-endnotes">
+            {references.map((reference) => (
+              <li id={`ref-${reference.number}`} key={reference.url}>
+                <span className="work-reference-number">[{reference.number}]</span>
+                <div>
+                  <a href={reference.url} rel="noreferrer" target="_blank">{reference.title} ↗</a>
+                  <small>{reference.purpose}{reference.tier ? ` · 资料层级 ${reference.tier}` : ''}</small>
+                  {reference.usages.length ? <p>{reference.usages.join('；')}</p> : null}
+                </div>
               </li>
             ))}
-          </ul>
+          </ol>
         ) : (
           <p className="muted">当前没有可直接展示的来源链接；这不代表资料不存在，只表示来源仍待整理。</p>
         )}

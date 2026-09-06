@@ -1,0 +1,58 @@
+.creator-search { max-width: 650px; margin: 24px 0; }
+.creator-search label { display: block; margin-bottom: 8px; color: var(--release-muted); }
+.creator-search > div, .creator-year-filter { display: flex; align-items: center; gap: 12px; }
+.creator-search input, .creator-year-filter select {
+  min-width: 0; padding: 12px 14px; border: 1px solid var(--release-line);
+  border-radius: 10px; background: var(--release-surface); color: inherit; font: inherit;
+}
+.creator-search input { flex: 1; }
+.creator-search button, .creator-year-filter button {
+  padding: 12px 20px; border: 1px solid var(--release-line); border-radius: 10px;
+  background: var(--release-surface); color: inherit; font: inherit; cursor: pointer;
+}
+.creator-directory, .creator-works, .work-reference-list { padding: 0; list-style: none; }
+.creator-directory { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.creator-directory li a {
+  display: flex; flex-direction: column; gap: 12px; height: 100%; padding: 22px;
+  border: 1px solid var(--release-line); border-radius: 15px; background: var(--release-surface); text-decoration: none;
+}
+.creator-directory strong { overflow-wrap: anywhere; font-size: 17px; }
+.creator-directory span, .creator-work-title > span, .creator-work-title > small,
+.creator-work-rating > small, .work-reference-list small, .work-reference-list p { color: var(--release-muted); }
+.creator-directory span { font-size: 13px; }
+.creator-directory a:hover, .creator-search button:hover, .creator-year-filter button:hover { border-color: #c985a8; }
+.creator-year-filter { margin: 30px 0; flex-wrap: wrap; }
+.creator-year-section { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 24px; margin: 30px 0; }
+.creator-year-section h2 { margin: 18px 0; font-size: 22px; color: var(--release-muted); }
+.creator-works { margin: 0; }
+.creator-works li { display: flex; justify-content: space-between; gap: 24px; padding: 22px 0; border-top: 1px solid var(--release-line); }
+.creator-work-title { display: grid; gap: 8px; min-width: 0; }
+.creator-work-title > a { font-size: 19px; line-height: 1.5; font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
+.creator-work-title > a:hover { text-decoration: underline; }
+.creator-work-title > span, .creator-work-title > small { font-size: 13px; line-height: 1.6; }
+.creator-work-rating { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 76px; text-decoration: none; font-size: 12px; }
+.creator-work-rating .rating-chip { width: 42px; height: 42px; font-size: 20px; }
+.creator-pagination { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--release-line); }
+.creator-pagination span { color: var(--release-muted); font-size: 13px; }
+.work-reference-marks { margin-left: 4px; font-size: 11px; line-height: 0; white-space: nowrap; }
+.work-reference-marks a { padding: 3px; text-decoration: none; }
+.work-reference-list { margin: 20px 0 0; display: grid; gap: 16px; }
+.work-reference-list li { display: flex; gap: 12px; padding-top: 16px; border-top: 1px solid var(--release-line); scroll-margin-top: 100px; }
+.work-reference-list li:target { background: rgb(201 133 168 / .12); border-radius: 8px; }
+.work-reference-number { color: var(--release-muted); min-width: 28px; }
+.work-reference-list li > div { min-width: 0; }
+.work-reference-list a { overflow-wrap: anywhere; }
+.work-reference-list small { display: block; margin-top: 8px; }
+.work-reference-list p { margin: 6px 0 0; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.release-credit-groups li > div { min-width: 0; overflow-wrap: anywhere; }
+.release-credit-groups li > span { flex-shrink: 0; }
+@media (max-width: 900px) { .creator-directory { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 680px) {
+  .creator-directory { grid-template-columns: 1fr; }
+  .creator-year-section { grid-template-columns: 1fr; gap: 0; }
+  .creator-year-section h2 { margin-bottom: 14px; }
+  .creator-works li { gap: 12px; }
+  .creator-work-title > a { font-size: 17px; }
+  .creator-work-rating { min-width: 64px; }
+  .creator-pagination { gap: 8px; }
+}

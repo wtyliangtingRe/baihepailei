@@ -38,6 +38,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       - run: pnpm validate:ui
+      - run: pnpm validate:metadata
+      - run: pnpm validate:creators
       - run: pnpm typecheck
       - run: pnpm build
       - run: pnpm smoke:public

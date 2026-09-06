@@ -64,6 +64,8 @@ try {
     '/rules',
     '/radar',
     '/feedback',
+    '/creators',
+    '/organizations',
   ]
   for (const path of pages) {
     const result = await response(path)
@@ -94,8 +96,6 @@ try {
   const redirects = new Map([
     ['/browse', '/works'],
     ['/evidence', '/feedback'],
-    ['/creators', '/works'],
-    ['/organizations', '/works'],
   ])
   for (const [path, destination] of redirects) {
     const result = await response(path, { redirect: 'manual' })
@@ -189,6 +189,25 @@ try {
     assert.ok(enrichedDetail.includes(expected), `enriched detail should include ${expected}`)
   }
 
+  const creditedWork = await json('/api/work-lineage/works/36946')
+  for (const credit of [creditedWork.creators[0], creditedWork.organizations[0]]) {
+    assert.ok(credit.creatorId, 'Credits must expose stable CreatorIds')
+    const organization = credit.creatorKind === 'organization'
+    const path = `/${organization ? 'organizations/o' : 'creators/c'}-${credit.creatorId}`
+    assert.ok(enrichedDetail.includes(`href="${path}"`), 'Work credits link to internal creator pages')
+    const result = await response(path)
+    assert.equal(result.status, 200)
+    const creatorPage = await result.text()
+    assert.ok(creatorPage.includes('按首次发行年份排列'))
+    assert.ok(/href="\/works\/w-\d+"/.test(creatorPage), 'Creator pages link back to real Works')
+    const wrongKind = `/${organization ? 'creators/c' : 'organizations/o'}-${credit.creatorId}`
+    assert.equal((await response(wrongKind)).status, 404)
+  }
+  assert.equal((await response('/creators/c-999999999999')).status, 404)
+  assert.ok(enrichedDetail.includes('role="doc-noteref"'))
+  assert.ok(enrichedDetail.includes('id="ref-1"'))
+  assert.ok(enrichedDetail.includes('资料来源与获取方式'))
+
   const taggedDetail = await (await response('/works/w-18556')).text()
   for (const expected of [
     'AI 综合，待复核',
@@ -227,6 +246,7 @@ try {
     structuredFeedbackIssueForms: 'PASS',
     anonymousWriteBoundary: 'PASS',
     publicFieldBoundary: 'PASS',
+    creatorNavigationAndFootnotes: 'PASS',
     status: 'PASS',
   }, null, 2))
 } catch (error) {

@@ -7,6 +7,10 @@ import ts from 'typescript'
 // Exercise the real TypeScript runtime outside Next without loading server-only.
 // Each invocation has its own global cache, which permits baseline comparisons.
 export function loadPublicRelease(root, overrides = {}) {
+  return loadPublicModule(root, 'src/lib/publicRelease.ts', overrides)
+}
+
+export function loadPublicModule(root, entry, overrides = {}) {
   const modules = new Map()
   const context = vm.createContext({ process, URL, URLSearchParams, console })
   const nativeRequire = createRequire(join(root, 'package.json'))
@@ -28,5 +32,5 @@ export function loadPublicRelease(root, overrides = {}) {
     run(require, module, module.exports)
     return module.exports
   }
-  return load(join(root, 'src/lib/publicRelease.ts'))
+  return load(join(root, entry))
 }

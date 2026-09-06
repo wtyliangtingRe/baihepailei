@@ -3,6 +3,8 @@ import 'server-only'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { addPublicMetadata, readPublicMetadata } from '@/lib/publicMetadata'
+import { mergeCredits } from '@/lib/publicDescriptiveMerge'
+import { readPublicCreatorGraph, withCreatorIds, type CreatorKind, type PublicCreatorGraph } from '@/lib/publicCreatorGraph'
 
 import { isRadarRatingClass, radarClassDefinitions } from '@/lib/radar/ratingPolicy'
 import { publicSearchTermsForRatingClass } from '@/lib/radar/publicSearchTerms'
@@ -27,6 +29,11 @@ export type PublicCredit = {
   name: string
   role: string
   sourceUrl?: string
+  sourceUrls?: string[]
+  creatorId?: string
+  creatorKind?: CreatorKind
+  originalName?: string
+  originalNames?: string[]
 }
 
 export type PublicLocalizedTitle = {
@@ -255,6 +262,7 @@ export type PublicCatalogMergeStats = {
 }
 
 type PublicReleaseCache = {
+  creatorGraph?: PublicCreatorGraph
   manifest: PublicReleaseManifest
   enrichmentManifest: PublicEnrichmentManifest
   records: PublicWorkRecord[]
@@ -427,13 +435,7 @@ function uniqueLocalizedTitles(values: PublicLocalizedTitle[]): PublicLocalizedT
 }
 
 function uniqueCredits(values: PublicCredit[]): PublicCredit[] {
-  const seen = new Set<string>()
-  return values.filter((credit) => {
-    const key = `${normalizeMergeTitle(credit.name)}|${normalizeMergeTitle(credit.role)}`
-    if (!key || seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
+  return mergeCredits(values)
 }
 
 function uniqueSources(values: PublicWorkSource[]): PublicWorkSource[] {
@@ -889,7 +891,43 @@ export function getPublicCatalogMergeStats(): PublicCatalogMergeStats {
 export function getPublicWorkById(workId: string): PublicWorkRecord | null {
   const exactWorkId = String(workId || '').trim()
   if (!exactWorkId || exactWorkId.length > 200) return null
-  return loadRelease().byWorkId.get(exactWorkId) || null
+  const work = loadRelease().byWorkId.get(exactWorkId)
+  return work ? withCreatorIds(work, getCreatorGraph()) : null
+}
+
+function getCreatorGraph(): PublicCreatorGraph {
+  const cache = loadRelease()
+  return cache.creatorGraph ||= readPublicCreatorGraph(releaseDirectory(), cache.records)
+}
+
+// Descriptive export stays independent of the graph so a refresh can assign new credits.
+export function getPublicCreatorGraphInput(): PublicWorkRecord[] {
+  return loadRelease().records
+}
+
+export function getPublicCreatorById(creatorId: string) {
+  if (!/^\d{7,12}$/.test(creatorId)) return null
+  return getCreatorGraph().entities.get(creatorId) || null
+}
+
+export function getPublicCreatorWorks(creatorId: string, input: { year?: string; offset?: number; limit?: number } = {}) {
+  const all = getCreatorGraph().works.get(creatorId) || []
+  const years = [...new Set(all.map(entry => entry.year))]
+  const matched = input.year ? all.filter(entry => entry.year === input.year) : all
+  const offset = normalizeOffset(input.offset), limit = normalizeLimit(input.limit)
+  return { items: matched.slice(offset, offset + limit), total: matched.length, allTotal: all.length, years, offset, limit }
+}
+
+export function getPublicCreatorList(input: { kind: CreatorKind; query?: string; offset?: number; limit?: number }) {
+  const graph = getCreatorGraph()
+  const query = String(input.query || '').normalize('NFKC').toLowerCase().trim().slice(0, 200)
+  const matched = [...graph.entities.values()]
+    .filter(creator => creator.kind === input.kind && graph.works.has(creator.creatorId) && (!query ||
+      creator.creatorId === query || creator.names.some(name => name.normalize('NFKC').toLowerCase().includes(query))))
+    .map(creator => ({ ...creator, workCount: graph.works.get(creator.creatorId)!.length }))
+    .sort((a, b) => b.workCount - a.workCount || a.name.localeCompare(b.name, 'zh-CN') || Number(a.creatorId) - Number(b.creatorId))
+  const offset = normalizeOffset(input.offset), limit = normalizeLimit(input.limit)
+  return { items: matched.slice(offset, offset + limit), total: matched.length, offset, limit }
 }
 
 export function getPublicWorkList(input: {

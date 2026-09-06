@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 import type { PublicCredit, PublicLocalizedTitle, PublicWorkRecord, PublicWorkSource } from './publicRelease'
+import { mergeCredits, mergeLocalizedTitles, mergeSources } from './publicDescriptiveMerge'
 
 export const METADATA_DIRECTORY = 'metadata-20260905-v01'
 export type PublicMetadata = {
@@ -50,25 +51,24 @@ function unique<T>(rows: T[], key: (row: T) => string): T[] {
 // Descriptive aliases must never become new automatic identity-merge keys.
 export function addPublicMetadata(record: PublicWorkRecord, members: PublicMetadata[]): PublicWorkRecord {
   const ordered = [...members].sort((a, b) => Number(b.workId === record.workId) - Number(a.workId === record.workId))
-  const titles = unique(ordered.flatMap(row => row.localizedTitles), row => normalized(row.title))
-  const titleKeys = new Set(titles.map(row => normalized(row.title)))
-  const localizedTitles = [...titles, ...record.localizedTitles.filter(row => !titleKeys.has(normalized(row.title)))]
+  const localizedTitles = mergeLocalizedTitles([...record.localizedTitles, ...ordered.flatMap(row => row.localizedTitles)])
   const aliases = unique([...record.aliases, ...ordered.flatMap(row => row.aliases)], normalized)
-    .filter(title => normalized(title) !== normalized(record.title))
-  const summaries = ordered.flatMap(row => row.summary ? [row.summary] : [])
-  const summary = summaries.find(row => row.kind === 'source_summary') || record.summary || summaries[0]
-  const dated = ordered.find(row => row.firstPublished)
+    .filter(title => title.trim() && normalized(title) !== normalized(record.title))
+  const summaries = ordered.flatMap(row => row.summary?.text?.trim() ? [row.summary] : [])
+  const summary = summaries.find(row => row.kind === 'source_summary') ||
+    (record.summary?.text?.trim() ? record.summary : undefined) || summaries[0]
+  const dated = ordered.find(row => row.firstPublished?.trim())
   return {
     ...record,
     aliases,
     localizedTitles,
-    media: { ...record.media, format: ordered.find(row => row.format)?.format || record.media.format },
+    media: { ...record.media, format: ordered.find(row => row.format?.trim())?.format || record.media.format },
     firstPublished: record.firstPublished || dated?.firstPublished,
     firstPublishedLabel: record.firstPublishedLabel || dated?.firstPublishedLabel,
     firstPublishedPrecision: record.firstPublishedPrecision || dated?.firstPublishedPrecision,
-    creators: unique([...record.creators, ...ordered.flatMap(row => row.creators)], row => `${normalized(row.name)}|${normalized(row.role)}`),
-    organizations: unique([...record.organizations, ...ordered.flatMap(row => row.organizations)], row => `${normalized(row.name)}|${normalized(row.role)}`),
-    sources: unique([...record.sources, ...ordered.flatMap(row => row.sources)], row => row.url),
+    creators: mergeCredits([...record.creators, ...ordered.flatMap(row => row.creators)]),
+    organizations: mergeCredits([...record.organizations, ...ordered.flatMap(row => row.organizations)]),
+    sources: mergeSources([...record.sources, ...ordered.flatMap(row => row.sources)]),
     // Builder includes existing verified summaries and refuses placeholder prose.
     summary,
   }

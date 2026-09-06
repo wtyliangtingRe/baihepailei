@@ -31,6 +31,7 @@ import './ui-visual-polish.css'
 import './stewardship-notices.css'
 import './radar.css'
 import './release.css'
+import './creators.css'
 
 export const metadata: Metadata = {
   title: {
@@ -84,6 +85,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/ratings">评级说明</Link>
               <Link href="/rules">完整规则</Link>
               <Link href="/radar">评级进度</Link>
+              <Link href="/creators">作者 / 主创</Link>
+              <Link href="/organizations">创作机构</Link>
               <Link href="/feedback">补充纠错</Link>
             </nav>
           </footer>
