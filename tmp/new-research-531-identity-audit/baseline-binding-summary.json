@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "baseline-binding-audit-v1",
+  "workIdRange": [
+    "32590",
+    "33120"
+  ],
+  "targetCount": 531,
+  "matchingObjects": 0,
+  "matchingWorkIds": 0,
+  "topLevelType": "list",
+  "topLevelKeys": null,
+  "state": "baseline_binding_audited_no_title_matching"
+}
