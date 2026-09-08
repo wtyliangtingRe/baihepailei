@@ -3,6 +3,9 @@ export type PublicMediaMode = 'text' | 'enhanced'
 export const DEFAULT_PUBLIC_FEEDBACK_ISSUE_URL =
   'https://github.com/wtyliangtingRe/baihepailei/issues/new'
 
+// The site owner explicitly supplied this address for public feedback.
+export const DEFAULT_PUBLIC_FEEDBACK_EMAIL = 'wty1123581321@gmail.com'
+
 function publicHttpsUrl(value: unknown, fallback = ''): string {
   const candidate = String(value || '').trim() || fallback
   if (!candidate) return ''
@@ -34,7 +37,7 @@ export function publicFeedbackChannels() {
   return {
     // Keep the owner login identity server-only. A public contact address must be
     // configured explicitly because every NEXT_PUBLIC value is browser-visible.
-    email: publicEmail(process.env['NEXT_PUBLIC_FEEDBACK_EMAIL']),
+    email: publicEmail(process.env['NEXT_PUBLIC_FEEDBACK_EMAIL']) || DEFAULT_PUBLIC_FEEDBACK_EMAIL,
     externalForm: publicHttpsUrl(process.env['NEXT_PUBLIC_FEEDBACK_FORM_URL']),
     // Always keep a real, authenticated submission path in local/default builds.
     // Deployments can point this at a dedicated public issues-only repository.

@@ -23,6 +23,77 @@
   border-color: rgb(255 181 215 / 0.45);
 }
 
+.feedback-email-address {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.feedback-contacts {
+  display: grid;
+  gap: 16px;
+}
+
+.feedback-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.feedback-contact-card {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  gap: 14px;
+}
+
+.feedback-contact-card h3,
+.feedback-contact-card p {
+  margin: 0;
+}
+
+.feedback-contact-card p {
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+}
+
+.feedback-contact-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.feedback-contact-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.feedback-contact-image:focus-visible {
+  outline: 3px solid var(--release-pink, #ffb5d7);
+  outline-offset: 4px;
+}
+
+@media (max-width: 900px) {
+  .feedback-contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feedback-contact-image {
+    height: auto;
+    max-width: 360px;
+    justify-self: center;
+  }
+
+  .feedback-contact-image img {
+    height: auto;
+  }
+}
+
 .feedback-channel-card h2,
 .feedback-channel-card p,
 .feedback-channel-card small,

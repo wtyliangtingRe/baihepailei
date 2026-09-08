@@ -92,11 +92,9 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
   return (
     <main className="page collection-page release-works-page">
       <section className="page-heading collection-heading">
-        <p className="eyebrow">作品资料库</p>
-        <h1>找作品，也先看清雷点。</h1>
+        <h1>作品资料库</h1>
         <p>
-          可按作品名、别名、作者、制作机构或警示关键词检索。列表优先展示作品类型、当前等级与具体警示；
-          没有细分依据的条目会如实标出，不会凭印象补写理由。
+          可按作品名、别名、作者、制作机构或警示关键词检索，并按评级、作品类型与评级进度筛选。
         </p>
         <form action="/works" className="works-filter-panel release-filter-panel">
           <div className="works-filter-grid release-filter-grid">

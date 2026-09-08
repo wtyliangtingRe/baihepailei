@@ -16,7 +16,7 @@ export default function RadarIndexPage() {
       status: 'conflict',
       count: getPublicWorkList({ status: 'conflict', limit: 1 }).total,
       title: '结论待核对',
-      copy: '不同材料指向不同等级，本站暂不替用户制造一个确定答案。',
+      copy: '现有材料存在分歧，结论待进一步核对。',
     },
     {
       status: 'blocked',
@@ -40,12 +40,11 @@ export default function RadarIndexPage() {
         <p className="eyebrow">评级进度</p>
         <h1>{terminalTotal.toLocaleString('zh-CN')} 部作品暂不评级。</h1>
         <p>
-          它们已经有一定资料，但还不能给出可靠结论。页面保留真实进度，
-          不为了让每部作品都有字母等级而猜测剧情或雷点。
+          这些作品已有部分资料，仍需补充证据或核对结论。
         </p>
         <div className="collection-actions">
           <Link className="result-link" href="/works?status=research_record_only">浏览待补资料作品</Link>
-          <Link className="back-link" href="/ratings">评级怎么读</Link>
+          <Link className="back-link" href="/ratings">评级原则</Link>
         </div>
       </section>
 
@@ -69,7 +68,7 @@ export default function RadarIndexPage() {
           <h2>另有 {notAssessed.toLocaleString('zh-CN')} 部作品。</h2>
         </div>
         <p>
-          这些作品目前只有可检索标题与类型，没有继承旧评级。你仍可以用作品名或别名找到页面并补充线索。
+          这些作品尚未评级，可以用作品名或别名找到页面并补充线索。
         </p>
         <Link className="result-link" href="/works?status=not_assessed">浏览尚未评级作品</Link>
       </section>

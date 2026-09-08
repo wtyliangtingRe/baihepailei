@@ -43,8 +43,7 @@ export const metadata: Metadata = {
 
 const navItems = [
   { href: '/works', label: '作品' },
-  { href: '/ratings', label: '评级与警示' },
-  { href: '/rules', label: '完整规则' },
+  { href: '/ratings', label: '评级原则' },
   { href: '/recommendations', label: '安心向' },
   { href: '/updates', label: '最近更新' },
   { href: '/feedback', label: '补充纠错' },
@@ -79,10 +78,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <footer className="site-footer">
             <div>
               <strong>百合排雷</strong>
-              <span>核心等级、具体警示与资料来源分开呈现。</span>
+              <span>百合作品资料、评级与内容警示。</span>
             </div>
             <nav aria-label="页脚导航">
-              <Link href="/ratings">评级说明</Link>
+              <Link href="/ratings">评级原则</Link>
               <Link href="/rules">完整规则</Link>
               <Link href="/radar">评级进度</Link>
               <Link href="/creators">作者 / 主创</Link>

@@ -22,10 +22,6 @@ export default function RecommendationsPage() {
       <section className="page-heading collection-heading">
         <p className="eyebrow">从高等级开始</p>
         <h1>安心向浏览</h1>
-        <p>
-          这里不另造“推荐分”，只从当前 S / A 评级中提供浏览入口。
-          每部作品仍需结合细分类、连载边界与资料完整度阅读。
-        </p>
         <div className="collection-actions">
           <Link className="back-link" href="/works?grade=S">全部 S 级</Link>
           <Link className="back-link" href="/works?grade=A">全部 A 级</Link>
