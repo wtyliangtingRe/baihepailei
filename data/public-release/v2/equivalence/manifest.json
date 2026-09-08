@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "baihepailei-public-catalog-equivalence-manifest-v1",
+  "releaseId": "public-catalog-equivalence-20260905-v01",
+  "generatedAt": "2026-09-05T00:14:41Z",
+  "sourceCatalog": {
+    "repository": "wtyliangtingRe/baihepailei",
+    "ref": "86f58fcd6cb97608bdedbe88ec7126f6a1c7e62d",
+    "path": "data/public-release/v1",
+    "rows": 35411
+  },
+  "sources": [
+    {
+      "name": "Bangumi API",
+      "url": "https://api.bgm.tv/v0/subjects/{id}",
+      "fetchedRows": 2164,
+      "unavailableRows": 2
+    },
+    {
+      "name": "bangumi-data",
+      "url": "https://github.com/bangumi-data/bangumi-data/tree/779b5e878d145363f3c77bfe9b1ba5b778c70473",
+      "revision": "779b5e878d145363f3c77bfe9b1ba5b778c70473",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "anime-offline-database",
+      "url": "https://github.com/manami-project/anime-offline-database/releases/tag/2026-27",
+      "release": "2026-27",
+      "compressedSha256": "5672cef0fd729a7f7810fc9cf7d54007612aee83fbcf44dd370359c82db6373a",
+      "license": "ODbL-1.0"
+    },
+    {
+      "name": "Wikidata",
+      "url": "https://query.wikidata.org/",
+      "retrievedAt": "2026-09-05T00:14:41Z",
+      "license": "CC0-1.0"
+    },
+    {
+      "name": "VNDB API",
+      "url": "https://api.vndb.org/kana/vn",
+      "fetchedRows": 3455,
+      "unavailableRows": 3
+    }
+  ],
+  "counts": {
+    "sourceCatalogWorks": 35411,
+    "equivalenceGroups": 427,
+    "equivalenceEdges": 427,
+    "explicitlyLinkedWorks": 854,
+    "titleEvidenceRows": 5619,
+    "titleEvidenceValues": 19307,
+    "exclusions": 31,
+    "evidenceKinds": {
+      "external_id_crosswalk": 352,
+      "strict_title_date_format_match": 356,
+      "wikidata_shared_item": 226,
+      "strict_title_release_match": 25
+    },
+    "exclusionReasons": {
+      "same_provider_partial_identity_conflict": 2,
+      "source_unavailable": 5,
+      "catalog_media_mismatch": 4,
+      "not_one_to_one": 13,
+      "release_year_mismatch": 2,
+      "superseded_by_official_title_date_format_match": 2,
+      "bangumi_subject_is_not_a_game": 3
+    },
+    "baseline": {
+      "sourceWorks": 35411,
+      "visibleWorks": 35344,
+      "mergedAway": 67,
+      "multiWorkGroups": 67,
+      "largestGroup": 2,
+      "ambiguousTitleKeys": 197
+    },
+    "afterEquivalence": {
+      "sourceWorks": 35411,
+      "visibleWorks": 34940,
+      "mergedAway": 471,
+      "multiWorkGroups": 471,
+      "largestGroup": 2,
+      "ambiguousTitleKeys": 199
+    }
+  },
+  "policy": {
+    "explicitIdentityEvidencePrecedesTitleMatching": true,
+    "externalTitlesAreSearchEvidenceOnly": true,
+    "strictNormalization": "Unicode NFKC + lowercase + whitespace removal; punctuation is preserved",
+    "sameProviderDifferentSiteIdsForbidden": true,
+    "ambiguousCrosswalksExcluded": true,
+    "blockingRatingConflictsForbidden": true,
+    "staleCrosswalksCanBeSupersededOnlyByOfficialTitleDateFormatEvidence": true
+  },
+  "files": {
+    "catalog-equivalence-groups.jsonl": {
+      "rows": 427,
+      "bytes": 585195,
+      "sha256": "6f6b3d629c997d842441e0e692eaa208419e8086fbde3236ae9d8940854c3773"
+    },
+    "catalog-title-evidence.jsonl": {
+      "rows": 5619,
+      "bytes": 3050275,
+      "sha256": "350420acec0df8a84ca0943f236ca7b0074d8bbb54089b6d98011ca4cbd8eb1d"
+    },
+    "catalog-equivalence-exclusions.jsonl": {
+      "rows": 31,
+      "bytes": 8650,
+      "sha256": "a17470d741ffb7415677feb3ff68e7790c7c40d4133bcce7aa2fff0a05b2172a"
+    }
+  }
+}
