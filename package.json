@@ -17,7 +17,8 @@
     "validate:metadata": "node scripts/validate-public-metadata.mjs",
     "validate:creators": "node scripts/validate-public-creators.mjs && node --test tests/public-creator-metadata.test.mjs",
     "smoke:public": "node scripts/smoke-public-site.mjs",
-    "check": "pnpm validate:release && pnpm audit:merge && pnpm validate:metadata && pnpm validate:creators && pnpm validate:ui && pnpm typecheck && pnpm build"
+    "check": "pnpm validate:release && pnpm validate:pack-reuse && pnpm audit:merge && pnpm validate:metadata && pnpm validate:creators && pnpm validate:ui && pnpm typecheck && pnpm build",
+    "validate:pack-reuse": "node scripts/validate-pack-reuse.mjs"
   },
   "dependencies": {
     "next": "^16.2.6",

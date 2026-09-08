@@ -2,6 +2,7 @@ import 'server-only'
 
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { gunzipSync } from 'node:zlib'
 import { addPublicMetadata, readPublicMetadata } from '@/lib/publicMetadata'
 import { mergeCredits } from '@/lib/publicDescriptiveMerge'
 import { readPublicCreatorGraph, withCreatorIds, type CreatorKind, type PublicCreatorGraph } from '@/lib/publicCreatorGraph'
@@ -226,6 +227,7 @@ export type PublicReleaseManifest = {
   schemaVersion: 'baihepailei-public-release-manifest-v1'
   releaseId: string
   generatedAt: string
+  displayIdentityBaseline?: string
   publicationPolicy: {
     currentDurableDataOnly: boolean
     waitForAdditionalData: boolean
@@ -289,7 +291,7 @@ const terminalSelectionOrder = new Map<PublicRatingState, number>([
 
 function releaseDirectory(): string {
   const configured = String(process.env.BAIHEPAILEI_RELEASE_DIR || '').trim()
-  return configured ? resolve(configured) : join(process.cwd(), 'data', 'public-release', 'v1')
+  return configured ? resolve(configured) : join(process.cwd(), 'data', 'public-release', 'v2')
 }
 
 function parseJsonLines<T>(content: string, file: string): T[] {
@@ -523,8 +525,9 @@ function mergeRecordGroup(
   ordinals: Map<string, number>,
   titleEvidenceByWorkId: Map<string, CatalogTitleEvidence>,
   resolvedMedia?: CatalogEquivalenceGroup['resolvedMedia'],
+  stablePrimaryWorkId?: string,
 ): PublicWorkRecord {
-  const primary = [...records].sort((left, right) => {
+  const primary = records.find(record => record.workId === stablePrimaryWorkId) || [...records].sort((left, right) => {
     const richness = recordRichness(right) - recordRichness(left)
     if (richness) return richness
     return (ordinals.get(left.workId) ?? Number.MAX_SAFE_INTEGER) -
@@ -587,6 +590,7 @@ function deduplicateCatalog(
   ordinals: Map<string, number>,
   equivalenceGroups: CatalogEquivalenceGroup[],
   titleEvidenceByWorkId: Map<string, CatalogTitleEvidence>,
+  stablePrimaryByWorkId?: Map<string, string>,
 ) {
   const parent = records.map((_, index) => index)
   const find = (index: number): number => {
@@ -728,7 +732,13 @@ function deduplicateCatalog(
     if (mediaOverrides.length > 1) {
       throw new Error(`Conflicting resolved media for Work IDs ${members.map((record) => record.workId).join(', ')}`)
     }
-    const merged = mergeRecordGroup(members, ordinals, titleEvidenceByWorkId, mediaOverrides[0])
+    const stablePrimaryWorkId = stablePrimaryByWorkId?.get(members[0].workId)
+    if (stablePrimaryByWorkId && (!stablePrimaryWorkId ||
+      !members.some(record => record.workId === stablePrimaryWorkId) ||
+      members.some(record => stablePrimaryByWorkId.get(record.workId) !== stablePrimaryWorkId))) {
+      throw new Error(`Display identity baseline conflicts with Work group ${members.map(record => record.workId).join(', ')}`)
+    }
+    const merged = mergeRecordGroup(members, ordinals, titleEvidenceByWorkId, mediaOverrides[0], stablePrimaryWorkId)
     mergedRecords.push(merged)
     const memberIds = members.map((record) => record.workId)
     memberIdsByPrimary.set(merged.workId, memberIds)
@@ -841,12 +851,18 @@ function loadRelease(): PublicReleaseCache {
     throw new Error('Catalog title evidence references a non-public Work ID')
   }
 
+  // Rating text and source counts must not rename previously published Work nodes.
+  const stablePrimaryByWorkId = manifest.displayIdentityBaseline
+    ? new Map((JSON.parse(gunzipSync(readFileSync(join(directory, manifest.displayIdentityBaseline))).toString('utf8')) as
+      Array<{ sourceWorkId: string; primaryWorkId: string }>).map(row => [row.sourceWorkId, row.primaryWorkId]))
+    : undefined
   const merged = deduplicateCatalog(
     rawRecords,
     baseRecords,
     ordinals,
     equivalenceGroups,
     titleEvidenceByWorkId,
+    stablePrimaryByWorkId,
   )
   const metadata = readPublicMetadata(directory, new Map(baseRecords.map(record => [record.workId, record.identity.siteId])))
   const records = merged.records.map(record => addPublicMetadata(record,

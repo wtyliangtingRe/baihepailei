@@ -6,7 +6,7 @@ import { gunzipSync } from 'node:zlib'
 import { loadPublicRelease } from './lib/load-public-release.mjs'
 
 const root = process.cwd()
-const release = process.env.BAIHEPAILEI_RELEASE_DIR || join(root,'data/public-release/v1')
+const release = process.env.BAIHEPAILEI_RELEASE_DIR || join(root,'data/public-release/v2')
 const directory = join(release,'metadata-20260905-v01')
 const readJson = path => JSON.parse(readFileSync(path,'utf8'))
 const manifest = readJson(join(directory,'manifest.json'))
@@ -56,13 +56,18 @@ assert.equal(createHash('sha256').update(baselineBytes).digest('hex'),manifest.b
 assert.equal(manifest.baseline.sourceCommit,'19a6885d250f6c54c1722002798912ac08f3ddb3')
 const baselineRows=JSON.parse(gunzipSync(baselineBytes).toString('utf8'))
 const baseline=new Map(baselineRows.map(row=>[row.sourceWorkId,row]))
+const ratingAdditions=baseManifest.displayIdentityBaseline
+  ? new Set(readLines(join(release,'pack-reuse-20260908-v01.jsonl')).map(row=>baseline.get(row.workId)?.primaryWorkId))
+  : new Set()
 assert.equal(baseline.size,base.length)
 const current=loadPublicRelease(root)
 const publicWorks=new Map()
 for(const record of base){
   const before=baseline.get(record.workId),after=current.getPublicWorkById(record.workId)
   assert.equal(after.workId,before.primaryWorkId,`Stable canonical route ${record.workId}`)
-  assert.equal(JSON.stringify(after.rating),JSON.stringify(before.rating),`Stable rating ${record.workId}`)
+  if (before.rating.state!=='not_assessed' || !ratingAdditions.has(before.primaryWorkId)) {
+    assert.equal(JSON.stringify(after.rating),JSON.stringify(before.rating),`Stable rating ${record.workId}`)
+  }
   assert.equal(after.media.group,before.media,`Stable media identity ${record.workId}`)
   publicWorks.set(after.workId,after)
 }

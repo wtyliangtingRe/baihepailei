@@ -25,6 +25,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm validate:release
+      - run: pnpm validate:pack-reuse
       - name: Audit public catalog merge
         id: merge_audit
         run: pnpm audit:merge

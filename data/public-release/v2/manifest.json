@@ -1,0 +1,229 @@
+{
+  "schemaVersion": "baihepailei-public-release-manifest-v1",
+  "releaseId": "baihepailei-pack-reuse-release-20260908-v01",
+  "generatedAt": "2026-09-08T00:00:00Z",
+  "sourceOfTruth": {
+    "repository": "wtyliangtingRe/baihepailei-research-data",
+    "auditedAuthority": {
+      "branch": "agent/full-work-union-hold-audit-20260901-v01",
+      "commit": "ec51252213c5109e74d7f3952037fc6c9274beecb"
+    },
+    "newestOwnerCalibration": {
+      "pullRequest": 533,
+      "branch": "agent/railgun-f-male-romantic-axis-20260830-0001",
+      "headCommit": "79020a5c7aa997a274fe0f84a00f5672ea9821aa",
+      "railgunAssessmentBlobSha": "c46813eed2d0d2004598fbbdbb57a41fb44de6ff",
+      "calibrationAssessmentBlobSha": "8502dee8e1c4b32d45031f7157988073fee40b1e",
+      "newRatedWorks": [
+        "18556",
+        "26328",
+        "26923"
+      ],
+      "supersededRatingWorks": [
+        "4975"
+      ]
+    },
+    "identityRegistry": {
+      "path": "indexes/global-migration-v01/global-canonical-coverage-35610-v01.jsonl",
+      "blobSha": "45dd765e52a436ac1c4eb691b7925b3f8d44257e"
+    },
+    "baseAuditedUnion": {
+      "works": 4115,
+      "workLedgerBlobShas": [
+        "f91a21d982ce8c824016e12986b99a0ed1c028b3",
+        "792c0f92784e32ea255eb564cf46b1bd20c7f8fe",
+        "18ce04ece20aa69281335a6bec66a0b3e65d7e4d",
+        "a34b6277117588ecb55723fc717711b351151bb2",
+        "bef0ea0d8348ee1b0355290b85c9b4b2deffc6fc"
+      ]
+    },
+    "ratingAuthorityBlobShas": {
+      "unanimousNormalizationV12": "1a2bf1e5fbc6c5067458b1823a0d86e18f75fffe",
+      "conservativeDUnclearV18": "3919ba8fbe4911c554477c1000d58813e2229668",
+      "boundedEvidenceDUnclearV20": "3884e1a008a22ee165432faec265bbe6c8889fd9",
+      "tail42V23": "c9c3aed989382c5f101e0d9d57b321599b45e583",
+      "authoredConflictV24": "adfda315e7e57f850fdd78876acfdde2da442749",
+      "authoredRangeV26": "f8b79c8bb808d490ccea09f39de8f2aec2d64fdd",
+      "recordOnlyV27": "51cc7775f104979c0678715d494867d9c5ff9a83",
+      "finalTailV29": "c15001a9cb2b3224ca3e01be8c4448d14540f1e7"
+    },
+    "packReuseAssessment": {
+      "dataset": "datasets/assessment-campaigns/pack-reuse-20260908-v01",
+      "baseWebsiteCommit": "a773ea6c20d87be437405d581b79e0c824713bee",
+      "baseResearchCommit": "ea7015f26224a7241934edf75632f6bd21c4966f",
+      "selectionPackRange": [
+        1,
+        25
+      ],
+      "reviewedWorks": 5000,
+      "newRatedWorks": 633,
+      "freshExternalResearch": false,
+      "commit": "37709feb46ac175d6f55e6f7460cd88355eda60b",
+      "pullRequest": 540
+    }
+  },
+  "publicationAuthorization": {
+    "directive": "Use all current data and ratings, stop waiting, complete the rating projection, and make the website launch-ready.",
+    "newVersionedProjectionAuthorized": true,
+    "priorFrozenArtifactsRemainImmutable": true,
+    "awsDeploymentDeferredUntilLocalPreviewAccepted": true,
+    "packReuseDirective": "Reuse usable existing Research, author ratings and publish them; publish any existing ratings; skip unusable records; do not redo external research."
+  },
+  "publicationPolicy": {
+    "currentDurableDataOnly": true,
+    "waitForAdditionalData": false,
+    "preserveFrozenHistory": true,
+    "forceGradesForNonratingTerminalStates": false,
+    "ownerCalibrationAppliedAsNewestExplicitAuthority": true,
+    "dUnclear": "Publish as grade D with low-confidence / needs-more-research metadata; it does not assert a specific negative trope.",
+    "catalogExclusions": [
+      {
+        "rows": 198,
+        "reason": "opaque Bangumi identities are not public-resolvable"
+      },
+      {
+        "rows": 1,
+        "reason": "feedback smoke-test record is not a real catalog work"
+      }
+    ]
+  },
+  "counts": {
+    "catalogWorks": 35411,
+    "publicIdentityBindings": 34170,
+    "partialIdentityBindings": 1241,
+    "identityRepairRequired": 531,
+    "baseAuditedUnionWorks": 4115,
+    "ownerCalibrationAdditions": 3,
+    "auditedWorks": 4751,
+    "ratedWorks": 4634,
+    "nonratingTerminalWorks": 117,
+    "notAssessedWorks": 30660,
+    "ratingsNeedingMoreResearch": 1578,
+    "dUnclearRatings": 1083
+  },
+  "ratingStatusCounts": {
+    "not_assessed": 30660,
+    "rated": 4634,
+    "blocked": 4,
+    "conflict": 12,
+    "research_required": 2,
+    "research_record_only": 99
+  },
+  "nonratingTerminalBreakdown": {
+    "research_record_only": 99,
+    "conflict": 12,
+    "blocked": 4,
+    "research_required": 2
+  },
+  "gradeCounts": {
+    "B": 833,
+    "S": 93,
+    "D": 2935,
+    "C": 194,
+    "E": 314,
+    "F": 194,
+    "A": 71
+  },
+  "invariants": {
+    "finalDecisionScopePartition": "4634 + 117 = 4751",
+    "baseAuditSourcePartitionsDisjoint": true,
+    "newestCalibrationNewWorks": 3,
+    "newestCalibrationExplicitSupersessions": 1,
+    "duplicateFinalWorkIds": 0,
+    "uncoveredDecisionScopeWorkIds": 0,
+    "frozenSourceBytesMutated": 0
+  },
+  "shards": [
+    {
+      "file": "catalog-0001.jsonl",
+      "rows": 2500,
+      "bytes": 773629,
+      "sha256": "4c9bbbd76885b3cde5d2b69314bf4cddd0dee63fd20913a107cde5b2a8ad642e"
+    },
+    {
+      "file": "catalog-0002.jsonl",
+      "rows": 2500,
+      "bytes": 795513,
+      "sha256": "1cd87ff0b3711eec0848e48f80f4e3c52a41dc2bab0586a9ebedb406b47fb698"
+    },
+    {
+      "file": "catalog-0003.jsonl",
+      "rows": 2500,
+      "bytes": 976009,
+      "sha256": "685966424efbc4792119a81948d9501f7d6033ee2a847425d81ed1954cf04953"
+    },
+    {
+      "file": "catalog-0004.jsonl",
+      "rows": 2500,
+      "bytes": 1055517,
+      "sha256": "78003ec0c617c946e42be12d2a58663ff5d4f668d3fd823ca086f11a6084fe8b"
+    },
+    {
+      "file": "catalog-0005.jsonl",
+      "rows": 2500,
+      "bytes": 1118158,
+      "sha256": "7882f6a8357ffbe0ad26eba3072168ae1b1d43be94782b6b3b012c97470b095a"
+    },
+    {
+      "file": "catalog-0006.jsonl",
+      "rows": 2500,
+      "bytes": 901175,
+      "sha256": "f0004ce09e017b28c8413a614b1c433afd1e1aa25c2a78a1d3ceaa397377d7bf"
+    },
+    {
+      "file": "catalog-0007.jsonl",
+      "rows": 2500,
+      "bytes": 845758,
+      "sha256": "77c85f02c66d8a9e744c3ce71fc39e70afd7c2d89be9ab9a4d871da37e500b2e"
+    },
+    {
+      "file": "catalog-0008.jsonl",
+      "rows": 2500,
+      "bytes": 785679,
+      "sha256": "db48f1f9a71e4279ce7c9e6e10b45acd9ca5807fd6bcc1f417cf00ce6b47ef58"
+    },
+    {
+      "file": "catalog-0009.jsonl",
+      "rows": 2500,
+      "bytes": 781218,
+      "sha256": "5034d13ff5d686bca2e1b8fe1ca08f61fac35d589b98ae71cd9f20f355af5f97"
+    },
+    {
+      "file": "catalog-0010.jsonl",
+      "rows": 2500,
+      "bytes": 772426,
+      "sha256": "87d315c46a6eeb1585ef6762b1c7721f994ab45de8b7281ddafec671a8b60283"
+    },
+    {
+      "file": "catalog-0011.jsonl",
+      "rows": 2500,
+      "bytes": 771075,
+      "sha256": "770548bb07fb3657b4adfe81aed59a6e65cdf8ad1ae5935940dd4756d333e750"
+    },
+    {
+      "file": "catalog-0012.jsonl",
+      "rows": 2500,
+      "bytes": 732290,
+      "sha256": "8565eba9a75b2a9da3b22b1b28afcce166617c71533725e9b1d691f5f1a83f73"
+    },
+    {
+      "file": "catalog-0013.jsonl",
+      "rows": 2500,
+      "bytes": 715782,
+      "sha256": "ae1b93a6d540afc3e376ad28b563db5dd1a2a05f2b09f179a56439f7e49390ba"
+    },
+    {
+      "file": "catalog-0014.jsonl",
+      "rows": 2500,
+      "bytes": 1261866,
+      "sha256": "f722fa6b9675b81adfeb017674248d673326306cd431ae24ec990b4b997a01d8"
+    },
+    {
+      "file": "catalog-0015.jsonl",
+      "rows": 411,
+      "bytes": 126213,
+      "sha256": "ab518e5300c6259f405c6f33a326b71907a24a317b2689b2f5aee7e26ec8c0b9"
+    }
+  ],
+  "displayIdentityBaseline": "metadata-20260905-v01/baseline-bindings.json.gz"
+}

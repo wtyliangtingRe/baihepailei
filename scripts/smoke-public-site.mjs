@@ -121,7 +121,7 @@ try {
       mergedAway: 471,
       mergedGroups: 471,
       largestMergedGroup: 2,
-      ratedWorks: 4_001,
+      ratedWorks: 4_634,
     },
   )
   assert.equal(health.visibleWorks + health.mergedAway, health.catalogWorks)
@@ -141,6 +141,22 @@ try {
   assert.equal(uncertainWork.rating.class, undefined)
   assert.equal(uncertainWork.rating.uncertaintyKind, 'evidence_insufficient')
   assert.equal(uncertainWork.rating.needsMoreResearch, true)
+
+  for (const [id, grade] of [['12120','S'],['18154','B'],['19473','C'],['8506','D'],['7925','E'],['18574','F']]) {
+    const work = await json(`/api/work-lineage/works/${id}`)
+    assert.equal(work.rating.grade,grade,`New assessment ${id}`)
+    assert.ok(work.rating.reasoningSummary && work.rating.evidenceUrl)
+  }
+  const skippedWork=await json('/api/work-lineage/works/38850')
+  assert.equal(skippedWork.rating.state,'not_assessed','Skipped records must not receive invented ratings')
+  const newClip=await json('/api/work-lineage/works/32107')
+  assert.equal(newClip.workId,'15896','New evidence must preserve the established public Work node')
+  assert.equal(newClip.rating.grade,'B')
+  for (const credit of newClip.organizations) {
+    const page=await response(`/organizations/o-${credit.creatorId}?year=2017`)
+    assert.equal(page.status,200)
+    assert.ok((await page.text()).includes('/works/w-15896'))
+  }
 
   // Punctuation and exact-provider identity must keep distinct seasons/works distinct.
   // These pairs were concrete false merges under the retired punctuation-stripping policy.

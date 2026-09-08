@@ -7,7 +7,7 @@ import { loadPublicRelease, loadPublicModule } from './lib/load-public-release.m
 const root = process.cwd()
 const release = loadPublicRelease(root)
 const { collectWorkReferences } = loadPublicModule(root, 'src/lib/publicWorkReferences.ts')
-const directory = join(process.env.BAIHEPAILEI_RELEASE_DIR || join(root, 'data/public-release/v1'), 'creators-20260906-v01')
+const directory = join(process.env.BAIHEPAILEI_RELEASE_DIR || join(root, 'data/public-release/v2'), 'creators-20260906-v01')
 const manifest = JSON.parse(readFileSync(join(directory, 'manifest.json'), 'utf8'))
 const entities = gunzipSync(readFileSync(join(directory, 'entities.jsonl.gz'))).toString('utf8').trim().split('\n').map(JSON.parse)
 const keyOwners = new Map()
