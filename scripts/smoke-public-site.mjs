@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { setTimeout as delay } from 'node:timers/promises'
 
 const host = '127.0.0.1'
@@ -91,6 +92,16 @@ try {
   const newWorkFeedback = await (await response('/feedback?type=new_work')).text()
   for (const expected of ['打开新作品提交表', 'new-work.yml', '推荐收录新作品']) {
     assert.ok(newWorkFeedback.includes(expected), `new-work feedback should include ${expected}`)
+  }
+
+  assert.ok(correctionFeedback.includes('mailto:wty1123581321@gmail.com?'))
+  for (const file of ['wechat.png', 'bilibili.png', 'douyin.png']) {
+    const path = `/contact/${file}`
+    assert.ok(correctionFeedback.includes(path), `feedback should display ${path}`)
+    const asset = await response(path)
+    assert.equal(asset.status, 200, `${path} should be available in production`)
+    assert.match(asset.headers.get('content-type') || '', /^image\/png/)
+    assert.ok(Buffer.from(await asset.arrayBuffer()).equals(readFileSync(`public${path}`)), `${path} must preserve the supplied original`)
   }
 
   const redirects = new Map([

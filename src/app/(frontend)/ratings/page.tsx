@@ -38,11 +38,10 @@ export default function RatingsPage() {
   return (
     <main className="page collection-page ratings-public-page release-ratings-page">
       <section className="page-heading collection-heading">
-        <p className="eyebrow">评级怎么读</p>
-        <h1>等级给方向，警示给原因。</h1>
+        <h1>评级原则</h1>
         <p>
           每部作品先按 S–F 给出核心结论，再用一个或多个细分类说明关系状态、设定或雷点。
-          较低等级事实会拦截较高等级；“没查到”永远不等于“不存在”。
+          同时符合多个等级时，以已确认的较低等级为准；资料不足的部分请结合待补信息阅读。
         </p>
         <div className="collection-actions">
           <Link className="result-link" href="/works?status=rated">浏览 {total.toLocaleString('zh-CN')} 部已评级作品</Link>
@@ -64,7 +63,7 @@ export default function RatingsPage() {
         <article>
           <span>资料边界</span>
           <h2>范围与待补充</h2>
-          <p>把结论范围、低把握和缺失细分类直接展示，不伪装成精确答案。</p>
+          <p>了解评级适用的剧情与版本范围，以及资料把握和待补信息。</p>
         </article>
       </section>
 
@@ -100,7 +99,7 @@ export default function RatingsPage() {
         <div className="release-section-heading release-section-heading-top">
           <div>
             <p className="eyebrow">独立偏好层</p>
-            <h2>设定与成人内容，不藏进一个字母里。</h2>
+            <h2>设定与成人内容</h2>
           </div>
         </div>
         <p className="release-grade-explanation">
@@ -124,7 +123,7 @@ export default function RatingsPage() {
       <section className="release-method-note release-d-unclear-note">
         <div>
           <p className="eyebrow">特别说明</p>
-          <h2>资料不足型 D 会单独标明，不把未知写成具体雷点</h2>
+          <h2>资料不足型 D</h2>
         </div>
         <p>
           当前发布源数据中有 {manifest.counts.dUnclearRatings.toLocaleString('zh-CN')} 条 D-UNCLEAR 评级记录；
@@ -136,11 +135,11 @@ export default function RatingsPage() {
 
       <section className="detail-card release-rating-principles">
         <p className="eyebrow">三个阅读原则</p>
-        <h2>评级不是一个孤立字母。</h2>
+        <h2>结合等级、标签与资料范围阅读</h2>
         <ul>
-          <li><strong>低等级拦截：</strong>若已确认 E/F 级事实，即使女性关系本身很强，也不能只展示较高等级。</li>
+          <li><strong>低等级拦截：</strong>若已确认 E/F 级事实，即使女性关系本身很强，核心评级仍以较低等级为准。</li>
           <li><strong>多标签并存：</strong>同一作品可以同时有关系状态、男性关系、设定与企划风险标签。</li>
-          <li><strong>未知保持未知：</strong>缺少细分资料时只公开已有等级，不用旧规则或标题印象补一个理由。</li>
+          <li><strong>资料完整度：</strong>标有“待补充”或“具体雷点未确认”的条目，仍需进一步核实。</li>
         </ul>
       </section>
     </main>

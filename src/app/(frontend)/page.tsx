@@ -44,11 +44,23 @@ export default function HomePage() {
             当前已有 {number(ratedVisible)} 部作品公开评级
           </div>
           <p className="eyebrow">百合作品评级与排雷资料库</p>
-          <h1>先看关系结论，<br />再看具体雷点。</h1>
+          <h1>关于百合排雷</h1>
           <p className="release-hero-copy">
-            搜索作品后，你会直接看到 S–F 等级、具体警示、评级理由、作品类型，
-            以及当前已经核实的作者、创作机构、简介与来源。资料没有补齐的部分会明确留空。
+            本站收录百合及相关作品，整理作品资料、作者与创作机构、关系评级和具体雷点，
+            帮助读者查找作品、了解内容，并按自己的偏好选择阅读、观看或游玩。
           </p>
+          <aside className="release-disclaimer" aria-labelledby="site-disclaimer-title">
+            <h2 id="site-disclaimer-title">免责声明</h2>
+            <p>
+              本站主要借助 AI 收集资料与辅助评级，可能存在误判、遗漏或理解偏差，内容仅供参考。
+              目前维护人手有限，许多作品仍缺少资料或尚未评级；空白条目和缺失警示不代表作品已经确认安全。
+            </p>
+            <p>
+              评级以当时收集到的资料为依据。连载进展、后续剧情、版本差异及新增信息都可能影响结论，
+              站内更新也可能滞后，请结合具体版本、资料日期和原作内容阅读。
+              如有异议或补充，欢迎通过<Link href="/feedback">补充纠错页的表单或联系方式</Link>反馈，并附上作品名与相关依据。
+            </p>
+          </aside>
           <form action="/search" className="search-box release-search" role="search">
             <label htmlFor="home-search-input">搜索作品、作者、制作机构或警示</label>
             <div>
@@ -58,7 +70,7 @@ export default function HomePage() {
           </form>
           <div className="actions">
             <Link className="release-primary-action" href="/works?status=rated">浏览已有评级</Link>
-            <Link href="/ratings">评级怎么读</Link>
+            <Link href="/ratings">评级原则</Link>
             <Link href="/rules">查看警示细则</Link>
           </div>
         </section>
@@ -67,7 +79,7 @@ export default function HomePage() {
           <article>
             <span>已有评级</span>
             <strong>{number(ratedVisible)}</strong>
-            <small>去重后的 S–F 当前结论</small>
+            <small>S–F 评级作品</small>
           </article>
           <article>
             <span>S / A 级</span>
@@ -77,10 +89,10 @@ export default function HomePage() {
           <article>
             <span>可浏览作品</span>
             <strong>{number(merge.visibleWorks)}</strong>
-            <small>由 {number(merge.sourceWorks)} 条源目录记录归并</small>
+            <small>动画、漫画、小说与游戏等</small>
           </article>
           <article>
-            <span>已恢复来源摘要</span>
+            <span>已有来源简介</span>
             <strong>{number(enrichment.sources.workAssets.summaries)}</strong>
             <small>有可核验简介资料</small>
           </article>
@@ -133,19 +145,17 @@ export default function HomePage() {
           <article>
             <span>3</span>
             <h2>看依据与缺口</h2>
-            <p>结论摘要、范围和待补资料不会藏起来。</p>
+            <p>结合结论范围、资料日期与待补信息阅读。</p>
           </article>
         </section>
 
         <section className="release-method-note release-method-note-public">
           <div>
-            <p className="eyebrow">当前资料边界</p>
-            <h2>有多少可靠资料，就展示多少。</h2>
+            <h2>资料完善进度</h2>
           </div>
           <p>
-            发布源数据中有 {number(manifest.counts.dUnclearRatings)} 条资料不足型 D，会明确写“具体雷点未确认”；
-            去重后仍有 {number(notAssessedVisible)} 部作品尚未评级。缺少作者、机构或细分类时保持空缺，
-            不用旧结论和标题猜测填满页面。
+            目前有 {number(notAssessedVisible)} 部作品尚未评级。
+            另有 {number(manifest.counts.dUnclearRatings)} 条资料不足型 D 评级记录，标注为“具体雷点未确认”，仍需进一步核实。
           </p>
           <Link className="result-link" href="/works">进入作品资料库</Link>
         </section>

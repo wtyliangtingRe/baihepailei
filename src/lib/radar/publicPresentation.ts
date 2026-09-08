@@ -26,10 +26,10 @@ export const publicStatusLabels: Record<PublicRatingState, string> = {
 export const publicStatusDescriptions: Record<PublicRatingState, string> = {
   rated: '本站已有可公开的 S–F 结论；请同时查看具体警示与资料完整度。',
   research_record_only: '目前只有作品资料，还没有足够依据形成公开评级。',
-  conflict: '已有材料指向不同结论，本站暂不替用户制造一个确定答案。',
+  conflict: '现有材料存在分歧，结论待进一步核对。',
   blocked: '现有资料存在关键缺口，暂时无法给出可靠评级。',
   research_required: '这部作品需要针对关系、结局或设定做进一步核实。',
-  not_assessed: '作品已收录，但还没有进入完整评级流程。',
+  not_assessed: '作品已收录，尚未评级。',
 }
 
 export const mediaGroupLabels: Record<PublicMediaGroup, string> = {

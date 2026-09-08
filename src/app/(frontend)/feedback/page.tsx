@@ -76,6 +76,12 @@ const newWorkDataTypes = [
   { title: '作者与制作方', text: '提供作者、主创、制作机构、出版社、平台与官方网站等可核验来源。' },
 ]
 
+const contactCards = [
+  { platform: '微信', account: '衛藤天音', image: '/contact/wechat.png', width: 862, height: 1419 },
+  { platform: '哔哩哔哩', account: '衛藤天音 · UID 181312604', image: '/contact/bilibili.png', width: 1027, height: 1459 },
+  { platform: '抖音', account: '抖音号：wty123581321', image: '/contact/douyin.png', width: 1219, height: 1820 },
+]
+
 export default async function FeedbackPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams
   const channels = publicFeedbackChannels()
@@ -110,11 +116,10 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
     <main className="page feedback-page">
       <section className="page-heading collection-heading">
         <div>
-          <p className="eyebrow">{submissionKind}</p>
-          <h1>{isNewWork ? '告诉我们还缺哪部作品' : '把可核验资料补到正确作品'}</h1>
+          <h1>{isNewWork ? '推荐收录新作品' : '补充与纠错'}</h1>
           <p>
-            如果从作品页进入，这里会自动带上反馈编号 Work ID，方便准确定位。
-            线索会先核实再进入公开资料，不会因为一次提交自动改变评级。
+            欢迎提交作品资料、评级异议或新作品线索，也可以通过邮件和下方联系方式联系站长。
+            从作品页进入时会自动带上作品名与编号。
           </p>
         </div>
         <div className="collection-actions">
@@ -135,7 +140,7 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
         <section>
           <div className="collection-heading">
             <h2>填写并提交线索</h2>
-            <p className="muted">提交内容只进入待核实队列，确认作品对应与来源后才会更新公开页面。</p>
+            <p className="muted">请附上作品名、具体问题和相关依据，方便核实与更新。</p>
           </div>
           <div className="feedback-channel-grid">
             <article className="detail-card feedback-channel-card feedback-channel-primary">
@@ -145,14 +150,13 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
               {anonymousHref ? (
                 <a className="result-link" href={anonymousHref} rel="noreferrer" target="_blank">打开匿名投稿表 ↗</a>
               ) : <p className="muted">匿名入口暂未开放。</p>}
-              <small>线索先进入独立待审区，核实后才会更新作品资料。</small>
             </article>
             {issueHref ? (
               <article className="detail-card feedback-channel-card">
                 <p className="eyebrow">GitHub 贡献者</p>
                 <h2>投稿与图片证据</h2>
                 <p>
-                  可附 PNG、JPG、JPEG 或 WebP 截图，并说明出处。需要登录 GitHub，但不用注册或绑定本站账号。
+                  登录 GitHub 即可提交文字与 PNG、JPG、JPEG 或 WebP 截图，请说明出处。
                   请每张尽量压缩到 2 MB 以内，且不超过 GitHub 的 10 MB 限制。
                 </p>
                 <a className="result-link" href={issueHref} rel="noreferrer" target="_blank">
@@ -168,9 +172,9 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
             {emailHref ? (
               <article className="detail-card feedback-channel-card">
                 <p className="eyebrow">Email</p>
-                <h2>发送邮件</h2>
-                <p>适合少量文字、来源链接和需要继续沟通的材料。</p>
-                <a className="result-link" href={emailHref}>写一封线索邮件</a>
+                <h2>联系站长</h2>
+                <p>可直接发送作品资料、纠错说明或评级异议。</p>
+                <a className="result-link feedback-email-address" href={emailHref}>{channels.email}</a>
               </article>
             ) : null}
           </div>
@@ -182,10 +186,28 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
         </section>
       )}
 
+      <section className="feedback-contacts" aria-labelledby="feedback-contact-title">
+        <div className="collection-heading">
+          <h2 id="feedback-contact-title">其他联系方式</h2>
+          <p className="muted">使用对应平台扫码联系。点击图片可查看或保存原图；联系时请注明“百合排雷”和相关作品。</p>
+        </div>
+        <div className="feedback-contact-grid">
+          {contactCards.map((contact) => (
+            <article className="detail-card feedback-contact-card" key={contact.platform}>
+              <h3>{contact.platform}</h3>
+              <a className="feedback-contact-image" href={contact.image} target="_blank" rel="noopener noreferrer" aria-label={`查看${contact.platform}联系二维码原图`}>
+                <img src={contact.image} alt={`${contact.platform}联系二维码，${contact.account}`} width={contact.width} height={contact.height} loading="lazy" decoding="async" />
+              </a>
+              <p>{contact.account}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="detail-card feedback-security-note" role="note">
         <h2>提交前请留意</h2>
         <p>
-          所有线索均需人工核实，提交不会自动更改作品资料或评级。匿名表单仅收文字；
+          站长会在核实后更新资料。匿名表单仅收文字；
           GitHub 图片请注明作品版本和原作位置，不要附视频、压缩包或文档。
           请勿提交私人联系方式、未公开材料或无权公开的文件。
         </p>
@@ -204,7 +226,7 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Sea
         <h2>怎样提交最容易核实</h2>
         <ul>
           <li>附上作品名或页面中的 Work ID，避免反馈落到同名作品。</li>
-          <li>只写确定的信息；不知道就保留未知，不猜作者、剧情或评级。</li>
+          <li>尽量写明能够确认的信息，并标注仍不确定的部分。</li>
           <li>尽量提供可追溯的官方页面、原作位置或可靠资料链接。</li>
           <li>涉及结局、NTR、男性关系等内容时，请尽量说明发生位置与版本。</li>
           <li>同名、改编版和不同路线请明确区分；无法确认时直接注明“不确定”。</li>

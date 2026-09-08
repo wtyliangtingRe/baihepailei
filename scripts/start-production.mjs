@@ -43,6 +43,10 @@ async function runStandaloneProductionServer() {
   }
 
   cpSync(staticSource, staticTarget, { recursive: true, force: true })
+  const publicSource = join(repoRoot, 'public')
+  if (existsSync(publicSource)) {
+    cpSync(publicSource, join(standaloneRoot, 'public'), { recursive: true, force: true })
+  }
   process.env.HOSTNAME = host
   process.env.PORT = port
   process.chdir(standaloneRoot)

@@ -339,7 +339,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
             <p>
               {rating.uncertaintyKind
                 ? '这是一条资料不足型 D：不能据此推断男性结局、NTR 或其他具体情节。'
-                : '现存资料没有保留可安全复用的细分类；本站不会用旧标签或模型猜测补上。'}
+                : '具体细分类与评级依据仍待补充。'}
             </p>
           </div>
         ) : null}
@@ -357,7 +357,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
             <strong>为什么这样评</strong>
             <p lang={likelyEnglish(rating.reasoningSummary) ? 'en' : 'zh-CN'}>{rating.reasoningSummary}</p>
             {likelyEnglish(rating.reasoningSummary) ? (
-              <small>此段保留现有资料的原文，避免翻译改变结论。</small>
+              <small>来源原文</small>
             ) : null}
           </div>
         ) : null}
@@ -385,7 +385,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
             ))}
           </ol>
         ) : (
-          <p className="muted">当前没有可直接展示的来源链接；这不代表资料不存在，只表示来源仍待整理。</p>
+          <p className="muted">资料来源链接待整理。</p>
         )}
       </section>
 
@@ -395,8 +395,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
           <h2>发现遗漏或错误？告诉我们。</h2>
         </div>
         <p>
-          缺少作者、简介或细分类时会保持空缺，不使用标题相似度猜测补齐。
-          从这里提交反馈时会自动关联当前作品，不需要另外查找编号。
+          欢迎补充作品资料、评级依据或报告错误。从这里提交反馈时会自动关联当前作品。
         </p>
         <Link className="result-link" href={feedbackHref(work.workId, work.title)}>为这部作品补充资料</Link>
       </section>
