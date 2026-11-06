@@ -132,10 +132,25 @@ try {
       mergedAway: 471,
       mergedGroups: 471,
       largestMergedGroup: 2,
-      ratedWorks: 4_636,
+      ratedWorks: 4_667,
     },
   )
   assert.equal(health.visibleWorks + health.mergedAway, health.catalogWorks)
+
+  for (const [id, grade] of [['29019', 'B'], ['28505', 'A'], ['23732', 'F']]) {
+    const work = await json(`/api/work-lineage/works/${id}`)
+    assert.equal(work.rating.grade, grade)
+    assert.equal(work.rating.needsMoreResearch, true)
+    assert.ok(work.rating.evidenceSources.some((source) => source.kind === 'community'))
+    assert.ok(work.rating.evidenceSources.some((source) => source.kind === 'official'))
+    const page = await response(`/works/w-${id}`)
+    const html = await page.text()
+    assert.equal(page.status, 200)
+    assert.ok(html.includes('第三方 / 社区资料 · 评级依据'))
+    for (const source of work.rating.evidenceSources) {
+      assert.ok(html.includes(source.url.replaceAll('&', '&amp;')), `missing source for ${id}: ${source.url}`)
+    }
+  }
 
   for (const query of ['男性替身', 'NTR', '岸 虎次郎', '安達としまむら', 'Adachi and Shimamura', '安达与岛村']) {
     const result = await json(`/api/work-lineage/works?q=${encodeURIComponent(query)}&limit=2`)

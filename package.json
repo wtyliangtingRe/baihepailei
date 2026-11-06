@@ -17,9 +17,10 @@
     "validate:metadata": "node scripts/validate-public-metadata.mjs",
     "validate:creators": "node scripts/validate-public-creators.mjs && node --test tests/public-creator-metadata.test.mjs",
     "smoke:public": "node scripts/smoke-public-site.mjs",
-    "check": "pnpm validate:release && pnpm validate:pack-reuse && pnpm validate:official-assessments && pnpm audit:merge && pnpm validate:metadata && pnpm validate:creators && pnpm validate:ui && pnpm typecheck && pnpm build",
+    "check": "pnpm validate:release && pnpm validate:pack-reuse && pnpm validate:official-assessments && pnpm validate:source-assessments && pnpm audit:merge && pnpm validate:metadata && pnpm validate:creators && pnpm validate:ui && pnpm typecheck && pnpm build",
     "validate:pack-reuse": "node scripts/validate-pack-reuse.mjs",
-    "validate:official-assessments": "node scripts/validate-official-assessments.mjs"
+    "validate:official-assessments": "node scripts/validate-official-assessments.mjs",
+    "validate:source-assessments": "node scripts/validate-source-assessments.mjs"
   },
   "dependencies": {
     "next": "^16.2.6",

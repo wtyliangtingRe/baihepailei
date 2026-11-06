@@ -70,6 +70,7 @@ export type PublicWorkRating = {
   needsMoreResearch?: boolean
   reasoningSummary?: string
   evidenceUrl?: string
+  evidenceSources?: { url: string; kind: 'official' | 'community' }[]
   uncertaintyKind?: 'evidence_insufficient'
 }
 
@@ -166,6 +167,7 @@ type RatingDetailEnrichment = {
   classes?: string[]
   reasoningSummary?: string
   evidenceUrl?: string
+  evidenceSources?: { url: string; kind: 'official' | 'community' }[]
 }
 
 type CatalogEquivalenceGroup = {
@@ -291,7 +293,7 @@ const terminalSelectionOrder = new Map<PublicRatingState, number>([
 
 function releaseDirectory(): string {
   const configured = String(process.env.BAIHEPAILEI_RELEASE_DIR || '').trim()
-  return configured ? resolve(configured) : join(process.cwd(), 'data', 'public-release', 'v3')
+  return configured ? resolve(configured) : join(process.cwd(), 'data', 'public-release', 'v4')
 }
 
 function parseJsonLines<T>(content: string, file: string): T[] {
@@ -359,6 +361,7 @@ function mergeRating(
     needsMoreResearch: base.needsMoreResearch,
     reasoningSummary: base.reasoningSummary || matchingDetail?.reasoningSummary,
     evidenceUrl: matchingDetail?.evidenceUrl,
+    evidenceSources: matchingDetail?.evidenceSources,
     uncertaintyKind: base.class === 'D-UNCLEAR' ? 'evidence_insufficient' : undefined,
   }
 }
@@ -503,6 +506,7 @@ export function selectMergedRating(records: PublicWorkRecord[]): PublicWorkRatin
     classes,
     reasoningSummary: reasonRecord?.rating.reasoningSummary,
     evidenceUrl: evidenceRecord?.rating.evidenceUrl,
+    evidenceSources: evidenceRecord?.rating.evidenceSources,
     needsMoreResearch: records.some((record) => record.rating.needsMoreResearch),
     uncertaintyKind: selectedGrade === 'D' && records.some((record) => record.rating.uncertaintyKind)
       ? 'evidence_insufficient'

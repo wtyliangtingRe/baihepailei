@@ -7,7 +7,7 @@ import { loadPublicRelease, loadPublicModule } from './lib/load-public-release.m
 const root = process.cwd()
 const release = loadPublicRelease(root)
 const { collectWorkReferences } = loadPublicModule(root, 'src/lib/publicWorkReferences.ts')
-const directory = join(process.env.BAIHEPAILEI_RELEASE_DIR || join(root, 'data/public-release/v3'), 'creators-20260906-v01')
+const directory = join(process.env.BAIHEPAILEI_RELEASE_DIR || join(root, 'data/public-release/v4'), 'creators-20260906-v01')
 const manifest = JSON.parse(readFileSync(join(directory, 'manifest.json'), 'utf8'))
 const entities = gunzipSync(readFileSync(join(directory, 'entities.jsonl.gz'))).toString('utf8').trim().split('\n').map(JSON.parse)
 const keyOwners = new Map()
@@ -35,6 +35,7 @@ for (const record of records) {
   const urls = new Set(refs.map(ref => ref.url))
   const oldUrls = new Set([
     ...record.sources.map(source => source.url), record.summary?.sourceUrl, record.rating.evidenceUrl,
+    ...(record.rating.evidenceSources || []).map(source => source.url),
     ...[...record.creators, ...record.organizations].flatMap(credit => [credit.sourceUrl, ...(credit.sourceUrls || [])]),
   ].filter(Boolean))
   assert.equal(urls.size, oldUrls.size, `External links preserved without additions: ${record.workId}`)

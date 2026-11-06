@@ -32,3 +32,11 @@ test('an assessment URL is preserved when no merged record has a reason', () => 
   assert.equal(result.reasoningSummary, undefined)
   assert.equal(result.evidenceUrl, 'https://example.test/source')
 })
+
+test('multiple cited sources stay attached to their own merged assessment', () => {
+  const first = work({ reasoningSummary: '短', evidenceUrl: 'https://example.test/first', evidenceSources: [{url:'https://example.test/first',kind:'official'}] })
+  const second = work({ reasoningSummary: '这是更详细的判断', evidenceUrl: 'https://example.test/second', evidenceSources: [{url:'https://example.test/community',kind:'community'}] })
+  const result = selectMergedRating([first, second])
+  assert.equal(result.reasoningSummary, second.rating.reasoningSummary)
+  assert.deepEqual(result.evidenceSources, second.rating.evidenceSources)
+})

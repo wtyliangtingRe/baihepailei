@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const releaseDir = resolve(
-  process.env.BAIHEPAILEI_RELEASE_DIR || join(repoRoot, 'data', 'public-release', 'v3'),
+  process.env.BAIHEPAILEI_RELEASE_DIR || join(repoRoot, 'data', 'public-release', 'v4'),
 )
 const manifestPath = join(releaseDir, 'manifest.json')
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))

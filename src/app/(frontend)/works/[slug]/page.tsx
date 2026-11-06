@@ -345,7 +345,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
         ) : null}
 
         <dl className="release-detail-list release-rating-facts">
-          <div><dt>评级状态</dt><dd>{publicStatusLabels[rating.state]}{referenceMarks([rating.evidenceUrl])}</dd></div>
+          <div><dt>评级状态</dt><dd>{publicStatusLabels[rating.state]}{referenceMarks([rating.evidenceUrl, ...(rating.evidenceSources || []).map((source) => source.url)])}</dd></div>
           {rating.grade ? <div><dt>核心等级</dt><dd>{rating.grade} · {gradeLabel(rating.grade)}</dd></div> : null}
           {range ? <div><dt>结论范围</dt><dd>{range}</dd></div> : null}
           {rating.grade ? <div><dt>资料把握</dt><dd>{confidenceLabel(rating.confidence)}</dd></div> : null}

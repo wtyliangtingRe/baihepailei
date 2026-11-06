@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "baihepailei-public-creator-graph-v1",
+  "nextId": 1018609,
+  "files": [
+    {
+      "file": "entities.jsonl.gz",
+      "rows": 18608,
+      "bytes": 559610,
+      "sha256": "fa551104eb8ee53cbd457c280138fe06367143a07139b525a2eb1dc57dffb038"
+    },
+    {
+      "file": "credits-0001.jsonl.gz",
+      "rows": 25000,
+      "bytes": 378016,
+      "sha256": "a54224c6f4c12a83f5db0fa378b9f9c74a281f036ab1ba644ef1e307358b7f50"
+    },
+    {
+      "file": "credits-0002.jsonl.gz",
+      "rows": 25000,
+      "bytes": 461621,
+      "sha256": "f8491d8824c6a71492581f684387fb2e5bb9845b19d6b6e19f1ec32942e2a073"
+    },
+    {
+      "file": "credits-0003.jsonl.gz",
+      "rows": 17721,
+      "bytes": 344955,
+      "sha256": "9d806c60205959446dd554f4bca02ae739a24513eda1b5e7dadc6da7478011af"
+    }
+  ],
+  "source": {
+    "repository": "wtyliangtingRe/baihepailei-research-data",
+    "commit": "f3f42ca9b72a1a9306982e025c60119d280a9292",
+    "metadata": "datasets/public-work-metadata-20260905-v01/v01"
+  },
+  "policy": {
+    "appendOnlyIds": true,
+    "publicWorkIdsOnly": true,
+    "mayChangeRatings": false,
+    "nameMatching": "Exact normalized names only; distinct provider IDs never merge by name. Unresolved homonyms remain Work-scoped."
+  },
+  "counts": {
+    "publicWorks": 34940,
+    "credits": 67721,
+    "creditedWorks": 15117,
+    "people": 10721,
+    "organizations": 7887,
+    "externalIdentityNodes": 8425,
+    "uniqueNameBindings": 1809,
+    "unresolvedNameCredits": 30
+  }
+}

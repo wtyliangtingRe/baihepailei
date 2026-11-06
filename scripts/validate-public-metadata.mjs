@@ -6,7 +6,7 @@ import { gunzipSync } from 'node:zlib'
 import { loadPublicRelease } from './lib/load-public-release.mjs'
 
 const root = process.cwd()
-const release = process.env.BAIHEPAILEI_RELEASE_DIR || join(root,'data/public-release/v3')
+const release = process.env.BAIHEPAILEI_RELEASE_DIR || join(root,'data/public-release/v4')
 const directory = join(release,'metadata-20260905-v01')
 const readJson = path => JSON.parse(readFileSync(path,'utf8'))
 const manifest = readJson(join(directory,'manifest.json'))
@@ -61,13 +61,20 @@ const ratingAdditions=baseManifest.displayIdentityBaseline
   : new Set()
 const officialAssessmentFile = baseManifest.sourceOfTruth?.officialSourceAssessment?.file
 if (officialAssessmentFile) for (const row of readLines(join(release, officialAssessmentFile))) ratingAdditions.add(baseline.get(row.workId)?.primaryWorkId)
+const newerAssessmentFile = baseManifest.sourceOfTruth?.sourceAssessment20261107?.file
+const ratingRevisions = new Set()
+if (newerAssessmentFile) for (const row of readLines(join(release, newerAssessmentFile))) {
+  const primaryId = baseline.get(row.workId)?.primaryWorkId
+  ratingAdditions.add(primaryId)
+  if (row.revision) ratingRevisions.add(primaryId)
+}
 assert.equal(baseline.size,base.length)
 const current=loadPublicRelease(root)
 const publicWorks=new Map()
 for(const record of base){
   const before=baseline.get(record.workId),after=current.getPublicWorkById(record.workId)
   assert.equal(after.workId,before.primaryWorkId,`Stable canonical route ${record.workId}`)
-  if (before.rating.state!=='not_assessed' || !ratingAdditions.has(before.primaryWorkId)) {
+  if (!ratingRevisions.has(before.primaryWorkId) && (before.rating.state!=='not_assessed' || !ratingAdditions.has(before.primaryWorkId))) {
     assert.equal(JSON.stringify(after.rating),JSON.stringify(before.rating),`Stable rating ${record.workId}`)
   }
   assert.equal(after.media.group,before.media,`Stable media identity ${record.workId}`)

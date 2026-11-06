@@ -35,6 +35,9 @@ export function collectWorkReferences(work: PublicWorkRecord): WorkReference[] {
     const reference = references.get(source.url.trim())
     if (reference && source.tier) reference.tier = source.tier
   }
+  for (const source of work.rating.evidenceSources || []) {
+    add(source.url, source.kind === 'community' ? '第三方 / 社区资料 · 评级依据' : '官方或授权资料 · 评级依据', '评级依据')
+  }
   add(work.rating.evidenceUrl, '评级依据页面', '评级依据')
   add(work.summary?.sourceUrl, '简介来源', '作品介绍')
   for (const credit of [...work.creators, ...work.organizations]) {
