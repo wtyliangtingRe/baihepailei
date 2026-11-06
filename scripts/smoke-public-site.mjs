@@ -132,7 +132,7 @@ try {
       mergedAway: 471,
       mergedGroups: 471,
       largestMergedGroup: 2,
-      ratedWorks: 4_634,
+      ratedWorks: 4_636,
     },
   )
   assert.equal(health.visibleWorks + health.mergedAway, health.catalogWorks)
@@ -157,6 +157,12 @@ try {
     const work = await json(`/api/work-lineage/works/${id}`)
     assert.equal(work.rating.grade,grade,`New assessment ${id}`)
     assert.ok(work.rating.reasoningSummary && work.rating.evidenceUrl)
+  }
+  for (const id of ['15053', '15056']) {
+    const work = await json(`/api/work-lineage/works/${id}`)
+    assert.equal(work.rating.grade, 'F', `Official assessment ${id}`)
+    assert.ok(work.rating.reasoningSummary && work.rating.evidenceUrl)
+    assert.equal(work.rating.needsMoreResearch, true)
   }
   const skippedWork=await json('/api/work-lineage/works/38850')
   assert.equal(skippedWork.rating.state,'not_assessed','Skipped records must not receive invented ratings')

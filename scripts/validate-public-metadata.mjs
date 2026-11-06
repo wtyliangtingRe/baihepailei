@@ -6,7 +6,7 @@ import { gunzipSync } from 'node:zlib'
 import { loadPublicRelease } from './lib/load-public-release.mjs'
 
 const root = process.cwd()
-const release = process.env.BAIHEPAILEI_RELEASE_DIR || join(root,'data/public-release/v2')
+const release = process.env.BAIHEPAILEI_RELEASE_DIR || join(root,'data/public-release/v3')
 const directory = join(release,'metadata-20260905-v01')
 const readJson = path => JSON.parse(readFileSync(path,'utf8'))
 const manifest = readJson(join(directory,'manifest.json'))
@@ -59,6 +59,8 @@ const baseline=new Map(baselineRows.map(row=>[row.sourceWorkId,row]))
 const ratingAdditions=baseManifest.displayIdentityBaseline
   ? new Set(readLines(join(release,'pack-reuse-20260908-v01.jsonl')).map(row=>baseline.get(row.workId)?.primaryWorkId))
   : new Set()
+const officialAssessmentFile = baseManifest.sourceOfTruth?.officialSourceAssessment?.file
+if (officialAssessmentFile) for (const row of readLines(join(release, officialAssessmentFile))) ratingAdditions.add(baseline.get(row.workId)?.primaryWorkId)
 assert.equal(baseline.size,base.length)
 const current=loadPublicRelease(root)
 const publicWorks=new Map()

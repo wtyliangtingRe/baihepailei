@@ -49,18 +49,6 @@ export default function HomePage() {
             本站收录百合及相关作品，整理作品资料、作者与创作机构、关系评级和具体雷点，
             帮助读者查找作品、了解内容，并按自己的偏好选择阅读、观看或游玩。
           </p>
-          <aside className="release-disclaimer" aria-labelledby="site-disclaimer-title">
-            <h2 id="site-disclaimer-title">免责声明</h2>
-            <p>
-              本站主要借助 AI 收集资料与辅助评级，可能存在误判、遗漏或理解偏差，内容仅供参考。
-              目前维护人手有限，许多作品仍缺少资料或尚未评级；空白条目和缺失警示不代表作品已经确认安全。
-            </p>
-            <p>
-              评级以当时收集到的资料为依据。连载进展、后续剧情、版本差异及新增信息都可能影响结论，
-              站内更新也可能滞后，请结合具体版本、资料日期和原作内容阅读。
-              如有异议或补充，欢迎通过<Link href="/feedback">补充纠错页的表单或联系方式</Link>反馈，并附上作品名与相关依据。
-            </p>
-          </aside>
           <form action="/search" className="search-box release-search" role="search">
             <label htmlFor="home-search-input">搜索作品、作者、制作机构或警示</label>
             <div>
@@ -73,6 +61,18 @@ export default function HomePage() {
             <Link href="/ratings">评级原则</Link>
             <Link href="/rules">查看警示细则</Link>
           </div>
+          <aside className="release-disclaimer" aria-labelledby="site-disclaimer-title">
+            <h2 id="site-disclaimer-title">免责声明</h2>
+            <p>
+              本站主要借助 AI 收集资料与辅助评级，可能存在误判、遗漏或理解偏差，内容仅供参考。
+              目前维护人手有限，许多作品仍缺少资料或尚未评级；空白条目和缺失警示不代表作品已经确认安全。
+            </p>
+            <p>
+              评级以当时收集到的资料为依据。连载进展、后续剧情、版本差异及新增信息都可能影响结论，
+              站内更新也可能滞后，请结合具体版本、资料日期和原作内容阅读。
+              如有异议或补充，欢迎通过<Link href="/feedback">补充纠错页的表单或联系方式</Link>反馈，并附上作品名与相关依据。
+            </p>
+          </aside>
         </section>
 
         <section className="release-stat-grid release-stat-grid-public" aria-label="公开资料概览">

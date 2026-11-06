@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 520" fill="none">
+  <defs>
+    <linearGradient id="petal" x1="150" y1="60" x2="390" y2="350" gradientUnits="userSpaceOnUse"><stop stop-color="#fff6fb"/><stop offset=".56" stop-color="#f2b7d8"/><stop offset="1" stop-color="#ad82c6"/></linearGradient>
+    <linearGradient id="leaf" x1="235" y1="300" x2="415" y2="480" gradientUnits="userSpaceOnUse"><stop stop-color="#a3d3bb"/><stop offset="1" stop-color="#668e91"/></linearGradient>
+  </defs>
+  <circle cx="260" cy="246" r="202" stroke="#f4c8e0" stroke-opacity=".18"/>
+  <circle cx="260" cy="246" r="176" stroke="#f4c8e0" stroke-opacity=".1" stroke-dasharray="3 9"/>
+  <g stroke="url(#leaf)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M251 270C255 330 270 400 300 484"/>
+    <path d="M273 368C224 318 171 325 141 341c30 38 78 55 132 27Z" fill="url(#leaf)" fill-opacity=".18"/>
+    <path d="M281 404c31-60 79-79 121-77-10 43-48 77-121 77Z" fill="url(#leaf)" fill-opacity=".18"/>
+    <path d="M171 343c32 3 66 13 98 28M310 392c30-29 51-44 76-54" stroke-opacity=".7" stroke-width="2"/>
+  </g>
+  <g stroke="url(#petal)" stroke-width="3" stroke-linejoin="round">
+    <path d="M257 244C218 207 208 123 256 66c47 57 38 141 1 178Z" fill="url(#petal)" fill-opacity=".2"/>
+    <path d="M255 247C198 250 136 204 133 137c72 4 119 46 122 110Z" fill="url(#petal)" fill-opacity=".16"/>
+    <path d="M259 247c3-64 50-106 122-110-3 67-65 113-122 110Z" fill="url(#petal)" fill-opacity=".16"/>
+    <path d="M255 250c-34 44-107 57-157 18 41-40 109-49 157-18Z" fill="url(#petal)" fill-opacity=".14"/>
+    <path d="M259 250c34 44 107 57 157 18-41-40-109-49-157-18Z" fill="url(#petal)" fill-opacity=".14"/>
+    <path d="M257 253c-28 52-31 89 0 118 31-29 28-66 0-118Z" fill="url(#petal)" fill-opacity=".19"/>
+    <path d="M256 220V100M240 225l-83-69m118 69 83-69M232 247l-100 18m151-18 100 18M257 279v64" stroke-opacity=".42" stroke-width="1.5"/>
+  </g>
+  <g stroke="#f8dfad" stroke-width="2" stroke-linecap="round"><path d="M257 251l-31-43M257 251l-12-51M257 251l14-52M257 251l34-41"/><circle cx="225" cy="206" r="4" fill="#f8dfad"/><circle cx="244" cy="198" r="4" fill="#f8dfad"/><circle cx="272" cy="197" r="4" fill="#f8dfad"/><circle cx="293" cy="208" r="4" fill="#f8dfad"/></g>
+  <g fill="#f4c8e0" opacity=".7"><circle cx="80" cy="179" r="2"/><circle cx="410" cy="102" r="2"/><circle cx="429" cy="366" r="3"/><path d="M106 104l3 8 8 3-8 3-3 8-3-8-8-3 8-3 3-8ZM425 212l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6Z"/></g>
+</svg>

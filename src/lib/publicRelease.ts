@@ -291,7 +291,7 @@ const terminalSelectionOrder = new Map<PublicRatingState, number>([
 
 function releaseDirectory(): string {
   const configured = String(process.env.BAIHEPAILEI_RELEASE_DIR || '').trim()
-  return configured ? resolve(configured) : join(process.cwd(), 'data', 'public-release', 'v2')
+  return configured ? resolve(configured) : join(process.cwd(), 'data', 'public-release', 'v3')
 }
 
 function parseJsonLines<T>(content: string, file: string): T[] {
@@ -467,7 +467,7 @@ function recordRichness(record: PublicWorkRecord): number {
   )
 }
 
-function selectMergedRating(records: PublicWorkRecord[]): PublicWorkRating {
+export function selectMergedRating(records: PublicWorkRecord[]): PublicWorkRating {
   const rated = records.filter((record) => record.rating.state === 'rated' && record.rating.grade)
   let candidates: PublicWorkRecord[]
   if (rated.length) {
@@ -488,11 +488,12 @@ function selectMergedRating(records: PublicWorkRecord[]): PublicWorkRating {
       if (!isRadarRatingClass(ratingClass)) return false
       return !selectedGrade || radarClassDefinitions[ratingClass].grade === selectedGrade
     })
-  const reasoningSummary = [...sameGrade]
-    .map((record) => record.rating.reasoningSummary)
-    .filter((value): value is string => Boolean(value))
-    .sort((left, right) => right.length - left.length)[0]
-  const evidenceUrl = sameGrade.find((record) => record.rating.evidenceUrl)?.rating.evidenceUrl
+  // A reason and its evidence are one assessment: records with the same grade
+  // may describe different facts, so an unrelated URL must not be attached to it.
+  const reasonRecord = [...sameGrade]
+    .filter((record) => Boolean(record.rating.reasoningSummary))
+    .sort((left, right) => (right.rating.reasoningSummary?.length || 0) - (left.rating.reasoningSummary?.length || 0))[0]
+  const evidenceRecord = reasonRecord || (selected.rating.evidenceUrl ? selected : sameGrade.find((record) => record.rating.evidenceUrl))
 
   return {
     ...selected.rating,
@@ -500,8 +501,8 @@ function selectMergedRating(records: PublicWorkRecord[]): PublicWorkRating {
       ? selected.rating.class
       : classes[0],
     classes,
-    reasoningSummary: reasoningSummary || selected.rating.reasoningSummary,
-    evidenceUrl: selected.rating.evidenceUrl || evidenceUrl,
+    reasoningSummary: reasonRecord?.rating.reasoningSummary,
+    evidenceUrl: evidenceRecord?.rating.evidenceUrl,
     needsMoreResearch: records.some((record) => record.rating.needsMoreResearch),
     uncertaintyKind: selectedGrade === 'D' && records.some((record) => record.rating.uncertaintyKind)
       ? 'evidence_insufficient'

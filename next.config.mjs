@@ -5,7 +5,7 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   outputFileTracingIncludes: {
-    '/*': ['./data/public-release/v2/**/*'],
+    '/*': ['./data/public-release/v3/**/*'],
   },
   async headers() {
     return [{
