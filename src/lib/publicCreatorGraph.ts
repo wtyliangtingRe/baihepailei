@@ -71,6 +71,8 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
       name: node.name, names: node.names, identityBasis: node.identityBasis })
   }
   const byWorkId = new Map(records.map(work => [work.workId, work]))
+  const reviewedPrimary = new Map((review?.groups || []).flatMap(group =>
+    group.workIds.map(id => [id, group.primaryWorkId] as const)))
   const byCredit = new Map<string, CreditEdge[]>()
   const perCreator = new Map<string, Map<string, CreatorWork>>()
   const seen = new Set<string>()
@@ -80,7 +82,9 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
   for (const reviewed of review?.creditsByWork.values() || []) edges.push(...reviewed)
   for (const original of edges) {
     if (review?.removedCreatorIds.has(original.creatorId)) continue
-    const edge = correctCredit(original.workId, original, review)
+    const corrected = correctCredit(original.workId, original, review)
+    const primary = reviewedPrimary.get(original.workId)
+    const edge = primary ? { ...corrected, workId: primary } : corrected
     const creator = entities.get(edge.creatorId)
     const work = byWorkId.get(edge.workId)
     if (!creator || !work) throw new Error(`Creator edge references a missing public node: ${edge.workId}`)
@@ -88,7 +92,7 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
     const credits = edge.creditKind === 'person' ? work.creators : work.organizations
     if (!credits.some(credit => descriptiveKey(credit.name) === descriptiveKey(edge.name) &&
         descriptiveKey(credit.role) === descriptiveKey(edge.role))) throw new Error('Creator credit drift')
-    const unique = JSON.stringify([edge.workId, edge.creatorId, edge.name, edge.displayName, edge.role])
+    const unique = JSON.stringify([original.workId, edge.creatorId, edge.name, edge.displayName, edge.role])
     if (seen.has(unique)) throw new Error('Repeated creator credit edge')
     seen.add(unique)
     const key = creditKey(work.workId, edge.creditKind, edge.name, edge.role)

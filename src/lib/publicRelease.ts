@@ -1,4 +1,4 @@
-import { resolveReview, type SourceFinding, type SourceReview } from './sourceReview'
+import { matchesReviewEdition, resolveReview, type SourceFinding, type SourceReview } from './sourceReview'
 import 'server-only'
 
 import { readFileSync } from 'node:fs'
@@ -860,11 +860,17 @@ function loadRelease(): PublicReleaseCache {
     const seen = new Set<string>()
     for (const review of reviews) {
       const index = indexes.get(review.workId)
-      if (index === undefined || seen.has(review.workId) || !review.siteId || baseRecords[index].identity.siteId !== review.siteId) {
+      if (index === undefined || seen.has(review.workId) || !matchesReviewEdition(
+        review, baseRecords[index].title, baseRecords[index].identity.siteId)) {
         throw new Error(`Assessment identity mismatch: ${review.workId}`)
       }
       seen.add(review.workId)
       const work = rawRecords[index]
+      if (review.edition) {
+        const { isbn, media, sourceUrl } = review.edition
+        work.media = { group: media, type: media, format: media === 'manga' ? '漫画单行本' : '小说单行本' }
+        work.sources = [...work.sources, { title: `出版社书目 · ISBN ${isbn}`, url: sourceUrl }]
+      }
       const previous = work.rating
       const rating = resolveReview(review, previous, PUBLIC_GRADES)
       if (previous.grade) manifest.gradeCounts[previous.grade]--

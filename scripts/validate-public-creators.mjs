@@ -30,6 +30,19 @@ const reviewCounts = currentReview ? JSON.parse(readFileSync(join(identityRoot, 
   : { extraEntities: 0, mergeGroups: 0, credits: 0, newlyCreditedWorks: 0, duplicateCreditedWorks: 0, removedEntities: 0 }
 const extraEntities = currentReview ? readFileSync(join(identityRoot, 'entities.jsonl'), 'utf8').trim().split('\n').map(JSON.parse) : []
 assert.equal(extraEntities.length, reviewCounts.extraEntities)
+if (currentReview) {
+  const corrections = readFileSync(join(identityRoot, 'corrections.jsonl'), 'utf8').trim().split('\n').map(JSON.parse)
+  for (const correction of corrections.filter(row => row.edition)) {
+    const work = release.getPublicWorkById(correction.workId)
+    assert.equal(work.title, correction.edition.catalogTitle)
+    assert.ok(work.sources.some(source => source.url === correction.url && source.title.includes(correction.edition.isbn)))
+    for (const credit of correction.edition.credits) {
+      const rows = credit.creditKind === 'person' ? work.creators : work.organizations
+      assert.ok(rows.some(row => row.creatorId === credit.creatorId && row.role === credit.role &&
+        row.sourceUrls.includes(credit.sourceUrl || correction.url)), `Missing edition credit: ${work.workId} ${credit.name}`)
+    }
+  }
+}
 const records = release.getPublicCreatorGraphInput()
 assert.equal(records.length, manifest.counts.publicWorks - reviewCounts.mergeGroups)
 const publicIds = new Set(records.map(work => work.workId))
@@ -41,6 +54,7 @@ for (const record of records) {
   const urls = new Set(refs.map(ref => ref.url))
   const oldUrls = new Set([
     ...record.sources.map(source => source.url), record.summary?.sourceUrl, record.rating.evidenceUrl,
+    ...(record.rating.sourceFindings || []).flatMap(finding => finding.urls),
     ...(record.rating.evidenceSources || []).map(source => source.url),
     ...[...record.creators, ...record.organizations].flatMap(credit => [credit.sourceUrl, ...(credit.sourceUrls || [])]),
   ].filter(Boolean))

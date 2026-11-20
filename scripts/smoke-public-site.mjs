@@ -129,9 +129,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411,
-      visibleWorks: 34_937,
-      mergedAway: 474,
-      mergedGroups: 474,
+      visibleWorks: 34_935,
+      mergedAway: 476,
+      mergedGroups: 476,
       largestMergedGroup: 2,
       ratedWorks: reviewManifest.ratedSourceRecords,
     },
@@ -184,7 +184,8 @@ try {
   assert.equal(skippedWork.rating.state,'not_assessed','Skipped records must not receive invented ratings')
   const newClip=await json('/api/work-lineage/works/32107')
   assert.equal(newClip.workId,'15896','New evidence must preserve the established public Work node')
-  assert.equal(newClip.rating.grade,'B')
+  assert.equal(newClip.rating.grade,'C')
+  assert.ok(newClip.rating.sourceFindings.some(finding => finding.classes.includes('C-FRIENDSHIP')))
   for (const credit of newClip.organizations) {
     const page=await response(`/organizations/o-${credit.creatorId}?year=2017`)
     assert.equal(page.status,200)
@@ -196,15 +197,16 @@ try {
   const yuruYuri = await json('/api/work-lineage/works/29857')
   const yuruYuriSeason2 = await json('/api/work-lineage/works/29865')
   assert.equal(yuruYuri.title, 'Yuru Yuri')
-  assert.equal(yuruYuri.rating.state, 'not_assessed')
+  assert.equal(yuruYuri.rating.grade, 'B')
   assert.equal(yuruYuriSeason2.title, 'Yuru Yuri♪♪')
-  assert.equal(yuruYuriSeason2.rating.grade, 'D')
+  assert.equal(yuruYuriSeason2.rating.grade, 'B')
+  assert.notEqual(yuruYuri.rating.evidenceUrl, yuruYuriSeason2.rating.evidenceUrl)
   assert.notEqual(yuruYuri.workId, yuruYuriSeason2.workId)
 
   const showByRock = await json('/api/work-lineage/works/25024')
   const showByRockSeason2 = await json('/api/work-lineage/works/25027')
   assert.equal(showByRock.title, 'SHOW BY ROCK!!')
-  assert.equal(showByRock.rating.state, 'not_assessed')
+  assert.equal(showByRock.rating.grade, 'C')
   assert.equal(showByRockSeason2.title, 'SHOW BY ROCK!!#')
   assert.equal(showByRockSeason2.rating.grade, 'D')
   assert.notEqual(showByRock.workId, showByRockSeason2.workId)
@@ -214,6 +216,8 @@ try {
     ['14098', '36929'], // One Ichijinsha anthology in two catalogues
     ['19062', '38373'], // One Mikanuji short-story collection
     ['36714', '31964'], // The Gaze of The Eternal Sun, full Steam app
+    ['36722', '36481'], // No Fap Island, full game rather than its separate demo
+    ['36617', '31936'], // Kirakira Monstars, Windows release
     ['5409', '30268'], // Adachi and Shimamura / 安達としまむら
     ['25236', '31618'], // Sky Girls 2007 TV
     ['25237', '31619'], // Sky Girls 2006 OVA
@@ -230,6 +234,8 @@ try {
     ['17926', '31034'],
     ['4142', '4978'],
     ['4918', '4979'],
+    ['36426', '36701'], // The full Assistant and its first season
+    ['31936', '32462'], // Windows game and its mobile adaptation
   ]) {
     const leftWork = await json(`/api/work-lineage/works/${left}`)
     const rightWork = await json(`/api/work-lineage/works/${right}`)

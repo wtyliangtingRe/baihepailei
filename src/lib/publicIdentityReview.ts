@@ -8,9 +8,10 @@ import { mergeCredits, mergeSources } from './publicDescriptiveMerge'
 type ReviewedGroup = CatalogEquivalenceGroup & { primaryWorkId: string }
 type Correction = {
   workId: string
-  siteId: string
+  siteId: string | null
   url: string
   label?: string
+  firstPublished?: string
   format?: string
   wrongUrl?: string
   creditName?: string
@@ -20,6 +21,11 @@ type Correction = {
   removedCreatorId?: string
   summary?: string
   aliases?: string[]
+  edition?: {
+    isbn: string
+    catalogTitle: string
+    credits: (Pick<CreditEdge, 'creatorId' | 'creditKind' | 'name' | 'role'> & { sourceUrl?: string })[]
+  }
 }
 type ReviewedCredit = {
   sourceWorkId: string
@@ -52,7 +58,9 @@ export function readIdentityReview(directory: string, identities: Map<string, st
   const groups = read<ReviewedGroup>('groups.jsonl')
   const entities = read<PublicCreator>('entities.jsonl')
   const corrections = new Map(read<Correction>('corrections.jsonl').map(row => {
-    if (identities.get(row.workId) !== row.siteId) throw new Error(`Correction identity drift: ${row.workId}`)
+    if (identities.get(row.workId) !== row.siteId || (row.siteId === null && !row.edition)) {
+      throw new Error(`Correction identity drift: ${row.workId}`)
+    }
     return [row.workId, row]
   }))
   const creditsByWork = new Map<string, CreditEdge[]>()
@@ -67,6 +75,19 @@ export function readIdentityReview(directory: string, identities: Map<string, st
       role: row.role, name: row.name, displayName: row.name, bindingBasis: 'wikidata',
       sourceUrls: [`https://www.wikidata.org/wiki/${row.wikidataWork}`] })
     creditsByWork.set(row.workId, edges)
+  }
+  for (const fix of corrections.values()) {
+    const edition = fix.edition
+    if (!edition) continue
+    if (!/^97[89]\d{10}$/.test(edition.isbn) || !edition.catalogTitle || canonicalIds?.get(fix.workId) !== fix.workId) {
+      throw new Error(`Unbound publisher credit: ${fix.workId}`)
+    }
+    const edges = creditsByWork.get(fix.workId) || []
+    for (const { sourceUrl, ...credit } of edition.credits) {
+      edges.push({ ...credit, workId: fix.workId, displayName: credit.name,
+        bindingBasis: 'publisher_edition', sourceUrls: [sourceUrl || fix.url] })
+    }
+    creditsByWork.set(fix.workId, edges)
   }
   const removedCreatorIds = new Set([...corrections.values()].flatMap(row => row.removedCreatorId ? [row.removedCreatorId] : []))
   return { groups, entities, creditsByWork, corrections, removedCreatorIds }
@@ -84,10 +105,21 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
   const fix = review?.corrections.get(work.workId)
   const edges = review?.creditsByWork.get(work.workId)
   if (!fix && !edges) return work
+  if (fix?.edition && work.title !== fix.edition.catalogTitle) throw new Error(`Edition title drift: ${work.workId}`)
   const credits = (kind: CreatorKind) => (edges || []).filter(edge => edge.creditKind === kind)
     .map(edge => ({ name: edge.name, role: edge.role, sourceUrl: edge.sourceUrls[0] }))
+  const correctedSources = work.sources.map(source =>
+    fix?.wrongUrl && source.url === fix.wrongUrl ? { ...source, url: fix.url } : source)
+  if (fix?.label) correctedSources.push({ title: '版本与收录范围', url: fix.url })
+  if (fix?.edition) correctedSources.push({ title: `出版社书目 · ISBN ${fix.edition.isbn}`, url: fix.url })
+  else if (fix?.firstPublished) correctedSources.push({ title: '出版社书目与发售日期', url: fix.url })
   return {
     ...work,
+    sources: mergeSources(correctedSources),
+    ...(fix?.firstPublished && {
+      firstPublished: fix.firstPublished, firstPublishedLabel: fix.firstPublished,
+      firstPublishedPrecision: 'day' as const,
+    }),
     ...(fix?.placeholder && {
       aliases: [...new Set([...work.aliases.filter(alias => alias !== fix.placeholder), ...(fix.aliases || [])])],
       localizedTitles: work.localizedTitles.filter(item => item.title !== fix.placeholder),
@@ -97,10 +129,8 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
       title: `${work.title}（${fix.label}）`,
       aliases: [...new Set([work.title, ...work.aliases])],
       media: { ...work.media, format: fix.format },
-      sources: mergeSources([...work.sources, { title: '版本与收录范围', url: fix.url }]),
     }),
     ...(fix?.wrongUrl && {
-      sources: mergeSources(work.sources.map(source => source.url === fix.wrongUrl ? { ...source, url: fix.url } : source)),
       rating: work.rating.evidenceUrl === fix.wrongUrl ? { ...work.rating, evidenceUrl: fix.url } : work.rating,
     }),
     creators: mergeCredits([...work.creators.map(credit => correctCredit(work.workId, credit, review)), ...credits('person')]),

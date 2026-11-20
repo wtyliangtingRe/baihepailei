@@ -72,15 +72,16 @@ assert.equal(baseline.size,base.length)
 const current=loadPublicRelease(root)
 const identityRoot=join(root,'data/public-release/identity-20261121')
 const currentReview=!process.env.BAIHEPAILEI_RELEASE_DIR?.trim()
+const reviewedMedia=new Map()
 if (currentReview) {
   for (const review of readLines(join(root, 'data/public-release/review-20261121/reviews.jsonl'))) {
     const row = baseline.get(review.workId)
     assert.ok(row, `Missing review identity ${review.workId}`)
     ratingRevisions.add(row.primaryWorkId)
+    if (review.edition) reviewedMedia.set(row.primaryWorkId,review.edition.media)
   }
 }
 const groupTargets=new Map()
-const reviewedMedia=new Map()
 if(currentReview) for(const group of readLines(join(identityRoot,'groups.jsonl'))) {
   for(const id of group.workIds) {
     groupTargets.set(id,group.primaryWorkId)
@@ -89,6 +90,14 @@ if(currentReview) for(const group of readLines(join(identityRoot,'groups.jsonl')
 }
 const correctedUrls=new Map(currentReview ? readLines(join(identityRoot,'corrections.jsonl')).filter(row=>row.wrongUrl)
   .map(row=>[row.workId,row]) : [])
+if (currentReview) for (const row of readLines(join(identityRoot,'corrections.jsonl'))) {
+  if (!row.firstPublished) continue
+  const work=current.getPublicWorkById(row.workId)
+  assert.equal(work.firstPublished,row.firstPublished)
+  assert.equal(work.firstPublishedLabel,row.firstPublished)
+  assert.equal(work.firstPublishedPrecision,'day')
+  assert.ok(work.sources.some(source=>source.url===row.url))
+}
 const publicWorks=new Map()
 for(const record of base){
   const before=baseline.get(record.workId),after=current.getPublicWorkById(record.workId)

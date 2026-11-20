@@ -6,8 +6,8 @@
   "files": [
     {
       "file": "groups.jsonl",
-      "rows": 3,
-      "sha256": "6e58ac84e6c044a725353c9d0d3285e552d174c1e8d64cb1cf989dceba01655d"
+      "rows": 5,
+      "sha256": "cda4e7688f61a05b27665ad0d6b49f9c92664e1d666459dac066608023f54bae"
     },
     {
       "file": "entities.jsonl",
@@ -21,17 +21,17 @@
     },
     {
       "file": "corrections.jsonl",
-      "rows": 6,
-      "sha256": "44687acc2c50537e00f3e5bbb265570a4679f97d0691af423968e4ca436c12c8"
+      "rows": 13,
+      "sha256": "744548357e25a33b82a05878f8761eb56303d77ded3f81dabc02b3e61bd0e5dc"
     }
   ],
   "counts": {
     "extraEntities": 1293,
-    "credits": 3649,
-    "creditWorks": 2342,
-    "newlyCreditedWorks": 1252,
-    "mergeGroups": 3,
-    "duplicateCreditedWorks": 1,
+    "credits": 3662,
+    "creditWorks": 2348,
+    "newlyCreditedWorks": 1258,
+    "mergeGroups": 5,
+    "duplicateCreditedWorks": 3,
     "removedEntities": 1
   }
 }
