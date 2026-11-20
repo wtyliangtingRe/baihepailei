@@ -43,11 +43,13 @@ function pageHref(input: {
   media: string
   page: number
   perPage: number
+  source: string
 }): string {
   const params = new URLSearchParams()
   if (input.q) params.set('q', input.q)
   if (input.grade) params.set('grade', input.grade)
   if (input.status) params.set('status', input.status)
+  if (input.source) params.set('source', input.source)
   if (input.media) params.set('media', input.media)
   if (input.page > 1) params.set('page', String(input.page))
   if (input.perPage !== 30) params.set('perPage', String(input.perPage))
@@ -70,11 +72,14 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
   const status = PUBLIC_RATING_STATES.includes(statusRaw as PublicRatingState) ? statusRaw : ''
   const mediaRaw = first(params.media)
   const media = PUBLIC_MEDIA_GROUPS.includes(mediaRaw as PublicMediaGroup) ? mediaRaw : ''
+  const rawSource = first(params.source)
+  const source = rawSource === 'official' || rawSource === 'community' ? rawSource : ''
   const requestedPerPage = positiveInteger(first(params.perPage), 30)
   const perPage = [30, 60, 100].includes(requestedPerPage) ? requestedPerPage : 30
   const page = Math.min(positiveInteger(first(params.page), 1), 10_000)
   const result = getPublicWorkList({
     query: q,
+    source,
     grade,
     status,
     media,
@@ -84,17 +89,17 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
   const totalPages = Math.max(1, Math.ceil(result.total / perPage))
 
   if (result.total > 0 && page > totalPages) {
-    redirect(pageHref({ q, grade, status, media, page: totalPages, perPage }))
+    redirect(pageHref({ q, grade, status, media, source, page: totalPages, perPage }))
   }
 
-  const paginationInput = { q, grade, status, media, perPage }
+  const paginationInput = { q, grade, status, media, source, perPage }
 
   return (
     <main className="page collection-page release-works-page">
       <section className="page-heading collection-heading">
         <h1>作品资料库</h1>
         <p>
-          可按作品名、别名、作者、制作机构或警示关键词检索，并按评级、作品类型与评级进度筛选。
+          可按作品名、别名、作者、制作机构或警示关键词检索，并按等级、作品类型、评级来源和进度筛选。
         </p>
         <form action="/works" className="works-filter-panel release-filter-panel">
           <div className="works-filter-grid release-filter-grid">
@@ -128,6 +133,14 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
                 {PUBLIC_RATING_STATES.map((value) => (
                   <option key={value} value={value}>{publicStatusLabels[value]}</option>
                 ))}
+              </select>
+            </label>
+            <label>
+              <span>评级来源</span>
+              <select defaultValue={source} name="source">
+                <option value="">全部来源</option>
+                <option value="official">官方来源</option>
+                <option value="community">社区来源</option>
               </select>
             </label>
             <label>

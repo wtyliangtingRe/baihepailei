@@ -1,6 +1,8 @@
 import type { RadarRatingClass } from './ratingPolicy'
 
 export const PUBLIC_TAG_KEYS = [
+  'source-official',
+  'source-community',
   'setting-ts',
   'setting-futa',
   'setting-abo',
@@ -12,12 +14,18 @@ export const PUBLIC_TAG_KEYS = [
 export type PublicTagKey = (typeof PUBLIC_TAG_KEYS)[number]
 
 export type PublicTagDefinition = {
-  group: '设定提示' | '内容提示'
+  group: '设定提示' | '内容提示' | '评级来源'
   label: string
   description: string
 }
 
 export const publicTagDefinitions: Record<PublicTagKey, PublicTagDefinition> = {
+  'source-official': {
+    group: '评级来源', label: '官方来源', description: '作品原文、制作方、出版方或授权资料支持当前等级。',
+  },
+  'source-community': {
+    group: '评级来源', label: '社区来源', description: '可追溯的观后记录、读者评论或第三方资料支持当前等级。',
+  },
   'setting-ts': {
     group: '设定提示',
     label: 'TS / 性别转换',

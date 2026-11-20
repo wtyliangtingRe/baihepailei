@@ -12,7 +12,7 @@ export function loadPublicRelease(root, overrides = {}) {
 
 export function loadPublicModule(root, entry, overrides = {}) {
   const modules = new Map()
-  const context = vm.createContext({ process, URL, URLSearchParams, console })
+  const releaseGlobal = Object.create(globalThis)
   const nativeRequire = createRequire(join(root, 'package.json'))
   function load(path) {
     if (modules.has(path)) return modules.get(path).exports
@@ -28,8 +28,8 @@ export function loadPublicModule(root, entry, overrides = {}) {
       if (!existsSync(target)) target += '.ts'
       return load(target)
     }
-    const run = vm.runInContext(`(function(require,module,exports){${output}\n})`, context, { filename:path })
-    run(require, module, module.exports)
+    const run = vm.compileFunction(output, ['require', 'module', 'exports', 'globalThis'], { filename: path })
+    run(require, module, module.exports, releaseGlobal)
     return module.exports
   }
   return load(join(root, entry))

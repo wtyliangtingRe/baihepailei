@@ -24,8 +24,14 @@ for (const entity of entities) {
     byNamespace.set(identity.namespace, identity.externalId)
   }
 }
+const identityRoot = join(root, 'data/public-release/identity-20261121')
+const currentReview = !process.env.BAIHEPAILEI_RELEASE_DIR?.trim()
+const reviewCounts = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'manifest.json'), 'utf8')).counts
+  : { extraEntities: 0, mergeGroups: 0, credits: 0, newlyCreditedWorks: 0, duplicateCreditedWorks: 0, removedEntities: 0 }
+const extraEntities = currentReview ? readFileSync(join(identityRoot, 'entities.jsonl'), 'utf8').trim().split('\n').map(JSON.parse) : []
+assert.equal(extraEntities.length, reviewCounts.extraEntities)
 const records = release.getPublicCreatorGraphInput()
-assert.equal(records.length, manifest.counts.publicWorks)
+assert.equal(records.length, manifest.counts.publicWorks - reviewCounts.mergeGroups)
 const publicIds = new Set(records.map(work => work.workId))
 let linkedCredits = 0, references = 0
 const expectedWorks = new Map()
@@ -57,7 +63,7 @@ for (const record of records) {
   references += refs.length
 }
 let relatedWorks = 0
-for (const entity of entities) {
+for (const entity of [...entities, ...extraEntities]) {
   const result = release.getPublicCreatorWorks(entity.creatorId, { limit: 100 })
   const rows = [...result.items]
   for (let offset = 100; offset < result.total; offset += 100) rows.push(...release.getPublicCreatorWorks(entity.creatorId, { offset, limit: 100 }).items)
@@ -72,5 +78,9 @@ for (const entity of entities) {
 }
 assert.equal(release.getPublicCreatorById('not-an-id'), null)
 assert.equal(release.getPublicCreatorById(String(manifest.nextId)), null)
-console.log(JSON.stringify({ creators: entities.length, ...manifest.counts, linkedCredits, relatedWorks, references,
+const creditedWorks = records.filter(work => work.creators.length || work.organizations.length).length
+assert.equal(creditedWorks, manifest.counts.creditedWorks + reviewCounts.newlyCreditedWorks - reviewCounts.duplicateCreditedWorks)
+if (currentReview) assert.equal(release.getPublicCreatorById('1010974'), null, 'Retired null Steam organization')
+console.log(JSON.stringify({ creators: entities.length + extraEntities.length - reviewCounts.removedEntities, publicWorks: records.length,
+  creditedWorks, supplementaryCredits: reviewCounts.credits, linkedCredits, relatedWorks, references,
   uniqueIds: true, originalCreditsPreserved: true, existingLinksPreserved: true, publicWorkIdsOnly: true, status: 'PASS' }, null, 2))

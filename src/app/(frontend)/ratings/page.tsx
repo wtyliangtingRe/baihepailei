@@ -95,6 +95,14 @@ export default function RatingsPage() {
         })}
       </section>
 
+      <section className="detail-card">
+        <h2>评级来源</h2>
+        <p>先看原作和官方资料，再用社区记录核验。两类来源支持同一等级时标「官方来源」。结论不同时，取较低等级，标出支持这个等级的来源。</p>
+        <div className="collection-actions">
+          <Link href="/works?source=official">查看官方来源作品</Link>
+          <Link href="/works?source=community">查看社区来源作品</Link>
+        </div>
+      </section>
       <section className="detail-card release-preference-layer">
         <div className="release-section-heading release-section-heading-top">
           <div>
@@ -107,7 +115,7 @@ export default function RatingsPage() {
           只有逐作品资料已经确认时才会出现在作品页；没有标签不等于已经确认不存在。
         </p>
         <div className="release-preference-grid">
-          {PUBLIC_TAG_KEYS.map((key) => {
+          {PUBLIC_TAG_KEYS.filter(key => publicTagDefinitions[key].group !== '评级来源').map((key) => {
             const tag = publicTagDefinitions[key]
             return (
               <article key={key}>

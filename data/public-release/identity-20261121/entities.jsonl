@@ -1,0 +1,1293 @@
+{"creatorId":"90000001993","kind":"person","name":"岸本斉史","names":["岸本斉史","岸本齊史","Masashi Kishimoto"],"identityBasis":"external_id"}
+{"creatorId":"90000002010","kind":"person","name":"尾田栄一郎","names":["尾田栄一郎","尾田荣一郎","Eiichiro Oda"],"identityBasis":"external_id"}
+{"creatorId":"90000017572","kind":"person","name":"藤子・F・不二雄","names":["藤子・F・不二雄","藤子·F·不二雄","Fujiko F. Fujio"],"identityBasis":"external_id"}
+{"creatorId":"90000027286","kind":"person","name":"士貴智志","names":["士貴智志","Satoshi Shiki"],"identityBasis":"external_id"}
+{"creatorId":"90000038842","kind":"person","name":"安野モヨコ","names":["安野モヨコ","安野夢洋子","Moyoco Anno"],"identityBasis":"external_id"}
+{"creatorId":"90000050038","kind":"person","name":"虚淵玄","names":["虚淵玄","虛淵玄","Gen Urobuchi"],"identityBasis":"external_id"}
+{"creatorId":"90000055400","kind":"person","name":"宮崎駿","names":["宮崎駿","Hayao Miyazaki"],"identityBasis":"external_id"}
+{"creatorId":"90000081078","kind":"person","name":"前田真宏","names":["前田真宏","Mahiro Maeda"],"identityBasis":"external_id"}
+{"creatorId":"90000082555","kind":"organization","name":"Egmont Manga & Anime","names":["Egmont Manga & Anime"],"identityBasis":"external_id"}
+{"creatorId":"90000115781","kind":"person","name":"森恒二","names":["森恒二","Kōji Mori"],"identityBasis":"external_id"}
+{"creatorId":"90000119292","kind":"person","name":"中条比紗也","names":["中条比紗也","中條比紗也","Hisaya Nakajo"],"identityBasis":"external_id"}
+{"creatorId":"90000130450","kind":"person","name":"倉藤倖","names":["倉藤倖","Sachi Kurafuji"],"identityBasis":"external_id"}
+{"creatorId":"90000181569","kind":"person","name":"方條ゆとり","names":["方條ゆとり","方條Yutori","Yutori Hōjō"],"identityBasis":"external_id"}
+{"creatorId":"90000185421","kind":"person","name":"三池崇史","names":["三池崇史","Takashi Miike"],"identityBasis":"external_id"}
+{"creatorId":"90000193300","kind":"person","name":"手塚治虫","names":["手塚治虫","Osamu Tezuka"],"identityBasis":"external_id"}
+{"creatorId":"90000202229","kind":"person","name":"芦原妃名子","names":["芦原妃名子","Hinako Ashihara"],"identityBasis":"external_id"}
+{"creatorId":"90000208582","kind":"person","name":"鳥山明","names":["鳥山明","Akira Toriyama"],"identityBasis":"external_id"}
+{"creatorId":"90000219332","kind":"person","name":"小島正幸","names":["小島正幸","Masayuki Kojima"],"identityBasis":"external_id"}
+{"creatorId":"90000219948","kind":"person","name":"高橋留美子","names":["高橋留美子","Rumiko Takahashi"],"identityBasis":"external_id"}
+{"creatorId":"90000229724","kind":"person","name":"武内直子","names":["武内直子","武內直子","Naoko Takeuchi"],"identityBasis":"external_id"}
+{"creatorId":"90000230962","kind":"person","name":"荒川弘","names":["荒川弘","Hiromu Arakawa"],"identityBasis":"external_id"}
+{"creatorId":"90000232660","kind":"person","name":"種村有菜","names":["種村有菜","Arina Tanemura"],"identityBasis":"external_id"}
+{"creatorId":"90000234417","kind":"person","name":"渡瀬悠宇","names":["渡瀬悠宇","渡瀨悠宇","Yuu Watase"],"identityBasis":"external_id"}
+{"creatorId":"90000234425","kind":"person","name":"矢沢あい","names":["矢沢あい","矢澤愛","Ai Yazawa"],"identityBasis":"external_id"}
+{"creatorId":"90000238087","kind":"person","name":"葉鳥ビスコ","names":["葉鳥ビスコ","葉鳥螺子","Bisco Hatori"],"identityBasis":"external_id"}
+{"creatorId":"90000239360","kind":"person","name":"樋野まつり","names":["樋野まつり","樋野茉理","Matsuri Hino"],"identityBasis":"external_id"}
+{"creatorId":"90000241885","kind":"person","name":"高屋奈月","names":["高屋奈月","Natsuki Takaya"],"identityBasis":"external_id"}
+{"creatorId":"90000242774","kind":"person","name":"天野こずえ","names":["天野こずえ","天野梢","Kozue Amano"],"identityBasis":"external_id"}
+{"creatorId":"90000253412","kind":"person","name":"由貴香織里","names":["由貴香織里","Kaori Yuki"],"identityBasis":"external_id"}
+{"creatorId":"90000256887","kind":"person","name":"河下水希","names":["河下水希","Mizuki Kawashita"],"identityBasis":"external_id"}
+{"creatorId":"90000263303","kind":"person","name":"ほったゆみ","names":["ほったゆみ","堀田由美","Yumi Hotta"],"identityBasis":"external_id"}
+{"creatorId":"90000265061","kind":"person","name":"萩尾望都","names":["萩尾望都","Moto Hagio"],"identityBasis":"external_id"}
+{"creatorId":"90000265117","kind":"person","name":"こげどんぼ*","names":["こげどんぼ*","小夏鈍帆","Koge-Donbo"],"identityBasis":"external_id"}
+{"creatorId":"90000266996","kind":"person","name":"吉住渉","names":["吉住渉","吉住涉","Wataru Yoshizumi"],"identityBasis":"external_id"}
+{"creatorId":"90000268789","kind":"person","name":"竹宮惠子","names":["竹宮惠子","竹宮恵子","Keiko Takemiya"],"identityBasis":"external_id"}
+{"creatorId":"90000269498","kind":"person","name":"新條まゆ","names":["新條まゆ","新条真由","Mayu Shinjo"],"identityBasis":"external_id"}
+{"creatorId":"90000271250","kind":"person","name":"花森ぴんく","names":["花森ぴんく","花森小桃","Pink Hanamori"],"identityBasis":"external_id"}
+{"creatorId":"90000271610","kind":"person","name":"羽海野チカ","names":["羽海野チカ","羽海野千花","Chica Umino"],"identityBasis":"external_id"}
+{"creatorId":"90000272299","kind":"person","name":"日渡早紀","names":["日渡早紀","Saki Hiwatari"],"identityBasis":"external_id"}
+{"creatorId":"90000272314","kind":"person","name":"多田かおる","names":["多田かおる","多田薰","Kaoru Tada"],"identityBasis":"external_id"}
+{"creatorId":"90000272333","kind":"person","name":"漆原友紀","names":["漆原友紀","Yuki Urushibara"],"identityBasis":"external_id"}
+{"creatorId":"90000275008","kind":"person","name":"珠黎皐夕","names":["珠黎皐夕","Kouyu Shurei"],"identityBasis":"external_id"}
+{"creatorId":"90000275108","kind":"person","name":"水野十子","names":["水野十子","Tohko Mizuno"],"identityBasis":"external_id"}
+{"creatorId":"90000275121","kind":"person","name":"小手川ゆあ","names":["小手川ゆあ","小手川瑜亞","Yua Kotegawa"],"identityBasis":"external_id"}
+{"creatorId":"90000276378","kind":"person","name":"立野真琴","names":["立野真琴","Makoto Tateno"],"identityBasis":"external_id"}
+{"creatorId":"90000285084","kind":"person","name":"押井守","names":["押井守","Mamoru Oshii"],"identityBasis":"external_id"}
+{"creatorId":"90000289299","kind":"organization","name":"カールセン出版社","names":["カールセン出版社","卡尔森漫画","Carlsen Verlag"],"identityBasis":"external_id"}
+{"creatorId":"90000290043","kind":"organization","name":"月刊アフタヌーン","names":["月刊アフタヌーン","月刊Afternoon","Afternoon"],"identityBasis":"external_id"}
+{"creatorId":"90000290896","kind":"person","name":"望月淳","names":["望月淳","Jun Mochizuki"],"identityBasis":"external_id"}
+{"creatorId":"90000292664","kind":"person","name":"仲村佳樹","names":["仲村佳樹","Yoshiki Nakamura"],"identityBasis":"external_id"}
+{"creatorId":"90000292772","kind":"person","name":"神尾葉子","names":["神尾葉子","Yōko Kamio"],"identityBasis":"external_id"}
+{"creatorId":"90000295073","kind":"person","name":"久保帯人","names":["久保帯人","久保帶人","Tite Kubo"],"identityBasis":"external_id"}
+{"creatorId":"90000302859","kind":"person","name":"ハロルド作石","names":["ハロルド作石","作石貴浩","Harold Sakuishi"],"identityBasis":"external_id"}
+{"creatorId":"90000306397","kind":"person","name":"かきふらい","names":["かきふらい","Kakifly"],"identityBasis":"external_id"}
+{"creatorId":"90000312525","kind":"person","name":"坂口博信","names":["坂口博信","Hironobu Sakaguchi"],"identityBasis":"external_id"}
+{"creatorId":"90000313703","kind":"person","name":"小畑健","names":["小畑健","Takeshi Obata"],"identityBasis":"external_id"}
+{"creatorId":"90000313945","kind":"person","name":"青山剛昌","names":["青山剛昌","靑山剛昌","Gosho Aoyama"],"identityBasis":"external_id"}
+{"creatorId":"90000316970","kind":"person","name":"和月伸宏","names":["和月伸宏","Nobuhiro Watsuki"],"identityBasis":"external_id"}
+{"creatorId":"90000326247","kind":"person","name":"鶴田謙二","names":["鶴田謙二","Kenji Tsuruta"],"identityBasis":"external_id"}
+{"creatorId":"90000331400","kind":"person","name":"長谷見沙貴","names":["長谷見沙貴","Saki Hasemi"],"identityBasis":"external_id"}
+{"creatorId":"90000333643","kind":"person","name":"今敏","names":["今敏","Satoshi Kon"],"identityBasis":"external_id"}
+{"creatorId":"90000335080","kind":"person","name":"新海誠","names":["新海誠","Makoto Shinkai"],"identityBasis":"external_id"}
+{"creatorId":"90000348436","kind":"person","name":"浦沢直樹","names":["浦沢直樹","浦澤直樹","Naoki Urasawa"],"identityBasis":"external_id"}
+{"creatorId":"90000351029","kind":"person","name":"坂口尚","names":["坂口尚","Hisashi Sakaguchi"],"identityBasis":"external_id"}
+{"creatorId":"90000351742","kind":"person","name":"あだち充","names":["あだち充","安達充","Mitsuru Adachi"],"identityBasis":"external_id"}
+{"creatorId":"90000355062","kind":"person","name":"野村哲也","names":["野村哲也","Tetsuya Nomura"],"identityBasis":"external_id"}
+{"creatorId":"90000360610","kind":"person","name":"岸本聖史","names":["岸本聖史","岸本圣史","Seishi Kishimoto"],"identityBasis":"external_id"}
+{"creatorId":"90000360638","kind":"person","name":"臼井儀人","names":["臼井儀人","Yoshito Usui"],"identityBasis":"external_id"}
+{"creatorId":"90000361473","kind":"person","name":"望月峯太郎","names":["望月峯太郎","Minetarō Mochizuki"],"identityBasis":"external_id"}
+{"creatorId":"90000369396","kind":"person","name":"森下孝三","names":["森下孝三","Kōzō Morishita"],"identityBasis":"external_id"}
+{"creatorId":"90000369717","kind":"person","name":"ブルース・ティム","names":["ブルース・ティム","布鲁斯·蒂姆","Bruce Timm"],"identityBasis":"external_id"}
+{"creatorId":"90000373933","kind":"organization","name":"ダークホースコミックス","names":["ダークホースコミックス","黑馬漫畫","Dark Horse Comics, LLC"],"identityBasis":"external_id"}
+{"creatorId":"90000374823","kind":"person","name":"六道神士","names":["六道神士","Kōshi Rikudō"],"identityBasis":"external_id"}
+{"creatorId":"90000375242","kind":"organization","name":"鶴山文化社","names":["鶴山文化社","Haksan Culture Company"],"identityBasis":"external_id"}
+{"creatorId":"90000378710","kind":"person","name":"大友克洋","names":["大友克洋","Katsuhiro Otomo"],"identityBasis":"external_id"}
+{"creatorId":"90000390140","kind":"person","name":"北山清太郎","names":["北山清太郎","Seitarō Kitayama"],"identityBasis":"external_id"}
+{"creatorId":"90000403201","kind":"person","name":"森永あい","names":["森永あい","森永愛","Ai Morinaga"],"identityBasis":"external_id"}
+{"creatorId":"90000418449","kind":"person","name":"吉田秋生","names":["吉田秋生","Akimi Yoshida"],"identityBasis":"external_id"}
+{"creatorId":"90000429228","kind":"person","name":"水都あくあ","names":["水都あくあ","水都明亞","Aqua Mizuto"],"identityBasis":"external_id"}
+{"creatorId":"90000429963","kind":"person","name":"ティム・リード","names":["ティム・リード","蒂姆·里德","Tim Reid"],"identityBasis":"external_id"}
+{"creatorId":"90000431443","kind":"person","name":"松本零士","names":["松本零士","Leiji Matsumoto"],"identityBasis":"external_id"}
+{"creatorId":"90000433101","kind":"person","name":"杉崎ゆきる","names":["杉崎ゆきる","杉崎由綺琉","Yukiru Sugisaki"],"identityBasis":"external_id"}
+{"creatorId":"90000433251","kind":"person","name":"イム・ジュヨン","names":["イム・ジュヨン","Rhim Ju-yeon"],"identityBasis":"external_id"}
+{"creatorId":"90000433255","kind":"person","name":"森薫","names":["森薫","森薰","Kaoru Mori"],"identityBasis":"external_id"}
+{"creatorId":"90000435321","kind":"person","name":"小花美穂","names":["小花美穂","Miho Obana"],"identityBasis":"external_id"}
+{"creatorId":"90000437849","kind":"person","name":"いがらしゆみこ","names":["いがらしゆみこ","五十嵐優美子","Yumiko Igarashi"],"identityBasis":"external_id"}
+{"creatorId":"90000440507","kind":"person","name":"酒井まゆ","names":["酒井まゆ","酒井真由","Mayu Sakai"],"identityBasis":"external_id"}
+{"creatorId":"90000441373","kind":"person","name":"二ノ宮知子","names":["二ノ宮知子","Tomoko Ninomiya"],"identityBasis":"external_id"}
+{"creatorId":"90000441692","kind":"person","name":"氷栗優","names":["氷栗優","You Higuri"],"identityBasis":"external_id"}
+{"creatorId":"90000442602","kind":"person","name":"士郎正宗","names":["士郎正宗","Masamune Shirow"],"identityBasis":"external_id"}
+{"creatorId":"90000443171","kind":"person","name":"水波風南","names":["水波風南","水波风南","Kanan Minami"],"identityBasis":"external_id"}
+{"creatorId":"90000445265","kind":"person","name":"峰倉かずや","names":["峰倉かずや","峰倉和也","Kazuya Minekura"],"identityBasis":"external_id"}
+{"creatorId":"90000445903","kind":"person","name":"平野耕太","names":["平野耕太","Kouta Hirano"],"identityBasis":"external_id"}
+{"creatorId":"90000446051","kind":"person","name":"上田美和","names":["上田美和","Miwa Ueda"],"identityBasis":"external_id"}
+{"creatorId":"90000448653","kind":"person","name":"つだみきよ","names":["つだみきよ","津田美樹代","Mikiyo Tsuda"],"identityBasis":"external_id"}
+{"creatorId":"90000448669","kind":"person","name":"筑波さくら","names":["筑波さくら","筑波櫻","Sakura Tsukuba"],"identityBasis":"external_id"}
+{"creatorId":"90000448696","kind":"person","name":"やまねあやの","names":["やまねあやの","山根 綾乃","Ayano Yamane"],"identityBasis":"external_id"}
+{"creatorId":"90000448707","kind":"person","name":"篠原千絵","names":["篠原千絵","篠原千繪","Chie Shinohara"],"identityBasis":"external_id"}
+{"creatorId":"90000452246","kind":"person","name":"桂正和","names":["桂正和","Masakazu Katsura"],"identityBasis":"external_id"}
+{"creatorId":"90000453401","kind":"person","name":"皇名月","names":["皇名月","Natsuki Sumeragi"],"identityBasis":"external_id"}
+{"creatorId":"90000456096","kind":"person","name":"谷沢直","names":["谷沢直","谷澤直","Nao Yazawa"],"identityBasis":"external_id"}
+{"creatorId":"90000457637","kind":"person","name":"木下さくら","names":["木下さくら","木下櫻","Sakura Kinoshita"],"identityBasis":"external_id"}
+{"creatorId":"90000459078","kind":"person","name":"宮崎吾朗","names":["宮崎吾朗","Gorō Miyazaki"],"identityBasis":"external_id"}
+{"creatorId":"90000459911","kind":"person","name":"井上雄彦","names":["井上雄彦","井上雄彥","Takehiko Inoue"],"identityBasis":"external_id"}
+{"creatorId":"90000460877","kind":"person","name":"清水玲子","names":["清水玲子","Reiko Shimizu"],"identityBasis":"external_id"}
+{"creatorId":"90000461138","kind":"person","name":"池山田剛","names":["池山田剛","Gō Ikeyamada"],"identityBasis":"external_id"}
+{"creatorId":"90000463309","kind":"person","name":"水城せとな","names":["水城せとな","水城雪可奈","Setona Mizushiro"],"identityBasis":"external_id"}
+{"creatorId":"90000463346","kind":"person","name":"藤沢とおる","names":["藤沢とおる","藤泽亨","Tōru Fujisawa"],"identityBasis":"external_id"}
+{"creatorId":"90000463594","kind":"person","name":"フクシマハルカ","names":["フクシマハルカ","福島春佳","Haruka Fukushima"],"identityBasis":"external_id"}
+{"creatorId":"90000464351","kind":"person","name":"星野桂","names":["星野桂","Katsura Hoshino"],"identityBasis":"external_id"}
+{"creatorId":"90000465645","kind":"person","name":"岡崎京子","names":["岡崎京子","Kyoko Okazaki"],"identityBasis":"external_id"}
+{"creatorId":"90000467415","kind":"person","name":"北条司","names":["北条司","Tsukasa Hōjō"],"identityBasis":"external_id"}
+{"creatorId":"90000467750","kind":"person","name":"岡本倫","names":["岡本倫","Lynn Okamoto"],"identityBasis":"external_id"}
+{"creatorId":"90000468571","kind":"person","name":"垣野内成美","names":["垣野内成美","垣野內成美","Narumi Kakinouchi"],"identityBasis":"external_id"}
+{"creatorId":"90000468761","kind":"person","name":"こだか和麻","names":["こだか和麻","小鷹和麻","Kazuma Kodaka"],"identityBasis":"external_id"}
+{"creatorId":"90000469923","kind":"person","name":"惣領冬実","names":["惣領冬実","Fuyumi Soryo"],"identityBasis":"external_id"}
+{"creatorId":"90000471103","kind":"person","name":"石ノ森章太郎","names":["石ノ森章太郎","石之森章太郎","Shōtarō Ishinomori"],"identityBasis":"external_id"}
+{"creatorId":"90000471133","kind":"person","name":"横山光輝","names":["横山光輝","Mitsuteru Yokoyama"],"identityBasis":"external_id"}
+{"creatorId":"90000471137","kind":"person","name":"真島ヒロ","names":["真島ヒロ","真島浩","Hiro Mashima"],"identityBasis":"external_id"}
+{"creatorId":"90000482767","kind":"organization","name":"大元 C.I.","names":["大元 C.I.","大元C.I.","Daewon C.I."],"identityBasis":"external_id"}
+{"creatorId":"90000483089","kind":"person","name":"朴素熙","names":["朴素熙","Park So-hee"],"identityBasis":"external_id"}
+{"creatorId":"90000486529","kind":"person","name":"林達永","names":["林達永","Lim Dall-young"],"identityBasis":"external_id"}
+{"creatorId":"90000488254","kind":"person","name":"Kim Young-oh","names":["Kim Young-oh"],"identityBasis":"external_id"}
+{"creatorId":"90000504482","kind":"person","name":"弐瓶勉","names":["弐瓶勉","貳瓶勉","Tsutomu Nihei"],"identityBasis":"external_id"}
+{"creatorId":"90000508218","kind":"person","name":"西尾維新","names":["西尾維新","Nisio Isin"],"identityBasis":"external_id"}
+{"creatorId":"90000510959","kind":"person","name":"村上真紀","names":["村上真紀","Maki Murakami"],"identityBasis":"external_id"}
+{"creatorId":"90000510977","kind":"person","name":"高永ひなこ","names":["高永ひなこ","高永雏子","Hinako Takanaga"],"identityBasis":"external_id"}
+{"creatorId":"90000523540","kind":"person","name":"田中政志","names":["田中政志","Masashi Tanaka"],"identityBasis":"external_id"}
+{"creatorId":"90000532615","kind":"person","name":"小梅けいと","names":["小梅けいと","小梅京人","Keito Koume"],"identityBasis":"external_id"}
+{"creatorId":"90000533131","kind":"person","name":"相田裕","names":["相田裕","Yu Aida"],"identityBasis":"external_id"}
+{"creatorId":"90000533664","kind":"person","name":"古屋兎丸","names":["古屋兎丸","古屋兔丸","Usamaru Furuya"],"identityBasis":"external_id"}
+{"creatorId":"90000534001","kind":"person","name":"武井宏之","names":["武井宏之","Hiroyuki Takei"],"identityBasis":"external_id"}
+{"creatorId":"90000534289","kind":"person","name":"南天佑","names":["南天佑","Yutaka Nanten"],"identityBasis":"external_id"}
+{"creatorId":"90000534768","kind":"organization","name":"Grupo Editorial Vid","names":["Grupo Editorial Vid"],"identityBasis":"external_id"}
+{"creatorId":"90000535004","kind":"person","name":"こうの史代","names":["こうの史代","河野史代","Fumiyo Kōno"],"identityBasis":"external_id"}
+{"creatorId":"90000544355","kind":"person","name":"こなみかなた","names":["こなみかなた","湖南彼方","Kanata Konami"],"identityBasis":"external_id"}
+{"creatorId":"90000545625","kind":"person","name":"渡辺祥智","names":["渡辺祥智","Yoshitomo Watanabe"],"identityBasis":"external_id"}
+{"creatorId":"90000549755","kind":"person","name":"うるし原智志","names":["うるし原智志","漆原智志","Satoshi Urushihara"],"identityBasis":"external_id"}
+{"creatorId":"90000550311","kind":"person","name":"冨樫義博","names":["冨樫義博","富樫義博","Yoshihiro Togashi"],"identityBasis":"external_id"}
+{"creatorId":"90000553105","kind":"person","name":"大暮維人","names":["大暮維人","Oh!great"],"identityBasis":"external_id"}
+{"creatorId":"90000555822","kind":"person","name":"天野シロ","names":["天野シロ","雨野士郎","Shiro Amano"],"identityBasis":"external_id"}
+{"creatorId":"90000558858","kind":"person","name":"大場つぐみ","names":["大場つぐみ","大場鶇","Tsugumi Ohba"],"identityBasis":"external_id"}
+{"creatorId":"90000562776","kind":"person","name":"尹仁完","names":["尹仁完","Youn In-wan"],"identityBasis":"external_id"}
+{"creatorId":"90000576741","kind":"organization","name":"漫畫家有限公司","names":["漫畫家有限公司","Comics House"],"identityBasis":"external_id"}
+{"creatorId":"90000576756","kind":"person","name":"極楽院櫻子","names":["極楽院櫻子","極樂院櫻子","Ashika Sakura"],"identityBasis":"external_id"}
+{"creatorId":"90000592895","kind":"person","name":"高見広春","names":["高見広春","高見,広春","Koushun Takami"],"identityBasis":"external_id"}
+{"creatorId":"90000597117","kind":"person","name":"真東砂波","names":["真東砂波","Sanami Matoh"],"identityBasis":"external_id"}
+{"creatorId":"90000600217","kind":"person","name":"浅野いにお","names":["浅野いにお","淺野一二〇","Inio Asano"],"identityBasis":"external_id"}
+{"creatorId":"90000600384","kind":"person","name":"石川賢","names":["石川賢","Ken Ishikawa"],"identityBasis":"external_id"}
+{"creatorId":"90000602746","kind":"person","name":"皆川亮二","names":["皆川亮二","Ryōji Minagawa"],"identityBasis":"external_id"}
+{"creatorId":"90000605735","kind":"person","name":"山本英夫","names":["山本英夫","Hideo Yamamoto"],"identityBasis":"external_id"}
+{"creatorId":"90000610576","kind":"person","name":"岩原裕二","names":["岩原裕二","Yūji Iwahara"],"identityBasis":"external_id"}
+{"creatorId":"90000617888","kind":"person","name":"ヤスダスズヒト","names":["ヤスダスズヒト","安田典生","Suzuhito Yasuda"],"identityBasis":"external_id"}
+{"creatorId":"90000618961","kind":"person","name":"さとうふみや","names":["さとうふみや","佐藤文也","Fumiya Satō"],"identityBasis":"external_id"}
+{"creatorId":"90000618978","kind":"person","name":"渡辺多恵子","names":["渡辺多恵子","Taeko Watanabe"],"identityBasis":"external_id"}
+{"creatorId":"90000619018","kind":"person","name":"北川みゆき","names":["北川みゆき","北川美幸","Miyuki Kitagawa"],"identityBasis":"external_id"}
+{"creatorId":"90000622057","kind":"person","name":"八木教広","names":["八木教広","八木教廣","Norihiro Yagi"],"identityBasis":"external_id"}
+{"creatorId":"90000630431","kind":"person","name":"河森正治","names":["河森正治","Shōji Kawamori"],"identityBasis":"external_id"}
+{"creatorId":"90000640840","kind":"person","name":"村瀬修功","names":["村瀬修功","村瀨修功","Shukō Murase"],"identityBasis":"external_id"}
+{"creatorId":"90000655871","kind":"person","name":"天野洋一","names":["天野洋一","Yōichi Amano"],"identityBasis":"external_id"}
+{"creatorId":"90000660288","kind":"organization","name":"ビズメディア","names":["ビズメディア","碧日","Viz Media, LLC"],"identityBasis":"external_id"}
+{"creatorId":"90000678328","kind":"person","name":"中原杏","names":["中原杏","An Nakahara"],"identityBasis":"external_id"}
+{"creatorId":"90000682156","kind":"organization","name":"Crunchyroll SA","names":["Crunchyroll SA"],"identityBasis":"external_id"}
+{"creatorId":"90000684919","kind":"person","name":"リ・ヨンユ","names":["リ・ヨンユ","Lee Young-you"],"identityBasis":"external_id"}
+{"creatorId":"90000703322","kind":"organization","name":"パニーニ・コミックス","names":["パニーニ・コミックス","帕尼尼漫画","Panini Comics"],"identityBasis":"external_id"}
+{"creatorId":"90000710238","kind":"person","name":"星里もちる","names":["星里もちる","星里望留","Mochiru Hoshisato"],"identityBasis":"external_id"}
+{"creatorId":"90000710400","kind":"person","name":"邢民友","names":["邢民友","Hyung Min-woo"],"identityBasis":"external_id"}
+{"creatorId":"90000715725","kind":"person","name":"三浦建太郎","names":["三浦建太郎","Kentaro Miura"],"identityBasis":"external_id"}
+{"creatorId":"90000716359","kind":"person","name":"菊地秀行","names":["菊地秀行","Hideyuki Kikuchi"],"identityBasis":"external_id"}
+{"creatorId":"90000719250","kind":"person","name":"筒井康隆","names":["筒井康隆","Yasutaka Tsutsui"],"identityBasis":"external_id"}
+{"creatorId":"90000719354","kind":"person","name":"荒木飛呂彦","names":["荒木飛呂彦","荒木飛呂彥","Hirohiko Araki"],"identityBasis":"external_id"}
+{"creatorId":"90000720771","kind":"person","name":"細田守","names":["細田守","Mamoru Hosoda"],"identityBasis":"external_id"}
+{"creatorId":"90000723853","kind":"person","name":"谷口ジロー","names":["谷口ジロー","谷口二郎","Jiro Taniguchi"],"identityBasis":"external_id"}
+{"creatorId":"90000725003","kind":"person","name":"伊藤俊也","names":["伊藤俊也","Shunya Itō"],"identityBasis":"external_id"}
+{"creatorId":"90000725387","kind":"person","name":"車田正美","names":["車田正美","Masami Kurumada"],"identityBasis":"external_id"}
+{"creatorId":"90000727725","kind":"person","name":"冲方丁","names":["冲方丁","Tow Ubukata"],"identityBasis":"external_id"}
+{"creatorId":"90000731579","kind":"person","name":"麻宮騎亜","names":["麻宮騎亜","Kia Asamiya"],"identityBasis":"external_id"}
+{"creatorId":"90000744237","kind":"person","name":"伊藤潤二","names":["伊藤潤二","伊藤润二","Junji Itō"],"identityBasis":"external_id"}
+{"creatorId":"90000749265","kind":"person","name":"上条明峰","names":["上条明峰","Akimine Kamijyo"],"identityBasis":"external_id"}
+{"creatorId":"90000757810","kind":"person","name":"大久保篤","names":["大久保篤","Atsushi Ōkubo"],"identityBasis":"external_id"}
+{"creatorId":"90000776153","kind":"organization","name":"マンガファン","names":["マンガファン","Mangafan"],"identityBasis":"external_id"}
+{"creatorId":"90000779248","kind":"person","name":"あかほりさとる","names":["あかほりさとる","赤堀悟","Satoru Akahori"],"identityBasis":"external_id"}
+{"creatorId":"90000795246","kind":"person","name":"谷東","names":["谷東","Azuma Tani"],"identityBasis":"external_id"}
+{"creatorId":"90000841371","kind":"person","name":"植芝理一","names":["植芝理一","Riichi Ueshiba"],"identityBasis":"external_id"}
+{"creatorId":"90000845078","kind":"person","name":"時計野はり","names":["時計野はり","時計野針","Hari Tokeino"],"identityBasis":"external_id"}
+{"creatorId":"90000848530","kind":"person","name":"甲田学人","names":["甲田学人","Gakuto Coda"],"identityBasis":"external_id"}
+{"creatorId":"90000848865","kind":"person","name":"石田衣良","names":["石田衣良","Ira Ishida"],"identityBasis":"external_id"}
+{"creatorId":"90000849446","kind":"person","name":"古味直志","names":["古味直志","Naoshi Komi"],"identityBasis":"external_id"}
+{"creatorId":"90000850642","kind":"organization","name":"MF文庫J","names":["MF文庫J","MF Bunko J"],"identityBasis":"external_id"}
+{"creatorId":"90000859232","kind":"person","name":"青木琴美","names":["青木琴美","Kotomi Aoki"],"identityBasis":"external_id"}
+{"creatorId":"90000859730","kind":"person","name":"笹倉綾人","names":["笹倉綾人","Ayato Sasakura"],"identityBasis":"external_id"}
+{"creatorId":"90000860271","kind":"person","name":"マツモトトモ","names":["マツモトトモ","松本友","Tomo Matsumoto"],"identityBasis":"external_id"}
+{"creatorId":"90000864278","kind":"person","name":"西崎義展","names":["西崎義展","西崎弘文","Yoshinobu Nishizaki"],"identityBasis":"external_id"}
+{"creatorId":"90000865181","kind":"person","name":"兎塚エイジ","names":["兎塚エイジ","兔塚英志","Eiji Usatsuka"],"identityBasis":"external_id"}
+{"creatorId":"90000865434","kind":"organization","name":"リブレ","names":["リブレ","Libre出版","Libre Publishing"],"identityBasis":"external_id"}
+{"creatorId":"90000865684","kind":"person","name":"有沢まみず","names":["有沢まみず","有澤真水","Mamizu Arisawa"],"identityBasis":"external_id"}
+{"creatorId":"90000872923","kind":"person","name":"甲斐谷忍","names":["甲斐谷忍","Shinobu Kaitani"],"identityBasis":"external_id"}
+{"creatorId":"90000906332","kind":"person","name":"崔洋一","names":["崔洋一","Yoichi Sai"],"identityBasis":"external_id"}
+{"creatorId":"90000908962","kind":"person","name":"山下敦弘","names":["山下敦弘","Nobuhiro Yamashita"],"identityBasis":"external_id"}
+{"creatorId":"90000922757","kind":"person","name":"福田己津央","names":["福田己津央","Mitsuo Fukuda"],"identityBasis":"external_id"}
+{"creatorId":"90000926096","kind":"person","name":"岡村天斎","names":["岡村天斎","Tensai Okamura"],"identityBasis":"external_id"}
+{"creatorId":"90000946212","kind":"person","name":"江崎実生","names":["江崎実生","江崎實生","Mio Ezaki"],"identityBasis":"external_id"}
+{"creatorId":"90000957850","kind":"person","name":"遠藤浩輝","names":["遠藤浩輝","Hiroki Endō"],"identityBasis":"external_id"}
+{"creatorId":"90000958249","kind":"person","name":"矢吹健太朗","names":["矢吹健太朗","Kentaro Yabuki"],"identityBasis":"external_id"}
+{"creatorId":"90000958269","kind":"person","name":"高橋陽一","names":["高橋陽一","Yōichi Takahashi"],"identityBasis":"external_id"}
+{"creatorId":"90000958449","kind":"person","name":"藤田和日郎","names":["藤田和日郎","Kazuhiro Fujita"],"identityBasis":"external_id"}
+{"creatorId":"90000965600","kind":"person","name":"遊人","names":["遊人","U-Jin"],"identityBasis":"external_id"}
+{"creatorId":"90000966701","kind":"person","name":"樹林伸","names":["樹林伸","Shin Kibayashi"],"identityBasis":"external_id"}
+{"creatorId":"90000982575","kind":"person","name":"ヤマグチノボル","names":["ヤマグチノボル","山口昇","Noboru Yamaguchi"],"identityBasis":"external_id"}
+{"creatorId":"90000983424","kind":"person","name":"木城ゆきと","names":["木城ゆきと","木城雪戶","Yukito Kishiro"],"identityBasis":"external_id"}
+{"creatorId":"90000987583","kind":"person","name":"芝山努","names":["芝山努","Tsutomu Shibayama"],"identityBasis":"external_id"}
+{"creatorId":"90000994045","kind":"person","name":"迎夏生","names":["迎夏生","Natsumi Mukai"],"identityBasis":"external_id"}
+{"creatorId":"90000994434","kind":"person","name":"ハセガワケイスケ","names":["ハセガワケイスケ","長谷川啟介","K-Ske Hasegawa"],"identityBasis":"external_id"}
+{"creatorId":"90000997953","kind":"person","name":"絵夢羅","names":["絵夢羅","繪夢羅","Emura"],"identityBasis":"external_id"}
+{"creatorId":"90000999180","kind":"person","name":"加戸誉夫","names":["加戸誉夫","加戶譽夫","Takao Kato"],"identityBasis":"external_id"}
+{"creatorId":"90001001784","kind":"person","name":"福地翼","names":["福地翼","Tsubasa Fukuchi"],"identityBasis":"external_id"}
+{"creatorId":"90001008026","kind":"organization","name":"月刊少年ガンガン","names":["月刊少年ガンガン","月刊少年GANGAN","Shōnen Gangan"],"identityBasis":"external_id"}
+{"creatorId":"90001009504","kind":"person","name":"中山文十郎","names":["中山文十郎","Bunjūrō Nakayama"],"identityBasis":"external_id"}
+{"creatorId":"90001012736","kind":"person","name":"黒乃奈々絵","names":["黒乃奈々絵","黑乃奈奈繪","Nanae Chrono"],"identityBasis":"external_id"}
+{"creatorId":"90001015799","kind":"person","name":"八神ひろき","names":["八神ひろき","八神浩樹","Hiroki Yagami"],"identityBasis":"external_id"}
+{"creatorId":"90001016880","kind":"person","name":"武論尊","names":["武論尊","史村翔","Buronson"],"identityBasis":"external_id"}
+{"creatorId":"90001040261","kind":"person","name":"山田南平","names":["山田南平","Nanpei Yamada"],"identityBasis":"external_id"}
+{"creatorId":"90001043203","kind":"person","name":"五十嵐卓哉","names":["五十嵐卓哉","Takuya Igarashi"],"identityBasis":"external_id"}
+{"creatorId":"90001048873","kind":"person","name":"小山ゆう","names":["小山ゆう","小山由","Yū Koyama"],"identityBasis":"external_id"}
+{"creatorId":"90001049096","kind":"person","name":"成田良悟","names":["成田良悟","Ryohgo Narita"],"identityBasis":"external_id"}
+{"creatorId":"90001049521","kind":"person","name":"羅川真里茂","names":["羅川真里茂","Marimo Ragawa"],"identityBasis":"external_id"}
+{"creatorId":"90001049526","kind":"person","name":"安彦良和","names":["安彦良和","安彥良和","Yoshikazu Yasuhiko"],"identityBasis":"external_id"}
+{"creatorId":"90001050794","kind":"person","name":"わたなべまさこ","names":["わたなべまさこ","渡边雅子","Masako Watanabe"],"identityBasis":"external_id"}
+{"creatorId":"90001051001","kind":"person","name":"髙橋ツトム","names":["髙橋ツトム","高橋努","Tsutomu Takahashi"],"identityBasis":"external_id"}
+{"creatorId":"90001052026","kind":"organization","name":"d/visual","names":["d/visual"],"identityBasis":"external_id"}
+{"creatorId":"90001054495","kind":"person","name":"菅野文","names":["菅野文","Aya Kanno"],"identityBasis":"external_id"}
+{"creatorId":"90001054742","kind":"organization","name":"スター・コミックス","names":["スター・コミックス","Star Comics"],"identityBasis":"external_id"}
+{"creatorId":"90001056339","kind":"person","name":"古谷実","names":["古谷実","古谷實","Minoru Furuya"],"identityBasis":"external_id"}
+{"creatorId":"90001059934","kind":"person","name":"細川智栄子","names":["細川智栄子","细川智荣子","Chieko Hosokawa"],"identityBasis":"external_id"}
+{"creatorId":"90001062844","kind":"person","name":"江口寿史","names":["江口寿史","Hisashi Eguchi"],"identityBasis":"external_id"}
+{"creatorId":"90001064194","kind":"person","name":"緑川ゆき","names":["緑川ゆき","綠川幸","Yuki Midorikawa"],"identityBasis":"external_id"}
+{"creatorId":"90001065383","kind":"person","name":"よしながふみ","names":["よしながふみ","吉永史","Fumi Yoshinaga"],"identityBasis":"external_id"}
+{"creatorId":"90001071352","kind":"organization","name":"電撃文庫","names":["電撃文庫","電擊文庫","Dengeki Bunko"],"identityBasis":"external_id"}
+{"creatorId":"90001085764","kind":"person","name":"阿倍野ちゃこ","names":["阿倍野ちゃこ","阿倍野茶子","Chako Abeno"],"identityBasis":"external_id"}
+{"creatorId":"90001095991","kind":"person","name":"北爪宏幸","names":["北爪宏幸","Hiroyuki Kitazume"],"identityBasis":"external_id"}
+{"creatorId":"90001101038","kind":"person","name":"荒木哲郎","names":["荒木哲郎","Tetsurō Araki"],"identityBasis":"external_id"}
+{"creatorId":"90001118275","kind":"person","name":"久里洋二","names":["久里洋二","Yōji Kuri"],"identityBasis":"external_id"}
+{"creatorId":"90001121064","kind":"person","name":"唯登詩樹","names":["唯登詩樹","Toshiki Yui"],"identityBasis":"external_id"}
+{"creatorId":"90001123755","kind":"person","name":"吉田茂承","names":["吉田茂承","Shigetsugu Yoshida"],"identityBasis":"external_id"}
+{"creatorId":"90001132175","kind":"person","name":"高橋弥七郎","names":["高橋弥七郎","高橋彌七郎","Yashichiro Takahashi"],"identityBasis":"external_id"}
+{"creatorId":"90001147974","kind":"person","name":"高橋しん","names":["高橋しん","高橋真","Shin Takahashi"],"identityBasis":"external_id"}
+{"creatorId":"90001153258","kind":"person","name":"西森博之","names":["西森博之","Hiroyuki Nishimori"],"identityBasis":"external_id"}
+{"creatorId":"90001153362","kind":"person","name":"樋口橘","names":["樋口橘","樋口 橘","Tachibana Higuchi"],"identityBasis":"external_id"}
+{"creatorId":"90001187981","kind":"person","name":"石黒昇","names":["石黒昇","Noboru Ishiguro"],"identityBasis":"external_id"}
+{"creatorId":"90001188657","kind":"person","name":"黒田硫黄","names":["黒田硫黄","黑田硫黃","Iou Kuroda"],"identityBasis":"external_id"}
+{"creatorId":"90001191493","kind":"person","name":"藤崎竜","names":["藤崎竜","藤崎龍","Ryu Fujisaki"],"identityBasis":"external_id"}
+{"creatorId":"90001191638","kind":"person","name":"岩明均","names":["岩明均","Hitoshi Iwaaki"],"identityBasis":"external_id"}
+{"creatorId":"90001195859","kind":"person","name":"福本伸行","names":["福本伸行","Nobuyuki Fukumoto"],"identityBasis":"external_id"}
+{"creatorId":"90001206866","kind":"person","name":"竹宮ゆゆこ","names":["竹宮ゆゆこ","竹宮悠由子","Yuyuko Takemiya"],"identityBasis":"external_id"}
+{"creatorId":"90001207120","kind":"person","name":"吉田直","names":["吉田直","Sunao Yoshida"],"identityBasis":"external_id"}
+{"creatorId":"90001207530","kind":"person","name":"小野不由美","names":["小野不由美","Fuyumi Ono"],"identityBasis":"external_id"}
+{"creatorId":"90001243380","kind":"person","name":"杉井ギサブロー","names":["杉井ギサブロー","杉井仪三郎","Gisaburō Sugii"],"identityBasis":"external_id"}
+{"creatorId":"90001260399","kind":"person","name":"角銅博之","names":["角銅博之","Hiroyuki Kakudō"],"identityBasis":"external_id"}
+{"creatorId":"90001269354","kind":"person","name":"幸村誠","names":["幸村誠","Makoto Yukimura"],"identityBasis":"external_id"}
+{"creatorId":"90001284710","kind":"person","name":"橋本以蔵","names":["橋本以蔵","Izō Hashimoto"],"identityBasis":"external_id"}
+{"creatorId":"90001305150","kind":"person","name":"トニー・ランデル","names":["トニー・ランデル","托尼·兰德尔","Tony Randel"],"identityBasis":"external_id"}
+{"creatorId":"90001315839","kind":"person","name":"出崎統","names":["出崎統","Osamu Dezaki"],"identityBasis":"external_id"}
+{"creatorId":"90001319237","kind":"person","name":"梶原一騎","names":["梶原一騎","Ikki Kajiwara"],"identityBasis":"external_id"}
+{"creatorId":"90001323707","kind":"person","name":"梁慶一","names":["梁慶一","300~399路","Yang Kyung-il"],"identityBasis":"external_id"}
+{"creatorId":"90001324593","kind":"person","name":"空知英秋","names":["空知英秋","Hideaki Sorachi"],"identityBasis":"external_id"}
+{"creatorId":"90001332841","kind":"person","name":"池上遼一","names":["池上遼一","Ryoichi Ikegami"],"identityBasis":"external_id"}
+{"creatorId":"90001335454","kind":"person","name":"神坂一","names":["神坂一","Hajime Kanzaka"],"identityBasis":"external_id"}
+{"creatorId":"90001335515","kind":"person","name":"内藤泰弘","names":["内藤泰弘","Yasuhiro Nightow"],"identityBasis":"external_id"}
+{"creatorId":"90001335548","kind":"person","name":"村田蓮爾","names":["村田蓮爾","Range Murata"],"identityBasis":"external_id"}
+{"creatorId":"90001370780","kind":"person","name":"モンキー・パンチ","names":["モンキー・パンチ","加藤一彦","Monkey Punch"],"identityBasis":"external_id"}
+{"creatorId":"90001372761","kind":"person","name":"いとうのいぢ","names":["いとうのいぢ","伊東雜音","Noizi Ito"],"identityBasis":"external_id"}
+{"creatorId":"90001377779","kind":"person","name":"星野之宣","names":["星野之宣","Yukinobu Hoshino"],"identityBasis":"external_id"}
+{"creatorId":"90001385540","kind":"person","name":"湯浅政明","names":["湯浅政明","湯淺政明","Masaaki Yuasa"],"identityBasis":"external_id"}
+{"creatorId":"90001385951","kind":"person","name":"橋口たかし","names":["橋口たかし","橋口隆志","Takashi Hashiguchi"],"identityBasis":"external_id"}
+{"creatorId":"90001387797","kind":"person","name":"安西信行","names":["安西信行","Nobuyuki Anzai"],"identityBasis":"external_id"}
+{"creatorId":"90001390701","kind":"person","name":"広江礼威","names":["広江礼威","廣江禮威","Rei Hiroe"],"identityBasis":"external_id"}
+{"creatorId":"90001395850","kind":"organization","name":"ファンタグラフィックス","names":["ファンタグラフィックス","Fantagraphics Books"],"identityBasis":"external_id"}
+{"creatorId":"90001410685","kind":"person","name":"秋山たまよ","names":["秋山たまよ","Tamayo Akiyama"],"identityBasis":"external_id"}
+{"creatorId":"90001417381","kind":"organization","name":"Editores de Tebeos","names":["Editores de Tebeos"],"identityBasis":"external_id"}
+{"creatorId":"90001439795","kind":"person","name":"高梨みつば","names":["高梨みつば","高梨三葉","Mitsuba Takanashi"],"identityBasis":"external_id"}
+{"creatorId":"90001454296","kind":"organization","name":"グレナ","names":["グレナ","格莱纳","Glénat Éditions"],"identityBasis":"external_id"}
+{"creatorId":"90001504165","kind":"person","name":"松本大洋","names":["松本大洋","Taiyō Matsumoto"],"identityBasis":"external_id"}
+{"creatorId":"90001582074","kind":"organization","name":"カゼ","names":["カゼ","Kazé"],"identityBasis":"external_id"}
+{"creatorId":"90001637181","kind":"person","name":"田中ユタカ","names":["田中ユタカ","Yutaka Tanaka"],"identityBasis":"external_id"}
+{"creatorId":"90001646217","kind":"person","name":"石井克人","names":["石井克人","Katsuhito Ishii"],"identityBasis":"external_id"}
+{"creatorId":"90001716410","kind":"person","name":"キム・ミギョン","names":["キム・ミギョン","Kim Mi-kyung"],"identityBasis":"external_id"}
+{"creatorId":"90001721423","kind":"person","name":"かわぐちかいじ","names":["かわぐちかいじ","川口開治","Kaiji Kawaguchi"],"identityBasis":"external_id"}
+{"creatorId":"90001736792","kind":"person","name":"克・亜樹","names":["克・亜樹","克·亚树","Katsu Aki"],"identityBasis":"external_id"}
+{"creatorId":"90001738755","kind":"person","name":"園田健一","names":["園田健一","Kenichi Sonoda"],"identityBasis":"external_id"}
+{"creatorId":"90001750694","kind":"organization","name":"電撃コミックス","names":["電撃コミックス","電撃Comics","Dengeki Comics"],"identityBasis":"external_id"}
+{"creatorId":"90001851836","kind":"person","name":"征海美亜","names":["征海美亜","征海未亞","Mia Ikumi"],"identityBasis":"external_id"}
+{"creatorId":"90001857540","kind":"person","name":"神崎将臣","names":["神崎将臣","Masaomi Kanzaki"],"identityBasis":"external_id"}
+{"creatorId":"90001937859","kind":"person","name":"鬼頭莫宏","names":["鬼頭莫宏","Mohiro Kitoh"],"identityBasis":"external_id"}
+{"creatorId":"90001970474","kind":"person","name":"高田裕三","names":["高田裕三","Yuzo Takada"],"identityBasis":"external_id"}
+{"creatorId":"90001985677","kind":"person","name":"沖浦啓之","names":["沖浦啓之","Hiroyuki Okiura"],"identityBasis":"external_id"}
+{"creatorId":"90001986176","kind":"person","name":"うたたねひろゆき","names":["うたたねひろゆき","池內一二三","Hiroyuki Utatane"],"identityBasis":"external_id"}
+{"creatorId":"90001999778","kind":"person","name":"勝間田具治","names":["勝間田具治","胜间田具治","Tomoharu Katsumata"],"identityBasis":"external_id"}
+{"creatorId":"90002005281","kind":"person","name":"木尾士目","names":["木尾士目","Shimoku Kio"],"identityBasis":"external_id"}
+{"creatorId":"90002005836","kind":"organization","name":"康拉德編輯","names":["康拉德編輯","Conrad Editora"],"identityBasis":"external_id"}
+{"creatorId":"90002067115","kind":"organization","name":"エン・プレス","names":["エン・プレス","Yen Press","Yen Press, LLC"],"identityBasis":"external_id"}
+{"creatorId":"90002073284","kind":"organization","name":"セブンシーズ・エンターテインメント","names":["セブンシーズ・エンターテインメント","七海娛樂","Seven Seas Entertainment"],"identityBasis":"external_id"}
+{"creatorId":"90002077268","kind":"person","name":"狩撫麻礼","names":["狩撫麻礼","Garon Tsuchiya"],"identityBasis":"external_id"}
+{"creatorId":"90002083868","kind":"organization","name":"エグモントグループ","names":["エグモントグループ","艾格蒙聯盟","Egmont International Holding"],"identityBasis":"external_id"}
+{"creatorId":"90002207939","kind":"person","name":"森田宏幸","names":["森田宏幸","Hiroyuki Morita"],"identityBasis":"external_id"}
+{"creatorId":"90002213570","kind":"person","name":"依澄れい","names":["依澄れい","Rei Izumi"],"identityBasis":"external_id"}
+{"creatorId":"90002232808","kind":"person","name":"楠桂","names":["楠桂","Kei Kusunoki"],"identityBasis":"external_id"}
+{"creatorId":"90002235128","kind":"person","name":"田村由美","names":["田村由美","Yumi Tamura"],"identityBasis":"external_id"}
+{"creatorId":"90002247833","kind":"person","name":"文月晃","names":["文月晃","Kou Fumizuki"],"identityBasis":"external_id"}
+{"creatorId":"90002279877","kind":"person","name":"髙橋ヒロシ","names":["髙橋ヒロシ","高橋弘","Hiroshi Takahashi"],"identityBasis":"external_id"}
+{"creatorId":"90002280124","kind":"person","name":"しげの秀一","names":["しげの秀一","重野秀一","Shūichi Shigeno"],"identityBasis":"external_id"}
+{"creatorId":"90002290191","kind":"person","name":"塩崎雄二","names":["塩崎雄二","Yuji Shiozaki"],"identityBasis":"external_id"}
+{"creatorId":"90002293215","kind":"organization","name":"ADヴィジョン","names":["ADヴィジョン"],"identityBasis":"external_id"}
+{"creatorId":"90002293429","kind":"person","name":"こだま兼嗣","names":["こだま兼嗣","児玉健次","Kenji Kodama"],"identityBasis":"external_id"}
+{"creatorId":"90002304185","kind":"person","name":"谷口悟朗","names":["谷口悟朗","Gorō Taniguchi"],"identityBasis":"external_id"}
+{"creatorId":"90002305070","kind":"person","name":"山本鈴美香","names":["山本鈴美香","Sumika Yamamoto"],"identityBasis":"external_id"}
+{"creatorId":"90002306002","kind":"person","name":"長浜忠夫","names":["長浜忠夫","長濱忠夫","Tadao Nagahama"],"identityBasis":"external_id"}
+{"creatorId":"90002309266","kind":"organization","name":"Norma Editorial","names":["Norma Editorial"],"identityBasis":"external_id"}
+{"creatorId":"90002312383","kind":"person","name":"槙ようこ","names":["槙ようこ","槙陽子","Yōko Maki"],"identityBasis":"external_id"}
+{"creatorId":"90002339806","kind":"organization","name":"デルクール","names":["デルクール","Delcourt"],"identityBasis":"external_id"}
+{"creatorId":"90002339813","kind":"organization","name":"カナ","names":["カナ","Kana"],"identityBasis":"external_id"}
+{"creatorId":"90002339941","kind":"person","name":"ちばてつや","names":["ちばてつや","千葉徹彌","Tetsuya Chiba"],"identityBasis":"external_id"}
+{"creatorId":"90002351551","kind":"person","name":"伊達勇登","names":["伊達勇登","Hayato Date"],"identityBasis":"external_id"}
+{"creatorId":"90002364677","kind":"organization","name":"エレックス・メディア・コンプティンド","names":["エレックス・メディア・コンプティンド","Elex Media Komputindo"],"identityBasis":"external_id"}
+{"creatorId":"90002387072","kind":"person","name":"百瀬武昭","names":["百瀬武昭","Takeaki Momose"],"identityBasis":"external_id"}
+{"creatorId":"90002418447","kind":"organization","name":"創芸出版社","names":["創芸出版社","創藝出版社","Chuang Yi"],"identityBasis":"external_id"}
+{"creatorId":"90002422405","kind":"organization","name":"Taifu Comics","names":["Taifu Comics"],"identityBasis":"external_id"}
+{"creatorId":"90002448778","kind":"person","name":"吉河美希","names":["吉河美希","Miki Yoshikawa"],"identityBasis":"external_id"}
+{"creatorId":"90002459409","kind":"person","name":"岩代俊明","names":["岩代俊明","Toshiaki Iwashiro"],"identityBasis":"external_id"}
+{"creatorId":"90002483662","kind":"person","name":"田亀源五郎","names":["田亀源五郎","田龟源五郎"],"identityBasis":"external_id"}
+{"creatorId":"90002495073","kind":"person","name":"森本晃司","names":["森本晃司","Kōji Morimoto"],"identityBasis":"external_id"}
+{"creatorId":"90002518786","kind":"person","name":"神山健治","names":["神山健治","Kenji Kamiyama"],"identityBasis":"external_id"}
+{"creatorId":"90002522363","kind":"organization","name":"ヴィクター・ゴランツ書店","names":["ヴィクター・ゴランツ書店","维克多·格兰茨出版社","Gollancz"],"identityBasis":"external_id"}
+{"creatorId":"90002526307","kind":"organization","name":"プラネタ・デアゴスティーニ社","names":["プラネタ・デアゴスティーニ社","Planeta DeAgostini"],"identityBasis":"external_id"}
+{"creatorId":"90002538092","kind":"person","name":"湯山邦彦","names":["湯山邦彦","湯山邦彥","Kunihiko Yuyama"],"identityBasis":"external_id"}
+{"creatorId":"90002545393","kind":"person","name":"山本泰一郎","names":["山本泰一郎","Yasuichiro Yamamoto"],"identityBasis":"external_id"}
+{"creatorId":"90002571816","kind":"person","name":"赤根和樹","names":["赤根和樹","Kazuki Akane"],"identityBasis":"external_id"}
+{"creatorId":"90002593083","kind":"person","name":"川尻善昭","names":["川尻善昭","Yoshiaki Kawajiri"],"identityBasis":"external_id"}
+{"creatorId":"90002599283","kind":"person","name":"井上和郎","names":["井上和郎","Kazurou Inoue"],"identityBasis":"external_id"}
+{"creatorId":"90002606338","kind":"person","name":"東まゆみ","names":["東まゆみ","東麻由美","Mayumi Azuma"],"identityBasis":"external_id"}
+{"creatorId":"90002608397","kind":"person","name":"ISUTOSHI","names":["ISUTOSHI","Isutoshi"],"identityBasis":"external_id"}
+{"creatorId":"90002609816","kind":"person","name":"りんたろう","names":["りんたろう","林重行","Rintaro"],"identityBasis":"external_id"}
+{"creatorId":"90002630137","kind":"person","name":"寺沢武一","names":["寺沢武一","寺澤武一","Buichi Terasawa"],"identityBasis":"external_id"}
+{"creatorId":"90002632277","kind":"person","name":"男鹿和雄","names":["男鹿和雄","Kazuo Oga"],"identityBasis":"external_id"}
+{"creatorId":"90002634293","kind":"person","name":"今千秋","names":["今千秋","Chiaki Kon"],"identityBasis":"external_id"}
+{"creatorId":"90002663665","kind":"person","name":"中村春菊","names":["中村春菊","Shungiku Nakamura"],"identityBasis":"external_id"}
+{"creatorId":"90002667006","kind":"person","name":"吉浦康裕","names":["吉浦康裕","Yasuhiro Yoshiura"],"identityBasis":"external_id"}
+{"creatorId":"90002696742","kind":"person","name":"最富キョウスケ","names":["最富キョウスケ","Kyousuke Motomi"],"identityBasis":"external_id"}
+{"creatorId":"90002707181","kind":"person","name":"池田晃久","names":["池田晃久","Akihisa Ikeda"],"identityBasis":"external_id"}
+{"creatorId":"90002708110","kind":"person","name":"阿部記之","names":["阿部記之","Noriyuki Abe"],"identityBasis":"external_id"}
+{"creatorId":"90002715024","kind":"person","name":"相原実貴","names":["相原実貴","Miki Aihara"],"identityBasis":"external_id"}
+{"creatorId":"90002721204","kind":"person","name":"マイケル・アリアス","names":["マイケル・アリアス","麥可·艾瑞亞","Michael Arias"],"identityBasis":"external_id"}
+{"creatorId":"90002731432","kind":"person","name":"名木田恵子","names":["名木田恵子","名木田惠子","Kyoko Mizuki"],"identityBasis":"external_id"}
+{"creatorId":"90002829021","kind":"person","name":"志水アキ","names":["志水アキ","志水明","Aki Shimizu"],"identityBasis":"external_id"}
+{"creatorId":"90002829067","kind":"person","name":"伊藤彰","names":["伊藤彰","Akira Itō"],"identityBasis":"external_id"}
+{"creatorId":"90002868660","kind":"organization","name":"Asuka","names":["Asuka"],"identityBasis":"external_id"}
+{"creatorId":"90002880354","kind":"person","name":"夢枕獏","names":["夢枕獏","Baku Yumemakura"],"identityBasis":"external_id"}
+{"creatorId":"90002880551","kind":"person","name":"赤石路代","names":["赤石路代","Michiyo Akaishi"],"identityBasis":"external_id"}
+{"creatorId":"90002964212","kind":"person","name":"趙廷晩","names":["趙廷晩","趙廷晚","Cho Jung-man"],"identityBasis":"external_id"}
+{"creatorId":"90003012184","kind":"person","name":"西尾大介","names":["西尾大介","Daisuke Nishio"],"identityBasis":"external_id"}
+{"creatorId":"90003032264","kind":"person","name":"鳥海永行","names":["鳥海永行","鸟海永行","Hisayuki Toriumi"],"identityBasis":"external_id"}
+{"creatorId":"90003049366","kind":"person","name":"山本暎一","names":["山本暎一","山本栄一","Eiichi Yamamoto"],"identityBasis":"external_id"}
+{"creatorId":"90003049372","kind":"person","name":"岡部英二","names":["岡部英二","Eiji Okabe"],"identityBasis":"external_id"}
+{"creatorId":"90003049381","kind":"person","name":"大塚英志","names":["大塚英志","大塚英二","Eiji Ōtsuka"],"identityBasis":"external_id"}
+{"creatorId":"90003079318","kind":"person","name":"村山渉","names":["村山渉","Wataru Murayama"],"identityBasis":"external_id"}
+{"creatorId":"90003082793","kind":"person","name":"三条陸","names":["三条陸","Riku Sanjo"],"identityBasis":"external_id"}
+{"creatorId":"90003089616","kind":"person","name":"瀬尾公治","names":["瀬尾公治","瀨尾公治","Kōji Seo"],"identityBasis":"external_id"}
+{"creatorId":"90003090837","kind":"person","name":"木﨑文智","names":["木﨑文智","木崎文智","Fuminori Kizaki"],"identityBasis":"external_id"}
+{"creatorId":"90003101784","kind":"person","name":"森川ジョージ","names":["森川ジョージ","森川讓次","George Morikawa"],"identityBasis":"external_id"}
+{"creatorId":"90003107384","kind":"person","name":"澤井啓夫","names":["澤井啓夫","澤井啟夫","Yoshio Sawai"],"identityBasis":"external_id"}
+{"creatorId":"90003109142","kind":"person","name":"宮坂香帆","names":["宮坂香帆","Kaho Miyasaka"],"identityBasis":"external_id"}
+{"creatorId":"90003117944","kind":"person","name":"井上直久","names":["井上直久","Naohisa Inoue"],"identityBasis":"external_id"}
+{"creatorId":"90003120545","kind":"person","name":"田辺イエロウ","names":["田辺イエロウ","田邊伊衛郎","Yellow Tanabe"],"identityBasis":"external_id"}
+{"creatorId":"90003130818","kind":"person","name":"菊池一仁","names":["菊池一仁","Kazuhito Kikuchi"],"identityBasis":"external_id"}
+{"creatorId":"90003133021","kind":"person","name":"原恵一","names":["原恵一","原惠一","Keiichi Hara"],"identityBasis":"external_id"}
+{"creatorId":"90003133373","kind":"person","name":"高坂希太郎","names":["高坂希太郎","Kitarō Kōsaka"],"identityBasis":"external_id"}
+{"creatorId":"90003135260","kind":"person","name":"大和田秀樹","names":["大和田秀樹","Hideki Ōwada"],"identityBasis":"external_id"}
+{"creatorId":"90003135263","kind":"person","name":"日下秀憲","names":["日下秀憲","日下秀宪","Hidenori Kusaka"],"identityBasis":"external_id"}
+{"creatorId":"90003135272","kind":"person","name":"恩地日出夫","names":["恩地日出夫","Hideo Onchi"],"identityBasis":"external_id"}
+{"creatorId":"90003136268","kind":"person","name":"ときたひろこ","names":["ときたひろこ","時田廣子","Hiroko Tokita"],"identityBasis":"external_id"}
+{"creatorId":"90003136356","kind":"person","name":"松山洋","names":["松山洋","Hiroshi Matsuyama"],"identityBasis":"external_id"}
+{"creatorId":"90003136396","kind":"person","name":"北久保弘之","names":["北久保弘之","Hiroyuki Kitakubo"],"identityBasis":"external_id"}
+{"creatorId":"90003136401","kind":"person","name":"浅田弘幸","names":["浅田弘幸","Hiroyuki Asada"],"identityBasis":"external_id"}
+{"creatorId":"90003136410","kind":"person","name":"玉越博幸","names":["玉越博幸","Hiroyuki Tamakoshi"],"identityBasis":"external_id"}
+{"creatorId":"90003140672","kind":"person","name":"稲田浩司","names":["稲田浩司","Koji Inada"],"identityBasis":"external_id"}
+{"creatorId":"90003176880","kind":"person","name":"叶恭弘","names":["叶恭弘","Yasuhiro Kanō"],"identityBasis":"external_id"}
+{"creatorId":"90003177199","kind":"person","name":"舛田利雄","names":["舛田利雄","Toshio Masuda"],"identityBasis":"external_id"}
+{"creatorId":"90003181532","kind":"person","name":"許斐剛","names":["許斐剛","Takeshi Konomi"],"identityBasis":"external_id"}
+{"creatorId":"90003189973","kind":"person","name":"藤咲淳一","names":["藤咲淳一","Junichi Fujisaku"],"identityBasis":"external_id"}
+{"creatorId":"90003190112","kind":"person","name":"井上淳哉","names":["井上淳哉","Jun'ya Inoue"],"identityBasis":"external_id"}
+{"creatorId":"90003191990","kind":"person","name":"由羅カイリ","names":["由羅カイリ","由羅海里","Kairi Yura"],"identityBasis":"external_id"}
+{"creatorId":"90003192418","kind":"organization","name":"カミ","names":["カミ","Kami"],"identityBasis":"external_id"}
+{"creatorId":"90003194504","kind":"person","name":"工藤かずや","names":["工藤かずや","工藤和也","Kazuya Kudō"],"identityBasis":"external_id"}
+{"creatorId":"90003194681","kind":"person","name":"杉山慶一","names":["杉山慶一","杉山庆一","Keiichi Sugiyama"],"identityBasis":"external_id"}
+{"creatorId":"90003196896","kind":"person","name":"矢吹公郎","names":["矢吹公郎","Kimio Yabuki"],"identityBasis":"external_id"}
+{"creatorId":"90003197671","kind":"person","name":"中村嘉宏","names":["中村嘉宏","Yoshihiro Nakamura"],"identityBasis":"external_id"}
+{"creatorId":"90003201024","kind":"person","name":"うすた京介","names":["うすた京介","臼田京介","Kyosuke Usuta"],"identityBasis":"external_id"}
+{"creatorId":"90003201287","kind":"person","name":"相原コージ","names":["相原コージ","相原弘治","Koji Aihara"],"identityBasis":"external_id"}
+{"creatorId":"90003228887","kind":"person","name":"Lee Hyeon-sook","names":["Lee Hyeon-sook"],"identityBasis":"external_id"}
+{"creatorId":"90003228934","kind":"person","name":"李昭映","names":["李昭映","Lee So-young"],"identityBasis":"external_id"}
+{"creatorId":"90003234503","kind":"person","name":"樋口大輔","names":["樋口大輔","Daisuke Higuchi"],"identityBasis":"external_id"}
+{"creatorId":"90003241648","kind":"person","name":"高松信司","names":["高松信司","Shinji Takamatsu"],"identityBasis":"external_id"}
+{"creatorId":"90003241677","kind":"person","name":"川瀬敏文","names":["川瀬敏文","川瀨敏文","Toshifumi Kawase"],"identityBasis":"external_id"}
+{"creatorId":"90003267171","kind":"person","name":"JUDAL","names":["JUDAL","Judal"],"identityBasis":"external_id"}
+{"creatorId":"90003272581","kind":"person","name":"青木たかお","names":["青木たかお","青木孝夫","Takao Aoki"],"identityBasis":"external_id"}
+{"creatorId":"90003273115","kind":"person","name":"寺田憲史","names":["寺田憲史","寺田宪史","Kenji Terada"],"identityBasis":"external_id"}
+{"creatorId":"90003274618","kind":"person","name":"朝比奈ゆうや","names":["朝比奈ゆうや","朝比奈優彌","Yuya Asahina"],"identityBasis":"external_id"}
+{"creatorId":"90003278187","kind":"organization","name":"トンカム","names":["トンカム","Tonkam"],"identityBasis":"external_id"}
+{"creatorId":"90003290846","kind":"person","name":"おかざき真里","names":["おかざき真里","冈崎真里","Mari Okazaki"],"identityBasis":"external_id"}
+{"creatorId":"90003293468","kind":"person","name":"まりお金田","names":["まりお金田","瑪俐歐金田","Mario Kaneda"],"identityBasis":"external_id"}
+{"creatorId":"90003297095","kind":"person","name":"おおすみ正秋","names":["おおすみ正秋","大隅正秋","Masaaki Ōsumi"],"identityBasis":"external_id"}
+{"creatorId":"90003297155","kind":"person","name":"波多正美","names":["波多正美","Masami Hata"],"identityBasis":"external_id"}
+{"creatorId":"90003297171","kind":"person","name":"森田まさのり","names":["森田まさのり","森田真法","Masanori Morita"],"identityBasis":"external_id"}
+{"creatorId":"90003297205","kind":"person","name":"田口雅之","names":["田口雅之","Masayuki Taguchi"],"identityBasis":"external_id"}
+{"creatorId":"90003302187","kind":"person","name":"信本敬子","names":["信本敬子","Keiko Nobumoto"],"identityBasis":"external_id"}
+{"creatorId":"90003342565","kind":"person","name":"大林宣彦","names":["大林宣彦","Nobuhiko Obayashi"],"identityBasis":"external_id"}
+{"creatorId":"90003356916","kind":"person","name":"小林治","names":["小林治","Osamu Kobayashi"],"identityBasis":"external_id"}
+{"creatorId":"90003356918","kind":"person","name":"小林治","names":["小林治","Osamu Kobayashi"],"identityBasis":"external_id"}
+{"creatorId":"90003388349","kind":"organization","name":"Pika Édition","names":["Pika Édition"],"identityBasis":"external_id"}
+{"creatorId":"90003412279","kind":"person","name":"花見沢Q太郎","names":["花見沢Q太郎","花見澤Q太郎","Q-taro Hanamizawa"],"identityBasis":"external_id"}
+{"creatorId":"90003423738","kind":"person","name":"三家本礼","names":["三家本礼","Rei Mikamoto"],"identityBasis":"external_id"}
+{"creatorId":"90003477936","kind":"organization","name":"青心社","names":["青心社","Seishinsha"],"identityBasis":"external_id"}
+{"creatorId":"90003482024","kind":"person","name":"THORES柴本","names":["THORES柴本","Thores Shibamoto"],"identityBasis":"external_id"}
+{"creatorId":"90003482132","kind":"person","name":"高田慎一郎","names":["高田慎一郎","Shin'ichirō Takada"],"identityBasis":"external_id"}
+{"creatorId":"90003482244","kind":"person","name":"荒牧伸志","names":["荒牧伸志","Shinji Aramaki"],"identityBasis":"external_id"}
+{"creatorId":"90003482283","kind":"person","name":"高山しのぶ","names":["高山しのぶ","Shinobu Takayama"],"identityBasis":"external_id"}
+{"creatorId":"90003482405","kind":"person","name":"たかなししずえ","names":["たかなししずえ","高梨靜江","Shizue Takanashi"],"identityBasis":"external_id"}
+{"creatorId":"90003503793","kind":"person","name":"片渕須直","names":["片渕須直","片淵須直","Sunao Katabuchi"],"identityBasis":"external_id"}
+{"creatorId":"90003509589","kind":"person","name":"松江名俊","names":["松江名俊","Shun Matsuena"],"identityBasis":"external_id"}
+{"creatorId":"90003514132","kind":"person","name":"松本嵩春","names":["松本嵩春","Takaharu Matsumoto"],"identityBasis":"external_id"}
+{"creatorId":"90003514157","kind":"person","name":"しげまつ貴子","names":["しげまつ貴子","Takako Shigematsu"],"identityBasis":"external_id"}
+{"creatorId":"90003514203","kind":"person","name":"長崎尚志","names":["長崎尚志","Takashi Nagasaki"],"identityBasis":"external_id"}
+{"creatorId":"90003514320","kind":"person","name":"小池健","names":["小池健","Takeshi Koike"],"identityBasis":"external_id"}
+{"creatorId":"90003519220","kind":"person","name":"筒井哲也","names":["筒井哲也","Tetsuya Tsutsui"],"identityBasis":"external_id"}
+{"creatorId":"90003531399","kind":"person","name":"山下友美","names":["山下友美","Tomomi Yamashita"],"identityBasis":"external_id"}
+{"creatorId":"90003532633","kind":"person","name":"平田敏夫","names":["平田敏夫","Toshio Hirata"],"identityBasis":"external_id"}
+{"creatorId":"90003538236","kind":"person","name":"林葉直子","names":["林葉直子","Naoko Hayashiba"],"identityBasis":"external_id"}
+{"creatorId":"90003541672","kind":"person","name":"小林常夫","names":["小林常夫","Tsuneo Kobayashi"],"identityBasis":"external_id"}
+{"creatorId":"90003571996","kind":"person","name":"太田垣康男","names":["太田垣康男","Yasuo Ōtagaki"],"identityBasis":"external_id"}
+{"creatorId":"90003573155","kind":"person","name":"吉原由起","names":["吉原由起","Yuki Yoshihara"],"identityBasis":"external_id"}
+{"creatorId":"90003574286","kind":"person","name":"松下容子","names":["松下容子","Yōko Matsushita"],"identityBasis":"external_id"}
+{"creatorId":"90003648801","kind":"organization","name":"CMX","names":["CMX"],"identityBasis":"external_id"}
+{"creatorId":"90003719318","kind":"organization","name":"エディツィオニBD","names":["エディツィオニBD","Edizioni BD"],"identityBasis":"external_id"}
+{"creatorId":"90003746409","kind":"organization","name":"Flashbook Edizioni","names":["Flashbook Edizioni"],"identityBasis":"external_id"}
+{"creatorId":"90003776939","kind":"person","name":"有楽彰展","names":["有楽彰展","有樂彰展","Akinobu Uraka"],"identityBasis":"external_id"}
+{"creatorId":"90003776985","kind":"person","name":"あらいきよこ","names":["あらいきよこ","新井清子","Kiyoko Arai"],"identityBasis":"external_id"}
+{"creatorId":"90003778279","kind":"person","name":"綾峰欄人","names":["綾峰欄人","Rando Ayamine"],"identityBasis":"external_id"}
+{"creatorId":"90003785480","kind":"person","name":"うえだひでひと","names":["うえだひでひと","植田秀仁","Hidehito Ueda"],"identityBasis":"external_id"}
+{"creatorId":"90003785762","kind":"person","name":"乾はるか","names":["乾はるか","Haruka Inui"],"identityBasis":"external_id"}
+{"creatorId":"90003785771","kind":"person","name":"福冨博","names":["福冨博","福富博","Hiroshi Fukutomi"],"identityBasis":"external_id"}
+{"creatorId":"90003785776","kind":"person","name":"笹川ひろし","names":["笹川ひろし","笹川浩","Hiroshi Sasagawa"],"identityBasis":"external_id"}
+{"creatorId":"90003810748","kind":"organization","name":"J-Pop","names":["J-Pop"],"identityBasis":"external_id"}
+{"creatorId":"90003811238","kind":"person","name":"川越淳","names":["川越淳","Jun Kawagoe"],"identityBasis":"external_id"}
+{"creatorId":"90003812898","kind":"organization","name":"カッパ・エディツィオーニ","names":["カッパ・エディツィオーニ","Kappa Edizioni"],"identityBasis":"external_id"}
+{"creatorId":"90003813166","kind":"person","name":"椎名軽穂","names":["椎名軽穂","椎名輕穗","Karuho Shiina"],"identityBasis":"external_id"}
+{"creatorId":"90003814188","kind":"person","name":"やまざきかずお","names":["やまざきかずお","山崎和男","Kazuo Yamazaki"],"identityBasis":"external_id"}
+{"creatorId":"90003844762","kind":"person","name":"井沢満","names":["井沢満","井澤滿","Mann Izawa"],"identityBasis":"external_id"}
+{"creatorId":"90003853963","kind":"person","name":"水沢めぐみ","names":["水沢めぐみ","水澤惠","Megumi Mizusawa"],"identityBasis":"external_id"}
+{"creatorId":"90003866432","kind":"person","name":"高橋資祐","names":["高橋資祐","Motosuke Takahashi"],"identityBasis":"external_id"}
+{"creatorId":"90003869994","kind":"person","name":"モグダン","names":["モグダン","Mogudan"],"identityBasis":"external_id"}
+{"creatorId":"90003875777","kind":"organization","name":"キムドン社","names":["キムドン社","NXB金同出版社","Kim Dong Publishing House"],"identityBasis":"external_id"}
+{"creatorId":"90003959525","kind":"person","name":"坂本眞一","names":["坂本眞一","坂本真一","Shin-ichi Sakamoto"],"identityBasis":"external_id"}
+{"creatorId":"90003976778","kind":"person","name":"富田祐弘","names":["富田祐弘","富田佑弘","Sukehiro Tomita"],"identityBasis":"external_id"}
+{"creatorId":"90003978408","kind":"person","name":"鈴木信也","names":["鈴木信也","铃木信也","Shin'ya Suzuki"],"identityBasis":"external_id"}
+{"creatorId":"90003980163","kind":"person","name":"藪下泰司","names":["藪下泰司","Taiji Yabushita"],"identityBasis":"external_id"}
+{"creatorId":"90003981526","kind":"person","name":"遠藤達哉","names":["遠藤達哉","Tatsuya Endō"],"identityBasis":"external_id"}
+{"creatorId":"90003981527","kind":"person","name":"浜崎達也","names":["浜崎達也","濱崎達也","Tatsuya Hamazaki"],"identityBasis":"external_id"}
+{"creatorId":"90003985322","kind":"person","name":"アミノテツロー","names":["アミノテツロー","網野哲郎","Tetsurō Amino"],"identityBasis":"external_id"}
+{"creatorId":"90004023162","kind":"person","name":"和深ゆあな","names":["和深ゆあな","和深柚有菜","Yuana Kazumi"],"identityBasis":"external_id"}
+{"creatorId":"90004197995","kind":"person","name":"井出安軌","names":["井出安軌","Yasunori Ide"],"identityBasis":"external_id"}
+{"creatorId":"90004200092","kind":"person","name":"今沢哲男","names":["今沢哲男","今澤哲男","Tetsuo Imazawa"],"identityBasis":"external_id"}
+{"creatorId":"90004204311","kind":"organization","name":"Istari Comics","names":["Istari Comics"],"identityBasis":"external_id"}
+{"creatorId":"90004204341","kind":"person","name":"長峯達也","names":["長峯達也","Tatsuya Nagamine"],"identityBasis":"external_id"}
+{"creatorId":"90004217010","kind":"person","name":"加瀬充子","names":["加瀬充子","加瀨充子","Mitsuko Kase"],"identityBasis":"external_id"}
+{"creatorId":"90004229560","kind":"organization","name":"Comix-ART","names":["Comix-ART"],"identityBasis":"external_id"}
+{"creatorId":"90004355026","kind":"organization","name":"Editorial Ivrea","names":["Editorial Ivrea"],"identityBasis":"external_id"}
+{"creatorId":"90004355175","kind":"person","name":"日高政光","names":["日高政光","Masamitsu Hidaka"],"identityBasis":"external_id"}
+{"creatorId":"90004385945","kind":"person","name":"上田倫子","names":["上田倫子","Rinko Ueda"],"identityBasis":"external_id"}
+{"creatorId":"90004386086","kind":"person","name":"水無月すう","names":["水無月すう","水無月嵩","Suu Minazuki"],"identityBasis":"external_id"}
+{"creatorId":"90004387828","kind":"person","name":"三原ミツカズ","names":["三原ミツカズ","Mitsukazu Mihara"],"identityBasis":"external_id"}
+{"creatorId":"90004411283","kind":"person","name":"池沢理美","names":["池沢理美","Satomi Ikezawa"],"identityBasis":"external_id"}
+{"creatorId":"90004412704","kind":"organization","name":"Sangatsu Manga","names":["Sangatsu Manga"],"identityBasis":"external_id"}
+{"creatorId":"90004537535","kind":"person","name":"山口祐司 (アニメーション監督)","names":["山口祐司 (アニメーション監督)","虎田功","Yūji Yamaguchi"],"identityBasis":"external_id"}
+{"creatorId":"90004700256","kind":"person","name":"小椋アカネ","names":["小椋アカネ","Akane Ogura"],"identityBasis":"external_id"}
+{"creatorId":"90004701123","kind":"person","name":"暁月あきら","names":["暁月あきら","晓月明","Akira Akatsuki"],"identityBasis":"external_id"}
+{"creatorId":"90004701166","kind":"person","name":"西森章","names":["西森章","Akira Nishimori"],"identityBasis":"external_id"}
+{"creatorId":"90004721168","kind":"person","name":"秋乃茉莉","names":["秋乃茉莉","Matsuri Akino"],"identityBasis":"external_id"}
+{"creatorId":"90004817832","kind":"person","name":"鈴見敦","names":["鈴見敦","Atsushi Suzumi"],"identityBasis":"external_id"}
+{"creatorId":"90004822595","kind":"organization","name":"オーロラ・パブリッシング","names":["オーロラ・パブリッシング","Aurora Publishing"],"identityBasis":"external_id"}
+{"creatorId":"90004988825","kind":"person","name":"水月博士","names":["水月博士","Hakase Mizuki"],"identityBasis":"external_id"}
+{"creatorId":"90005102284","kind":"person","name":"真木ちとせ","names":["真木ちとせ","Chitose Maki"],"identityBasis":"external_id"}
+{"creatorId":"90005157254","kind":"organization","name":"Compupress","names":["Compupress"],"identityBasis":"external_id"}
+{"creatorId":"90005158759","kind":"person","name":"桜場コハル","names":["桜場コハル","櫻場小春","Coharu Sakuraba"],"identityBasis":"external_id"}
+{"creatorId":"90005275916","kind":"organization","name":"デジタル・マンガ","names":["デジタル・マンガ","Digital Manga"],"identityBasis":"external_id"}
+{"creatorId":"90005291380","kind":"person","name":"今川泰宏","names":["今川泰宏","Yasuhiro Imagawa"],"identityBasis":"external_id"}
+{"creatorId":"90005338725","kind":"organization","name":"JBC出版社","names":["JBC出版社","Editora JBC"],"identityBasis":"external_id"}
+{"creatorId":"90005359621","kind":"person","name":"とよ田みのる","names":["とよ田みのる","豐田實","Minoru Toyoda"],"identityBasis":"external_id"}
+{"creatorId":"90005360024","kind":"person","name":"三浦貴大","names":["三浦貴大","Takahiro Miura"],"identityBasis":"external_id"}
+{"creatorId":"90005361877","kind":"person","name":"結賀さとる","names":["結賀さとる","結賀理","Satoru Yuiga"],"identityBasis":"external_id"}
+{"creatorId":"90005362768","kind":"person","name":"やまざき貴子","names":["やまざき貴子","山崎貴子","Takako Yamazaki"],"identityBasis":"external_id"}
+{"creatorId":"90005363319","kind":"organization","name":"富士見ファンタジア文庫","names":["富士見ファンタジア文庫","富士見Fantasia文庫","Fujimi Fantasia Bunko"],"identityBasis":"external_id"}
+{"creatorId":"90005365041","kind":"organization","name":"ファミ通文庫","names":["ファミ通文庫","Fami通文庫","Famitsu Bunko"],"identityBasis":"external_id"}
+{"creatorId":"90005374987","kind":"person","name":"鬼頭えん","names":["鬼頭えん","En Kitō"],"identityBasis":"external_id"}
+{"creatorId":"90005398742","kind":"person","name":"庄司陽子","names":["庄司陽子","Yōko Shōji"],"identityBasis":"external_id"}
+{"creatorId":"90005399979","kind":"person","name":"えすとえむ","names":["えすとえむ","est em"],"identityBasis":"external_id"}
+{"creatorId":"90005462154","kind":"organization","name":"フラワーコミックス","names":["フラワーコミックス","Flower Comics α(Alpha)","Flower Comics"],"identityBasis":"external_id"}
+{"creatorId":"90005524967","kind":"person","name":"Gary Dehan","names":["Gary Dehan"],"identityBasis":"external_id"}
+{"creatorId":"90005770828","kind":"person","name":"池田宏","names":["池田宏","Hiroshi Ikeda"],"identityBasis":"external_id"}
+{"creatorId":"90005771603","kind":"person","name":"山賀博之","names":["山賀博之","Hiroyuki Yamaga"],"identityBasis":"external_id"}
+{"creatorId":"90005772253","kind":"person","name":"岩岡ヒサエ","names":["岩岡ヒサエ","岩岡壽枝","Hisae Iwaoka"],"identityBasis":"external_id"}
+{"creatorId":"90005957587","kind":"organization","name":"角川コミックスドラゴンJr.","names":["角川コミックスドラゴンJr.","Kadokawa Comics Dragon Jr."],"identityBasis":"external_id"}
+{"creatorId":"90005957646","kind":"person","name":"空廼カイリ","names":["空廼カイリ","空廼海里","Kairi Sorano"],"identityBasis":"external_id"}
+{"creatorId":"90005975051","kind":"person","name":"宗我部としのり","names":["宗我部としのり","宗我部利典","Toshinori Sogabe"],"identityBasis":"external_id"}
+{"creatorId":"90006088906","kind":"person","name":"斎藤博","names":["斎藤博","齋藤博","Hiroshi Saitō"],"identityBasis":"external_id"}
+{"creatorId":"90006103854","kind":"person","name":"山田J太","names":["山田J太","J-ta Yamada"],"identityBasis":"external_id"}
+{"creatorId":"90006136815","kind":"person","name":"雪乃紗衣","names":["雪乃紗衣","Sai Yukino"],"identityBasis":"external_id"}
+{"creatorId":"90006142167","kind":"person","name":"小畑友紀","names":["小畑友紀","小畑友纪","Yūki Obata"],"identityBasis":"external_id"}
+{"creatorId":"90006145200","kind":"person","name":"杉浦志保","names":["杉浦志保","Shiho Sugiura"],"identityBasis":"external_id"}
+{"creatorId":"90006159335","kind":"organization","name":"JPF社","names":["JPF社","Japonica Polonica Fantastica"],"identityBasis":"external_id"}
+{"creatorId":"90006164134","kind":"person","name":"宇佐美真紀","names":["宇佐美真紀","Maki Usami"],"identityBasis":"external_id"}
+{"creatorId":"90006165255","kind":"person","name":"円城寺マキ","names":["円城寺マキ","圓城寺真紀","Maki Enjōji"],"identityBasis":"external_id"}
+{"creatorId":"90006203085","kind":"person","name":"安藤慈朗","names":["安藤慈朗","Jiro Ando"],"identityBasis":"external_id"}
+{"creatorId":"90006203100","kind":"person","name":"松本次郎","names":["松本次郎","Jiro Matsumoto"],"identityBasis":"external_id"}
+{"creatorId":"90006308970","kind":"person","name":"鈴木ジュリエッタ","names":["鈴木ジュリエッタ","鈴木JULIETTA","Julietta Suzuki"],"identityBasis":"external_id"}
+{"creatorId":"90006348746","kind":"person","name":"林海象","names":["林海象","Kaizō Hayashi"],"identityBasis":"external_id"}
+{"creatorId":"90006359803","kind":"person","name":"藤原カムイ","names":["藤原カムイ","藤原神居","Kamui Fujiwara"],"identityBasis":"external_id"}
+{"creatorId":"90006364240","kind":"person","name":"桜小路かのこ","names":["桜小路かのこ","櫻小路鹿乃子","Kanoko Sakurakoji"],"identityBasis":"external_id"}
+{"creatorId":"90006378100","kind":"person","name":"山田勝久","names":["山田勝久","Katsuhisa Yamada"],"identityBasis":"external_id"}
+{"creatorId":"90006378246","kind":"person","name":"谷田部勝義","names":["谷田部勝義","Katsuyoshi Yatabe"],"identityBasis":"external_id"}
+{"creatorId":"90006381556","kind":"person","name":"平井和正","names":["平井和正","Kazumasa Hirai"],"identityBasis":"external_id"}
+{"creatorId":"90006381790","kind":"person","name":"片山一良","names":["片山一良","Kazuyoshi Katayama"],"identityBasis":"external_id"}
+{"creatorId":"90006389239","kind":"person","name":"村枝賢一","names":["村枝賢一","Kenichi Muraeda"],"identityBasis":"external_id"}
+{"creatorId":"90006389269","kind":"person","name":"八谷賢一","names":["八谷賢一","Kenichi Yatani"],"identityBasis":"external_id"}
+{"creatorId":"90006392012","kind":"person","name":"片山憲太郎","names":["片山憲太郎","Kentarō Katayama"],"identityBasis":"external_id"}
+{"creatorId":"90006426183","kind":"person","name":"池野恋","names":["池野恋","Koi Ikeno"],"identityBasis":"external_id"}
+{"creatorId":"90006426456","kind":"person","name":"澤井幸次","names":["澤井幸次","Koji Sawai"],"identityBasis":"external_id"}
+{"creatorId":"90006455142","kind":"person","name":"ときた洸一","names":["ときた洸一","時田洸一","Kōichi Tokita"],"identityBasis":"external_id"}
+{"creatorId":"90006487870","kind":"person","name":"篠原健太","names":["篠原健太","Kenta Shinohara"],"identityBasis":"external_id"}
+{"creatorId":"90006535026","kind":"organization","name":"Level Comics","names":["Level Comics"],"identityBasis":"external_id"}
+{"creatorId":"90006547448","kind":"person","name":"ユキヒロマツシタ","names":["ユキヒロマツシタ","福島宏之","Yukihiro Matsushita"],"identityBasis":"external_id"}
+{"creatorId":"90006664489","kind":"organization","name":"ネーション・エドゥテインメント","names":["ネーション・エドゥテインメント","Nation Edutainment"],"identityBasis":"external_id"}
+{"creatorId":"90006711807","kind":"organization","name":"M&C!","names":["M&C!"],"identityBasis":"external_id"}
+{"creatorId":"90006782817","kind":"person","name":"落合正幸","names":["落合正幸","Masayuki Ochiai"],"identityBasis":"external_id"}
+{"creatorId":"90006787709","kind":"person","name":"真斗","names":["真斗","Mato"],"identityBasis":"external_id"}
+{"creatorId":"90006864178","kind":"person","name":"桜野みねね","names":["桜野みねね","櫻野鈴音","Minene Sakurano"],"identityBasis":"external_id"}
+{"creatorId":"90006883322","kind":"person","name":"橋本みつお","names":["橋本みつお","橋本光夫","Mitsuo Hashimoto"],"identityBasis":"external_id"}
+{"creatorId":"90006883346","kind":"person","name":"本郷みつる","names":["本郷みつる","本郷滿","Mitsuru Hongo"],"identityBasis":"external_id"}
+{"creatorId":"90006883411","kind":"person","name":"増原光幸","names":["増原光幸","Mitsuyuki Masuhara"],"identityBasis":"external_id"}
+{"creatorId":"90006884795","kind":"person","name":"草凪みずほ","names":["草凪みずほ","草凪瑞穗","Mizuho Kusanagi"],"identityBasis":"external_id"}
+{"creatorId":"90006917997","kind":"person","name":"新沢基栄","names":["新沢基栄","新澤基榮","Motoei Shinzawa"],"identityBasis":"external_id"}
+{"creatorId":"90006918002","kind":"person","name":"小林源文","names":["小林源文","Motofumi Kobayashi"],"identityBasis":"external_id"}
+{"creatorId":"90006934700","kind":"person","name":"高橋良輔","names":["高橋良輔","Ryōsuke Takahashi"],"identityBasis":"external_id"}
+{"creatorId":"90006961717","kind":"person","name":"秋元奈美","names":["秋元奈美","Nami Akimoto"],"identityBasis":"external_id"}
+{"creatorId":"90006963367","kind":"person","name":"明比正行","names":["明比正行","Masayuki Akehi"],"identityBasis":"external_id"}
+{"creatorId":"90006964768","kind":"person","name":"伊藤尚往","names":["伊藤尚往","Naoyuki Itō"],"identityBasis":"external_id"}
+{"creatorId":"90006964777","kind":"person","name":"影山なおゆき","names":["影山なおゆき","影山直行","Naoyuki Kageyama"],"identityBasis":"external_id"}
+{"creatorId":"90007265649","kind":"person","name":"林田球","names":["林田球","Q Hayashida"],"identityBasis":"external_id"}
+{"creatorId":"90007309868","kind":"person","name":"臣士れい","names":["臣士れい","Rei Omishi"],"identityBasis":"external_id"}
+{"creatorId":"90007317106","kind":"person","name":"館尾冽","names":["館尾冽","Retsu Tateo"],"identityBasis":"external_id"}
+{"creatorId":"90007333057","kind":"person","name":"高田りえ","names":["高田りえ","高田理惠","Rie Takada"],"identityBasis":"external_id"}
+{"creatorId":"90007335079","kind":"person","name":"藤井理乃","names":["藤井理乃","Rino Fujii"],"identityBasis":"external_id"}
+{"creatorId":"90007385272","kind":"person","name":"鷹岬諒","names":["鷹岬諒","Ryo Takamisaki"],"identityBasis":"external_id"}
+{"creatorId":"90007385646","kind":"person","name":"見田竜介","names":["見田竜介","見田龍介","Ryūsuke Mita"],"identityBasis":"external_id"}
+{"creatorId":"90007386178","kind":"person","name":"吉村明美","names":["吉村明美","Akemi Yoshimura"],"identityBasis":"external_id"}
+{"creatorId":"90007426424","kind":"person","name":"山本サトシ","names":["山本サトシ","山本智","Satoshi Yamamoto"],"identityBasis":"external_id"}
+{"creatorId":"90007446734","kind":"person","name":"松山せいじ","names":["松山せいじ","松山清治","Seiji Matsuyama"],"identityBasis":"external_id"}
+{"creatorId":"90007494264","kind":"person","name":"一色まこと","names":["一色まこと","一色真人","Makoto Isshiki"],"identityBasis":"external_id"}
+{"creatorId":"90007496325","kind":"person","name":"高柳滋仁","names":["高柳滋仁","Shigehito Takayanagi"],"identityBasis":"external_id"}
+{"creatorId":"90007496356","kind":"person","name":"影山楙倫","names":["影山楙倫","Shigenori Kageyama"],"identityBasis":"external_id"}
+{"creatorId":"90007497198","kind":"person","name":"三沢伸","names":["三沢伸","三澤伸","Shin Misawa"],"identityBasis":"external_id"}
+{"creatorId":"90007497526","kind":"person","name":"木村真一郎","names":["木村真一郎","Shinichiro Kimura"],"identityBasis":"external_id"}
+{"creatorId":"90007499514","kind":"person","name":"清野静流","names":["清野静流","Shizuru Seino"],"identityBasis":"external_id"}
+{"creatorId":"90007500090","kind":"person","name":"河本昇悟","names":["河本昇悟","Shogo Koumoto"],"identityBasis":"external_id"}
+{"creatorId":"90007506159","kind":"person","name":"浜田翔子","names":["浜田翔子","濱田翔子","Shōko Hamada"],"identityBasis":"external_id"}
+{"creatorId":"90007667637","kind":"person","name":"海瀬壮祐","names":["海瀬壮祐","海瀨壯祐","Sōsuke Kaise"],"identityBasis":"external_id"}
+{"creatorId":"90007677523","kind":"person","name":"山口貴由","names":["山口貴由","Takayuki Yamaguchi"],"identityBasis":"external_id"}
+{"creatorId":"90007678143","kind":"person","name":"岡野剛","names":["岡野剛","Takeshi Okano"],"identityBasis":"external_id"}
+{"creatorId":"90007697986","kind":"person","name":"松本テマリ","names":["松本テマリ","松本手毬","Temari Matsumoto"],"identityBasis":"external_id"}
+{"creatorId":"90007705333","kind":"person","name":"昆童虫","names":["昆童虫","Teruo Kakuta"],"identityBasis":"external_id"}
+{"creatorId":"90007706937","kind":"person","name":"えんどうてつや","names":["えんどうてつや","遠藤徹哉","Tetsuya Endo"],"identityBasis":"external_id"}
+{"creatorId":"90007770153","kind":"person","name":"三家本泰美","names":["三家本泰美","Yasumi Mikamoto"],"identityBasis":"external_id"}
+{"creatorId":"90007770779","kind":"person","name":"白土武","names":["白土武","Takeshi Shirato"],"identityBasis":"external_id"}
+{"creatorId":"90007805458","kind":"person","name":"亀垣一","names":["亀垣一","龜垣一","Hajime Kamegaki"],"identityBasis":"external_id"}
+{"creatorId":"90007813586","kind":"person","name":"松浦聡彦","names":["松浦聡彦","松浦聰彦","Tokihiko Matsuura"],"identityBasis":"external_id"}
+{"creatorId":"90007820093","kind":"person","name":"宮野ともちか","names":["宮野ともちか","宫野知亲","Tomochika Miyano"],"identityBasis":"external_id"}
+{"creatorId":"90007820196","kind":"person","name":"湖川友謙","names":["湖川友謙","Tomonori Kogawa"],"identityBasis":"external_id"}
+{"creatorId":"90007827831","kind":"person","name":"都留稔幸","names":["都留稔幸","Toshiyuki Tsuru"],"identityBasis":"external_id"}
+{"creatorId":"90007828260","kind":"person","name":"小箱とたん","names":["小箱とたん","Totan Kobako"],"identityBasis":"external_id"}
+{"creatorId":"90007830703","kind":"person","name":"芦田豊雄","names":["芦田豊雄","蘆田豐雄","Toyoo Ashida"],"identityBasis":"external_id"}
+{"creatorId":"90007850047","kind":"person","name":"ことぶきつかさ","names":["ことぶきつかさ","琴吹司","Tsukasa Kotobuki"],"identityBasis":"external_id"}
+{"creatorId":"90007864225","kind":"organization","name":"ウドン・エンターテインメント","names":["ウドン・エンターテインメント","Udon娱乐","UDON"],"identityBasis":"external_id"}
+{"creatorId":"90008011294","kind":"organization","name":"角川スニーカー文庫","names":["角川スニーカー文庫","角川Sneaker文庫","Kadokawa Sneaker Bunko"],"identityBasis":"external_id"}
+{"creatorId":"90008017002","kind":"person","name":"斎藤けん","names":["斎藤けん","齋藤賢","Ken Saitō"],"identityBasis":"external_id"}
+{"creatorId":"90008017261","kind":"person","name":"和泉明日香","names":["和泉明日香","Asuka Izumi"],"identityBasis":"external_id"}
+{"creatorId":"90008049952","kind":"person","name":"安田剛士","names":["安田剛士","Tsuyoshi Yasuda"],"identityBasis":"external_id"}
+{"creatorId":"90008049980","kind":"person","name":"黒田やすひろ","names":["黒田やすひろ","Yasuhiro Kuroda"],"identityBasis":"external_id"}
+{"creatorId":"90008056316","kind":"person","name":"米たにヨシトモ","names":["米たにヨシトモ","米谷良知","Yoshitomo Yonetani"],"identityBasis":"external_id"}
+{"creatorId":"90008060511","kind":"person","name":"森山雄治","names":["森山雄治","Yuji Moriyama"],"identityBasis":"external_id"}
+{"creatorId":"90008060616","kind":"person","name":"雨宮由樹","names":["雨宮由樹","Yuki Amemiya"],"identityBasis":"external_id"}
+{"creatorId":"90008060662","kind":"person","name":"志水ゆき","names":["志水ゆき","志水雪","Yuki Shimizu"],"identityBasis":"external_id"}
+{"creatorId":"90008061567","kind":"person","name":"なるしまゆり","names":["なるしまゆり","成島由利","Yuri Narushima"],"identityBasis":"external_id"}
+{"creatorId":"90008062700","kind":"person","name":"みなもと悠","names":["みなもと悠","源悠","Yū Minamoto"],"identityBasis":"external_id"}
+{"creatorId":"90008193411","kind":"person","name":"駒都えーじ","names":["駒都えーじ","駒都英二","E-ji Komatsu"],"identityBasis":"external_id"}
+{"creatorId":"90008193516","kind":"person","name":"秋山瑞人","names":["秋山瑞人","Mizuhito Akiyama"],"identityBasis":"external_id"}
+{"creatorId":"90008193642","kind":"person","name":"椎名高志","names":["椎名高志","Takashi Shiina"],"identityBasis":"external_id"}
+{"creatorId":"90008194377","kind":"person","name":"板野一郎","names":["板野一郎","Ichirō Itano"],"identityBasis":"external_id"}
+{"creatorId":"90008194595","kind":"person","name":"前川たけし","names":["前川たけし","前川剛","Takeshi Maekawa"],"identityBasis":"external_id"}
+{"creatorId":"90008305741","kind":"organization","name":"世界图书出版公司","names":["世界图书出版公司","World Publishing Corporation, Ltd."],"identityBasis":"external_id"}
+{"creatorId":"90008528774","kind":"person","name":"矢野博之","names":["矢野博之","Hiroyuki Yano"],"identityBasis":"external_id"}
+{"creatorId":"90008544706","kind":"person","name":"宮繁之","names":["宮繁之","Shigeyuki Miya"],"identityBasis":"external_id"}
+{"creatorId":"90008917522","kind":"person","name":"庵田定夏","names":["庵田定夏","Sadanatsu Anda"],"identityBasis":"external_id"}
+{"creatorId":"90008917578","kind":"person","name":"あんど慶周","names":["あんど慶周","安藤慶周","Keishū Ando"],"identityBasis":"external_id"}
+{"creatorId":"90008917937","kind":"person","name":"葵せきな","names":["葵せきな","葵關南","Sekina Aoi"],"identityBasis":"external_id"}
+{"creatorId":"90008918202","kind":"person","name":"あらいずみるい","names":["あらいずみるい","新泉留衣","Rui Araizumi"],"identityBasis":"external_id"}
+{"creatorId":"90008919169","kind":"person","name":"あさりよしとお","names":["あさりよしとお","淺利義遠","Yoshitoh Asari"],"identityBasis":"external_id"}
+{"creatorId":"90008952511","kind":"person","name":"榎本ちづる","names":["榎本ちづる","榎本千鶴","Chizuru Enomoto"],"identityBasis":"external_id"}
+{"creatorId":"90008955339","kind":"person","name":"紅優","names":["紅優","Yū Kō"],"identityBasis":"external_id"}
+{"creatorId":"90008955956","kind":"person","name":"古都和子","names":["古都和子","Kazuko Furumiya"],"identityBasis":"external_id"}
+{"creatorId":"90008964576","kind":"person","name":"高尾滋","names":["高尾滋","Takao Shigeru"],"identityBasis":"external_id"}
+{"creatorId":"90008966412","kind":"person","name":"浜崎博嗣","names":["浜崎博嗣","濱崎博嗣","Hiroshi Hamasaki"],"identityBasis":"external_id"}
+{"creatorId":"90008967372","kind":"person","name":"ひかわきょうこ","names":["ひかわきょうこ","冰川京子","Kyoko Hikawa"],"identityBasis":"external_id"}
+{"creatorId":"90008972895","kind":"person","name":"犬木加奈子","names":["犬木加奈子","Kanako Inuki"],"identityBasis":"external_id"}
+{"creatorId":"90008973288","kind":"person","name":"伊藤達文","names":["伊藤達文","Tatsufumi Itō"],"identityBasis":"external_id"}
+{"creatorId":"90008979434","kind":"person","name":"こやま基夫","names":["こやま基夫","古山基夫","Motoo Koyama"],"identityBasis":"external_id"}
+{"creatorId":"90008979701","kind":"person","name":"黒丸","names":["黒丸","黑丸","Kuromaru"],"identityBasis":"external_id"}
+{"creatorId":"90009006816","kind":"person","name":"翠川しん","names":["翠川しん","翠川森","Shin Midorikawa"],"identityBasis":"external_id"}
+{"creatorId":"90009008743","kind":"person","name":"森本梢子","names":["森本梢子","Kozueko Morimoto"],"identityBasis":"external_id"}
+{"creatorId":"90009009823","kind":"person","name":"武藤啓","names":["武藤啓","武藤啟","Hiromu Mutō"],"identityBasis":"external_id"}
+{"creatorId":"90009016186","kind":"person","name":"西山優里子","names":["西山優里子","Yuriko Nishiyama"],"identityBasis":"external_id"}
+{"creatorId":"90009035168","kind":"person","name":"佐藤友生","names":["佐藤友生","Yūki Satō"],"identityBasis":"external_id"}
+{"creatorId":"90009037315","kind":"person","name":"塩野干支郎次","names":["塩野干支郎次","鹽野干支郎次","Etorōji Shiono"],"identityBasis":"external_id"}
+{"creatorId":"90009046266","kind":"person","name":"橘皆無","names":["橘皆無","Kaimu Tachibana"],"identityBasis":"external_id"}
+{"creatorId":"90009047874","kind":"person","name":"田中メカ","names":["田中メカ","田中機械","Meca Tanaka"],"identityBasis":"external_id"}
+{"creatorId":"90009050641","kind":"person","name":"山花典之","names":["山花典之","Noriyuki Yamahana"],"identityBasis":"external_id"}
+{"creatorId":"90009053801","kind":"person","name":"上橋菜穂子","names":["上橋菜穂子","上橋菜穗子","Nahoko Uehashi"],"identityBasis":"external_id"}
+{"creatorId":"90009075138","kind":"person","name":"山口譲司","names":["山口譲司","山口讓司","Masakazu Yamaguchi"],"identityBasis":"external_id"}
+{"creatorId":"90009077805","kind":"person","name":"雪丸もえ","names":["雪丸もえ","雪丸萌","Moe Yukimaru"],"identityBasis":"external_id"}
+{"creatorId":"90009079675","kind":"person","name":"三部敬","names":["三部敬","Kei Sanbe"],"identityBasis":"external_id"}
+{"creatorId":"90009085899","kind":"organization","name":"てんとう虫コミックス","names":["てんとう虫コミックス","瓢蟲COMICS","Tentōmushi Comics"],"identityBasis":"external_id"}
+{"creatorId":"90009097275","kind":"person","name":"琴義弓介","names":["琴義弓介","Yumisuke Kotoyoshi"],"identityBasis":"external_id"}
+{"creatorId":"90009098487","kind":"person","name":"三好雄己","names":["三好雄己","Yūki Miyoshi"],"identityBasis":"external_id"}
+{"creatorId":"90009104364","kind":"person","name":"佐々木少年","names":["佐々木少年","佐佐木少年","Sasaki Shōnen"],"identityBasis":"external_id"}
+{"creatorId":"90009108426","kind":"person","name":"児玉樹","names":["児玉樹","兒玉樹","Miki Kodama"],"identityBasis":"external_id"}
+{"creatorId":"90009124559","kind":"person","name":"夏目イサク","names":["夏目イサク","夏目維朔","Isaku Natsume"],"identityBasis":"external_id"}
+{"creatorId":"90009124928","kind":"person","name":"大島司","names":["大島司","Tsukasa Ōshima"],"identityBasis":"external_id"}
+{"creatorId":"90009125217","kind":"person","name":"天王寺きつね","names":["天王寺きつね","天王寺狐","Kitsune Tennouji"],"identityBasis":"external_id"}
+{"creatorId":"90009127303","kind":"person","name":"宇仁田ゆみ","names":["宇仁田ゆみ","宇仁田由美","Yumi Unita"],"identityBasis":"external_id"}
+{"creatorId":"90009130304","kind":"person","name":"こなみ詔子","names":["こなみ詔子","小浪詔子","Shōko Konami"],"identityBasis":"external_id"}
+{"creatorId":"90009130359","kind":"person","name":"小田切ほたる","names":["小田切ほたる","小田切螢","Hotaru Odagiri"],"identityBasis":"external_id"}
+{"creatorId":"90009131691","kind":"person","name":"山本ヤマト","names":["山本ヤマト","山本大和","Yamato Yamamoto"],"identityBasis":"external_id"}
+{"creatorId":"90009146730","kind":"person","name":"日高万里","names":["日高万里","Banri Hidaka"],"identityBasis":"external_id"}
+{"creatorId":"90009184732","kind":"person","name":"西条真二","names":["西条真二","Shinji Saijō"],"identityBasis":"external_id"}
+{"creatorId":"90009188927","kind":"person","name":"摩砂雪","names":["摩砂雪","Masayuki"],"identityBasis":"external_id"}
+{"creatorId":"90009188943","kind":"person","name":"政木伸一","names":["政木伸一","Shin'ichi Masaki"],"identityBasis":"external_id"}
+{"creatorId":"90009190399","kind":"person","name":"有馬啓太郎","names":["有馬啓太郎","有馬啟太郎","Keitarō Arima"],"identityBasis":"external_id"}
+{"creatorId":"90009201154","kind":"person","name":"織田綺","names":["織田綺","Aya Oda"],"identityBasis":"external_id"}
+{"creatorId":"90009201330","kind":"person","name":"pako","names":["pako","Pako"],"identityBasis":"external_id"}
+{"creatorId":"90009299632","kind":"person","name":"榊健滋","names":["榊健滋","Kenji Sakaki"],"identityBasis":"external_id"}
+{"creatorId":"90009299660","kind":"person","name":"エナミカツミ","names":["エナミカツミ","榎波克己","Katsumi Enami"],"identityBasis":"external_id"}
+{"creatorId":"90009307509","kind":"person","name":"渡瀬のぞみ","names":["渡瀬のぞみ","渡瀨希美","Nozomi Watase"],"identityBasis":"external_id"}
+{"creatorId":"90009310006","kind":"person","name":"潮見知佳","names":["潮見知佳","Chika Shiomi"],"identityBasis":"external_id"}
+{"creatorId":"90009318942","kind":"person","name":"的良みらん","names":["的良みらん","的良米蘭","Milan Matra"],"identityBasis":"external_id"}
+{"creatorId":"90009320153","kind":"person","name":"瀬上あきら","names":["瀬上あきら","瀨上明","Akira Segami"],"identityBasis":"external_id"}
+{"creatorId":"90009321815","kind":"person","name":"あきづき空太","names":["あきづき空太","秋月空太","Sorata Akizuki"],"identityBasis":"external_id"}
+{"creatorId":"90009333909","kind":"person","name":"菊田みちよ","names":["菊田みちよ","菊田珠智代","Michiyo Kikuta"],"identityBasis":"external_id"}
+{"creatorId":"90009339377","kind":"person","name":"藤原ゆか","names":["藤原ゆか","藤原友佳","Yuka Fujiwara"],"identityBasis":"external_id"}
+{"creatorId":"90009341773","kind":"person","name":"西野かつみ","names":["西野かつみ","西野勝海","Katsumi Nishino"],"identityBasis":"external_id"}
+{"creatorId":"90009347392","kind":"organization","name":"Studio JG","names":["Studio JG"],"identityBasis":"external_id"}
+{"creatorId":"90009367034","kind":"organization","name":"ジェッツコミックス","names":["ジェッツコミックス","JETS COMICS","Jets Comics"],"identityBasis":"external_id"}
+{"creatorId":"90009372608","kind":"person","name":"静野孔文","names":["静野孔文","Kōbun Shizuno"],"identityBasis":"external_id"}
+{"creatorId":"90010377773","kind":"person","name":"河島正","names":["河島正","川島正","Tadashi Kawashima"],"identityBasis":"external_id"}
+{"creatorId":"90010432920","kind":"organization","name":"Bonnier Carlsen Bokförlag","names":["Bonnier Carlsen Bokförlag"],"identityBasis":"external_id"}
+{"creatorId":"90010432926","kind":"organization","name":"Bonnierförlagen","names":["Bonnierförlagen"],"identityBasis":"external_id"}
+{"creatorId":"90010663257","kind":"organization","name":"Schibsted Forlag","names":["Schibsted Forlag"],"identityBasis":"external_id"}
+{"creatorId":"90010751528","kind":"organization","name":"デル・レイ・ブックス","names":["デル・レイ・ブックス","Del Rey漫画","Del Rey Manga"],"identityBasis":"external_id"}
+{"creatorId":"90010846957","kind":"person","name":"ぢたま(某)","names":["ぢたま(某)","Ditama某","Bow Ditama"],"identityBasis":"external_id"}
+{"creatorId":"90010847227","kind":"organization","name":"ガンガンコミックス","names":["ガンガンコミックス","Gangan Comics"],"identityBasis":"external_id"}
+{"creatorId":"90010851321","kind":"organization","name":"講談社USA","names":["講談社USA","Kodansha Comics USA","Kodansha USA Publishing, LLC"],"identityBasis":"external_id"}
+{"creatorId":"90010866483","kind":"person","name":"三田誠","names":["三田誠","Makoto Sanda"],"identityBasis":"external_id"}
+{"creatorId":"90010885953","kind":"person","name":"佐藤健悦","names":["佐藤健悦","Kenetsu Satō"],"identityBasis":"external_id"}
+{"creatorId":"90010936665","kind":"organization","name":"大然文化","names":["大然文化","Da Ran Culture Enterprise"],"identityBasis":"external_id"}
+{"creatorId":"90010950629","kind":"person","name":"宮崎まさる","names":["宮崎まさる","宮崎克","Masaru Miyazaki"],"identityBasis":"external_id"}
+{"creatorId":"90010954042","kind":"organization","name":"富士見ミステリー文庫","names":["富士見ミステリー文庫","富士見Mystery文庫","Fujimi Mystery Bunko"],"identityBasis":"external_id"}
+{"creatorId":"90011045541","kind":"person","name":"山本小鉄子","names":["山本小鉄子","山本小鐵子","Kotetsuko Yamamoto"],"identityBasis":"external_id"}
+{"creatorId":"90011079569","kind":"organization","name":"文化伝信","names":["文化伝信","文化傳信","Culturecom Holdings Limited"],"identityBasis":"external_id"}
+{"creatorId":"90011088766","kind":"organization","name":"春天出版社","names":["春天出版社","Spring Publishing"],"identityBasis":"external_id"}
+{"creatorId":"90011095188","kind":"person","name":"杉田尚","names":["杉田尚","Naoya Sugita"],"identityBasis":"external_id"}
+{"creatorId":"90011167146","kind":"person","name":"竹熊健太郎","names":["竹熊健太郎","Kentaro Takekuma"],"identityBasis":"external_id"}
+{"creatorId":"90011191882","kind":"organization","name":"BUNCH COMICS","names":["BUNCH COMICS","週刊Comic Bunch","Bunch Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011227444","kind":"person","name":"KAITO","names":["KAITO"],"identityBasis":"external_id"}
+{"creatorId":"90011231305","kind":"person","name":"MEE","names":["MEE"],"identityBasis":"external_id"}
+{"creatorId":"90011231447","kind":"organization","name":"MFコミックス","names":["MFコミックス","MF Comic Flapper系列","MF Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011242326","kind":"person","name":"宮下あきら","names":["宮下あきら","宮下明","Akira Miyashita"],"identityBasis":"external_id"}
+{"creatorId":"90011257396","kind":"person","name":"あしべゆうほ","names":["あしべゆうほ","蘆邊遊步","Yūho Ashibe"],"identityBasis":"external_id"}
+{"creatorId":"90011257431","kind":"organization","name":"あすかコミックス","names":["あすかコミックス","Asuka Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011258571","kind":"person","name":"あらきかなお","names":["あらきかなお","Kanao Araki"],"identityBasis":"external_id"}
+{"creatorId":"90011258601","kind":"person","name":"あらゐけいいち","names":["あらゐけいいち","新井圭一","Keiichi Arawi"],"identityBasis":"external_id"}
+{"creatorId":"90011259802","kind":"person","name":"いとうみきお","names":["いとうみきお","Mikio Itō"],"identityBasis":"external_id"}
+{"creatorId":"90011259848","kind":"person","name":"いなだ詩穂","names":["いなだ詩穂","Shiho Inada"],"identityBasis":"external_id"}
+{"creatorId":"90011259887","kind":"person","name":"いのうえ空","names":["いのうえ空","井上空","Sora Inoue"],"identityBasis":"external_id"}
+{"creatorId":"90011264078","kind":"person","name":"かねこしんや","names":["かねこしんや","Shinya Kaneko"],"identityBasis":"external_id"}
+{"creatorId":"90011264440","kind":"person","name":"かわかみじゅんこ","names":["かわかみじゅんこ","川上純子","Junko Kawakami"],"identityBasis":"external_id"}
+{"creatorId":"90011269732","kind":"person","name":"すたひろ","names":["すたひろ","Stu-Hiro"],"identityBasis":"external_id"}
+{"creatorId":"90011270254","kind":"person","name":"そ〜とめこういちろう","names":["そ〜とめこういちろう","五月女浩一朗","Kōichirō Sōtome"],"identityBasis":"external_id"}
+{"creatorId":"90011270807","kind":"person","name":"たかなぎ優名","names":["たかなぎ優名","高凪優名","Yuna Takanagi"],"identityBasis":"external_id"}
+{"creatorId":"90011270865","kind":"person","name":"たがみよしひさ","names":["たがみよしひさ","田上喜久","Yoshihisa Tagami"],"identityBasis":"external_id"}
+{"creatorId":"90011270887","kind":"person","name":"たくま朋正","names":["たくま朋正","Tomomasa Takuma"],"identityBasis":"external_id"}
+{"creatorId":"90011272160","kind":"person","name":"つきりのゆみ","names":["つきりのゆみ","Yumi Tsukirino"],"identityBasis":"external_id"}
+{"creatorId":"90011272374","kind":"person","name":"つなきあき","names":["つなきあき","津奈木亞樹","Aki Tsunaki"],"identityBasis":"external_id"}
+{"creatorId":"90011274553","kind":"person","name":"なると真樹","names":["なると真樹","Maki Naruto"],"identityBasis":"external_id"}
+{"creatorId":"90011274978","kind":"person","name":"ねぎしひろし","names":["ねぎしひろし","根岸弘","Hiroshi Negishi"],"identityBasis":"external_id"}
+{"creatorId":"90011277085","kind":"person","name":"ふじもとよしたか","names":["ふじもとよしたか","藤本義孝","Yoshitaka Fujimoto"],"identityBasis":"external_id"}
+{"creatorId":"90011278327","kind":"person","name":"まだらさい","names":["まだらさい","Sai Madara"],"identityBasis":"external_id"}
+{"creatorId":"90011278670","kind":"organization","name":"まんがタイムコミックス","names":["まんがタイムコミックス","Manga Time Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011279299","kind":"person","name":"みやびあきの","names":["みやびあきの","雅秋乃","Akino Miyabi"],"identityBasis":"external_id"}
+{"creatorId":"90011280041","kind":"person","name":"もとなおこ","names":["もとなおこ","Naoko Moto"],"identityBasis":"external_id"}
+{"creatorId":"90011280343","kind":"person","name":"やすみ哲夫","names":["やすみ哲夫","八角哲夫","Tetsuo Yasumi"],"identityBasis":"external_id"}
+{"creatorId":"90011280552","kind":"person","name":"やまもり三香","names":["やまもり三香","山森三香","Mika Yamamori"],"identityBasis":"external_id"}
+{"creatorId":"90011280645","kind":"person","name":"ゆうきりん","names":["ゆうきりん","Rin Yūki"],"identityBasis":"external_id"}
+{"creatorId":"90011281463","kind":"organization","name":"りぼんマスコットコミックス","names":["りぼんマスコットコミックス","Ribon Mascot Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011291860","kind":"person","name":"オクショウ","names":["オクショウ","億章","Okushou"],"identityBasis":"external_id"}
+{"creatorId":"90011299192","kind":"person","name":"クリスタルな洋介","names":["クリスタルな洋介","CRYSTAL洋介","Crystal na Yosuke"],"identityBasis":"external_id"}
+{"creatorId":"90011303326","kind":"person","name":"コージィ城倉","names":["コージィ城倉","Cozy城倉","Kojii Jokura"],"identityBasis":"external_id"}
+{"creatorId":"90011303621","kind":"person","name":"ゴツボ×リュウジ","names":["ゴツボ×リュウジ","Ryūji Gotsubo"],"identityBasis":"external_id"}
+{"creatorId":"90011303623","kind":"person","name":"ゴツボ☆マサル","names":["ゴツボ☆マサル","Masaru Gotsubo"],"identityBasis":"external_id"}
+{"creatorId":"90011310204","kind":"organization","name":"ジャンプ・コミックス","names":["ジャンプ・コミックス","Jump Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011311220","kind":"person","name":"スエカネクミコ","names":["スエカネクミコ","末包久美子","Kumiko Suekane"],"identityBasis":"external_id"}
+{"creatorId":"90011318247","kind":"organization","name":"チャンピオンREDコミックス","names":["チャンピオンREDコミックス","Champion Red Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011328521","kind":"organization","name":"バーズコミックス","names":["バーズコミックス","Birz Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011330386","kind":"person","name":"ヒロモト森一","names":["ヒロモト森一","森井浩","Shinichi Hiromoto"],"identityBasis":"external_id"}
+{"creatorId":"90011330723","kind":"organization","name":"ビッグコミックス","names":["ビッグコミックス","Big Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011341668","kind":"organization","name":"マーガレットコミックス","names":["マーガレットコミックス","瑪格麗特漫畫","Margaret Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011343138","kind":"person","name":"ムトウユージ","names":["ムトウユージ","武藤裕治","Yūji Mutō"],"identityBasis":"external_id"}
+{"creatorId":"90011345416","kind":"organization","name":"ヤングジャンプ・コミックス","names":["ヤングジャンプ・コミックス","Young Jump Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011345472","kind":"organization","name":"ヤンマガKC","names":["ヤンマガKC","Young Magazine KC"],"identityBasis":"external_id"}
+{"creatorId":"90011351429","kind":"organization","name":"ワニマガジン社","names":["ワニマガジン社","Wanimagazine社","Wanimagazine"],"identityBasis":"external_id"}
+{"creatorId":"90011351902","kind":"organization","name":"ヴァルキリーコミックス","names":["ヴァルキリーコミックス","Valkyrie Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011353212","kind":"organization","name":"一迅社文庫アイリス","names":["一迅社文庫アイリス","一迅社文庫Iris","Ichijinsha Bunko Iris"],"identityBasis":"external_id"}
+{"creatorId":"90011353686","kind":"person","name":"七草","names":["七草","Nanakusa"],"identityBasis":"external_id"}
+{"creatorId":"90011354950","kind":"person","name":"三好輝","names":["三好輝","Hikaru Miyoshi"],"identityBasis":"external_id"}
+{"creatorId":"90011358698","kind":"person","name":"上坪亮樹","names":["上坪亮樹","Ryōki Kamitsubo"],"identityBasis":"external_id"}
+{"creatorId":"90011359748","kind":"person","name":"上田宏","names":["上田宏","Hiroshi Ueda"],"identityBasis":"external_id"}
+{"creatorId":"90011364085","kind":"person","name":"中山勝一","names":["中山勝一","Katsuichi Nakayama"],"identityBasis":"external_id"}
+{"creatorId":"90011364184","kind":"person","name":"中山敦支","names":["中山敦支","Atsushi Nakayama"],"identityBasis":"external_id"}
+{"creatorId":"90011364188","kind":"person","name":"中山昌亮","names":["中山昌亮","Masaaki Nakayama"],"identityBasis":"external_id"}
+{"creatorId":"90011364662","kind":"person","name":"中嶋ちずな","names":["中嶋ちずな","Chizuna Nakajima"],"identityBasis":"external_id"}
+{"creatorId":"90011367095","kind":"person","name":"中西達郎","names":["中西達郎","Tatsurō Nakanishi"],"identityBasis":"external_id"}
+{"creatorId":"90011368818","kind":"person","name":"乃木坂太郎","names":["乃木坂太郎","Tarō Nogizaka"],"identityBasis":"external_id"}
+{"creatorId":"90011368952","kind":"person","name":"久保ミツロウ","names":["久保ミツロウ","久保光郎","Mitsurō Kubo"],"identityBasis":"external_id"}
+{"creatorId":"90011369259","kind":"person","name":"久城りおん","names":["久城りおん","久城凜音","Rion Kujō"],"identityBasis":"external_id"}
+{"creatorId":"90011370397","kind":"person","name":"九条キヨ","names":["九条キヨ","Kiyo Kyūjō"],"identityBasis":"external_id"}
+{"creatorId":"90011370442","kind":"person","name":"九里一平","names":["九里一平","Ippei Kuri"],"identityBasis":"external_id"}
+{"creatorId":"90011370741","kind":"person","name":"亀井幹太","names":["亀井幹太","龜井幹太","Kanta Kamei"],"identityBasis":"external_id"}
+{"creatorId":"90011373691","kind":"person","name":"井田ヒロト","names":["井田ヒロト","井田博人","Hiroto Ida"],"identityBasis":"external_id"}
+{"creatorId":"90011377035","kind":"person","name":"今日マチ子","names":["今日マチ子","今日町子","Machiko Kyō"],"identityBasis":"external_id"}
+{"creatorId":"90011377120","kind":"person","name":"今村隆寛","names":["今村隆寛","Takahiro Imamura"],"identityBasis":"external_id"}
+{"creatorId":"90011380185","kind":"person","name":"伊藤智彦","names":["伊藤智彦","伊藤智彥","Tomohiko Itō"],"identityBasis":"external_id"}
+{"creatorId":"90011380187","kind":"person","name":"伊藤有壱","names":["伊藤有壱","伊藤有壹","Yūichi Itō"],"identityBasis":"external_id"}
+{"creatorId":"90011382131","kind":"person","name":"佐々木勝利","names":["佐々木勝利","佐佐木勝利","Katsutoshi Sasaki"],"identityBasis":"external_id"}
+{"creatorId":"90011382948","kind":"person","name":"佐倉ケンイチ","names":["佐倉ケンイチ","Ken'ichi Sakura"],"identityBasis":"external_id"}
+{"creatorId":"90011383295","kind":"person","name":"佐渡川準","names":["佐渡川準","Jun Sadogawa"],"identityBasis":"external_id"}
+{"creatorId":"90011384380","kind":"person","name":"佐藤肇","names":["佐藤肇","Hajime Satō"],"identityBasis":"external_id"}
+{"creatorId":"90011384400","kind":"person","name":"佐藤英一","names":["佐藤英一","Hidekazu Satō"],"identityBasis":"external_id"}
+{"creatorId":"90011384435","kind":"person","name":"佐藤裕紀","names":["佐藤裕紀","Hiroki Satō"],"identityBasis":"external_id"}
+{"creatorId":"90011385435","kind":"person","name":"佳月玲茅","names":["佳月玲茅","Rechi Kazuki"],"identityBasis":"external_id"}
+{"creatorId":"90011388942","kind":"person","name":"入江喜和","names":["入江喜和","Kiwa Irie"],"identityBasis":"external_id"}
+{"creatorId":"90011393984","kind":"person","name":"内山正幸","names":["内山正幸","內山正幸","Masayuki Uchiyama"],"identityBasis":"external_id"}
+{"creatorId":"90011394072","kind":"person","name":"内水融","names":["内水融","Tōru Uchimizu"],"identityBasis":"external_id"}
+{"creatorId":"90011395128","kind":"person","name":"冨永恒雄","names":["冨永恒雄","富永恒雄","Tsuneo Tominaga"],"identityBasis":"external_id"}
+{"creatorId":"90011395579","kind":"person","name":"出口竜正","names":["出口竜正","出口龍正","Ryūsei Deguchi"],"identityBasis":"external_id"}
+{"creatorId":"90011395620","kind":"person","name":"出崎哲","names":["出崎哲","Satoshi Dezaki"],"identityBasis":"external_id"}
+{"creatorId":"90011397187","kind":"person","name":"前川涼","names":["前川涼","Ryō Maekawa"],"identityBasis":"external_id"}
+{"creatorId":"90011407997","kind":"person","name":"南條範夫","names":["南條範夫","Norio Nanjō"],"identityBasis":"external_id"}
+{"creatorId":"90011409802","kind":"person","name":"原田妙子","names":["原田妙子","Taeko Harada"],"identityBasis":"external_id"}
+{"creatorId":"90011409808","kind":"person","name":"原田宗典","names":["原田宗典","Munenori Harada"],"identityBasis":"external_id"}
+{"creatorId":"90011409959","kind":"person","name":"原田重光","names":["原田重光","Shigemitsu Harada"],"identityBasis":"external_id"}
+{"creatorId":"90011413024","kind":"person","name":"吉川浩司","names":["吉川浩司","Kōji Yoshikawa"],"identityBasis":"external_id"}
+{"creatorId":"90011413680","kind":"person","name":"吉田基已","names":["吉田基已","Motoi Yoshida"],"identityBasis":"external_id"}
+{"creatorId":"90011418978","kind":"person","name":"善聡一郎","names":["善聡一郎","善聰一郎","Sōichirō Zen"],"identityBasis":"external_id"}
+{"creatorId":"90011420146","kind":"person","name":"四辻たかお","names":["四辻たかお","Takao Yotsuji"],"identityBasis":"external_id"}
+{"creatorId":"90011420847","kind":"person","name":"国広あづさ","names":["国広あづさ","Azusa Kunihiro"],"identityBasis":"external_id"}
+{"creatorId":"90011423243","kind":"person","name":"土屋啓之助","names":["土屋啓之助","Keinosuke Tsuchiya"],"identityBasis":"external_id"}
+{"creatorId":"90011425532","kind":"person","name":"坂田純一","names":["坂田純一","Jun'ichi Sakata"],"identityBasis":"external_id"}
+{"creatorId":"90011427813","kind":"person","name":"堀部健和","names":["堀部健和","Takeo Horibe"],"identityBasis":"external_id"}
+{"creatorId":"90011429175","kind":"person","name":"増尾昭一","names":["増尾昭一","增尾昭一","Shōichi Masuo"],"identityBasis":"external_id"}
+{"creatorId":"90011429931","kind":"person","name":"夏元雅人","names":["夏元雅人","Masato Natsumoto"],"identityBasis":"external_id"}
+{"creatorId":"90011429939","kind":"person","name":"夏原武","names":["夏原武","Takeshi Natsuhara"],"identityBasis":"external_id"}
+{"creatorId":"90011432186","kind":"person","name":"大井昌和","names":["大井昌和","Masakazu Ōi"],"identityBasis":"external_id"}
+{"creatorId":"90011434115","kind":"person","name":"大塚雅彦","names":["大塚雅彦","Masahiko Ōtsuka"],"identityBasis":"external_id"}
+{"creatorId":"90011436260","kind":"person","name":"大根仁","names":["大根仁","Hitoshi Ōne"],"identityBasis":"external_id"}
+{"creatorId":"90011436410","kind":"person","name":"大森英敏","names":["大森英敏","Hidetoshi Ōmori"],"identityBasis":"external_id"}
+{"creatorId":"90011437470","kind":"person","name":"大海とむ","names":["大海とむ","Tomu Ohmi"],"identityBasis":"external_id"}
+{"creatorId":"90011437503","kind":"person","name":"大清水さち","names":["大清水さち","Sachi Ōshimizu"],"identityBasis":"external_id"}
+{"creatorId":"90011438516","kind":"person","name":"大羽隆廣","names":["大羽隆廣","Takahiro Ōba"],"identityBasis":"external_id"}
+{"creatorId":"90011438987","kind":"person","name":"大谷アキラ","names":["大谷アキラ","大谷昭","Akira Ōtani"],"identityBasis":"external_id"}
+{"creatorId":"90011439210","kind":"person","name":"大貫信夫","names":["大貫信夫","Nobuo Ōnuki"],"identityBasis":"external_id"}
+{"creatorId":"90011439236","kind":"person","name":"大賀俊二","names":["大賀俊二","Shunji Ōga"],"identityBasis":"external_id"}
+{"creatorId":"90011444079","kind":"person","name":"太田モアレ","names":["太田モアレ","Moare Ōta"],"identityBasis":"external_id"}
+{"creatorId":"90011444957","kind":"person","name":"奈央晃徳","names":["奈央晃徳","奈央晃德","Akinari Nao"],"identityBasis":"external_id"}
+{"creatorId":"90011445826","kind":"person","name":"奥村よしあき","names":["奥村よしあき","奧村吉昭","Yoshiaki Okumura"],"identityBasis":"external_id"}
+{"creatorId":"90011445983","kind":"person","name":"奥瀬サキ","names":["奥瀬サキ","奧瀨早紀","Saki Okuse"],"identityBasis":"external_id"}
+{"creatorId":"90011446067","kind":"person","name":"奥田誠治","names":["奥田誠治","奧田誠治","Seiji Okuda"],"identityBasis":"external_id"}
+{"creatorId":"90011449435","kind":"person","name":"宇木敦哉","names":["宇木敦哉","Atsuya Uki"],"identityBasis":"external_id"}
+{"creatorId":"90011450198","kind":"person","name":"安井健太郎","names":["安井健太郎","Kentarō Yasui"],"identityBasis":"external_id"}
+{"creatorId":"90011451046","kind":"person","name":"安田弘之","names":["安田弘之","Hiroyuki Yasuda"],"identityBasis":"external_id"}
+{"creatorId":"90011451348","kind":"person","name":"安藤正浩","names":["安藤正浩","Masahiro Andō"],"identityBasis":"external_id"}
+{"creatorId":"90011454153","kind":"person","name":"宮崎なぎさ","names":["宮崎なぎさ","宮崎渚","Nagisa Miyazaki"],"identityBasis":"external_id"}
+{"creatorId":"90011455219","kind":"person","name":"宮脇ゆきの","names":["宮脇ゆきの","Yukino Miyawaki"],"identityBasis":"external_id"}
+{"creatorId":"90011457897","kind":"person","name":"寺本幸代","names":["寺本幸代","Yukiyo Teramoto"],"identityBasis":"external_id"}
+{"creatorId":"90011458288","kind":"person","name":"寿たらこ","names":["寿たらこ","Tarako Kotobuki"],"identityBasis":"external_id"}
+{"creatorId":"90011458760","kind":"person","name":"小中和哉","names":["小中和哉","Kazuya Konaka"],"identityBasis":"external_id"}
+{"creatorId":"90011459420","kind":"person","name":"小坂春女","names":["小坂春女","Harume Kosaka"],"identityBasis":"external_id"}
+{"creatorId":"90011463540","kind":"person","name":"小華和ためお","names":["小華和ためお","小華和為雄","Tameo Kohanawa"],"identityBasis":"external_id"}
+{"creatorId":"90011464147","kind":"person","name":"小野洋一郎","names":["小野洋一郎","Yōichirō Ono"],"identityBasis":"external_id"}
+{"creatorId":"90011464634","kind":"organization","name":"少年チャンピオン・コミックス","names":["少年チャンピオン・コミックス","少年 Champion Comics","Shōnen Champion Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011466555","kind":"person","name":"山原義人","names":["山原義人","Yoshito Yamahara"],"identityBasis":"external_id"}
+{"creatorId":"90011466610","kind":"person","name":"山口ミコト","names":["山口ミコト","Mikoto Yamaguchi"],"identityBasis":"external_id"}
+{"creatorId":"90011467534","kind":"person","name":"山口頼房","names":["山口頼房","山口賴房","Yorifusa Yamaguchi"],"identityBasis":"external_id"}
+{"creatorId":"90011468153","kind":"person","name":"山崎理","names":["山崎理","Osamu Yamasaki"],"identityBasis":"external_id"}
+{"creatorId":"90011468186","kind":"person","name":"山崎紗也夏","names":["山崎紗也夏","Sayaka Yamazaki"],"identityBasis":"external_id"}
+{"creatorId":"90011468316","kind":"person","name":"山川純一","names":["山川純一","Junichi Yamakawa"],"identityBasis":"external_id"}
+{"creatorId":"90011469369","kind":"person","name":"山本賢治","names":["山本賢治","山本贤治","Kenji Yamamoto"],"identityBasis":"external_id"}
+{"creatorId":"90011470371","kind":"person","name":"山田恵庸","names":["山田恵庸","山田惠庸","Yoshinobu Yamada"],"identityBasis":"external_id"}
+{"creatorId":"90011470637","kind":"person","name":"山田芳裕","names":["山田芳裕","Yoshihiro Yamada"],"identityBasis":"external_id"}
+{"creatorId":"90011470729","kind":"person","name":"山田雄三","names":["山田雄三","Yūzō Yamada"],"identityBasis":"external_id"}
+{"creatorId":"90011472973","kind":"person","name":"岡崎稔","names":["岡崎稔","冈崎稔","Minoru Okazaki"],"identityBasis":"external_id"}
+{"creatorId":"90011473128","kind":"person","name":"岡本慶子","names":["岡本慶子","Keiko Okamoto"],"identityBasis":"external_id"}
+{"creatorId":"90011475248","kind":"person","name":"岩永亮太郎","names":["岩永亮太郎","Ryōtarō Iwanaga"],"identityBasis":"external_id"}
+{"creatorId":"90011477920","kind":"person","name":"川口まどか","names":["川口まどか","Madoka Kawaguchi"],"identityBasis":"external_id"}
+{"creatorId":"90011478890","kind":"person","name":"川津健二朗","names":["川津健二朗","Kenjirō Kawatsu"],"identityBasis":"external_id"}
+{"creatorId":"90011479419","kind":"person","name":"巣山真也","names":["巣山真也","巢山真也","Shin'ya Suyama"],"identityBasis":"external_id"}
+{"creatorId":"90011482472","kind":"person","name":"平尾隆之","names":["平尾隆之","Takayuki Hirao"],"identityBasis":"external_id"}
+{"creatorId":"90011483013","kind":"person","name":"平方昌宏","names":["平方昌宏","Masahiro Hirakata"],"identityBasis":"external_id"}
+{"creatorId":"90011483043","kind":"person","name":"平本アキラ","names":["平本アキラ","平本Akira","Akira Hiramoto"],"identityBasis":"external_id"}
+{"creatorId":"90011483333","kind":"person","name":"平田智浩","names":["平田智浩","Tomohiro Hirata"],"identityBasis":"external_id"}
+{"creatorId":"90011488315","kind":"person","name":"後信治","names":["後信治","Uro Shinji"],"identityBasis":"external_id"}
+{"creatorId":"90011488834","kind":"person","name":"御厨さと美","names":["御厨さと美","御廚哲美","Satomi Mikuriya"],"identityBasis":"external_id"}
+{"creatorId":"90011489015","kind":"person","name":"御形屋はるか","names":["御形屋はるか","Haruka Ogataya"],"identityBasis":"external_id"}
+{"creatorId":"90011491037","kind":"person","name":"志村錠児","names":["志村錠児","志村錠兒","Jōji Shimura"],"identityBasis":"external_id"}
+{"creatorId":"90011492362","kind":"person","name":"恵広史","names":["恵広史","惠廣史","Kōji Megumi"],"identityBasis":"external_id"}
+{"creatorId":"90011496538","kind":"person","name":"戸田泰成","names":["戸田泰成","戶田泰成","Yasunari Toda"],"identityBasis":"external_id"}
+{"creatorId":"90011497712","kind":"person","name":"押見修造","names":["押見修造","Shūzō Oshimi"],"identityBasis":"external_id"}
+{"creatorId":"90011502724","kind":"person","name":"新海岳人","names":["新海岳人","Taketo Shinkai"],"identityBasis":"external_id"}
+{"creatorId":"90011505152","kind":"person","name":"日向武史","names":["日向武史","Takeshi Hinata"],"identityBasis":"external_id"}
+{"creatorId":"90011508316","kind":"person","name":"日本橋ヨヲコ","names":["日本橋ヨヲコ","日本橋陽子","Yōko Nihonbashi"],"identityBasis":"external_id"}
+{"creatorId":"90011510778","kind":"person","name":"日高ショーコ","names":["日高ショーコ","日高翔子","Shoko Hidaka"],"identityBasis":"external_id"}
+{"creatorId":"90011511297","kind":"person","name":"早川啓二","names":["早川啓二","早川啟二","Keiji Hayakawa"],"identityBasis":"external_id"}
+{"creatorId":"90011513415","kind":"person","name":"春原ロビンソン","names":["春原ロビンソン","Robinson Haruhara"],"identityBasis":"external_id"}
+{"creatorId":"90011513763","kind":"person","name":"春河もえ","names":["春河もえ","春河萌","Moe Harukawa"],"identityBasis":"external_id"}
+{"creatorId":"90011514224","kind":"person","name":"是空とおる","names":["是空とおる","是空亨","Tōru Zekū"],"identityBasis":"external_id"}
+{"creatorId":"90011517083","kind":"person","name":"望月奈々","names":["望月奈々","Nana Mochizuki"],"identityBasis":"external_id"}
+{"creatorId":"90011518788","kind":"person","name":"木村太彦","names":["木村太彦","Tahiko Kimura"],"identityBasis":"external_id"}
+{"creatorId":"90011518941","kind":"person","name":"木村有里","names":["木村有里","Yuri Kimura"],"identityBasis":"external_id"}
+{"creatorId":"90011521725","kind":"person","name":"杉元伶一","names":["杉元伶一","Reiichi Sugimoto"],"identityBasis":"external_id"}
+{"creatorId":"90011521948","kind":"person","name":"杉山美和子","names":["杉山美和子","Miwako Sugiyama"],"identityBasis":"external_id"}
+{"creatorId":"90011522242","kind":"person","name":"杉浦次郎","names":["杉浦次郎","Jirō Sugiura"],"identityBasis":"external_id"}
+{"creatorId":"90011523362","kind":"person","name":"村瀬克俊","names":["村瀬克俊","村瀨克俊","Katsutoshi Murase"],"identityBasis":"external_id"}
+{"creatorId":"90011523489","kind":"person","name":"村田真哉","names":["村田真哉","Shin'ya Murata"],"identityBasis":"external_id"}
+{"creatorId":"90011526698","kind":"person","name":"東山和子","names":["東山和子","Kazuko Higashiyama"],"identityBasis":"external_id"}
+{"creatorId":"90011528500","kind":"person","name":"東郷光宏","names":["東郷光宏","四谷光宏","Mitsuhiro Tōgō"],"identityBasis":"external_id"}
+{"creatorId":"90011528753","kind":"person","name":"東風孝広","names":["東風孝広","東風孝廣","Takahiro Kochi"],"identityBasis":"external_id"}
+{"creatorId":"90011530128","kind":"person","name":"松島幸太朗","names":["松島幸太朗","Yukitarō Matsushima"],"identityBasis":"external_id"}
+{"creatorId":"90011530748","kind":"person","name":"松月滉","names":["松月滉","Kō Matsuzuki"],"identityBasis":"external_id"}
+{"creatorId":"90011530974","kind":"person","name":"松本夏実","names":["松本夏実","松本夏實","Natsumi Matsumoto"],"identityBasis":"external_id"}
+{"creatorId":"90011531176","kind":"person","name":"松本淳","names":["松本淳","Atsushi Matsumoto"],"identityBasis":"external_id"}
+{"creatorId":"90011531482","kind":"person","name":"松林悟","names":["松林悟","Satoru Matsubayashi"],"identityBasis":"external_id"}
+{"creatorId":"90011531713","kind":"person","name":"松沢まり","names":["松沢まり","松澤麻里","Mari Matsuzawa"],"identityBasis":"external_id"}
+{"creatorId":"90011532534","kind":"person","name":"板倉雄一","names":["板倉雄一","Yuichi Itakura"],"identityBasis":"external_id"}
+{"creatorId":"90011533378","kind":"person","name":"林静一","names":["林静一","林靜一","Seiichi Hayashi"],"identityBasis":"external_id"}
+{"creatorId":"90011536753","kind":"person","name":"桂明日香","names":["桂明日香","Asuka Katsura"],"identityBasis":"external_id"}
+{"creatorId":"90011537066","kind":"person","name":"桃森ミヨシ","names":["桃森ミヨシ","Miyoshi Tōmori"],"identityBasis":"external_id"}
+{"creatorId":"90011537150","kind":"person","name":"案納正美","names":["案納正美","Masami Annō"],"identityBasis":"external_id"}
+{"creatorId":"90011537228","kind":"person","name":"桐嶋たける","names":["桐嶋たける","桐嶋猛","Takeru Kirishima"],"identityBasis":"external_id"}
+{"creatorId":"90011538585","kind":"person","name":"梅澤淳稔","names":["梅澤淳稔","Atsutoshi Umezawa"],"identityBasis":"external_id"}
+{"creatorId":"90011539260","kind":"person","name":"森井しづき","names":["森井しづき","Shizuki Morii"],"identityBasis":"external_id"}
+{"creatorId":"90011539326","kind":"person","name":"森利道","names":["森利道","Toshimichi Mori"],"identityBasis":"external_id"}
+{"creatorId":"90011539578","kind":"person","name":"森嶋プチ","names":["森嶋プチ","Petit Morishima"],"identityBasis":"external_id"}
+{"creatorId":"90011540368","kind":"person","name":"森邦宏","names":["森邦宏","Kunihiro Mori"],"identityBasis":"external_id"}
+{"creatorId":"90011542157","kind":"person","name":"樋口雅一","names":["樋口雅一","Masakazu Higuchi"],"identityBasis":"external_id"}
+{"creatorId":"90011542594","kind":"person","name":"横山浩之","names":["横山浩之","Hiroyuki Yokoyama"],"identityBasis":"external_id"}
+{"creatorId":"90011546070","kind":"person","name":"武田すん","names":["武田すん","武田寸","Sun Takeda"],"identityBasis":"external_id"}
+{"creatorId":"90011548141","kind":"person","name":"水あさと","names":["水あさと","水安里","Asato Mizu"],"identityBasis":"external_id"}
+{"creatorId":"90011549221","kind":"person","name":"水谷貴哉","names":["水谷貴哉","Takaya Mizutani"],"identityBasis":"external_id"}
+{"creatorId":"90011549670","kind":"person","name":"永丘昭典","names":["永丘昭典","Akinori Nagaoka"],"identityBasis":"external_id"}
+{"creatorId":"90011551898","kind":"person","name":"池田成","names":["池田成","马萨西·池田诚刚","Masashi Ikeda"],"identityBasis":"external_id"}
+{"creatorId":"90011554204","kind":"person","name":"河野慶","names":["河野慶","Kei Kawano"],"identityBasis":"external_id"}
+{"creatorId":"90011562366","kind":"person","name":"渡辺歩","names":["渡辺歩","渡邊步","Ayumu Watanabe"],"identityBasis":"external_id"}
+{"creatorId":"90011562600","kind":"person","name":"渡辺静","names":["渡辺静","渡邊靜","Shizumu Watanabe"],"identityBasis":"external_id"}
+{"creatorId":"90011563232","kind":"person","name":"湖山禎崇","names":["湖山禎崇","Yoshitaka Koyama"],"identityBasis":"external_id"}
+{"creatorId":"90011564503","kind":"person","name":"溝渕誠","names":["溝渕誠","溝淵誠","Makoto Mizobuchi"],"identityBasis":"external_id"}
+{"creatorId":"90011565228","kind":"person","name":"滝沢敏文","names":["滝沢敏文","滝澤敏文","Toshifumi Takizawa"],"identityBasis":"external_id"}
+{"creatorId":"90011566384","kind":"person","name":"瀬口たかひろ","names":["瀬口たかひろ","瀨口和宏","Takahiro Seguchi"],"identityBasis":"external_id"}
+{"creatorId":"90011567840","kind":"person","name":"熊倉隆敏","names":["熊倉隆敏","Takatoshi Kumakura"],"identityBasis":"external_id"}
+{"creatorId":"90011569667","kind":"person","name":"片岡人生","names":["片岡人生","Jinsei Kataoka"],"identityBasis":"external_id"}
+{"creatorId":"90011576043","kind":"person","name":"田中靖規","names":["田中靖規","Yasuki Tanaka"],"identityBasis":"external_id"}
+{"creatorId":"90011576674","kind":"person","name":"田島隆","names":["田島隆","Takashi Tajima"],"identityBasis":"external_id"}
+{"creatorId":"90011577192","kind":"person","name":"田畑由秋","names":["田畑由秋","Yoshiaki Tabata"],"identityBasis":"external_id"}
+{"creatorId":"90011577511","kind":"person","name":"田頭しのぶ","names":["田頭しのぶ","田頭忍","Shinobu Tagashira"],"identityBasis":"external_id"}
+{"creatorId":"90011583579","kind":"person","name":"真野玲","names":["真野玲","Akira Mano"],"identityBasis":"external_id"}
+{"creatorId":"90011583610","kind":"person","name":"真鍋昌平","names":["真鍋昌平","Shōhei Manabe"],"identityBasis":"external_id"}
+{"creatorId":"90011584010","kind":"person","name":"矢吹勉","names":["矢吹勉","Tsutomu Yabuki"],"identityBasis":"external_id"}
+{"creatorId":"90011584027","kind":"person","name":"矢吹豪","names":["矢吹豪","Gō Yabuki"],"identityBasis":"external_id"}
+{"creatorId":"90011584523","kind":"person","name":"知吹愛弓","names":["知吹愛弓","Ami Tomobuki"],"identityBasis":"external_id"}
+{"creatorId":"90011585513","kind":"person","name":"石山タカ明","names":["石山タカ明","石山貴明","Takaaki Ishiyama"],"identityBasis":"external_id"}
+{"creatorId":"90011585558","kind":"person","name":"石岡ショウエイ","names":["石岡ショウエイ","Rui Ishioka"],"identityBasis":"external_id"}
+{"creatorId":"90011587219","kind":"person","name":"石踊宏","names":["石踊宏","Hiroshi Ishiodori"],"identityBasis":"external_id"}
+{"creatorId":"90011587335","kind":"person","name":"石黒正数","names":["石黒正数","石黑正數","Masakazu Ishiguro"],"identityBasis":"external_id"}
+{"creatorId":"90011589697","kind":"person","name":"神志那弘志","names":["神志那弘志","Hiroshi Kōjina"],"identityBasis":"external_id"}
+{"creatorId":"90011590608","kind":"person","name":"神田晶","names":["神田晶","Akira Kanda"],"identityBasis":"external_id"}
+{"creatorId":"90011590629","kind":"person","name":"神田武幸","names":["神田武幸","Takeyuki Kanda"],"identityBasis":"external_id"}
+{"creatorId":"90011590890","kind":"person","name":"神谷誠","names":["神谷誠","Makoto Kamiya"],"identityBasis":"external_id"}
+{"creatorId":"90011593762","kind":"person","name":"福島鉄平","names":["福島鉄平","福島鐵平","Teppei Fukushima"],"identityBasis":"external_id"}
+{"creatorId":"90011593861","kind":"person","name":"福本潔","names":["福本潔","福本 潔","Kiyoshi Fukumoto"],"identityBasis":"external_id"}
+{"creatorId":"90011594280","kind":"person","name":"福田陽一郎","names":["福田陽一郎","Yōichirō Fukuda"],"identityBasis":"external_id"}
+{"creatorId":"90011596354","kind":"person","name":"稚野鳥子","names":["稚野鳥子","Toriko Chiya"],"identityBasis":"external_id"}
+{"creatorId":"90011597196","kind":"person","name":"穴久保幸作","names":["穴久保幸作","Kōsaku Anakubo"],"identityBasis":"external_id"}
+{"creatorId":"90011598854","kind":"person","name":"竹内啓雄","names":["竹内啓雄","竹內啟雄","Yoshio Takeuchi"],"identityBasis":"external_id"}
+{"creatorId":"90011598910","kind":"person","name":"竹内桜","names":["竹内桜","竹內櫻","Sakura Takeuchi"],"identityBasis":"external_id"}
+{"creatorId":"90011598960","kind":"person","name":"竹内良輔","names":["竹内良輔","竹內良輔","Ryōsuke Takeuchi"],"identityBasis":"external_id"}
+{"creatorId":"90011599172","kind":"person","name":"竹本泉","names":["竹本泉","Izumi Takemoto"],"identityBasis":"external_id"}
+{"creatorId":"90011603014","kind":"person","name":"筒井大志","names":["筒井大志","Taishi Tsutsui"],"identityBasis":"external_id"}
+{"creatorId":"90011603093","kind":"person","name":"筧秀隆","names":["筧秀隆","Hidetaka Kakei"],"identityBasis":"external_id"}
+{"creatorId":"90011603845","kind":"person","name":"篤見唯子","names":["篤見唯子","Yuiko Tokumi"],"identityBasis":"external_id"}
+{"creatorId":"90011604136","kind":"person","name":"米山シヲ","names":["米山シヲ","Shiwo Komeyama"],"identityBasis":"external_id"}
+{"creatorId":"90011604832","kind":"person","name":"糸曽賢志","names":["糸曽賢志","糸曾賢志","Kenji Itoso"],"identityBasis":"external_id"}
+{"creatorId":"90011606247","kind":"person","name":"紺野直幸","names":["紺野直幸","Naoyuki Konno"],"identityBasis":"external_id"}
+{"creatorId":"90011610056","kind":"person","name":"羽原信義","names":["羽原信義","Nobuyoshi Habara"],"identityBasis":"external_id"}
+{"creatorId":"90011610944","kind":"person","name":"聖千秋","names":["聖千秋","Chiaki Hijiri"],"identityBasis":"external_id"}
+{"creatorId":"90011611778","kind":"person","name":"胡桃ちの","names":["胡桃ちの","Chino Kurumi"],"identityBasis":"external_id"}
+{"creatorId":"90011612250","kind":"person","name":"脳みそホエホエ","names":["脳みそホエホエ","Hoehoe Noumiso"],"identityBasis":"external_id"}
+{"creatorId":"90011612341","kind":"person","name":"腰繁男","names":["腰繁男","Shigeo Koshi"],"identityBasis":"external_id"}
+{"creatorId":"90011613665","kind":"person","name":"舞阪洸","names":["舞阪洸","Kō Maisaka"],"identityBasis":"external_id"}
+{"creatorId":"90011614931","kind":"person","name":"芦野芳晴","names":["芦野芳晴","蘆野芳晴","Yoshiharu Ashino"],"identityBasis":"external_id"}
+{"creatorId":"90011615790","kind":"organization","name":"芳文社コミックス","names":["芳文社コミックス","Houbunsha Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011616011","kind":"person","name":"芹川有吾","names":["芹川有吾","Yūgo Serikawa"],"identityBasis":"external_id"}
+{"creatorId":"90011616473","kind":"person","name":"若林厚史","names":["若林厚史","Atsushi Wakabayashi"],"identityBasis":"external_id"}
+{"creatorId":"90011619431","kind":"person","name":"菅野嘉則","names":["菅野嘉則","Yoshinori Sugano"],"identityBasis":"external_id"}
+{"creatorId":"90011619565","kind":"person","name":"菊地康仁","names":["菊地康仁","Yasuhito Kikuchi"],"identityBasis":"external_id"}
+{"creatorId":"90011621002","kind":"person","name":"葛西治","names":["葛西治","Osamu Kasai"],"identityBasis":"external_id"}
+{"creatorId":"90011622587","kind":"person","name":"藍本松","names":["藍本松","Shō Aimoto"],"identityBasis":"external_id"}
+{"creatorId":"90011624100","kind":"person","name":"藤末さくら","names":["藤末さくら","Sakura Fujisue"],"identityBasis":"external_id"}
+{"creatorId":"90011624264","kind":"person","name":"藤村あゆみ","names":["藤村あゆみ","Ayumi Fujimura"],"identityBasis":"external_id"}
+{"creatorId":"90011624934","kind":"person","name":"藤田麻貴","names":["藤田麻貴","Maki Fujita"],"identityBasis":"external_id"}
+{"creatorId":"90011624937","kind":"person","name":"藤異秀明","names":["藤異秀明","Hideaki Fujii"],"identityBasis":"external_id"}
+{"creatorId":"90011625115","kind":"person","name":"藪野続久","names":["藪野続久","藪野續久","Tsuzuku Yabuno"],"identityBasis":"external_id"}
+{"creatorId":"90011626418","kind":"person","name":"衣谷遊","names":["衣谷遊","Yū Kinutani"],"identityBasis":"external_id"}
+{"creatorId":"90011627142","kind":"person","name":"西久保瑞穂","names":["西久保瑞穂","山口直樹","Mizuho Nishikubo"],"identityBasis":"external_id"}
+{"creatorId":"90011627263","kind":"person","name":"西公平","names":["西公平","Kōhei Nishi"],"identityBasis":"external_id"}
+{"creatorId":"90011628979","kind":"person","name":"西沢信孝","names":["西沢信孝","西澤信孝","Nobutaka Nishizawa"],"identityBasis":"external_id"}
+{"creatorId":"90011629134","kind":"person","name":"西澤昭男","names":["西澤昭男","Akio Nishizawa"],"identityBasis":"external_id"}
+{"creatorId":"90011629167","kind":"person","name":"西牧秀夫","names":["西牧秀夫","Hideo Nishimaki"],"identityBasis":"external_id"}
+{"creatorId":"90011629200","kind":"person","name":"西田健一","names":["西田健一","Ken'ichi Nishida"],"identityBasis":"external_id"}
+{"creatorId":"90011630736","kind":"organization","name":"角川文庫","names":["角川文庫","角川文库","Kadokawa Bunko"],"identityBasis":"external_id"}
+{"creatorId":"90011631161","kind":"person","name":"設楽博","names":["設楽博","設樂博","Hiroshi Shidara"],"identityBasis":"external_id"}
+{"creatorId":"90011632207","kind":"organization","name":"講談社コミックス","names":["講談社コミックス","講談社Comics","Kodansha Comics"],"identityBasis":"external_id"}
+{"creatorId":"90011632208","kind":"organization","name":"講談社コミックスフレンド","names":["講談社コミックスフレンド","Kodansha Comics Friend"],"identityBasis":"external_id"}
+{"creatorId":"90011632209","kind":"organization","name":"講談社コミックスなかよし","names":["講談社コミックスなかよし","KCなかよし","Kodansha Comics Nakayoshi"],"identityBasis":"external_id"}
+{"creatorId":"90011634484","kind":"person","name":"貝澤幸男","names":["貝澤幸男","Yukio Kaizawa"],"identityBasis":"external_id"}
+{"creatorId":"90011634505","kind":"person","name":"貞光紳也","names":["貞光紳也","Shin'ya Sadamitsu"],"identityBasis":"external_id"}
+{"creatorId":"90011635346","kind":"person","name":"赤人義一","names":["赤人義一","Yoshiichi Akahito"],"identityBasis":"external_id"}
+{"creatorId":"90011635974","kind":"person","name":"赤衣丸歩郎","names":["赤衣丸歩郎","赤衣丸步郎","Maruborō Akai"],"identityBasis":"external_id"}
+{"creatorId":"90011638154","kind":"person","name":"辻初樹","names":["辻初樹","Hatsuki Tsuji"],"identityBasis":"external_id"}
+{"creatorId":"90011638687","kind":"person","name":"近藤一馬","names":["近藤一馬","Kazuma Kondō"],"identityBasis":"external_id"}
+{"creatorId":"90011638708","kind":"person","name":"近藤信宏","names":["近藤信宏","Nobuhiro Kondō"],"identityBasis":"external_id"}
+{"creatorId":"90011639166","kind":"person","name":"迫稔雄","names":["迫稔雄","Toshio Sako"],"identityBasis":"external_id"}
+{"creatorId":"90011639722","kind":"person","name":"速野悠二","names":["速野悠二","Yūji Sumino"],"identityBasis":"external_id"}
+{"creatorId":"90011641774","kind":"person","name":"道満晴明","names":["道満晴明","道滿清明","Seiman Dōman"],"identityBasis":"external_id"}
+{"creatorId":"90011644242","kind":"person","name":"酒井美羽","names":["酒井美羽","Miwa Sakai"],"identityBasis":"external_id"}
+{"creatorId":"90011645030","kind":"person","name":"野中英次","names":["野中英次","Eiji Nonaka"],"identityBasis":"external_id"}
+{"creatorId":"90011645222","kind":"person","name":"野口賢","names":["野口賢","Takashi Noguchi"],"identityBasis":"external_id"}
+{"creatorId":"90011645932","kind":"person","name":"野田サトル","names":["野田サトル","野田智","Satoru Noda"],"identityBasis":"external_id"}
+{"creatorId":"90011648718","kind":"person","name":"鈴木央","names":["鈴木央","Nakaba Suzuki"],"identityBasis":"external_id"}
+{"creatorId":"90011648732","kind":"person","name":"鈴木孝義","names":["鈴木孝義","Takayoshi Suzuki"],"identityBasis":"external_id"}
+{"creatorId":"90011649246","kind":"person","name":"鈴木行","names":["鈴木行","Iku Suzuki"],"identityBasis":"external_id"}
+{"creatorId":"90011650847","kind":"person","name":"鎌仲史陽","names":["鎌仲史陽","鐮仲史陽","Nobuharu Kamanaka"],"identityBasis":"external_id"}
+{"creatorId":"90011650936","kind":"person","name":"鎌倉由実","names":["鎌倉由実","鐮倉由實","Yumi Kamakura"],"identityBasis":"external_id"}
+{"creatorId":"90011651195","kind":"person","name":"鏑木ひろ","names":["鏑木ひろ","鏑木宏","Hiro Kaburagi"],"identityBasis":"external_id"}
+{"creatorId":"90011652406","kind":"person","name":"長崎健司","names":["長崎健司","Kenji Nagasaki"],"identityBasis":"external_id"}
+{"creatorId":"90011657442","kind":"person","name":"阿智太郎","names":["阿智太郎","Taro Achi"],"identityBasis":"external_id"}
+{"creatorId":"90011659431","kind":"person","name":"雑賀礼史","names":["雑賀礼史","雜賀禮史","Reiji Saiga"],"identityBasis":"external_id"}
+{"creatorId":"90011661718","kind":"person","name":"青木康直","names":["青木康直","Yasunao Aoki"],"identityBasis":"external_id"}
+{"creatorId":"90011664151","kind":"person","name":"音久無","names":["音久無","Hisamu Oto"],"identityBasis":"external_id"}
+{"creatorId":"90011664590","kind":"person","name":"須永司","names":["須永司","Tsukasa Sunaga"],"identityBasis":"external_id"}
+{"creatorId":"90011664711","kind":"person","name":"須藤典彦","names":["須藤典彦","須藤典彥","Norihiko Suto"],"identityBasis":"external_id"}
+{"creatorId":"90011666621","kind":"person","name":"飯田馬之介","names":["飯田馬之介","Umanosuke Iida"],"identityBasis":"external_id"}
+{"creatorId":"90011668955","kind":"person","name":"高口里純","names":["高口里純","Satosumi Takaguchi"],"identityBasis":"external_id"}
+{"creatorId":"90011669995","kind":"person","name":"高木信孝","names":["高木信孝","Nobuyuki Takagi"],"identityBasis":"external_id"}
+{"creatorId":"90011671421","kind":"person","name":"高橋渉","names":["高橋渉","高橋涉","Wataru Takahashi"],"identityBasis":"external_id"}
+{"creatorId":"90011671779","kind":"person","name":"高津カリノ","names":["高津カリノ","高津Karino","Karino Takatsu"],"identityBasis":"external_id"}
+{"creatorId":"90011673127","kind":"person","name":"高野真之","names":["高野真之","Masayuki Takano"],"identityBasis":"external_id"}
+{"creatorId":"90011673234","kind":"person","name":"高雄右京","names":["高雄右京","Ukyō Takao"],"identityBasis":"external_id"}
+{"creatorId":"90011675620","kind":"person","name":"鴫野彰","names":["鴫野彰","Akira Shigino"],"identityBasis":"external_id"}
+{"creatorId":"90011676465","kind":"person","name":"鹿乃しうこ","names":["鹿乃しうこ","Shiuko Kano"],"identityBasis":"external_id"}
+{"creatorId":"90011677543","kind":"person","name":"麻生周一","names":["麻生周一","Shūichi Asō"],"identityBasis":"external_id"}
+{"creatorId":"90011678370","kind":"person","name":"黒柾志西","names":["黒柾志西","黑柾志西","Shisei Kuromasa"],"identityBasis":"external_id"}
+{"creatorId":"90011678609","kind":"person","name":"黒田昌郎","names":["黒田昌郎","黑田昌郎","Yoshio Kuroda"],"identityBasis":"external_id"}
+{"creatorId":"90011882903","kind":"person","name":"宝井理人","names":["宝井理人","寶井理人","Rihito Takarai"],"identityBasis":"external_id"}
+{"creatorId":"90012014160","kind":"person","name":"ホ・ヨンマン","names":["ホ・ヨンマン","許英萬","Huh Young-man"],"identityBasis":"external_id"}
+{"creatorId":"90012601236","kind":"organization","name":"ソウル文化社","names":["ソウル文化社","Seoul Cultural Publishers"],"identityBasis":"external_id"}
+{"creatorId":"90013022311","kind":"organization","name":"サイアム・インター・コミックス","names":["サイアム・インター・コミックス","Siam Inter Comics"],"identityBasis":"external_id"}
+{"creatorId":"90014614515","kind":"organization","name":"ベトナム青年出版社","names":["ベトナム青年出版社","越南青年出版社","Tre Publishing House"],"identityBasis":"external_id"}
+{"creatorId":"90015031115","kind":"organization","name":"KADOKAWA Future Publishing","names":["KADOKAWA Future Publishing","角川","Kadokawa Key-Process"],"identityBasis":"external_id"}
+{"creatorId":"90016138206","kind":"person","name":"相川有","names":["相川有","Yū Aikawa"],"identityBasis":"external_id"}
+{"creatorId":"90016143536","kind":"organization","name":"REXコミックス","names":["REXコミックス","REX Comics"],"identityBasis":"external_id"}
+{"creatorId":"90016175340","kind":"person","name":"Park Eun-a","names":["Park Eun-a"],"identityBasis":"external_id"}
+{"creatorId":"90016177591","kind":"person","name":"イビン","names":["イビン","宜賓","Lee Bin"],"identityBasis":"external_id"}
+{"creatorId":"90016179450","kind":"organization","name":"映像出版メディア","names":["映像出版メディア","Yongsang Publising Media, Inc"],"identityBasis":"external_id"}
+{"creatorId":"90016219890","kind":"person","name":"Park Hee-jung","names":["Park Hee-jung"],"identityBasis":"external_id"}
+{"creatorId":"90016263731","kind":"person","name":"アベユーイチ","names":["アベユーイチ","阿部雄一","Yūichi Abe"],"identityBasis":"external_id"}
+{"creatorId":"90016263810","kind":"person","name":"荒川航","names":["荒川航","Wataru Arakawa"],"identityBasis":"external_id"}
+{"creatorId":"90016263946","kind":"person","name":"ichtys","names":["ichtys","Ichtys"],"identityBasis":"external_id"}
+{"creatorId":"90016482544","kind":"organization","name":"花とゆめコミックス","names":["花とゆめコミックス","花與夢Comics","Hana to Yume Comics"],"identityBasis":"external_id"}
+{"creatorId":"90016525636","kind":"organization","name":"Akata","names":["Akata"],"identityBasis":"external_id"}
+{"creatorId":"90016729839","kind":"person","name":"林宏樹","names":["林宏樹","Hiroki Hayashi"],"identityBasis":"external_id"}
+{"creatorId":"90016770325","kind":"person","name":"神戸洋行","names":["神戸洋行","神戶洋行","Hiroyuki Kanbe"],"identityBasis":"external_id"}
+{"creatorId":"90016770337","kind":"person","name":"木々津克久","names":["木々津克久","木木津克久","Katsuhisa Kigitsu"],"identityBasis":"external_id"}
+{"creatorId":"90016886009","kind":"person","name":"橘秀樹","names":["橘秀樹","Hideki Tachibana"],"identityBasis":"external_id"}
+{"creatorId":"90016917997","kind":"person","name":"八鍬新之介","names":["八鍬新之介","八锹新之介","Shinnosuke Yakuwa"],"identityBasis":"external_id"}
+{"creatorId":"90017128860","kind":"person","name":"浅川順","names":["浅川順","Jun Asakawa"],"identityBasis":"external_id"}
+{"creatorId":"90017129559","kind":"person","name":"木宮茂","names":["木宮茂","Shigeru Kimiya"],"identityBasis":"external_id"}
+{"creatorId":"90017130241","kind":"person","name":"こいおみなと","names":["こいおみなと","Minato Koio"],"identityBasis":"external_id"}
+{"creatorId":"90017130285","kind":"person","name":"肥塚正史","names":["肥塚正史","Masashi Koizuka"],"identityBasis":"external_id"}
+{"creatorId":"90017130402","kind":"person","name":"古賀一臣","names":["古賀一臣","Kazuomi Koga"],"identityBasis":"external_id"}
+{"creatorId":"90017159013","kind":"person","name":"佐藤ざくり","names":["佐藤ざくり","Zakuri Satō"],"identityBasis":"external_id"}
+{"creatorId":"90017159929","kind":"person","name":"杉戸アキラ","names":["杉戸アキラ","杉戶Akira","Akira Sugito"],"identityBasis":"external_id"}
+{"creatorId":"90017160206","kind":"person","name":"隅田かずあさ","names":["隅田かずあさ","隅田和麻","Kazuasa Sumida"],"identityBasis":"external_id"}
+{"creatorId":"90017160304","kind":"person","name":"瀬下寛之","names":["瀬下寛之","濑下宽之","Hiroyuki Seshita"],"identityBasis":"external_id"}
+{"creatorId":"90017160852","kind":"person","name":"むらた雅彦","names":["むらた雅彦","村田雅彥","Masahiko Murata"],"identityBasis":"external_id"}
+{"creatorId":"90017164014","kind":"organization","name":"新星出版社","names":["新星出版社","New Star Press"],"identityBasis":"external_id"}
+{"creatorId":"90017209781","kind":"person","name":"横山彰利","names":["横山彰利","橫山彰利","Akitoshi Yokoyama"],"identityBasis":"external_id"}
+{"creatorId":"90017210497","kind":"organization","name":"CR COMICS","names":["CR COMICS","CR Comics"],"identityBasis":"external_id"}
+{"creatorId":"90017214832","kind":"person","name":"宮尾佳和","names":["宮尾佳和","Yoshikazu Miyao"],"identityBasis":"external_id"}
+{"creatorId":"90017220541","kind":"person","name":"水田ケンジ","names":["水田ケンジ","Kenji Mizuta"],"identityBasis":"external_id"}
+{"creatorId":"90017221483","kind":"person","name":"矢嶋哲生","names":["矢嶋哲生","矢岛哲生","Tetsuo Yajima"],"identityBasis":"external_id"}
+{"creatorId":"90017222709","kind":"person","name":"冨安大貴","names":["冨安大貴","富安大貴","Daiki Tomiyasu"],"identityBasis":"external_id"}
+{"creatorId":"90017226022","kind":"person","name":"中村憲由","names":["中村憲由","Noriyuki Nakamura"],"identityBasis":"external_id"}
+{"creatorId":"90017230626","kind":"person","name":"山本崇一朗","names":["山本崇一朗","Sōichirō Yamamoto"],"identityBasis":"external_id"}
+{"creatorId":"90017350112","kind":"person","name":"立川譲","names":["立川譲","立川讓","Yuzuru Tachikawa"],"identityBasis":"external_id"}
+{"creatorId":"90018233587","kind":"person","name":"田島列島","names":["田島列島","Retto Tajima"],"identityBasis":"external_id"}
+{"creatorId":"90018233822","kind":"person","name":"土屋登喜蔵","names":["土屋登喜蔵","Tokizō Tsuchiya"],"identityBasis":"external_id"}
+{"creatorId":"90018234583","kind":"person","name":"浜津守","names":["浜津守","濱津守","Mamoru Hamatsu"],"identityBasis":"external_id"}
+{"creatorId":"90018456008","kind":"person","name":"コトヤマ","names":["コトヤマ","琴山","Kotoyama"],"identityBasis":"external_id"}
+{"creatorId":"90018544237","kind":"person","name":"上田芳裕","names":["上田芳裕","Yoshihiro Ueda"],"identityBasis":"external_id"}
+{"creatorId":"90018817634","kind":"person","name":"塩谷直義","names":["塩谷直義","鹽谷直義","Naoyoshi Shiotani"],"identityBasis":"external_id"}
+{"creatorId":"90020038960","kind":"person","name":"江上潔","names":["江上潔","江上 潔","Kiyoshi Egami"],"identityBasis":"external_id"}
+{"creatorId":"90020040118","kind":"person","name":"古味慎也","names":["古味慎也","Shin'ya Komi"],"identityBasis":"external_id"}
+{"creatorId":"90020041111","kind":"person","name":"高橋敦史","names":["高橋敦史","Atsushi Takahashi"],"identityBasis":"external_id"}
+{"creatorId":"90020041349","kind":"person","name":"タヤマ碧","names":["タヤマ碧","Midori Tayama"],"identityBasis":"external_id"}
+{"creatorId":"90020041869","kind":"person","name":"中村充志","names":["中村充志","Atsushi Nakamura"],"identityBasis":"external_id"}
+{"creatorId":"90021019804","kind":"person","name":"山本かな","names":["山本かな","Kana Yamamoto"],"identityBasis":"external_id"}
+{"creatorId":"90021127504","kind":"person","name":"Fumihiro Yoshimura","names":["Fumihiro Yoshimura"],"identityBasis":"external_id"}
+{"creatorId":"90022123690","kind":"person","name":"長谷川康夫","names":["長谷川康夫","Yasuo Hasegawa"],"identityBasis":"external_id"}
+{"creatorId":"90022123943","kind":"person","name":"遠藤政治","names":["遠藤政治","Masaharu Endo"],"identityBasis":"external_id"}
+{"creatorId":"90022124923","kind":"person","name":"白浜鴎","names":["白浜鴎","白濱鷗","Kamome Shirahama"],"identityBasis":"external_id"}
+{"creatorId":"90022126225","kind":"person","name":"眉月じゅん","names":["眉月じゅん","眉月純","Jun Mayuzuki"],"identityBasis":"external_id"}
+{"creatorId":"90022126243","kind":"person","name":"新波歩","names":["新波歩","Ayumi Shinba"],"identityBasis":"external_id"}
+{"creatorId":"90022131037","kind":"person","name":"峰浪りょう","names":["峰浪りょう","峰浪了","Ryō Minenami"],"identityBasis":"external_id"}
+{"creatorId":"90024175584","kind":"person","name":"寺田和男","names":["寺田和男","Kazuo Terada"],"identityBasis":"external_id"}
+{"creatorId":"90024473864","kind":"person","name":"満仲勧","names":["満仲勧","滿仲勸","Susumu Mitsunaka"],"identityBasis":"external_id"}
+{"creatorId":"90024873142","kind":"person","name":"中村章子","names":["中村章子","Shōko Nakamura"],"identityBasis":"external_id"}
+{"creatorId":"90025425696","kind":"person","name":"鈴木清崇","names":["鈴木清崇","Kiyotaka Suzuki"],"identityBasis":"external_id"}
+{"creatorId":"90026043624","kind":"person","name":"野中卓也","names":["野中卓也","Takuya Nonaka"],"identityBasis":"external_id"}
+{"creatorId":"90026937056","kind":"person","name":"黒川文男","names":["黒川文男","黑川文男","Fumio Kurokawa"],"identityBasis":"external_id"}
+{"creatorId":"90027536472","kind":"person","name":"有木涼","names":["有木涼","Ryō Yūki"],"identityBasis":"external_id"}
+{"creatorId":"90027555913","kind":"organization","name":"LARP Editores","names":["LARP Editores"],"identityBasis":"external_id"}
+{"creatorId":"90027917531","kind":"person","name":"大宮一仁","names":["大宮一仁","Kazuhito Ōmiya"],"identityBasis":"external_id"}
+{"creatorId":"90027917710","kind":"person","name":"涼川りん","names":["涼川りん","涼川鈴","Rin Suzukawa"],"identityBasis":"external_id"}
+{"creatorId":"90027917924","kind":"person","name":"多田俊介","names":["多田俊介","Shunsuke Tada"],"identityBasis":"external_id"}
+{"creatorId":"90028153851","kind":"person","name":"浅井義之","names":["浅井義之","Yoshiyuki Asai"],"identityBasis":"external_id"}
+{"creatorId":"90028374032","kind":"person","name":"地岡公俊","names":["地岡公俊","Kimitoshi Chioka"],"identityBasis":"external_id"}
+{"creatorId":"90028551924","kind":"person","name":"Hitoto*","names":["Hitoto*"],"identityBasis":"external_id"}
+{"creatorId":"90028689670","kind":"person","name":"暮田公平","names":["暮田公平","Kōhei Kureta"],"identityBasis":"external_id"}
+{"creatorId":"90029600178","kind":"person","name":"細田雅弘","names":["細田雅弘","Masahiro Hosoda"],"identityBasis":"external_id"}
+{"creatorId":"90030924702","kind":"person","name":"川崎博嗣","names":["川崎博嗣","Hirotsugu Kawasaki"],"identityBasis":"external_id"}
+{"creatorId":"90033883090","kind":"person","name":"紀伊カンナ","names":["紀伊カンナ","紀伊Kanna","Kanna Kii"],"identityBasis":"external_id"}
+{"creatorId":"90034164032","kind":"person","name":"竹下良平","names":["竹下良平","Ryōhei Takeshita"],"identityBasis":"external_id"}
+{"creatorId":"90038277491","kind":"person","name":"江野スミ","names":["江野スミ","Sumi Eno"],"identityBasis":"external_id"}
+{"creatorId":"90038278592","kind":"person","name":"伊藤隼之介","names":["伊藤隼之介","Junnosuke Itō"],"identityBasis":"external_id"}
+{"creatorId":"90039054131","kind":"organization","name":"J-Novel Club LLC","names":["J-Novel Club LLC"],"identityBasis":"external_id"}
+{"creatorId":"90039523111","kind":"person","name":"香代乃","names":["香代乃","Kayono"],"identityBasis":"external_id"}
+{"creatorId":"90041693046","kind":"person","name":"カトウコトノ","names":["カトウコトノ","加藤箏乃","Kotono Kato"],"identityBasis":"external_id"}
+{"creatorId":"90045095740","kind":"organization","name":"Lezhin Entertainment","names":["Lezhin Entertainment"],"identityBasis":"external_id"}
+{"creatorId":"90047165380","kind":"person","name":"中山幸","names":["中山幸","Miyuki Nakayama"],"identityBasis":"external_id"}
+{"creatorId":"90048753172","kind":"person","name":"花田陵","names":["花田陵","Ryō Hanada"],"identityBasis":"external_id"}
+{"creatorId":"90051574625","kind":"person","name":"板垣巴留","names":["板垣巴留","Paru Itagaki"],"identityBasis":"external_id"}
+{"creatorId":"90054867618","kind":"person","name":"塚原重義","names":["塚原重義","Shigeyoshi Tsukahara"],"identityBasis":"external_id"}
+{"creatorId":"90055522630","kind":"organization","name":"アース・スターノベル","names":["アース・スターノベル","Earth Star Novel"],"identityBasis":"external_id"}
+{"creatorId":"90055524412","kind":"person","name":"豊田悠","names":["豊田悠","豐田悠","Yuu Toyota"],"identityBasis":"external_id"}
+{"creatorId":"90055529831","kind":"person","name":"高野ひと深","names":["高野ひと深","高野一深","Hitomi Takano"],"identityBasis":"external_id"}
+{"creatorId":"90056059843","kind":"person","name":"黄井ぴかち","names":["黄井ぴかち","Pikachi Ohi"],"identityBasis":"external_id"}
+{"creatorId":"90056703470","kind":"organization","name":"Altraverse","names":["Altraverse"],"identityBasis":"external_id"}
+{"creatorId":"90057070676","kind":"person","name":"永田カビ","names":["永田カビ","Nagata Kabi"],"identityBasis":"external_id"}
+{"creatorId":"90059551989","kind":"person","name":"井藤ななみ","names":["井藤ななみ","Nanami Itō"],"identityBasis":"external_id"}
+{"creatorId":"90060229900","kind":"person","name":"高松美咲","names":["高松美咲","Misaki Takamatsu"],"identityBasis":"external_id"}
+{"creatorId":"90060231010","kind":"person","name":"芥見下々","names":["芥見下々","芥見下下","Gege Akutami"],"identityBasis":"external_id"}
+{"creatorId":"90062085477","kind":"person","name":"沓名健一","names":["沓名健一","Kenichi Kutsuna"],"identityBasis":"external_id"}
+{"creatorId":"90062085488","kind":"person","name":"しろまんた","names":["しろまんた","Shiromanta"],"identityBasis":"external_id"}
+{"creatorId":"90062695172","kind":"person","name":"Park Sang-seon","names":["Park Sang-seon"],"identityBasis":"external_id"}
+{"creatorId":"90063144914","kind":"person","name":"西村聡","names":["西村聡","Satoshi Nishimura"],"identityBasis":"external_id"}
+{"creatorId":"90063610473","kind":"organization","name":"Milky Way Ediciones","names":["Milky Way Ediciones"],"identityBasis":"external_id"}
+{"creatorId":"90063967670","kind":"person","name":"一重夕子","names":["一重夕子","Yūko Ichijū"],"identityBasis":"external_id"}
+{"creatorId":"90064138465","kind":"organization","name":"MAL'OPUS","names":["MAL'OPUS"],"identityBasis":"external_id"}
+{"creatorId":"90064495431","kind":"organization","name":"Nakladatelství Crew","names":["Nakladatelství Crew"],"identityBasis":"external_id"}
+{"creatorId":"90064684145","kind":"person","name":"小高義規","names":["小高義規","Yoshinori Odaka"],"identityBasis":"external_id"}
+{"creatorId":"90064782312","kind":"person","name":"津田尚克","names":["津田尚克","Naokatsu Tsuda"],"identityBasis":"external_id"}
+{"creatorId":"90065248546","kind":"person","name":"今井一暁","names":["今井一暁","今井一曉","Kazuaki Imai"],"identityBasis":"external_id"}
+{"creatorId":"90067222674","kind":"person","name":"櫻木優平","names":["櫻木優平","Yuhei Sakuragi"],"identityBasis":"external_id"}
+{"creatorId":"90069635237","kind":"person","name":"権平ひつじ","names":["権平ひつじ","權平ひつじ","Hitsuji Gondaira"],"identityBasis":"external_id"}
+{"creatorId":"90074265423","kind":"person","name":"Han Seung-Hee","names":["Han Seung-Hee"],"identityBasis":"external_id"}
+{"creatorId":"90074265452","kind":"person","name":"Jun Jin Suk","names":["Jun Jin Suk"],"identityBasis":"external_id"}
+{"creatorId":"90074425998","kind":"person","name":"山口つばさ","names":["山口つばさ","山口飛翔","Tsubasa Yamaguchi"],"identityBasis":"external_id"}
+{"creatorId":"90083208571","kind":"person","name":"泉朝樹","names":["泉朝樹","Tomoki Izumi"],"identityBasis":"external_id"}
+{"creatorId":"90084160175","kind":"person","name":"杉山卓","names":["杉山卓","杉山 卓","Taku Sugiyama"],"identityBasis":"external_id"}
+{"creatorId":"90089520962","kind":"person","name":"甲本一","names":["甲本一","Hajime Kōmoto"],"identityBasis":"external_id"}
+{"creatorId":"90090406232","kind":"person","name":"青木康浩","names":["青木康浩","Yasuhiro Aoki"],"identityBasis":"external_id"}
+{"creatorId":"90090866580","kind":"person","name":"黒柳トシマサ","names":["黒柳トシマサ","黑柳利充","Toshimasa Kuroyanagi"],"identityBasis":"external_id"}
+{"creatorId":"90092924403","kind":"person","name":"霜山朋久","names":["霜山朋久","Tomohisa Shimoyama"],"identityBasis":"external_id"}
+{"creatorId":"90096712542","kind":"person","name":"四宮義俊","names":["四宮義俊","Yoshitoshi Shinomiya"],"identityBasis":"external_id"}
+{"creatorId":"90097161471","kind":"person","name":"寺坂研人","names":["寺坂研人","Kento Terasaka"],"identityBasis":"external_id"}
+{"creatorId":"90099547987","kind":"person","name":"伊沢玲","names":["伊沢玲","Rei Izawa"],"identityBasis":"external_id"}
+{"creatorId":"90100699558","kind":"person","name":"吉田健次郎","names":["吉田健次郎","Kenjirō Yoshida"],"identityBasis":"external_id"}
+{"creatorId":"90101096402","kind":"person","name":"恵口公生","names":["恵口公生","惠口公生","Kōsei Eguchi"],"identityBasis":"external_id"}
+{"creatorId":"90101200589","kind":"person","name":"村野佑太","names":["村野佑太","Yūta Murano"],"identityBasis":"external_id"}
+{"creatorId":"90102246857","kind":"person","name":"市川量也","names":["市川量也","Kazuya Ichikawa"],"identityBasis":"external_id"}
+{"creatorId":"90104538689","kind":"person","name":"小西明日翔","names":["小西明日翔","Asuka Konishi"],"identityBasis":"external_id"}
+{"creatorId":"90105034023","kind":"person","name":"山口悟","names":["山口悟","Satoru Yamaguchi"],"identityBasis":"external_id"}
+{"creatorId":"90105134653","kind":"person","name":"直谷たかし","names":["直谷たかし","Takashi Naoya"],"identityBasis":"external_id"}
+{"creatorId":"90105258985","kind":"person","name":"真木蛍五","names":["真木蛍五","真木螢五","Keigo Maki"],"identityBasis":"external_id"}
+{"creatorId":"90105295636","kind":"person","name":"くまなの","names":["くまなの","熊名乃","Kumanano"],"identityBasis":"external_id"}
+{"creatorId":"90105354833","kind":"person","name":"吉岡忍","names":["吉岡忍","Shinobu Yoshioka"],"identityBasis":"external_id"}
+{"creatorId":"90105703973","kind":"person","name":"イノウエ","names":["イノウエ","Inoue"],"identityBasis":"external_id"}
+{"creatorId":"90105730233","kind":"organization","name":"SQEXノベル","names":["SQEXノベル","SQEX Novel"],"identityBasis":"external_id"}
+{"creatorId":"90105954928","kind":"organization","name":"GCノベルズ","names":["GCノベルズ","GC小說","GC Novels"],"identityBasis":"external_id"}
+{"creatorId":"90106307189","kind":"person","name":"ありいめめこ","names":["ありいめめこ","Memeco Arii"],"identityBasis":"external_id"}
+{"creatorId":"90106351907","kind":"person","name":"トマリ","names":["トマリ","Tomari"],"identityBasis":"external_id"}
+{"creatorId":"90106396849","kind":"person","name":"木下麦","names":["木下麦","木下麥","Baku Kinoshita"],"identityBasis":"external_id"}
+{"creatorId":"90106478534","kind":"person","name":"ムサヲ","names":["ムサヲ","Musawo"],"identityBasis":"external_id"}
+{"creatorId":"90106478741","kind":"person","name":"井龍一","names":["井龍一","Hajime Inoryū"],"identityBasis":"external_id"}
+{"creatorId":"90106479609","kind":"person","name":"日暮キノコ","names":["日暮キノコ","Kinoko Higurashi"],"identityBasis":"external_id"}
+{"creatorId":"90106569066","kind":"person","name":"山本佳奈","names":["山本佳奈","Kana Yamamoto"],"identityBasis":"external_id"}
+{"creatorId":"90106616361","kind":"person","name":"イワタナオミ","names":["イワタナオミ","Naomi Iwata"],"identityBasis":"external_id"}
+{"creatorId":"90106688023","kind":"organization","name":"ガムコミックス","names":["ガムコミックス","Gum Comics"],"identityBasis":"external_id"}
+{"creatorId":"90106853303","kind":"person","name":"学慶人","names":["学慶人","Keito Gaku"],"identityBasis":"external_id"}
+{"creatorId":"90107018065","kind":"organization","name":"ドラゴンコミックス","names":["ドラゴンコミックス","Dragon Comics"],"identityBasis":"external_id"}
+{"creatorId":"90107442487","kind":"person","name":"竹町","names":["竹町","Takemachi"],"identityBasis":"external_id"}
+{"creatorId":"90108109622","kind":"person","name":"依田瑞稀","names":["依田瑞稀","Mizuki Yoda"],"identityBasis":"external_id"}
+{"creatorId":"90108584921","kind":"person","name":"七斗七","names":["七斗七","Nanato Nana"],"identityBasis":"external_id"}
+{"creatorId":"90108776581","kind":"person","name":"内々けやき","names":["内々けやき","Keyaki Uchiuchi"],"identityBasis":"external_id"}
+{"creatorId":"90110623764","kind":"person","name":"鳥谷コウ","names":["鳥谷コウ","Kō Toriya"],"identityBasis":"external_id"}
+{"creatorId":"90111111969","kind":"person","name":"tomomi","names":["tomomi","Tomomi"],"identityBasis":"external_id"}
+{"creatorId":"90111113061","kind":"person","name":"春園ショウ","names":["春園ショウ","春園翔","Shō Harusono"],"identityBasis":"external_id"}
+{"creatorId":"90111113774","kind":"person","name":"野田彩子","names":["野田彩子","Ayako Noda"],"identityBasis":"external_id"}
+{"creatorId":"90111461292","kind":"person","name":"三浦和也","names":["三浦和也","Kazuya Miura"],"identityBasis":"external_id"}
+{"creatorId":"90111621149","kind":"person","name":"せるげい","names":["せるげい","Sergei"],"identityBasis":"external_id"}
+{"creatorId":"90111858599","kind":"person","name":"山川直輝","names":["山川直輝","Naoki Yamakawa"],"identityBasis":"external_id"}
+{"creatorId":"90112222856","kind":"person","name":"おくら","names":["おくら","Okura"],"identityBasis":"external_id"}
+{"creatorId":"90112273859","kind":"person","name":"実樹ぶきみ","names":["実樹ぶきみ","Bukimi Miki"],"identityBasis":"external_id"}
+{"creatorId":"90112408880","kind":"person","name":"Kang-Won Kim","names":["Kang-Won Kim"],"identityBasis":"external_id"}
+{"creatorId":"90112844733","kind":"person","name":"木村智","names":["木村智","士貴智志·木村昴","Satoshi Kimura"],"identityBasis":"external_id"}
+{"creatorId":"90113032369","kind":"organization","name":"Kotori","names":["Kotori"],"identityBasis":"external_id"}
+{"creatorId":"90113032524","kind":"organization","name":"Nasha Idea","names":["Nasha Idea"],"identityBasis":"external_id"}
+{"creatorId":"90113427472","kind":"person","name":"Kazuhisa Takenouchi","names":["Kazuhisa Takenouchi"],"identityBasis":"external_id"}
+{"creatorId":"90113540084","kind":"person","name":"Sae Okamoto","names":["Sae Okamoto"],"identityBasis":"external_id"}
+{"creatorId":"90113547607","kind":"person","name":"古川順康","names":["古川順康","Nobuyasu Furukawa"],"identityBasis":"external_id"}
+{"creatorId":"90113567023","kind":"person","name":"米代恭","names":["米代恭","Kyō Yoneshiro"],"identityBasis":"external_id"}
+{"creatorId":"90113687941","kind":"person","name":"浦田保則","names":["浦田保則","Yasunori Urata"],"identityBasis":"external_id"}
+{"creatorId":"90114298643","kind":"person","name":"伊月クロ","names":["伊月クロ","Kuro Itsuki"],"identityBasis":"external_id"}
+{"creatorId":"90114352494","kind":"person","name":"majoccoid","names":["majoccoid"],"identityBasis":"external_id"}
+{"creatorId":"90114684563","kind":"person","name":"Kazunori Ikegami","names":["Kazunori Ikegami"],"identityBasis":"external_id"}
+{"creatorId":"90114841514","kind":"person","name":"白野ほなみ","names":["白野ほなみ","Honami Shirono"],"identityBasis":"external_id"}
+{"creatorId":"90114908417","kind":"person","name":"井端義秀","names":["井端義秀","Yoshihide Ibata"],"identityBasis":"external_id"}
+{"creatorId":"90115117767","kind":"person","name":"Sal Jiang","names":["Sal Jiang"],"identityBasis":"external_id"}
+{"creatorId":"90115529059","kind":"person","name":"静脈","names":["静脈","Jōmyaku"],"identityBasis":"external_id"}
+{"creatorId":"90115693085","kind":"organization","name":"百合姫コミックス","names":["百合姫コミックス","Yuri Hime Comics"],"identityBasis":"external_id"}
+{"creatorId":"90115693243","kind":"organization","name":"ブレイドコミックス","names":["ブレイドコミックス","Blade Comics"],"identityBasis":"external_id"}
+{"creatorId":"90115693326","kind":"organization","name":"MFC キューンシリーズ","names":["MFC キューンシリーズ","MFC Cune系列","MFC Cune Series"],"identityBasis":"external_id"}
+{"creatorId":"90115693347","kind":"organization","name":"電撃コミックスNEXT","names":["電撃コミックスNEXT","Dengeki Comics Next"],"identityBasis":"external_id"}
+{"creatorId":"90115693387","kind":"organization","name":"webアクションコミックス","names":["webアクションコミックス","Web Action Comics"],"identityBasis":"external_id"}
+{"creatorId":"90115693434","kind":"organization","name":"FUZコミックス","names":["FUZコミックス","Fuz Comics"],"identityBasis":"external_id"}
+{"creatorId":"90115693442","kind":"organization","name":"バンブーコミックス","names":["バンブーコミックス","Bamboo Comics"],"identityBasis":"external_id"}
+{"creatorId":"90115696412","kind":"organization","name":"まんがタイムKRコミックス","names":["まんがタイムKRコミックス","Manga Time KR Comics"],"identityBasis":"external_id"}
+{"creatorId":"90115707563","kind":"organization","name":"アクションコミックス","names":["アクションコミックス","Action Comics"],"identityBasis":"external_id"}
+{"creatorId":"90115727573","kind":"organization","name":"ガンガンコミックスJOKER","names":["ガンガンコミックスJOKER","Gangan Comics Joker"],"identityBasis":"external_id"}
+{"creatorId":"90115728248","kind":"organization","name":"MFC フラッパーシリーズ","names":["MFC フラッパーシリーズ","MFC Flapper系列","MFC Flapper Series"],"identityBasis":"external_id"}
+{"creatorId":"90115734785","kind":"organization","name":"少年マガジンコミックス","names":["少年マガジンコミックス","Shōnen Magazine Comics"],"identityBasis":"external_id"}
+{"creatorId":"90115753647","kind":"organization","name":"PASH! コミックス","names":["PASH! コミックス","Pash! Comics"],"identityBasis":"external_id"}
+{"creatorId":"90115754348","kind":"organization","name":"角川コミックス・エース","names":["角川コミックス・エース","Kadokawa Comics Ace"],"identityBasis":"external_id"}
+{"creatorId":"90115754420","kind":"organization","name":"MFC アライブシリーズ","names":["MFC アライブシリーズ","MFC Alive系列","MFC Alive Series"],"identityBasis":"external_id"}
+{"creatorId":"90115942119","kind":"organization","name":"Gファンタジーコミックス","names":["Gファンタジーコミックス","GFantasy Comics"],"identityBasis":"external_id"}
+{"creatorId":"90115942243","kind":"organization","name":"シリウスKC","names":["シリウスKC","Sirius KC"],"identityBasis":"external_id"}
+{"creatorId":"90115978166","kind":"organization","name":"GL文庫","names":["GL文庫","GL Bunko"],"identityBasis":"external_id"}
+{"creatorId":"90116702376","kind":"organization","name":"Outland forlag","names":["Outland forlag"],"identityBasis":"external_id"}
+{"creatorId":"90116936245","kind":"person","name":"板津匡覧","names":["板津匡覧","Yoshimi Itazu"],"identityBasis":"external_id"}
+{"creatorId":"90117287527","kind":"person","name":"追儺三浦","names":["追儺三浦","Tsuina Miura"],"identityBasis":"external_id"}
+{"creatorId":"90117288879","kind":"person","name":"御所園翔太","names":["御所園翔太","Shota Goshozono"],"identityBasis":"external_id"}
+{"creatorId":"90117303992","kind":"person","name":"宇田川 一彦","names":["宇田川 一彦","Kazuhiko Udagawa"],"identityBasis":"external_id"}
+{"creatorId":"90117336919","kind":"person","name":"にいさとる","names":["にいさとる","Satoru Nii"],"identityBasis":"external_id"}
+{"creatorId":"90117344886","kind":"person","name":"森大貴","names":["森大貴","Hirotaka Mori"],"identityBasis":"external_id"}
+{"creatorId":"90117833678","kind":"person","name":"秋鹿ユギリ","names":["秋鹿ユギリ","Yugiri Aika"],"identityBasis":"external_id"}
+{"creatorId":"90117844056","kind":"person","name":"山口ひかる","names":["山口ひかる","Hikaru Yamaguchi"],"identityBasis":"external_id"}
+{"creatorId":"90117862119","kind":"person","name":"Shunji Ôga","names":["Shunji Ôga"],"identityBasis":"external_id"}
+{"creatorId":"90117862168","kind":"person","name":"竹下健一","names":["竹下健一","Ken'ichi Takeshita"],"identityBasis":"external_id"}
+{"creatorId":"90117862577","kind":"person","name":"Wataru Araki","names":["Wataru Araki"],"identityBasis":"external_id"}
+{"creatorId":"90117862840","kind":"person","name":"Asumi Matsumura","names":["Asumi Matsumura"],"identityBasis":"external_id"}
+{"creatorId":"90117863825","kind":"person","name":"久米一成","names":["久米一成","Kazunari Kume"],"identityBasis":"external_id"}
+{"creatorId":"90117885635","kind":"person","name":"Yasuo Yamayoshi","names":["Yasuo Yamayoshi"],"identityBasis":"external_id"}
+{"creatorId":"90119381198","kind":"person","name":"モコちゃん","names":["モコちゃん","Moko-chan"],"identityBasis":"external_id"}
+{"creatorId":"90119451712","kind":"person","name":"サトウ光敏","names":["サトウ光敏","Mitsutoshi Satō"],"identityBasis":"external_id"}
+{"creatorId":"90123142098","kind":"person","name":"たらちねジョン","names":["たらちねジョン","Jon Tarachine"],"identityBasis":"external_id"}
+{"creatorId":"90123405289","kind":"person","name":"ぽむ","names":["ぽむ","Pom","Pomu"],"identityBasis":"external_id"}
+{"creatorId":"90123579237","kind":"organization","name":"少年サンデーコミックス","names":["少年サンデーコミックス","少年Sunday Comics","Shōnen Sunday Comics"],"identityBasis":"external_id"}
+{"creatorId":"90124024620","kind":"organization","name":"少年サンデーコミックススペシャル","names":["少年サンデーコミックススペシャル","Shōnen Sunday Comics Special"],"identityBasis":"external_id"}
+{"creatorId":"90124708536","kind":"person","name":"Satoru Namekawa","names":["Satoru Namekawa"],"identityBasis":"external_id"}
+{"creatorId":"90125740707","kind":"person","name":"木乃ひのき","names":["木乃ひのき","Hinoki Kino"],"identityBasis":"external_id"}
+{"creatorId":"90125747459","kind":"person","name":"根岸宏樹","names":["根岸宏樹","Negishi Hiroki"],"identityBasis":"external_id"}
+{"creatorId":"90125949214","kind":"person","name":"ボブ白旗","names":["ボブ白旗","鲍勃白旗","Bob Shirohata"],"identityBasis":"external_id"}
+{"creatorId":"90126734743","kind":"organization","name":"ビームコミックス","names":["ビームコミックス","Beam Comix"],"identityBasis":"external_id"}
+{"creatorId":"90126736051","kind":"organization","name":"マガジンエッジKC","names":["マガジンエッジKC","Magazine Edge KC"],"identityBasis":"external_id"}
+{"creatorId":"90130118388","kind":"person","name":"つるまいかだ","names":["つるまいかだ","Tsurumaikada"],"identityBasis":"external_id"}
+{"creatorId":"90130258726","kind":"organization","name":"ヤングガンガンコミックス","names":["ヤングガンガンコミックス","Young Gangan Comics"],"identityBasis":"external_id"}
+{"creatorId":"90130260503","kind":"organization","name":"アフタヌーンKC","names":["アフタヌーンKC","Afternoon KC"],"identityBasis":"external_id"}
+{"creatorId":"90130267073","kind":"organization","name":"モーニングKC","names":["モーニングKC","Morning KC"],"identityBasis":"external_id"}
+{"creatorId":"90130281850","kind":"organization","name":"JUMP COMICS SQ.","names":["JUMP COMICS SQ.","Jump Comics SQ."],"identityBasis":"external_id"}
+{"creatorId":"90130301671","kind":"organization","name":"サンデーうぇぶりコミックス","names":["サンデーうぇぶりコミックス","Sunday Webry Comics"],"identityBasis":"external_id"}
+{"creatorId":"90130302631","kind":"organization","name":"富士見ファンタジアコミックス","names":["富士見ファンタジアコミックス","Fujimi Fantasia Comics"],"identityBasis":"external_id"}
+{"creatorId":"90130302696","kind":"organization","name":"Feelコミックス","names":["Feelコミックス","Feel Comics"],"identityBasis":"external_id"}
+{"creatorId":"90130315854","kind":"organization","name":"ちゃおコミックス","names":["ちゃおコミックス","Ciao Comics"],"identityBasis":"external_id"}
+{"creatorId":"90130315908","kind":"organization","name":"ヤングアニマルコミックス","names":["ヤングアニマルコミックス","Young Animal Comics"],"identityBasis":"external_id"}
+{"creatorId":"90130317165","kind":"organization","name":"ガンガンコミックスONLINE","names":["ガンガンコミックスONLINE","Gangan Comics Online"],"identityBasis":"external_id"}
+{"creatorId":"90130342142","kind":"organization","name":"IKKI COMIX","names":["IKKI COMIX","Ikki Comix"],"identityBasis":"external_id"}
+{"creatorId":"90130356054","kind":"organization","name":"ジャンプコミックス+","names":["ジャンプコミックス+","Jump Comics+"],"identityBasis":"external_id"}
+{"creatorId":"90130379762","kind":"person","name":"柳井伸彦","names":["柳井伸彦","Nobuhiko Yanai"],"identityBasis":"external_id"}
+{"creatorId":"90130464821","kind":"organization","name":"少年ビッグコミックス","names":["少年ビッグコミックス","Shōnen Big Comics"],"identityBasis":"external_id"}
+{"creatorId":"90130475367","kind":"organization","name":"ビッグコミックススペシャル","names":["ビッグコミックススペシャル","Big Comics Special"],"identityBasis":"external_id"}
+{"creatorId":"90130534259","kind":"organization","name":"ヤングキングコミックス","names":["ヤングキングコミックス","Young King Comics"],"identityBasis":"external_id"}
+{"creatorId":"90130651054","kind":"organization","name":"ZERO-SUMコミックス","names":["ZERO-SUMコミックス","Zero-Sum Comics"],"identityBasis":"external_id"}
+{"creatorId":"90130693358","kind":"organization","name":"ヤンマガKCスペシャル","names":["ヤンマガKCスペシャル","Yanmaga KC Special"],"identityBasis":"external_id"}
+{"creatorId":"90130758399","kind":"person","name":"橋本悠","names":["橋本悠","Yu Hashimoto"],"identityBasis":"external_id"}
+{"creatorId":"90131179369","kind":"organization","name":"イブニングKC","names":["イブニングKC","Evening KC"],"identityBasis":"external_id"}
+{"creatorId":"90131379474","kind":"person","name":"Tomotaka Shibayama","names":["Tomotaka Shibayama"],"identityBasis":"external_id"}
+{"creatorId":"90131379475","kind":"person","name":"Francesca Calo","names":["Francesca Calo"],"identityBasis":"external_id"}
+{"creatorId":"90131604290","kind":"organization","name":"なかよしコミックス","names":["なかよしコミックス","Nakayoshi Comics"],"identityBasis":"external_id"}
+{"creatorId":"90131604633","kind":"organization","name":"ちゅちゅコミックス","names":["ちゅちゅコミックス","ChuChu Comics"],"identityBasis":"external_id"}
+{"creatorId":"90131727467","kind":"person","name":"篠原正寛","names":["篠原正寛","篠原正寬","Masahiro Shinohara"],"identityBasis":"external_id"}
+{"creatorId":"90131814487","kind":"person","name":"山崎光恵","names":["山崎光恵","山崎光惠","Mitsue Yamazaki"],"identityBasis":"external_id"}
+{"creatorId":"90132280527","kind":"person","name":"西脇だっと","names":["西脇だっと","Dat Nishiwaki"],"identityBasis":"external_id"}
+{"creatorId":"90132431789","kind":"person","name":"重原克也","names":["重原克也","Katsuya Shigehara"],"identityBasis":"external_id"}
+{"creatorId":"90132704918","kind":"organization","name":"ウィングス・コミックス","names":["ウィングス・コミックス","Wings Comics"],"identityBasis":"external_id"}
+{"creatorId":"90132717474","kind":"organization","name":"講談社コミックスキス","names":["講談社コミックスキス","Kodansha Comics Kiss"],"identityBasis":"external_id"}
+{"creatorId":"90132723461","kind":"organization","name":"KCデラックス","names":["KCデラックス","KC Deluxe"],"identityBasis":"external_id"}
+{"creatorId":"90133575796","kind":"organization","name":"Yen Press","names":["Yen Press"],"identityBasis":"external_id"}
+{"creatorId":"90133698002","kind":"organization","name":"少年ジャンプ","names":["少年ジャンプ","Shonen Jump"],"identityBasis":"external_id"}
+{"creatorId":"90134715686","kind":"organization","name":"Kodansha Comics","names":["Kodansha Comics"],"identityBasis":"external_id"}
+{"creatorId":"90134874619","kind":"person","name":"吉村愛","names":["吉村愛","Ai Yoshimura"],"identityBasis":"external_id"}
+{"creatorId":"90135105701","kind":"organization","name":"彗星社","names":["彗星社","Studio Hōkiboshi"],"identityBasis":"external_id"}
+{"creatorId":"90135498581","kind":"person","name":"春の日びより","names":["春の日びより","Harunohi Biyori"],"identityBasis":"external_id"}
+{"creatorId":"90135525454","kind":"person","name":"曽我篤士","names":["曽我篤士","曾我篤士","Atsushi Soga"],"identityBasis":"external_id"}
+{"creatorId":"90135526875","kind":"person","name":"植野メグル","names":["植野メグル","Meguru Ueno"],"identityBasis":"external_id"}
+{"creatorId":"90135579659","kind":"person","name":"おだまさる","names":["おだまさる","Masaru Oda"],"identityBasis":"external_id"}
+{"creatorId":"90135689409","kind":"person","name":"優しい内臓","names":["優しい内臓","Yasashii Naizo"],"identityBasis":"external_id"}
+{"creatorId":"90135690018","kind":"person","name":"森田と純平","names":["森田と純平"],"identityBasis":"external_id"}
+{"creatorId":"90136265283","kind":"person","name":"柳伸亮","names":["柳伸亮","Shinsuke Yanagi"],"identityBasis":"external_id"}
+{"creatorId":"90136374694","kind":"person","name":"秋本賢一郎","names":["秋本賢一郎","Kenichiro Akimoto"],"identityBasis":"external_id"}
+{"creatorId":"90137126926","kind":"organization","name":"プリンセスコミックス","names":["プリンセスコミックス","Princess Comics"],"identityBasis":"external_id"}
+{"creatorId":"90137184395","kind":"person","name":"蓮井隆弘","names":["蓮井隆弘"],"identityBasis":"external_id"}
+{"creatorId":"90137805143","kind":"person","name":"ケンノジ","names":["ケンノジ","Kennoji"],"identityBasis":"external_id"}
+{"creatorId":"90138419864","kind":"person","name":"山下清悟","names":["山下清悟","Shingo Yamashita"],"identityBasis":"external_id"}
+{"creatorId":"90138420056","kind":"person","name":"さおとめやぎ","names":["さおとめやぎ","Yagi Saotome"],"identityBasis":"external_id"}
+{"creatorId":"90138869560","kind":"person","name":"竹谷州史","names":["竹谷州史","Shūji Takeya"],"identityBasis":"external_id"}
+{"creatorId":"90139540167","kind":"organization","name":"Denpa","names":["Denpa"],"identityBasis":"external_id"}
+{"creatorId":"90139553081","kind":"organization","name":"花音コミックス","names":["花音コミックス","Hanaoto Comics"],"identityBasis":"external_id"}
+{"creatorId":"90139848084","kind":"person","name":"高瀬わか","names":["高瀬わか","高瀬若","Waka Takase"],"identityBasis":"external_id"}
+{"creatorId":"90140047590","kind":"person","name":"桃川ささみ","names":["桃川ささみ","Sasami Momokawa"],"identityBasis":"external_id"}
+{"creatorId":"90140305546","kind":"person","name":"寺澤和晃","names":["寺澤和晃","Kazuaki Terasawa"],"identityBasis":"external_id"}
+{"creatorId":"90140589631","kind":"person","name":"たびれこ","names":["たびれこ","Tabireko"],"identityBasis":"external_id"}
+{"creatorId":"90140621628","kind":"person","name":"オ ジング","names":["オ ジング","吳珍九","Jinkoo Oh"],"identityBasis":"external_id"}
+{"creatorId":"90140798588","kind":"person","name":"羽田宇佐","names":["羽田宇佐","Usa Haneda"],"identityBasis":"external_id"}
+{"creatorId":"90140814105","kind":"person","name":"町田麗弥","names":["町田麗弥","Reiya Machida"],"identityBasis":"external_id"}
+{"creatorId":"90141105932","kind":"person","name":"四分一節子","names":["四分一節子","Setsuko Shibuichi"],"identityBasis":"external_id"}
+{"creatorId":"90141353645","kind":"person","name":"Rangrari","names":["Rangrari"],"identityBasis":"external_id"}
+{"creatorId":"90141572490","kind":"person","name":"筒井 いつき","names":["筒井 いつき","Itsuki Tsutsui"],"identityBasis":"external_id"}
+{"creatorId":"90141581557","kind":"person","name":"由田果","names":["由田果","Yutaka"],"identityBasis":"external_id"}
+{"creatorId":"90141662358","kind":"organization","name":"サンデーGXコミックス","names":["サンデーGXコミックス","Sunday GX Comics"],"identityBasis":"external_id"}
+{"creatorId":"90141680513","kind":"person","name":"尾野凛","names":["尾野凛","Rin Ono"],"identityBasis":"external_id"}
+{"creatorId":"90141702103","kind":"person","name":"高橋雅之","names":["高橋雅之","Masayuki Takahashi"],"identityBasis":"external_id"}
+{"creatorId":"90141713442","kind":"person","name":"黒木美幸","names":["黒木美幸","Miyuki Kuroki"],"identityBasis":"external_id"}
+{"creatorId":"90141717626","kind":"person","name":"Tamotsu Kuwabara","names":["Tamotsu Kuwabara"],"identityBasis":"external_id"}
+{"creatorId":"90141746460","kind":"person","name":"佐々木憲世","names":["佐々木憲世","Noriyo Sasaki"],"identityBasis":"external_id"}
+{"creatorId":"90141772745","kind":"person","name":"月見里智弘","names":["月見里智弘","Tomohiro Tsukimisato"],"identityBasis":"external_id"}
+{"creatorId":"90141881228","kind":"person","name":"Yūsuke Morishita","names":["Yūsuke Morishita"],"identityBasis":"external_id"}
+{"creatorId":"90142084539","kind":"person","name":"梅木 葵","names":["梅木 葵","Aoi Umeki"],"identityBasis":"external_id"}
+{"creatorId":"90142129066","kind":"person","name":"中谷 亜沙美","names":["中谷 亜沙美","Asami Nakatani"],"identityBasis":"external_id"}
+{"creatorId":"90142172594","kind":"person","name":"Akikonchi","names":["Akikonchi"],"identityBasis":"external_id"}
+{"creatorId":"90142172980","kind":"person","name":"武市 直子","names":["武市 直子","Naoko Takeichi"],"identityBasis":"external_id"}

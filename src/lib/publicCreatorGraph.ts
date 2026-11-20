@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 import type { PublicCredit, PublicWorkRecord } from './publicRelease'
 import { descriptiveKey, mergeCredits } from './publicDescriptiveMerge'
+import { correctCredit, type IdentityReview } from './publicIdentityReview'
 
 export type CreatorKind = 'person' | 'organization'
 export type PublicCreator = {
@@ -13,7 +14,7 @@ export type PublicCreator = {
   names: string[]
   identityBasis: 'external_id' | 'name_only' | 'unresolved_name'
 }
-type CreditEdge = {
+export type CreditEdge = {
   creatorId: string
   workId: string
   name: string
@@ -38,7 +39,7 @@ export function publicationYear(work: PublicWorkRecord): string {
   return work.firstPublished?.match(/^(\d{4})(?:-|$)/)?.[1] || 'unknown'
 }
 
-export function readPublicCreatorGraph(directory: string, records: PublicWorkRecord[]): PublicCreatorGraph {
+export function readPublicCreatorGraph(directory: string, records: PublicWorkRecord[], review?: IdentityReview): PublicCreatorGraph {
   const root = join(directory, CREATOR_GRAPH_DIRECTORY)
   const manifest = JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8'))
   if (manifest.schemaVersion !== 'baihepailei-public-creator-graph-v1' ||
@@ -57,9 +58,10 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
     if (rows.length !== descriptor.rows) throw new Error(`Creator graph count mismatch: ${file}`)
     return rows
   }
-  const nodes = readRows<PublicCreator>('entities.jsonl.gz')
+  const nodes = [...readRows<PublicCreator>('entities.jsonl.gz'), ...(review?.entities || [])]
   const entities = new Map<string, PublicCreator>()
   for (const node of nodes) {
+    if (review?.removedCreatorIds.has(node.creatorId)) continue
     if (!/^\d{7,12}$/.test(node.creatorId) || entities.has(node.creatorId) ||
         !['person', 'organization'].includes(node.kind) || !node.name.trim()) {
       throw new Error('Invalid or repeated CreatorId')
@@ -74,7 +76,11 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
   const seen = new Set<string>()
   const creditFiles = manifest.files.filter((row: { file: string }) => /^credits-\d{4}\.jsonl\.gz$/.test(row.file))
   if (!creditFiles.length) throw new Error('Missing creator credit shards')
-  for (const edge of creditFiles.flatMap((row: { file: string }) => readRows<CreditEdge>(row.file)) as CreditEdge[]) {
+  const edges: CreditEdge[] = creditFiles.flatMap((row: { file: string }) => readRows<CreditEdge>(row.file))
+  for (const reviewed of review?.creditsByWork.values() || []) edges.push(...reviewed)
+  for (const original of edges) {
+    if (review?.removedCreatorIds.has(original.creatorId)) continue
+    const edge = correctCredit(original.workId, original, review)
     const creator = entities.get(edge.creatorId)
     const work = byWorkId.get(edge.workId)
     if (!creator || !work) throw new Error(`Creator edge references a missing public node: ${edge.workId}`)

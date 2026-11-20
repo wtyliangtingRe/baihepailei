@@ -70,19 +70,40 @@ if (newerAssessmentFile) for (const row of readLines(join(release, newerAssessme
 }
 assert.equal(baseline.size,base.length)
 const current=loadPublicRelease(root)
+const identityRoot=join(root,'data/public-release/identity-20261121')
+const currentReview=!process.env.BAIHEPAILEI_RELEASE_DIR?.trim()
+if (currentReview) {
+  for (const review of readLines(join(root, 'data/public-release/review-20261121/reviews.jsonl'))) {
+    const row = baseline.get(review.workId)
+    assert.ok(row, `Missing review identity ${review.workId}`)
+    ratingRevisions.add(row.primaryWorkId)
+  }
+}
+const groupTargets=new Map()
+const reviewedMedia=new Map()
+if(currentReview) for(const group of readLines(join(identityRoot,'groups.jsonl'))) {
+  for(const id of group.workIds) {
+    groupTargets.set(id,group.primaryWorkId)
+    if(group.resolvedMedia) reviewedMedia.set(id,group.resolvedMedia.group)
+  }
+}
+const correctedUrls=new Map(currentReview ? readLines(join(identityRoot,'corrections.jsonl')).filter(row=>row.wrongUrl)
+  .map(row=>[row.workId,row]) : [])
 const publicWorks=new Map()
 for(const record of base){
   const before=baseline.get(record.workId),after=current.getPublicWorkById(record.workId)
-  assert.equal(after.workId,before.primaryWorkId,`Stable canonical route ${record.workId}`)
-  if (!ratingRevisions.has(before.primaryWorkId) && (before.rating.state!=='not_assessed' || !ratingAdditions.has(before.primaryWorkId))) {
+  assert.equal(after.workId,groupTargets.get(before.primaryWorkId) || before.primaryWorkId,`Stable canonical route ${record.workId}`)
+  const corrected=correctedUrls.get(before.primaryWorkId)
+  if(corrected && before.rating.evidenceUrl===corrected.wrongUrl) before.rating.evidenceUrl=corrected.url
+  if (!groupTargets.has(before.primaryWorkId) && !ratingRevisions.has(before.primaryWorkId) && (before.rating.state!=='not_assessed' || !ratingAdditions.has(before.primaryWorkId))) {
     assert.equal(JSON.stringify(after.rating),JSON.stringify(before.rating),`Stable rating ${record.workId}`)
   }
-  assert.equal(after.media.group,before.media,`Stable media identity ${record.workId}`)
+  assert.equal(after.media.group,reviewedMedia.get(before.primaryWorkId) || before.media,`Stable media identity ${record.workId}`)
   publicWorks.set(after.workId,after)
 }
 const works=[...publicWorks.values()]
 const count=fn=>works.filter(fn).length
-const report={sourceWorks:base.length,visibleWorks:works.length,stableCanonicalIds:true,stableRatings:true,
+const report={sourceWorks:base.length,visibleWorks:works.length,stableCanonicalIds:true,unreviewedRatingsPreserved:true,
   aliases:count(row=>row.aliases.length || row.localizedTitles.some(t=>t.title!==row.title)),
   knownMedia:count(row=>row.media.group!=='unknown'),creatorCredits:count(row=>row.creators.length),
   organizationCredits:count(row=>row.organizations.length),anyCredits:count(row=>row.creators.length || row.organizations.length),

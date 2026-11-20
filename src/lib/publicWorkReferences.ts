@@ -35,8 +35,12 @@ export function collectWorkReferences(work: PublicWorkRecord): WorkReference[] {
     const reference = references.get(source.url.trim())
     if (reference && source.tier) reference.tier = source.tier
   }
+  for (const finding of work.rating.sourceFindings || []) {
+    const label = finding.kind === 'official' ? '官方或授权资料' : '第三方 / 社区资料'
+    for (const url of finding.urls) add(url, label + ' · 评级依据', label + '支持 ' + finding.grade + ' 级')
+  }
   for (const source of work.rating.evidenceSources || []) {
-    add(source.url, source.kind === 'community' ? '第三方 / 社区资料 · 评级依据' : '官方或授权资料 · 评级依据', '评级依据')
+    add(source.url, source.kind === 'community' ? '第三方 / 社区资料 · 评级依据' : '官方或授权资料 · 评级依据', source.kind === 'community' ? '社区资料支持的评级' : '官方资料支持的评级')
   }
   add(work.rating.evidenceUrl, '评级依据页面', '评级依据')
   add(work.summary?.sourceUrl, '简介来源', '作品介绍')

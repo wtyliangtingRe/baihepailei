@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "baihepailei-public-identity-review-v1",
+  "baseRelease": "v4",
+  "retrievedOn": "2026-11-21",
+  "source": "Wikidata (CC0), exact AniList work identifiers and matching work titles. See groups.jsonl for edition evidence.",
+  "files": [
+    {
+      "file": "groups.jsonl",
+      "rows": 3,
+      "sha256": "6e58ac84e6c044a725353c9d0d3285e552d174c1e8d64cb1cf989dceba01655d"
+    },
+    {
+      "file": "entities.jsonl",
+      "rows": 1293,
+      "sha256": "facb67105dc168d38d1f51e1e9ee743506ab13c7f4dab4526752c3e9809da711"
+    },
+    {
+      "file": "credits.jsonl",
+      "rows": 3649,
+      "sha256": "6b26f009d0fdab1c2d3be3350a5c27db3f707941176c99d34953d5f8302a8d79"
+    },
+    {
+      "file": "corrections.jsonl",
+      "rows": 6,
+      "sha256": "44687acc2c50537e00f3e5bbb265570a4679f97d0691af423968e4ca436c12c8"
+    }
+  ],
+  "counts": {
+    "extraEntities": 1293,
+    "credits": 3649,
+    "creditWorks": 2342,
+    "newlyCreditedWorks": 1252,
+    "mergeGroups": 3,
+    "duplicateCreditedWorks": 1,
+    "removedEntities": 1
+  }
+}

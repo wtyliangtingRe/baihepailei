@@ -29,7 +29,7 @@ export default function HomePage() {
   const safeVisible =
     getPublicWorkList({ grade: 'S', status: 'rated', limit: 1 }).total +
     getPublicWorkList({ grade: 'A', status: 'rated', limit: 1 }).total
-  const notAssessedVisible = getPublicWorkList({ status: 'not_assessed', limit: 1 }).total
+  const notAssessedVisible = merge.visibleWorks - ratedVisible
   const featured = [
     ...getPublicWorkList({ grade: 'S', status: 'rated', limit: 4 }).items,
     ...getPublicWorkList({ grade: 'A', status: 'rated', limit: 2 }).items,
@@ -38,41 +38,24 @@ export default function HomePage() {
   return (
     <main className="home release-home">
       <div className="home-stack">
-        <section className="hero release-hero">
-          <div className="release-kicker">
-            <span className="release-live-dot" aria-hidden="true" />
-            当前已有 {number(ratedVisible)} 部作品公开评级
+        <section aria-labelledby="library-title" className="library-cover">
+          <div className="library-intro">
+            <h1 id="library-title">百合排雷资料库</h1>
+            <p>查找百合漫画、动画、小说和游戏，了解作品中的关系走向、内容警示与评级依据。</p>
+            <form action="/search" className="library-search" role="search">
+              <label htmlFor="home-search-input">搜索作品、作者、机构或警示</label>
+              <div>
+                <input id="home-search-input" name="q" placeholder="作品名、别名或关键词" type="search" />
+                <button type="submit">搜索</button>
+              </div>
+            </form>
+            <nav aria-label="浏览资料库" className="library-shortcuts">
+              <Link href="/works">全部作品</Link>
+              <Link href="/works?status=rated">已有评级</Link>
+              <Link href="/rules">警示细则</Link>
+            </nav>
           </div>
-          <p className="eyebrow">百合作品评级与排雷资料库</p>
-          <h1>关于百合排雷</h1>
-          <p className="release-hero-copy">
-            本站收录百合及相关作品，整理作品资料、作者与创作机构、关系评级和具体雷点，
-            帮助读者查找作品、了解内容，并按自己的偏好选择阅读、观看或游玩。
-          </p>
-          <form action="/search" className="search-box release-search" role="search">
-            <label htmlFor="home-search-input">搜索作品、作者、制作机构或警示</label>
-            <div>
-              <input id="home-search-input" name="q" placeholder="例如：终将成为你、仲谷鳰、男性替身" type="search" />
-              <button className="result-link" type="submit">查作品</button>
-            </div>
-          </form>
-          <div className="actions">
-            <Link className="release-primary-action" href="/works?status=rated">浏览已有评级</Link>
-            <Link href="/ratings">评级原则</Link>
-            <Link href="/rules">查看警示细则</Link>
-          </div>
-          <aside className="release-disclaimer" aria-labelledby="site-disclaimer-title">
-            <h2 id="site-disclaimer-title">免责声明</h2>
-            <p>
-              本站主要借助 AI 收集资料与辅助评级，可能存在误判、遗漏或理解偏差，内容仅供参考。
-              目前维护人手有限，许多作品仍缺少资料或尚未评级；空白条目和缺失警示不代表作品已经确认安全。
-            </p>
-            <p>
-              评级以当时收集到的资料为依据。连载进展、后续剧情、版本差异及新增信息都可能影响结论，
-              站内更新也可能滞后，请结合具体版本、资料日期和原作内容阅读。
-              如有异议或补充，欢迎通过<Link href="/feedback">补充纠错页的表单或联系方式</Link>反馈，并附上作品名与相关依据。
-            </p>
-          </aside>
+          <div aria-hidden="true" className="library-art" />
         </section>
 
         <section className="release-stat-grid release-stat-grid-public" aria-label="公开资料概览">
@@ -101,10 +84,9 @@ export default function HomePage() {
         <section className="release-section">
           <div className="release-section-heading">
             <div>
-              <p className="eyebrow">从高等级开始</p>
-              <h2>当前安心向作品</h2>
+              <h2>安心向作品</h2>
             </div>
-            <Link className="back-link" href="/recommendations">查看完整入口</Link>
+            <Link className="back-link" href="/recommendations">浏览全部 S / A 级作品</Link>
           </div>
           <div className="release-featured-grid">
             {featured.map((work) => {
@@ -124,7 +106,6 @@ export default function HomePage() {
                       {credits ? ` · ${credits}` : ''}
                     </p>
                   </div>
-                  <span aria-hidden="true">↗</span>
                 </Link>
               )
             })}
@@ -133,17 +114,14 @@ export default function HomePage() {
 
         <section className="release-reading-model release-home-guide">
           <article>
-            <span>1</span>
             <h2>看核心等级</h2>
             <p>S–F 先说明整体关系与风险区间。</p>
           </article>
           <article>
-            <span>2</span>
             <h2>看警示标签</h2>
             <p>男性关系、路线、设定与结局分别列出。</p>
           </article>
           <article>
-            <span>3</span>
             <h2>看依据与缺口</h2>
             <p>结合结论范围、资料日期与待补信息阅读。</p>
           </article>
@@ -159,6 +137,11 @@ export default function HomePage() {
           </p>
           <Link className="result-link" href="/works">进入作品资料库</Link>
         </section>
+        <details className="library-disclaimer">
+          <summary>评级说明与免责声明</summary>
+          <p>本站借助 AI 收集资料、辅助评级，可能出现误判或遗漏。评级以已核实的版本和剧情为准，连载进展、改编和新资料都可能改变结论。尚未评级或缺少警示的作品仍需核验。</p>
+          <p>如发现错误，可在<Link href="/feedback">补充纠错页</Link>提交作品名、版本与相关依据。</p>
+        </details>
       </div>
     </main>
   )

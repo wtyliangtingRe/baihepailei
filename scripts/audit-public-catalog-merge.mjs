@@ -390,11 +390,13 @@ const hardenedTitleBaseline = runMerge({
   rejectAmbiguousTitleKeys: true,
   protectAllIdentityClaims: true,
 })
+const reviewedGroups = process.env.BAIHEPAILEI_RELEASE_DIR?.trim() ? []
+  : readFileSync(join(releaseDir, '..', 'identity-20261121', 'groups.jsonl'), 'utf8').trim().split('\n').map(JSON.parse)
 const currentIdentitySafe = runMerge({
   normalizeTitle: normalizeIdentitySafeTitle,
   rejectAmbiguousTitleKeys: true,
   includeMergedGroups: true,
-  explicitGroups: equivalenceGroups,
+  explicitGroups: [...equivalenceGroups, ...reviewedGroups],
   protectAllIdentityClaims: true,
 })
 
@@ -412,11 +414,11 @@ assert.equal(currentIdentitySafe.sourceWorks, 35_411, 'unexpected public source-
 assert.equal(hardenedTitleBaseline.visibleWorks, 35_346, 'unexpected hardened baseline visible-work count')
 assert.equal(hardenedTitleBaseline.mergedAway, 65, 'unexpected hardened baseline merged-row count')
 assert.equal(hardenedTitleBaseline.multiWorkGroups, 65, 'unexpected hardened baseline merge-group count')
-assert.equal(currentIdentitySafe.visibleWorks, 34_940, 'unexpected identity-safe visible-work count')
-assert.equal(currentIdentitySafe.mergedAway, 471, 'unexpected identity-safe merged-row count')
-assert.equal(currentIdentitySafe.multiWorkGroups, 471, 'unexpected identity-safe merged-group count')
+assert.equal(currentIdentitySafe.visibleWorks, 34_940 - reviewedGroups.length, 'unexpected identity-safe visible-work count')
+assert.equal(currentIdentitySafe.mergedAway, 471 + reviewedGroups.length, 'unexpected identity-safe merged-row count')
+assert.equal(currentIdentitySafe.multiWorkGroups, 471 + reviewedGroups.length, 'unexpected identity-safe merged-group count')
 assert.equal(currentIdentitySafe.largestGroup, 2, 'unexpected identity-safe largest merge group')
-assert.equal(currentIdentitySafe.mergedGroups.length, 471, 'merge-group review list must be complete')
+assert.equal(currentIdentitySafe.mergedGroups.length, 471 + reviewedGroups.length, 'merge-group review list must be complete')
 assert.equal(currentIdentitySafe.ambiguousTitleKeysSkipped, 199, 'unexpected ambiguous title-key count')
 assert.equal(equivalenceGroups.length, 427, 'explicit equivalence-group count drift')
 assert.equal(titleEvidence.length, 5_619, 'title-evidence row count drift')
@@ -442,6 +444,7 @@ for (const group of currentIdentitySafe.mergedGroups) {
 }
 const sameGroup = (left, right) => groupByWorkId.get(String(left))?.has(String(right)) === true
 for (const [left, right] of [
+  ...reviewedGroups.map(group => group.workIds),
   ['25236', '31618'], // Sky Girls 2007 TV
   ['25237', '31619'], // Sky Girls 2006 OVA
   ['17930', '31034'], // Lycoris Recoil: Friends are thieves of time.
@@ -449,6 +452,7 @@ for (const [left, right] of [
   assert.ok(sameGroup(left, right), `validated aliases ${left}/${right} must merge`)
 }
 for (const [left, right] of [
+  ['32072', '32073'], // Single ISBN vs. three-volume series
   ['25237', '31618'], // stale TV-to-OVA crosswalk
   ['17926', '31034'], // stale Lycoris placeholder crosswalk
   ['4142', '4978'], // same-provider partial IDs, generic title 雨眠

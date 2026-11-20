@@ -19,6 +19,11 @@ export default function UpdatesPage() {
         <p>这里记录用户实际能看到的资料与规则变化。</p>
       </section>
       <article className="release-snapshot-note">
+        <div><p className="eyebrow">2026-11-21</p><h2>逐作复核与来源标签</h2></div>
+        <p>作品页现在列出官方资料和社区资料各自支持的等级。部分旧评级仅补核了出处，仍沿用原调查记录。全库复核进行中。</p>
+        <Link className="result-link" href="/rules">查看评级规则</Link>
+      </article>
+      <article className="release-snapshot-note">
         <div>
           <p className="eyebrow">2026-09-03 · 本地预览候选</p>
           <h2>作品资料与警示回到主位</h2>
@@ -32,16 +37,16 @@ export default function UpdatesPage() {
       </article>
       <article className="release-snapshot-note">
         <div>
-          <p className="eyebrow">2026-09-02 · 数据快照</p>
-          <h2>当前数据闭环</h2>
+          <p className="eyebrow">当前目录</p>
+          <h2>目录收录情况</h2>
         </div>
         <p>
           发布 {manifest.counts.catalogWorks.toLocaleString('zh-CN')} 条可检索作品、
           {manifest.counts.ratedWorks.toLocaleString('zh-CN')} 条 S–F 评级和
           {manifest.counts.nonratingTerminalWorks.toLocaleString('zh-CN')} 条显式非评级终态。
-          停止等待额外数据，后续更新采用追加版本。
+
         </p>
-        <Link className="result-link" href="/ratings">查看首发评级</Link>
+        <Link className="result-link" href="/ratings">查看评级分布</Link>
       </article>
     </main>
   )

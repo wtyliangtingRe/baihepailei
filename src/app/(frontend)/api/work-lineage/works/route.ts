@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const result = getPublicWorkList({
       query: request.nextUrl.searchParams.get('q') || '',
+      source: request.nextUrl.searchParams.get('source') || '',
       grade: request.nextUrl.searchParams.get('grade') || '',
       status: request.nextUrl.searchParams.get('status') || '',
       media: request.nextUrl.searchParams.get('media') || '',

@@ -99,6 +99,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
   const hasBasicMetadata = Boolean(
     work.firstPublished || work.creators.length || work.organizations.length,
   )
+  const contentTags = work.publicTags.filter(tag => tag.group !== '评级来源')
   const references = collectWorkReferences(work)
   function referenceMarks(urls: Array<string | undefined>) {
     const numbers = [...new Set(urls.flatMap(url => {
@@ -138,14 +139,6 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
             {mediaLabel(work.media.group, work.media.type)}
           </p>
           <h1>{work.title}</h1>
-          {work.localizedTitles.length || displayAliases.length ? (
-            <p className="release-aliases">
-              又名：{[
-                ...work.localizedTitles.map((title) => title.title),
-                ...displayAliases,
-              ].filter((title, index, values) => title !== work.title && values.indexOf(title) === index).join('、')}
-            </p>
-          ) : null}
           <p className="release-detail-lead">{ratingLead(rating)}</p>
           <div className="release-warning-row" aria-label="评级依据与警示">
             {work.publicTags.map((tag) => (
@@ -174,7 +167,13 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
         </section>
       ) : null}
 
-      <section className="detail-card release-title-alias-card" aria-label="译名与别名">
+      <nav className="work-section-nav" aria-label="作品页目录">
+        <a href="#work-info">作品资料</a>
+        <a href="#work-verdict">查看评级依据</a>
+        <a href="#work-sources">查看来源</a>
+      </nav>
+
+      <section id="work-info" className="detail-card release-title-alias-card" aria-label="译名与别名">
         <p className="eyebrow">名称资料</p>
         <h2>译名与别名</h2>
         {work.localizedTitles.length || displayAliases.length ? (
@@ -276,7 +275,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
         )}
       </section>
 
-      <section className="detail-card release-conclusion-card">
+      <section id="work-verdict" className="detail-card release-conclusion-card">
         <div className="release-section-heading release-section-heading-top">
           <div>
             <p className="eyebrow">排雷结论</p>
@@ -289,14 +288,14 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
           {rating.grade ? gradeSummary(rating.grade) : publicStatusDescriptions[rating.state]}
         </p>
 
-        {work.publicTags.length ? (
+        {contentTags.length ? (
           <section className="release-preference-notices" aria-label="独立设定与内容提示">
             <div>
               <p className="eyebrow">独立设定与内容提示</p>
               <h3>这些提示与核心等级分开阅读</h3>
             </div>
             <div className="release-preference-grid">
-              {work.publicTags.map((tag) => (
+              {contentTags.map((tag) => (
                 <article key={tag.key}>
                   <span>{tag.group}</span>
                   <strong>{tag.label}</strong>
@@ -346,9 +345,14 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
 
         <dl className="release-detail-list release-rating-facts">
           <div><dt>评级状态</dt><dd>{publicStatusLabels[rating.state]}{referenceMarks([rating.evidenceUrl, ...(rating.evidenceSources || []).map((source) => source.url)])}</dd></div>
+          {rating.reviewMethod === 'attribution' ? <div><dt>复核范围</dt><dd>本次补核评级出处，沿用原调查结论。</dd></div> : null}
+          {rating.sourceFindings?.map((finding, index) => (
+            <div key={index}><dt>{finding.kind === 'official' ? '官方来源' : '社区来源'}</dt>
+              <dd>{finding.grade} · {gradeLabel(finding.grade)}{referenceMarks(finding.urls)}</dd></div>
+          ))}
           {rating.grade ? <div><dt>核心等级</dt><dd>{rating.grade} · {gradeLabel(rating.grade)}</dd></div> : null}
           {range ? <div><dt>结论范围</dt><dd>{range}</dd></div> : null}
-          {rating.grade ? <div><dt>资料把握</dt><dd>{confidenceLabel(rating.confidence)}</dd></div> : null}
+          {rating.confidence ? <div><dt>资料把握</dt><dd>{confidenceLabel(rating.confidence)}</dd></div> : null}
           <div><dt>仍需补充</dt><dd>{rating.needsMoreResearch ? '是' : '否'}</dd></div>
         </dl>
 
@@ -363,7 +367,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
         ) : null}
       </section>
 
-      <section className="detail-card release-sources-card">
+      <section id="work-sources" className="detail-card release-sources-card">
         <div className="release-section-heading release-section-heading-top">
           <div>
             <p className="eyebrow">注释与外部入口</p>

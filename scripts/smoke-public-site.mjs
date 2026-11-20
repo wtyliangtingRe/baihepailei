@@ -114,6 +114,7 @@ try {
     assert.equal(new URL(result.headers.get('location'), base).pathname, destination)
   }
 
+  const reviewManifest = JSON.parse(readFileSync('data/public-release/review-20261121/manifest.json', 'utf8'))
   const health = await json('/api/health')
   assert.deepEqual(
     {
@@ -128,11 +129,11 @@ try {
     {
       ok: true,
       catalogWorks: 35_411,
-      visibleWorks: 34_940,
-      mergedAway: 471,
-      mergedGroups: 471,
+      visibleWorks: 34_937,
+      mergedAway: 474,
+      mergedGroups: 474,
       largestMergedGroup: 2,
-      ratedWorks: 4_667,
+      ratedWorks: reviewManifest.ratedSourceRecords,
     },
   )
   assert.equal(health.visibleWorks + health.mergedAway, health.catalogWorks)
@@ -210,6 +211,9 @@ try {
 
   // Evidence-backed cross-provider aliases resolve to one public work from every old Work ID.
   for (const [left, right] of [
+    ['14098', '36929'], // One Ichijinsha anthology in two catalogues
+    ['19062', '38373'], // One Mikanuji short-story collection
+    ['36714', '31964'], // The Gaze of The Eternal Sun, full Steam app
     ['5409', '30268'], // Adachi and Shimamura / 安達としまむら
     ['25236', '31618'], // Sky Girls 2007 TV
     ['25237', '31619'], // Sky Girls 2006 OVA
@@ -232,6 +236,18 @@ try {
     assert.notEqual(leftWork.workId, rightWork.workId, `${left}/${right} should remain separate`)
   }
 
+  const firstVolume = await json('/api/work-lineage/works/32072')
+  const fullSeries = await json('/api/work-lineage/works/32073')
+  assert.notEqual(firstVolume.workId, fullSeries.workId)
+  assert.ok(firstVolume.title.includes('第 1 卷') && fullSeries.title.includes('全 3 卷'))
+  const anthology = await json('/api/work-lineage/works/14098')
+  assert.ok(anthology.creators.some(credit => credit.name === '南方純' && credit.role === '封面绘制'))
+  const eternalSun = await json('/api/work-lineage/works/36714')
+  assert.equal(eternalSun.workId, '31964')
+  assert.equal(eternalSun.media.group, 'visual_novel')
+  assert.ok(eternalSun.organizations.some(credit => credit.name === 'DogMade制作组'))
+  assert.ok(!eternalSun.aliases.includes('null') && !eternalSun.summary.text.includes('null'))
+  assert.ok(!eternalSun.organizations.some(credit => credit.name === 'null'))
   const enrichedDetail = await (await response('/works/w-36946')).text()
   for (const expected of ['岸 虎次郎', '集英社', '2011-03-18', '作品介绍']) {
     assert.ok(enrichedDetail.includes(expected), `enriched detail should include ${expected}`)

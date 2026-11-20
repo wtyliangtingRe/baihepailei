@@ -1,3 +1,4 @@
+import { resolveReview, type SourceFinding, type SourceReview } from './sourceReview'
 import 'server-only'
 
 import { readFileSync } from 'node:fs'
@@ -5,6 +6,7 @@ import { join, resolve } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 import { addPublicMetadata, readPublicMetadata } from '@/lib/publicMetadata'
 import { mergeCredits } from '@/lib/publicDescriptiveMerge'
+import { applyReviewedMetadata, readIdentityReview, type IdentityReview } from '@/lib/publicIdentityReview'
 import { readPublicCreatorGraph, withCreatorIds, type CreatorKind, type PublicCreatorGraph } from '@/lib/publicCreatorGraph'
 
 import { isRadarRatingClass, radarClassDefinitions } from '@/lib/radar/ratingPolicy'
@@ -58,6 +60,9 @@ export type PublicWorkSource = {
 }
 
 export type PublicWorkRating = {
+  reviewMethod?: 'attribution' | 'assessment'
+  decidingSource?: SourceFinding['kind']
+  sourceFindings?: SourceFinding[]
   state: PublicRatingState
   grade?: PublicGrade
   bestGrade?: PublicGrade
@@ -170,7 +175,7 @@ type RatingDetailEnrichment = {
   evidenceSources?: { url: string; kind: 'official' | 'community' }[]
 }
 
-type CatalogEquivalenceGroup = {
+export type CatalogEquivalenceGroup = {
   schemaVersion: 'baihepailei-public-catalog-equivalence-v1'
   groupId: string
   decision: 'merge'
@@ -266,6 +271,7 @@ export type PublicCatalogMergeStats = {
 }
 
 type PublicReleaseCache = {
+  identityReview?: IdentityReview
   creatorGraph?: PublicCreatorGraph
   manifest: PublicReleaseManifest
   enrichmentManifest: PublicEnrichmentManifest
@@ -495,9 +501,13 @@ export function selectMergedRating(records: PublicWorkRecord[]): PublicWorkRatin
   // may describe different facts, so an unrelated URL must not be attached to it.
   const reasonRecord = [...sameGrade]
     .filter((record) => Boolean(record.rating.reasoningSummary))
-    .sort((left, right) => (right.rating.reasoningSummary?.length || 0) - (left.rating.reasoningSummary?.length || 0))[0]
+    .sort((left, right) => Number(right.rating.decidingSource === 'official') - Number(left.rating.decidingSource === 'official') ||
+      Number(Boolean(right.rating.decidingSource)) - Number(Boolean(left.rating.decidingSource)) ||
+      (right.rating.reasoningSummary?.length || 0) - (left.rating.reasoningSummary?.length || 0))[0]
   const evidenceRecord = reasonRecord || (selected.rating.evidenceUrl ? selected : sameGrade.find((record) => record.rating.evidenceUrl))
 
+  const reviewedFindings = [...new Map(records.flatMap(record => record.rating.sourceFindings || [])
+    .map(finding => [JSON.stringify(finding), finding])).values()]
   return {
     ...selected.rating,
     class: selected.rating.class && classes.includes(selected.rating.class)
@@ -505,6 +515,9 @@ export function selectMergedRating(records: PublicWorkRecord[]): PublicWorkRatin
       : classes[0],
     classes,
     reasoningSummary: reasonRecord?.rating.reasoningSummary,
+    reviewMethod: evidenceRecord?.rating.reviewMethod,
+    decidingSource: evidenceRecord?.rating.decidingSource,
+    sourceFindings: reviewedFindings.length ? reviewedFindings : undefined,
     evidenceUrl: evidenceRecord?.rating.evidenceUrl,
     evidenceSources: evidenceRecord?.rating.evidenceSources,
     needsMoreResearch: records.some((record) => record.rating.needsMoreResearch),
@@ -840,6 +853,40 @@ function loadRelease(): PublicReleaseCache {
       detailByWorkId.get(record.workId),
     ),
   )
+  if (!String(process.env.BAIHEPAILEI_RELEASE_DIR || '').trim()) {
+    const reviewDir = join(directory, '..', 'review-20261121')
+    const reviews = parseJsonLines<SourceReview>(readFileSync(join(reviewDir, 'reviews.jsonl'), 'utf8'), 'reviews.jsonl')
+    const indexes = new Map(baseRecords.map((record, index) => [record.workId, index]))
+    const seen = new Set<string>()
+    for (const review of reviews) {
+      const index = indexes.get(review.workId)
+      if (index === undefined || seen.has(review.workId) || !review.siteId || baseRecords[index].identity.siteId !== review.siteId) {
+        throw new Error(`Assessment identity mismatch: ${review.workId}`)
+      }
+      seen.add(review.workId)
+      const work = rawRecords[index]
+      const previous = work.rating
+      const rating = resolveReview(review, previous, PUBLIC_GRADES)
+      if (previous.grade) manifest.gradeCounts[previous.grade]--
+      manifest.gradeCounts[rating.grade!]++
+      manifest.ratingStatusCounts[previous.state]--
+      manifest.ratingStatusCounts.rated++
+      if (previous.state !== 'rated') {
+        if (previous.state === 'not_assessed') manifest.counts.auditedWorks++
+        else manifest.nonratingTerminalBreakdown[previous.state]--
+      }
+      manifest.counts.dUnclearRatings += Number(Boolean(rating.uncertaintyKind)) - Number(Boolean(previous.uncertaintyKind))
+      manifest.counts.ratingsNeedingMoreResearch += Number(Boolean(rating.needsMoreResearch)) - Number(Boolean(previous.needsMoreResearch))
+      work.rating = rating
+      work.publicTags = publicTagsFor(work.publicTags.map(t => t.key), review.findings.flatMap(f => f.classes))
+    }
+    manifest.counts.ratedWorks = manifest.ratingStatusCounts.rated
+    manifest.counts.notAssessedWorks = manifest.ratingStatusCounts.not_assessed
+    manifest.counts.nonratingTerminalWorks = manifest.counts.auditedWorks - manifest.counts.ratedWorks
+    manifest.releaseId = 'baihepailei-reviewed-catalog-20261121'
+    manifest.generatedAt = '2026-11-21T00:00:00+08:00'
+    manifest.invariants.finalDecisionScopePartition = `${manifest.counts.ratedWorks} + ${manifest.counts.nonratingTerminalWorks} = ${manifest.counts.auditedWorks}`
+  }
   const rawByWorkId = new Map(rawRecords.map((record) => [record.workId, record]))
   const titleEvidenceByWorkId = new Map(titleEvidence.map((evidence) => [evidence.workId, evidence]))
 
@@ -861,18 +908,29 @@ function loadRelease(): PublicReleaseCache {
     ? new Map((JSON.parse(gunzipSync(readFileSync(join(directory, manifest.displayIdentityBaseline))).toString('utf8')) as
       Array<{ sourceWorkId: string; primaryWorkId: string }>).map(row => [row.sourceWorkId, row.primaryWorkId]))
     : undefined
+  const identities = new Map(baseRecords.map(record => [record.workId, record.identity.siteId]))
+  const identityReview = readIdentityReview(directory, identities, stablePrimaryByWorkId)
+  for (const group of identityReview?.groups || []) {
+    for (const id of group.workIds) stablePrimaryByWorkId?.set(id, group.primaryWorkId)
+  }
   const merged = deduplicateCatalog(
     rawRecords,
     baseRecords,
     ordinals,
-    equivalenceGroups,
+    [...equivalenceGroups, ...(identityReview?.groups || [])],
     titleEvidenceByWorkId,
     stablePrimaryByWorkId,
   )
-  const metadata = readPublicMetadata(directory, new Map(baseRecords.map(record => [record.workId, record.identity.siteId])))
-  const records = merged.records.map(record => addPublicMetadata(record,
+  const metadata = readPublicMetadata(directory, identities)
+  const records = merged.records.map(record => applyReviewedMetadata(addPublicMetadata(record,
     (merged.memberIdsByPrimary.get(record.workId) || [record.workId]).map(id => metadata.get(id)!),
-  ))
+  ), identityReview))
+  for (const work of records) {
+    if (work.rating.decidingSource) {
+      const key = work.rating.decidingSource === 'official' ? 'source-official' : 'source-community'
+      work.publicTags = publicTagsFor([key, ...work.publicTags.map(tag => tag.key)])
+    }
+  }
   const enhancedByPrimary = new Map(records.map(record => [record.workId, record]))
   const byWorkId = new Map([...merged.byWorkId].map(([id, record]) => [id, enhancedByPrimary.get(record.workId)!]))
   globalThis.__baihepaileiPublicRelease = {
@@ -881,6 +939,7 @@ function loadRelease(): PublicReleaseCache {
     records,
     displayRecords: [...records].sort((left, right) => compareForDisplay(left, right, ordinals)),
     byWorkId,
+    identityReview,
     memberIdsByPrimary: merged.memberIdsByPrimary,
     mergeStats: merged.stats,
   }
@@ -918,7 +977,7 @@ export function getPublicWorkById(workId: string): PublicWorkRecord | null {
 
 function getCreatorGraph(): PublicCreatorGraph {
   const cache = loadRelease()
-  return cache.creatorGraph ||= readPublicCreatorGraph(releaseDirectory(), cache.records)
+  return cache.creatorGraph ||= readPublicCreatorGraph(releaseDirectory(), cache.records, cache.identityReview)
 }
 
 // Descriptive export stays independent of the graph so a refresh can assign new credits.
@@ -953,6 +1012,7 @@ export function getPublicCreatorList(input: { kind: CreatorKind; query?: string;
 
 export function getPublicWorkList(input: {
   query?: string
+  source?: string
   grade?: string
   status?: string
   media?: string
@@ -971,7 +1031,9 @@ export function getPublicWorkList(input: {
   const exactWorkId = query.match(/^(?:work\s*)?(\d+)$/)?.[1]
   const exactRecord = exactWorkId ? cache.byWorkId.get(exactWorkId) : undefined
   const source = exactRecord ? [exactRecord] : cache.displayRecords
+  const decidingSource = input.source === 'official' || input.source === 'community' ? input.source : ''
   const matched = source.filter((record) => {
+    if (decidingSource && record.rating.decidingSource !== decidingSource) return false
     if (grade && record.rating.grade !== grade) return false
     if (status && record.rating.state !== status) return false
     if (media && record.media.group !== media) return false

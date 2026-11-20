@@ -53,12 +53,12 @@ export default function RulesIndexPage() {
         <article>
           <span>低级拦截</span>
           <h2>严重事实不会被高分遮住</h2>
-          <p>命中更低等级事实时，最终核心等级必须下降；同级多个标签可以同时保留。</p>
+          <p>先按原作或官方授权资料预评，再以同一版本的社区记录核验。两边结论一致，标「官方来源」。出现分歧，取证据支持的较低等级，并标出支持该等级的来源。只有社区证据时，标「社区来源」。</p>
         </article>
         <article>
           <span>范围公开</span>
           <h2>未知不等于安全</h2>
-          <p>资料不足时显示范围、低把握或暂未评级，不把未知自动解释成“没有”。</p>
+          <p>可核实的情节按细则判级，同时注明已查到的卷数、路线或结局。尚在复核队列的作品会显示进度。只有完成检索后仍仅有名称的作品，才符合免予评级的条件。</p>
         </article>
       </section>
 
@@ -68,7 +68,7 @@ export default function RulesIndexPage() {
           <h2>D-UNCLEAR 不是现行规则类别。</h2>
         </div>
         <p>
-          当前 {manifest.counts.dUnclearRatings.toLocaleString('zh-CN')} 条资料不足型 D 来自本次发布闭环，
+          当前 {manifest.counts.dUnclearRatings.toLocaleString('zh-CN')} 条资料不足型 D 继承自早期快照，
           页面会把它显示为“具体雷点未确认”。它不在下面 50 条现行细则里，也不声称命中了任何 D 级剧情或设定事实。
         </p>
         <Link className="result-link" href="/works?grade=D">查看页面如何展示</Link>
