@@ -6,8 +6,8 @@
   "files": [
     {
       "file": "groups.jsonl",
-      "rows": 5,
-      "sha256": "cda4e7688f61a05b27665ad0d6b49f9c92664e1d666459dac066608023f54bae"
+      "rows": 7,
+      "sha256": "e4e0ca7b52d0913d9f3b8e8805c6773e0e3581f2d907bab13c3423c36b015068"
     },
     {
       "file": "entities.jsonl",
@@ -30,8 +30,8 @@
     "credits": 3662,
     "creditWorks": 2348,
     "newlyCreditedWorks": 1258,
-    "mergeGroups": 5,
-    "duplicateCreditedWorks": 3,
+    "mergeGroups": 7,
+    "duplicateCreditedWorks": 5,
     "removedEntities": 1
   }
 }

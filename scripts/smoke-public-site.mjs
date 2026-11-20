@@ -129,9 +129,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411,
-      visibleWorks: 34_935,
-      mergedAway: 476,
-      mergedGroups: 476,
+      visibleWorks: 34_933,
+      mergedAway: 478,
+      mergedGroups: 478,
       largestMergedGroup: 2,
       ratedWorks: reviewManifest.ratedSourceRecords,
     },
@@ -218,6 +218,8 @@ try {
     ['36714', '31964'], // The Gaze of The Eternal Sun, full Steam app
     ['36722', '36481'], // No Fap Island, full game rather than its separate demo
     ['36617', '31936'], // Kirakira Monstars, Windows release
+    ['32484', '32572'], // The author renamed the same game in November 2023
+    ['33202', '31879'], // Loren, original game and its Steam storefront
     ['5409', '30268'], // Adachi and Shimamura / 安達としまむら
     ['25236', '31618'], // Sky Girls 2007 TV
     ['25237', '31619'], // Sky Girls 2006 OVA

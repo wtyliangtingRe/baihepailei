@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { reviewedProviderAliases } from '../src/lib/reviewedProviderAliases.cjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const releaseDir = resolve(
@@ -174,13 +175,14 @@ function runMerge({
     else if (union(owner, index)) exactIdentityLinks += 1
   })
 
+  const duplicateSiteIds = reviewedProviderAliases(explicitGroups, records)
   const identityClaimsByRoot = new Map()
   if (protectAllIdentityClaims) {
     records.forEach((record, index) => {
       if (!record.identity.provider || !record.identity.siteId) return
       const root = find(index)
       const claims = identityClaimsByRoot.get(root) || new Map()
-      claims.set(String(record.identity.provider).toLowerCase(), String(record.identity.siteId))
+      claims.set(String(record.identity.provider).toLowerCase(), duplicateSiteIds.get(record.workId) || String(record.identity.siteId))
       identityClaimsByRoot.set(root, claims)
     })
   }
@@ -306,7 +308,7 @@ function runMerge({
       if (record.identity.provider && record.identity.siteId) {
         const provider = String(record.identity.provider).toLowerCase()
         const ids = providerIds.get(provider) || new Set()
-        ids.add(String(record.identity.siteId))
+        ids.add(duplicateSiteIds.get(record.workId) || String(record.identity.siteId))
         providerIds.set(provider, ids)
         if (ids.size > 1) sameProviderConflict = true
       }

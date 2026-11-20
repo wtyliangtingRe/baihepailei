@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 import { addPublicMetadata, readPublicMetadata } from '@/lib/publicMetadata'
 import { mergeCredits } from '@/lib/publicDescriptiveMerge'
+import { reviewedProviderAliases } from './reviewedProviderAliases.cjs'
 import { applyReviewedMetadata, readIdentityReview, type IdentityReview } from '@/lib/publicIdentityReview'
 import { readPublicCreatorGraph, withCreatorIds, type CreatorKind, type PublicCreatorGraph } from '@/lib/publicCreatorGraph'
 
@@ -180,6 +181,7 @@ export type CatalogEquivalenceGroup = {
   groupId: string
   decision: 'merge'
   workIds: string[]
+  providerDuplicate?: { provider: string; siteIds: Record<string, string> }
   resolvedMedia?: {
     group: PublicMediaGroup
     type: string
@@ -660,13 +662,14 @@ function deduplicateCatalog(
       .map(([key]) => key),
   )
 
+  const duplicateSiteIds = reviewedProviderAliases(equivalenceGroups, baseRecords)
   const identityClaimsByRoot = new Map<number, Map<string, string>>()
   records.forEach((_, index) => {
     const base = baseRecords[index]
     if (!base.identity.provider || !base.identity.siteId) return
     const root = find(index)
     const claims = identityClaimsByRoot.get(root) || new Map<string, string>()
-    claims.set(base.identity.provider.toLowerCase(), base.identity.siteId)
+    claims.set(base.identity.provider.toLowerCase(), duplicateSiteIds.get(base.workId) || base.identity.siteId)
     identityClaimsByRoot.set(root, claims)
   })
 
