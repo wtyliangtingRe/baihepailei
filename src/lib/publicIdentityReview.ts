@@ -85,7 +85,9 @@ export function readIdentityReview(directory: string, identities: Map<string, st
         legacyBindings.has(row.workId)) throw new Error(`Invalid legacy catalog edition: ${row.workId}`)
     const edition = row.printEdition
     if (edition && (!/^97[89]\d{10}$/.test(edition.isbn) || !edition.title ||
-        edition.url !== `https://www.books.or.jp/book-details/${edition.isbn}` ||
+        (edition.url !== `https://www.books.or.jp/book-details/${edition.isbn}` &&
+          !(edition.publisher === '一迅社' && edition.isbn.startsWith('97847580') &&
+            edition.url === `https://data.ichijinsha.co.jp/detail/${edition.isbn.slice(4, 12)}`)) ||
         (edition.publisherId && !edition.publisher))) throw new Error(`Invalid print edition: ${row.workId}`)
     legacyBindings.set(row.workId, row)
   }

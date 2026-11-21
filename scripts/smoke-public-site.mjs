@@ -129,9 +129,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411,
-      visibleWorks: 34_811,
-      mergedAway: 600,
-      mergedGroups: 587,
+      visibleWorks: 34_804,
+      mergedAway: 607,
+      mergedGroups: 593,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords,
     },
@@ -141,6 +141,12 @@ try {
   const ratedCatalog = await json('/api/work-lineage/works?status=rated&limit=1')
   assert.equal(health.ratedVisibleWorks, ratedCatalog.total)
 
+  const originalCitrus = await json('/api/work-lineage/works/4402')
+  const sequelCitrus = await json('/api/work-lineage/works/36758')
+  assert.notEqual(originalCitrus.workId, sequelCitrus.workId)
+  assert.ok(originalCitrus.printEditions.some(edition => edition.isbn === '9784758072649'))
+  const citrusFourth = await json('/api/work-lineage/works/4621')
+  assert.ok(citrusFourth.printEditions.some(edition => edition.url === 'https://data.ichijinsha.co.jp/detail/75807448'))
   const madokaAnthology = await json('/api/work-lineage/works/3798')
   assert.ok(madokaAnthology.printEditions.some(edition => edition.isbn === '9784832240643' && edition.onSale === '2011-09-12'))
   assert.ok(madokaAnthology.organizations.some(credit => credit.creatorId === '1002004' && credit.name === '芳文社'))
