@@ -62,10 +62,10 @@ const publicationPrecisionLabels: Record<string, string> = {
 }
 
 function localizedTitleLabel(language?: string, region?: string, kind?: string): string {
-  const languageLabel = language ? languageLabels[language] || language : '其他名称'
-  const regionalLabel = region ? `${languageLabel}（${region}）` : languageLabel
+  const languageLabel = language ? languageLabels[language] || language : ''
+  const regionalLabel = [languageLabel, region && `（${region}）`].filter(Boolean).join('')
   const kindLabel = kind ? localizedTitleKindLabels[kind] || kind : ''
-  return kindLabel ? `${regionalLabel} · ${kindLabel}` : regionalLabel
+  return [regionalLabel, kindLabel].filter(Boolean).join(' · ') || '其他名称'
 }
 
 export async function generateMetadata(

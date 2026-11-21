@@ -62,6 +62,11 @@ if (currentReview) {
       const rows = credit.creditKind === 'person' ? work.creators : work.organizations
       assert.ok(rows.some(row => row.creatorId === credit.creatorId && row.role === credit.role &&
         row.sourceUrls.includes(credit.sourceUrl || correction.url)), `Missing edition credit: ${work.workId} ${credit.name}`)
+      if (credit.replacesCatalogRole) {
+        assert.ok(!rows.some(row => row.creatorId === credit.creatorId && row.role === credit.replacesCatalogRole))
+        const updated = rows.find(row => row.creatorId === credit.creatorId && row.role === credit.role)
+        assert.ok(updated.sourceUrls.some(url => /^https:\/\/bgm\.tv\/subject\/\d+\/persons$/.test(url)))
+      }
     }
   }
 }
@@ -119,5 +124,5 @@ assert.equal(creditedWorks, manifest.counts.creditedWorks + reviewCounts.newlyCr
   bookCounts.newlyCreditedWorks + staffCounts.newlyCreditedWorks + (reviewCounts.historicalPrintNewlyCreditedWorks || 0))
 if (currentReview) assert.equal(release.getPublicCreatorById('1010974'), null, 'Retired null Steam organization')
 console.log(JSON.stringify({ creators: entities.length + extraEntities.length - reviewCounts.removedEntities, publicWorks: records.length,
-  creditedWorks, supplementaryCredits: reviewCounts.credits + bookCounts.credits + staffCounts.credits + (reviewCounts.historicalPrintPublisherCredits || 0), linkedCredits, relatedWorks, references,
+  creditedWorks, supplementaryCredits: reviewCounts.credits + bookCounts.credits + staffCounts.credits + (reviewCounts.historicalPrintPublisherCredits || 0) - (reviewCounts.publicationRoleReplacements || 0), linkedCredits, relatedWorks, references,
   uniqueIds: true, originalCreditsPreserved: true, existingLinksPreserved: true, publicWorkIdsOnly: true, status: 'PASS' }, null, 2))

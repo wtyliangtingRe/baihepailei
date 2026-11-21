@@ -129,9 +129,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411,
-      visibleWorks: 34_817,
-      mergedAway: 594,
-      mergedGroups: 581,
+      visibleWorks: 34_816,
+      mergedAway: 595,
+      mergedGroups: 582,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords,
     },

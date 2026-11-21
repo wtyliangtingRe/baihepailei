@@ -22,7 +22,7 @@ type BangumiCorrection = Pick<RecoveredBangumiWork, 'workId' | 'siteId' | 'catal
     printEdition?: NonNullable<PublicWorkRecord['printEditions']>[number] & { publisherId?: string }
     previous?: PublicWorkRecord['media']['group']
   }
-type EditionCredit = Pick<CreditEdge, 'creatorId' | 'creditKind' | 'name' | 'role'> & { sourceUrl?: string }
+type EditionCredit = Pick<CreditEdge, 'creatorId' | 'creditKind' | 'name' | 'role'> & { sourceUrl?: string; replacesCatalogRole?: string }
 type Correction = {
   catalogTitle?: string
   media?: PublicWorkRecord['media']
@@ -137,8 +137,8 @@ export function readIdentityReview(directory: string, identities: Map<string, st
       throw new Error(`Unbound publisher credit: ${fix.workId}`)
     }
     const edges = creditsByWork.get(fix.workId) || []
-    for (const { sourceUrl, ...credit } of credits) {
-      edges.push({ ...credit, workId: fix.workId, displayName: credit.name,
+    for (const { creatorId, creditKind, name, role, sourceUrl } of credits) {
+      edges.push({ creatorId, creditKind, name, role, workId: fix.workId, displayName: name,
         bindingBasis: edition ? 'publisher_edition' : 'publisher_release', sourceUrls: [sourceUrl || fix.url] })
     }
     creditsByWork.set(fix.workId, edges)
@@ -169,7 +169,11 @@ export function applyBangumiMetadata(work: PublicWorkRecord, row: BangumiCorrect
   const clean = (name: string) => !/[\u0080-\u009f\ufffd]/u.test(name)
   const localizedTitles = work.localizedTitles.filter(item => clean(item.title))
   const translated = row.title && row.title !== row.originalTitle ? [{ title: row.title, kind: 'localized' as const }] : []
-  const original = row.originalTitle ? [{ title: row.originalTitle, kind: 'original' as const }] : []
+  const originalName = row.originalTitle
+  const knownLanguage = localizedTitles.find(item => item.title === originalName && item.language)?.language
+  const scriptLanguage = /[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(originalName || '') ? 'ja' :
+    /\p{Script=Hangul}/u.test(originalName || '') ? 'ko' : undefined
+  const original = originalName ? [{ title: originalName, language: knownLanguage || scriptLanguage, kind: 'original' as const }] : []
   const aliases = row.title && row.originalTitle ? [work.title, row.title, row.originalTitle] : []
   const media = row.media || work.media
   let summary = work.summary

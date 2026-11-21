@@ -125,6 +125,16 @@ export function addCatalogStaff(directory: string, identities: Map<string, strin
     const sourceUrls = [`https://bgm.tv/subject/${row.subject}/persons`, `https://bgm.tv/person/${row.person}`]
     if (registry) sourceUrls.push(registry)
     const links = review.creditsByWork.get(workId) || []
+    const roster = review.corrections.get(workId)?.edition?.credits
+    const published = roster?.find(credit => credit.creatorId === row.creatorId && credit.creditKind === row.kind &&
+      (credit.role === row.role || credit.replacesCatalogRole === row.role))
+    if (published) {
+      const edge = links.find(item => item.bindingBasis === 'publisher_edition' &&
+        item.creatorId === published.creatorId && item.role === published.role)
+      if (!edge) throw new Error(`Missing edition roster credit for ${workId}`)
+      edge.sourceUrls = [...new Set([...edge.sourceUrls, ...sourceUrls])]
+      continue
+    }
     links.push({ workId, creatorId: row.creatorId, creditKind: row.kind, name: row.name, displayName: row.name,
       role: row.role, bindingBasis: 'bangumi_staff', sourceUrls })
     review.creditsByWork.set(workId, links)
