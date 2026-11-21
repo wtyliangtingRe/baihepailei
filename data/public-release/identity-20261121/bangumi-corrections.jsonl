@@ -107,7 +107,7 @@
 {"workId":"31146","siteId":"catalog-bangumi-592691","previous":"novel","media":{"group":"visual_novel","type":"visual_novel","format":"视觉小说"},"url":"https://bgm.tv/subject/592691","catalogTitle":"米玛与妮娜的巧克力工坊"}
 {"workId":"31147","siteId":"catalog-bangumi-334085","previous":"novel","media":{"group":"visual_novel","type":"visual_novel","format":"视觉小说"},"url":"https://bgm.tv/subject/334085","catalogTitle":"糸の由来"}
 {"workId":"31149","siteId":"catalog-bangumi-303165","previous":"novel","media":{"group":"visual_novel","type":"visual_novel","format":"视觉小说"},"url":"https://bgm.tv/subject/303165","catalogTitle":"秘封碎片"}
-{"workId":"31150","siteId":"catalog-bangumi-570331","previous":"novel","media":{"group":"other","type":"other","format":"软件"},"url":"https://bgm.tv/subject/570331","catalogTitle":"秘密爱情"}
+{"workId":"31150","siteId":"catalog-bangumi-570331","previous":"novel","media":{"group":"other","type":"other","format":"聊天式视觉小说平台"},"url":"https://bgm.tv/subject/570331","catalogTitle":"秘密爱情","editionSource":"https://play.google.com/store/apps/details?id=com.bookpalcomics.secretlove","editionSourceLabel":"Bookpalcomics · 应用介绍"}
 {"workId":"31153","siteId":"catalog-bangumi-329490","previous":"novel","media":{"group":"visual_novel","type":"visual_novel","format":"视觉小说"},"url":"https://bgm.tv/subject/329490","catalogTitle":"秘密舞会"}
 {"workId":"31165","siteId":"catalog-bangumi-584695","previous":"novel","media":{"group":"visual_novel","type":"visual_novel","format":"视觉小说"},"url":"https://bgm.tv/subject/584695","catalogTitle":"明日もあなたは居るはずだから"}
 {"workId":"31198","siteId":"catalog-bangumi-633865","previous":"novel","media":{"group":"visual_novel","type":"visual_novel","format":"视觉小说"},"url":"https://bgm.tv/subject/633865","catalogTitle":"魔法少女准则"}
@@ -283,6 +283,7 @@
 {"workId":"32139","siteId":"catalog-bangumi-208415","previous":"novel","media":{"group":"game","type":"game","format":"电子游戏"},"url":"https://bgm.tv/subject/208415","catalogTitle":"BanG Dream! 少女乐团派对!"}
 {"workId":"32153","siteId":"catalog-bangumi-619490","previous":"novel","media":{"group":"visual_novel","type":"visual_novel","format":"视觉小说"},"url":"https://bgm.tv/subject/619490","catalogTitle":"Be Not Afraid: Threads Of Light"}
 {"workId":"32155","siteId":"catalog-bangumi-258455","previous":"novel","media":{"group":"visual_novel","type":"visual_novel","format":"视觉小说"},"url":"https://bgm.tv/subject/258455","catalogTitle":"Blossoms Bloom Brightest"}
+{"workId":"32159","siteId":"catalog-bangumi-109534","previous":"anime","catalogTitle":"BREETSCHLAG","url":"https://bgm.tv/subject/109534","media":{"group":"other","type":"other","format":"跨媒体角色企划"},"editionSource":"https://www.dogakobo.com/project/pdf/PR_20140729_01.pdf","editionSourceLabel":"动画工房与 pixiv · 企划公告"}
 {"workId":"32160","siteId":"catalog-bangumi-624184","previous":"novel","media":{"group":"visual_novel","type":"visual_novel","format":"视觉小说"},"url":"https://bgm.tv/subject/624184","catalogTitle":"bygone snow"}
 {"workId":"32164","siteId":"catalog-bangumi-647138","previous":"novel","media":{"group":"visual_novel","type":"visual_novel","format":"视觉小说"},"url":"https://bgm.tv/subject/647138","catalogTitle":"chirk"}
 {"workId":"32165","siteId":"catalog-bangumi-560944","previous":"novel","media":{"group":"visual_novel","type":"visual_novel","format":"视觉小说"},"url":"https://bgm.tv/subject/560944","catalogTitle":"Chloe"}
