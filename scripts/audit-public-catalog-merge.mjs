@@ -149,6 +149,7 @@ function runMerge({
   explicitGroups = [],
   protectAllIdentityClaims = false,
   recovered = new Map(),
+  reviewedMedia = new Map(),
 }) {
   const records = sourceRecords.map(record => {
     const row = recovered.get(record.workId)
@@ -307,7 +308,12 @@ function runMerge({
 
     const members = indices.map((index) => {
       const record = records[index]
-      const effectiveMedia = componentResolvedMedia || record.media
+      const editionMedia = reviewedMedia.get(record.workId)
+      if (editionMedia && componentResolvedMedia) {
+        assert.equal(mediaMergeBucket(editionMedia.group), mediaMergeBucket(componentResolvedMedia.group),
+          `reviewed edition and equivalence group disagree on media for ${record.workId}`)
+      }
+      const effectiveMedia = editionMedia || componentResolvedMedia || record.media
       if (effectiveMedia.group !== 'unknown' && effectiveMedia.group !== 'other') {
         knownMedia.add(mediaMergeBucket(effectiveMedia.group))
       }
@@ -328,6 +334,7 @@ function runMerge({
         media: record.media.group,
         mediaType: record.media.type,
         resolvedMedia: componentResolvedMedia || null,
+        ...(editionMedia && { reviewedMedia: editionMedia }),
         identityState: record.identity.state || null,
         provider: record.identity.provider || null,
         siteId: record.identity.siteId || null,
@@ -409,8 +416,23 @@ const releasedTitleMatches = recovered.size ? 28 : 0
 const reviewedMergedRows = reviewedGroups.reduce((count, group) => count + group.workIds.length - 1, 0)
 const largestReviewedGroup = Math.max(2, ...reviewedGroups.map(group => group.workIds.length))
 if (recovered.size) assert.equal(recovered.size, 531)
+const reviewedMedia = new Map()
+if (recovered.size) {
+  const rawById = new Map(sourceRecords.map(record => [record.workId, record]))
+  const corrections = readFileSync(join(releaseDir, '..', 'identity-20261121', 'bangumi-corrections.jsonl'), 'utf8')
+    .trimEnd().split('\n').map(JSON.parse)
+  for (const row of corrections) {
+    if (!row.media) continue
+    const raw = rawById.get(row.workId)
+    assert.equal(raw?.title, row.catalogTitle, `media correction title drift: ${row.workId}`)
+    assert.equal(raw.identity.siteId, row.siteId, `media correction edition drift: ${row.workId}`)
+    if (row.previous) assert.equal(raw.media.group, row.previous, `previous media changed for ${row.workId}`)
+    reviewedMedia.set(row.workId, row.media)
+  }
+}
 const currentIdentitySafe = runMerge({
   recovered,
+  reviewedMedia,
   normalizeTitle: normalizeIdentitySafeTitle,
   rejectAmbiguousTitleKeys: true,
   includeMergedGroups: true,
@@ -471,6 +493,10 @@ for (const [left, right] of [
 }
 for (const [left, right] of [
   ['32072', '32073'], // Single ISBN vs. three-volume series
+  ['5410', '5411'], // Iruma's original novel and Mani's adaptation
+  ['5410', '5412'], // Iruma's original novel and Yuzuhara's adaptation
+  ['5411', '5412'], // Separate manga adaptations in different magazines
+  ['26200', '26201'], // Tadokoro-san web original and commercial redraw
   ['25237', '31618'], // stale TV-to-OVA crosswalk
   ['17926', '31034'], // stale Lycoris placeholder crosswalk
   ['4142', '4978'], // same-provider partial IDs, generic title 雨眠

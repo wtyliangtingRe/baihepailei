@@ -19,6 +19,7 @@ export type RecoveredBangumiWork = {
 }
 type BangumiCorrection = Pick<RecoveredBangumiWork, 'workId' | 'siteId' | 'catalogTitle' | 'url'> &
   Partial<Pick<RecoveredBangumiWork, 'title' | 'originalTitle' | 'media' | 'editionSource'>> & {
+    editionSourceLabel?: string
     printEdition?: NonNullable<PublicWorkRecord['printEditions']>[number] & { publisherId?: string }
     previous?: PublicWorkRecord['media']['group']
   }
@@ -163,11 +164,12 @@ export function addPrintPublisherCredits(review: NonNullable<IdentityReview>, wo
 }
 
 export function applyBangumiMetadata(work: PublicWorkRecord, row: BangumiCorrection): PublicWorkRecord {
-  if (row.previous && work.media.group !== row.previous) throw new Error(`Previous media changed for ${row.workId}`)
   const edition = row.printEdition
   const title = row.title && work.workId === row.workId ? row.title : work.title
   const clean = (name: string) => !/[\u0080-\u009f\ufffd]/u.test(name)
-  const localizedTitles = work.localizedTitles.filter(item => clean(item.title))
+  const localizedTitles = work.localizedTitles.filter(item => clean(item.title)).map(item =>
+    row.originalTitle && row.originalTitle !== row.catalogTitle && item.title === row.catalogTitle && item.kind === 'original'
+      ? { ...item, kind: 'alias' as const } : item)
   const translated = row.title && row.title !== row.originalTitle ? [{ title: row.title, kind: 'localized' as const }] : []
   const originalName = row.originalTitle
   const knownLanguage = localizedTitles.find(item => item.title === originalName && item.language)?.language
@@ -193,7 +195,8 @@ export function applyBangumiMetadata(work: PublicWorkRecord, row: BangumiCorrect
     localizedTitles: mergeLocalizedTitles([...localizedTitles, ...original, ...translated]),
     sources: mergeSources([...work.sources, { title: 'Bangumi 作品条目', url: row.url },
       ...(edition ? [{ title: `出版书目 · ISBN ${edition.isbn}`, url: edition.url, tier: 'official' as const }] : []),
-      ...(row.editionSource ? [{ title: row.editionSource.startsWith('https://ndlsearch.ndl.go.jp/') ? '国立国会图书馆书目' : '出版社书目', url: row.editionSource }] : [])]),
+      ...(row.editionSource ? [{ title: row.editionSourceLabel ||
+        (row.editionSource.startsWith('https://ndlsearch.ndl.go.jp/') ? '国立国会图书馆书目' : '出版社书目'), url: row.editionSource }] : [])]),
     catalogIdentifiers: [...(work.catalogIdentifiers || []).filter(item => item.siteId !== row.siteId),
       { provider: 'bangumi-subject', siteId: row.siteId, url: row.url }],
   }

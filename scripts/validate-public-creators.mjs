@@ -35,6 +35,8 @@ const bookCounts = currentReview ? JSON.parse(readFileSync(join(bibliographyRoot
   : { entities: 0, credits: 0, newlyCreditedWorks: 0 }
 const staffCounts = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'staff-manifest.json'), 'utf8'))
   : { entities: 0, credits: 0, newlyCreditedWorks: 0 }
+const licensedAnimation = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'licensed-animation-credits.json'), 'utf8'))
+  : { credits: [], newlyCreditedWorks: 0 }
 if (currentReview) {
   const bookEntities = gunzipSync(readFileSync(join(bibliographyRoot, 'book-entities.jsonl.gz'))).toString('utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
   assert.equal(bookEntities.length, bookCounts.entities)
@@ -121,8 +123,8 @@ assert.equal(release.getPublicCreatorById('not-an-id'), null)
 assert.equal(release.getPublicCreatorById(String(manifest.nextId)), null)
 const creditedWorks = records.filter(work => work.creators.length || work.organizations.length).length
 assert.equal(creditedWorks, manifest.counts.creditedWorks + reviewCounts.newlyCreditedWorks - reviewCounts.duplicateCreditedWorks +
-  bookCounts.newlyCreditedWorks + staffCounts.newlyCreditedWorks + (reviewCounts.historicalPrintNewlyCreditedWorks || 0))
+  bookCounts.newlyCreditedWorks + staffCounts.newlyCreditedWorks + licensedAnimation.newlyCreditedWorks + (reviewCounts.historicalPrintNewlyCreditedWorks || 0))
 if (currentReview) assert.equal(release.getPublicCreatorById('1010974'), null, 'Retired null Steam organization')
 console.log(JSON.stringify({ creators: entities.length + extraEntities.length - reviewCounts.removedEntities, publicWorks: records.length,
-  creditedWorks, supplementaryCredits: reviewCounts.credits + bookCounts.credits + staffCounts.credits + (reviewCounts.historicalPrintPublisherCredits || 0) - (reviewCounts.publicationRoleReplacements || 0), linkedCredits, relatedWorks, references,
+  creditedWorks, supplementaryCredits: reviewCounts.credits + bookCounts.credits + staffCounts.credits + licensedAnimation.credits.length + (reviewCounts.historicalPrintPublisherCredits || 0) - (reviewCounts.publicationRoleReplacements || 0), linkedCredits, relatedWorks, references,
   uniqueIds: true, originalCreditsPreserved: true, existingLinksPreserved: true, publicWorkIdsOnly: true, status: 'PASS' }, null, 2))

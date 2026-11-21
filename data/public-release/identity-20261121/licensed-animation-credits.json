@@ -1,0 +1,155 @@
+{
+  "newlyCreditedWorks": 0,
+  "credits": [
+    {
+      "sourceWorkId": "5817",
+      "siteId": "catalog-anilist-19429",
+      "creatorId": "1017083",
+      "kind": "person",
+      "name": "横谷昌宏",
+      "role": "剧本",
+      "programUrl": "https://www.b-ch.com/titles/4085/",
+      "productionUrl": "https://bs.tbs.co.jp/anime/akumanoridoru/"
+    },
+    {
+      "sourceWorkId": "5817",
+      "siteId": "catalog-anilist-19429",
+      "creatorId": "815000001148",
+      "kind": "person",
+      "name": "藤咲あゆな",
+      "role": "剧本",
+      "programUrl": "https://www.b-ch.com/titles/4085/",
+      "productionUrl": "https://bs.tbs.co.jp/anime/akumanoridoru/"
+    },
+    {
+      "sourceWorkId": "5817",
+      "siteId": "catalog-anilist-19429",
+      "creatorId": "1007991",
+      "kind": "person",
+      "name": "高河ゆん",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/4085/",
+      "productionUrl": "https://bs.tbs.co.jp/anime/akumanoridoru/"
+    },
+    {
+      "sourceWorkId": "7217",
+      "siteId": "catalog-anilist-21462",
+      "creatorId": "1013746",
+      "kind": "organization",
+      "name": "東映アニメーション",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/5173/",
+      "productionUrl": "https://sailormoon-official.com/information/crystal3_129.php"
+    },
+    {
+      "sourceWorkId": "7217",
+      "siteId": "catalog-anilist-21462",
+      "creatorId": "90002634293",
+      "kind": "person",
+      "name": "今 千秋",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/5173/",
+      "productionUrl": "https://sailormoon-official.com/information/crystal3_129.php"
+    },
+    {
+      "sourceWorkId": "7217",
+      "siteId": "catalog-anilist-21462",
+      "creatorId": "1016229",
+      "kind": "person",
+      "name": "小林雄次",
+      "role": "系列构成",
+      "programUrl": "https://www.b-ch.com/titles/5173/",
+      "productionUrl": "https://sailormoon-official.com/information/crystal3_129.php"
+    },
+    {
+      "sourceWorkId": "8628",
+      "siteId": "catalog-anilist-99131",
+      "creatorId": "1018521",
+      "kind": "person",
+      "name": "齊藤佳子",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/5999/",
+      "productionUrl": "https://www.bs11.jp/anime/comic-girls/"
+    },
+    {
+      "sourceWorkId": "8628",
+      "siteId": "catalog-anilist-99131",
+      "creatorId": "1016563",
+      "kind": "person",
+      "name": "待田堂子",
+      "role": "剧本",
+      "programUrl": "https://www.b-ch.com/titles/5999/",
+      "productionUrl": "https://www.bs11.jp/anime/comic-girls/"
+    },
+    {
+      "sourceWorkId": "8628",
+      "siteId": "catalog-anilist-99131",
+      "creatorId": "1017073",
+      "kind": "person",
+      "name": "横手美智子",
+      "role": "剧本",
+      "programUrl": "https://www.b-ch.com/titles/5999/",
+      "productionUrl": "https://www.bs11.jp/anime/comic-girls/"
+    },
+    {
+      "sourceWorkId": "8628",
+      "siteId": "catalog-anilist-99131",
+      "creatorId": "1017813",
+      "kind": "person",
+      "name": "花田十輝",
+      "role": "剧本",
+      "programUrl": "https://www.b-ch.com/titles/5999/",
+      "productionUrl": "https://www.bs11.jp/anime/comic-girls/"
+    },
+    {
+      "sourceWorkId": "9142",
+      "siteId": "catalog-anilist-1535",
+      "creatorId": "90000313703",
+      "kind": "person",
+      "name": "小畑 健",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/4369/",
+      "productionUrl": "https://madhouse.co.jp/works/tv_deathnote/"
+    },
+    {
+      "sourceWorkId": "9142",
+      "siteId": "catalog-anilist-1535",
+      "creatorId": "90000558858",
+      "kind": "person",
+      "name": "大場つぐみ",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/4369/",
+      "productionUrl": "https://madhouse.co.jp/works/tv_deathnote/"
+    },
+    {
+      "sourceWorkId": "11399",
+      "siteId": "catalog-anilist-14131",
+      "creatorId": "1012952",
+      "kind": "organization",
+      "name": "アクタス",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/3463/",
+      "productionUrl": "https://girls-und-panzer.jp/staff-tv/"
+    },
+    {
+      "sourceWorkId": "11929",
+      "siteId": "catalog-anilist-121",
+      "creatorId": "90000230962",
+      "kind": "person",
+      "name": "荒川 弘",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/215/",
+      "productionUrl": "https://www.bones.co.jp/work/hagaren/"
+    },
+    {
+      "sourceWorkId": "11932",
+      "siteId": "catalog-anilist-5114",
+      "creatorId": "90000230962",
+      "kind": "person",
+      "name": "荒川 弘",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/2887/",
+      "productionUrl": "https://www.bones.co.jp/work/fullmetal-alchemist/"
+    }
+  ]
+}

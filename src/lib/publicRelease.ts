@@ -866,6 +866,9 @@ function loadRelease(): PublicReleaseCache {
   const effectiveBase = baseRecords.map(record => {
     const correction = identityReview?.bangumiCorrections.get(record.workId)
     if (correction && record.title !== correction.catalogTitle) throw new Error(`Catalog title changed for ${record.workId}`)
+    if (correction?.previous && (mediaByWorkId.get(record.workId)?.group ?? 'unknown') !== correction.previous) {
+      throw new Error(`Previous media changed for ${record.workId}`)
+    }
     const row = recovered?.get(record.workId)
     if (!row) return record
     if (record.title !== row.catalogTitle || record.identity.siteId || record.identity.state !== 'repair_required') {

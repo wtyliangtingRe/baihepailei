@@ -101,6 +101,11 @@ type CatalogStaff = Pick<BookCredit, 'sourceWorkId' | 'siteId' | 'creatorId' | '
   registryUrl?: string
 }
 
+type AnimationCredit = Pick<BookCredit, 'sourceWorkId' | 'siteId' | 'creatorId' | 'kind' | 'name' | 'role'> & {
+  programUrl: string
+  productionUrl: string
+}
+
 export function addCatalogStaff(directory: string, identities: Map<string, string | null | undefined>,
   works: Map<string, { workId: string }>, review: NonNullable<IdentityReview>) {
   const root = join(directory, '..', 'identity-20261121')
@@ -137,6 +142,26 @@ export function addCatalogStaff(directory: string, identities: Map<string, strin
     }
     links.push({ workId, creatorId: row.creatorId, creditKind: row.kind, name: row.name, displayName: row.name,
       role: row.role, bindingBasis: 'bangumi_staff', sourceUrls })
+    review.creditsByWork.set(workId, links)
+  }
+  const licensedEditions: { credits: AnimationCredit[] } = JSON.parse(readFileSync(join(root, 'licensed-animation-credits.json'), 'utf8'))
+  for (const row of licensedEditions.credits) {
+    const workId = works.get(row.sourceWorkId)?.workId
+    const production = new URL(row.productionUrl)
+    if (!workId || identities.get(row.sourceWorkId) !== row.siteId || !/^(?:catalog-anilist-|ANILIST-)[1-9]\d*$/.test(row.siteId) ||
+        !/^https:\/\/www\.b-ch\.com\/titles\/[1-9]\d*\/$/.test(row.programUrl) ||
+        production.protocol !== 'https:' || production.hostname === 'www.b-ch.com') {
+      throw new Error(`Unbound licensed animation credit for ${row.sourceWorkId}`)
+    }
+    const links = review.creditsByWork.get(workId) || []
+    const sourceUrls = [row.programUrl, row.productionUrl]
+    const existing = links.find(item => item.creatorId === row.creatorId && item.creditKind === row.kind && item.role === row.role)
+    if (existing) {
+      existing.sourceUrls = [...new Set([...existing.sourceUrls, ...sourceUrls])]
+    } else {
+      links.push({ workId, creatorId: row.creatorId, creditKind: row.kind, name: row.name, displayName: row.name,
+        role: row.role, bindingBasis: 'licensed_animation_edition', sourceUrls })
+    }
     review.creditsByWork.set(workId, links)
   }
 }

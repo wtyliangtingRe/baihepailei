@@ -129,9 +129,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411,
-      visibleWorks: 34_816,
-      mergedAway: 595,
-      mergedGroups: 582,
+      visibleWorks: 34_811,
+      mergedAway: 600,
+      mergedGroups: 587,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords,
     },
@@ -182,7 +182,9 @@ try {
   }
 
   const taggedWork = await json('/api/work-lineage/works/18556')
-  assert.equal(taggedWork.rating.grade, 'D')
+  assert.equal(taggedWork.rating.grade, 'E')
+  assert.equal(taggedWork.rating.class, 'E-MALE-INTIMACY')
+  assert.equal(taggedWork.rating.decidingSource, 'official')
   assert.ok(taggedWork.publicTags.some((tag) => tag.key === 'setting-otokonoko-crossdressing'))
   assert.equal('identity' in taggedWork, false)
   assert.equal('ordinal' in taggedWork, false)
@@ -269,6 +271,12 @@ try {
     ['32703', '29863'], // Tenth-anniversary OVA
     ['33202', '31879'], // Loren, original game and its Steam storefront
     ['5409', '30268'], // Adachi and Shimamura / 安達としまむら
+    ['5411', '30267'], // Mani's Gangan Online adaptation
+    ['5412', '30265'], // Moke Yuzuhara's Dengeki Daioh adaptation
+    ['24940', '31464'], // Kuu's Gangan Joker serialization
+    ['26201', '31620'], // Tadokoro-san in Comic Valkyrie
+    ['18664', '31953'], // Horoda's Manga Time Kirara Carat series
+    ['33424', '31670'], // Studio 3.14's 2012 Windows release
     ['25236', '31618'], // Sky Girls 2007 TV
     ['25237', '31619'], // Sky Girls 2006 OVA
     ['17930', '31034'], // Lycoris Recoil WEB shorts
@@ -281,6 +289,9 @@ try {
   // Stale crosswalks and same-provider partial identities stay separate.
   for (const [left, right] of [
     ['33116', '33117'], // Light novel and manga adaptation
+    ['5411', '5412'], // Two manga adaptations with different artists
+    ['26200', '26201'], // Original webcomic and commercial redraw
+    ['31170', '18695'], // Three-story selection and its eponymous early serial
     ['32671', '32674'], // Madoka's two theatrical editions
     ['32740', '32659'], // First printed volume and serial
     ['25237', '31618'],
