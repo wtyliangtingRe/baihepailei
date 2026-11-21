@@ -129,9 +129,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411,
-      visibleWorks: 34_674,
-      mergedAway: 737,
-      mergedGroups: 713,
+      visibleWorks: 34_672,
+      mergedAway: 739,
+      mergedGroups: 715,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords,
     },
@@ -141,6 +141,26 @@ try {
   assert.ok(health.reviewedVisibleWorks > 0 && health.reviewedVisibleWorks <= health.ratedVisibleWorks)
   const ratedCatalog = await json('/api/work-lineage/works?status=rated&limit=1')
   assert.equal(health.ratedVisibleWorks, ratedCatalog.total)
+
+  const [doujin, reissuedDoujin, collection, indexedCollection] = await Promise.all(
+    ['6751', '39003', '6752', '38241'].map(id => json('/api/work-lineage/works/' + id)),
+  )
+  assert.equal(doujin.workId, reissuedDoujin.workId)
+  assert.equal(collection.workId, indexedCollection.workId)
+  assert.notEqual(doujin.workId, collection.workId)
+  assert.equal(doujin.rating.grade, 'S')
+  assert.ok(doujin.creators.some(person => person.creatorId === '1008243'))
+  assert.ok(collection.sources.some(source => source.url === 'https://data.ichijinsha.co.jp/detail/75807681'))
+
+  const watanare = await json('/api/work-lineage/works/28502')
+  for (const [id, role] of [['1007912', '原作'], ['1007803', '漫画'], ['1007923', '角色原案']]) {
+    const credit = watanare.creators.find(author => author.creatorId === id && author.role === role)
+    assert.ok(credit?.sourceUrls.includes('https://www.s-manga.net/items/contents.html?isbn=9784088934327'))
+  }
+  const [webComic, redrawnComic] = await Promise.all(['25454', '25453'].map(id => json('/api/work-lineage/works/' + id)))
+  assert.notEqual(webComic.workId, redrawnComic.workId)
+  assert.equal(webComic.rating.grade, 'E')
+  assert.equal(redrawnComic.rating.grade, 'F')
 
   const twoDk = await json('/api/work-lineage/works/5221')
   assert.equal(twoDk.workId, (await json('/api/work-lineage/works/4260')).workId)

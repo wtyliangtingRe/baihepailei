@@ -1,10 +1,10 @@
 {
-  "entities": 543,
-  "credits": 3567,
-  "works": 3171,
-  "newlyCreditedWorks": 614,
+  "entities": 608,
+  "credits": 4246,
+  "works": 3836,
+  "newlyCreditedWorks": 931,
   "sha256": {
-    "verified-author-entities.jsonl.gz": "4d4ee192b4bf52d458f3d85aab6f6dcbd0fdadc6c2c59ff8c31179bcd7c2d690",
-    "verified-authors.jsonl.gz": "2d59b4da8faff1b06cc31d9a42aafedc9d850b092e39d001cd5ee293f1333f63"
+    "verified-author-entities.jsonl.gz": "34b85826bf20e87e1d65747bb76dc522f81dc2fecc2f88f2d6e210073a818491",
+    "verified-authors.jsonl.gz": "fb26ebb4ca80be35bdc87a31091b47d7ed21d5b22c0b20ba81e14275747e332c"
   }
 }

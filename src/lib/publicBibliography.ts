@@ -151,12 +151,47 @@ type CatalogStaff = Pick<BookCredit, 'sourceWorkId' | 'siteId' | 'creatorId' | '
 type VerifiedBookAuthor = {
   workId: string
   siteId: string
-  subject: number
-  person: number
   staff: number
   creatorId: string
   name: string
   publicRole: string
+  publisherIsbn?: string
+} & (
+  | { publisherIsbn: string; mediaArtsId?: string; libraryId?: string }
+  | { subject: number; person: number }
+  | { seriesId: string; authorId: string; libraryId?: string; mediaArtsId?: string }
+  | { libraryId: string; mediaArtsId?: string }
+  | { mediaArtsId: string; libraryId?: string }
+)
+
+function bookAuthorReferences(row: VerifiedBookAuthor): string[] {
+  const sources: string[] = []
+  if ('subject' in row) {
+    if ([row.subject, row.person].every(id => Number.isSafeInteger(id) && id > 0)) {
+      sources.push(`https://bgm.tv/subject/${row.subject}/persons`, `https://bgm.tv/person/${row.person}`)
+    }
+  } else {
+    if ('seriesId' in row) {
+      if (!/^[0-9a-z]+$/.test(row.seriesId) || !/^[0-9a-z]+$/.test(row.authorId)) {
+        throw new Error(`Invalid book author or series identifier for ${row.workId}`)
+      }
+      sources.push(`https://www.mangaupdates.com/series/${row.seriesId}`, `https://www.mangaupdates.com/author/${row.authorId}`)
+    }
+    if (row.mediaArtsId) {
+      if (!/^M[1-9]\d*$/.test(row.mediaArtsId)) throw new Error(`Invalid Media Arts record for ${row.workId}`)
+      sources.push(`https://mediaarts-db.artmuseums.go.jp/id/${row.mediaArtsId}`)
+    }
+    if (row.libraryId) {
+      if (!/^R[0-9A-Z-]+$/.test(row.libraryId)) throw new Error(`Invalid library record for ${row.workId}`)
+      sources.push(`https://ndlsearch.ndl.go.jp/books/${row.libraryId}`)
+    }
+  }
+  if (row.publisherIsbn) {
+    if (!/^978408\d{7}$/.test(row.publisherIsbn)) throw new Error(`Invalid Shueisha edition for ${row.workId}`)
+    sources.push(`https://www.s-manga.net/items/contents.html?isbn=${row.publisherIsbn}`)
+  }
+  if (!sources.length) throw new Error(`Missing edition or author record for ${row.workId}`)
+  return sources
 }
 
 export function addVerifiedBookAuthors(directory: string, identities: Map<string, string | null | undefined>,
@@ -170,14 +205,14 @@ export function addVerifiedBookAuthors(directory: string, identities: Map<string
     const catalogId = row.siteId.match(/^catalog-anilist-([1-9]\d*)$/)?.[1]
     const workId = works.get(row.workId)?.workId
     if (!workId || !catalogId || identities.get(row.workId) !== row.siteId ||
-        ![row.subject, row.person, row.staff].every(id => Number.isSafeInteger(id) && id > 0)) {
+        !Number.isSafeInteger(row.staff) || row.staff < 1) {
       throw new Error(`Book author identity mismatch for ${row.workId}`)
     }
     const links = review.creditsByWork.get(workId) || []
     links.push({ workId, sourceWorkId: row.workId, creatorId: row.creatorId, name: row.name,
       displayName: row.name, role: row.publicRole, creditKind: 'person', bindingBasis: 'book_edition_author',
       sourceUrls: [`https://anilist.co/manga/${catalogId}`, `https://anilist.co/staff/${row.staff}`,
-        `https://bgm.tv/subject/${row.subject}/persons`, `https://bgm.tv/person/${row.person}`] })
+        ...bookAuthorReferences(row)] })
     review.creditsByWork.set(workId, links)
   }
 }
