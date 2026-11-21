@@ -19,6 +19,7 @@ export type RecoveredBangumiWork = {
 }
 type BangumiCorrection = Pick<RecoveredBangumiWork, 'workId' | 'siteId' | 'catalogTitle' | 'url'> &
   Partial<Pick<RecoveredBangumiWork, 'title' | 'originalTitle' | 'media' | 'editionSource'>> & {
+    printEdition?: NonNullable<PublicWorkRecord['printEditions']>[number] & { publisherId?: string }
     previous?: PublicWorkRecord['media']['group']
   }
 type EditionCredit = Pick<CreditEdge, 'creatorId' | 'creditKind' | 'name' | 'role'> & { sourceUrl?: string }
@@ -81,6 +82,10 @@ export function readIdentityReview(directory: string, identities: Map<string, st
     if (!match || row.url !== `https://bgm.tv/subject/${match[1]}` || !row.catalogSiteId.startsWith('work:mgv2-') ||
         identities.get(row.workId) !== row.catalogSiteId || !row.originalTitle || !row.catalogTitle || !row.title ||
         legacyBindings.has(row.workId)) throw new Error(`Invalid legacy catalog edition: ${row.workId}`)
+    const edition = row.printEdition
+    if (edition && (!/^97[89]\d{10}$/.test(edition.isbn) || !edition.title ||
+        edition.url !== `https://www.books.or.jp/book-details/${edition.isbn}` ||
+        (edition.publisherId && !edition.publisher))) throw new Error(`Invalid print edition: ${row.workId}`)
     legacyBindings.set(row.workId, row)
   }
   const recovered = new Map<string, RecoveredBangumiWork>()
@@ -144,8 +149,22 @@ export function readIdentityReview(directory: string, identities: Map<string, st
 
 export type IdentityReview = ReturnType<typeof readIdentityReview>
 
+export function addPrintPublisherCredits(review: NonNullable<IdentityReview>, works: Map<string, { workId: string }>) {
+  for (const row of review.legacyBindings.values()) {
+    const edition = row.printEdition
+    if (!edition?.publisherId || !edition.publisher) continue
+    const workId = works.get(row.workId)?.workId
+    if (!workId) throw new Error(`Missing print edition work: ${row.workId}`)
+    const edges = review.creditsByWork.get(workId) || []
+    edges.push({ workId, creatorId: edition.publisherId, name: edition.publisher, displayName: edition.publisher,
+      creditKind: 'organization', role: '出版社', bindingBasis: 'publisher_edition', sourceUrls: [edition.url, row.url] })
+    review.creditsByWork.set(workId, edges)
+  }
+}
+
 export function applyBangumiMetadata(work: PublicWorkRecord, row: BangumiCorrection): PublicWorkRecord {
   if (row.previous && work.media.group !== row.previous) throw new Error(`Previous media changed for ${row.workId}`)
+  const edition = row.printEdition
   const title = row.title && work.workId === row.workId ? row.title : work.title
   const clean = (name: string) => !/[\u0080-\u009f\ufffd]/u.test(name)
   const localizedTitles = work.localizedTitles.filter(item => clean(item.title))
@@ -161,9 +180,15 @@ export function applyBangumiMetadata(work: PublicWorkRecord, row: BangumiCorrect
   }
   return {
     ...work, title, media, summary,
+    ...(edition && { printEditions: [
+      ...(work.printEditions || []).filter(item => item.isbn !== edition.isbn),
+      { isbn: edition.isbn, title: edition.title, url: edition.url,
+        publisher: edition.publisher, onSale: edition.onSale, issued: edition.issued },
+    ] }),
     aliases: [...new Set([...work.aliases, ...aliases].filter(name => name !== title && clean(name)))],
     localizedTitles: mergeLocalizedTitles([...localizedTitles, ...original, ...translated]),
     sources: mergeSources([...work.sources, { title: 'Bangumi 作品条目', url: row.url },
+      ...(edition ? [{ title: `出版书目 · ISBN ${edition.isbn}`, url: edition.url, tier: 'official' as const }] : []),
       ...(row.editionSource ? [{ title: row.editionSource.startsWith('https://ndlsearch.ndl.go.jp/') ? '国立国会图书馆书目' : '出版社书目', url: row.editionSource }] : [])]),
     catalogIdentifiers: [...(work.catalogIdentifiers || []).filter(item => item.siteId !== row.siteId),
       { provider: 'bangumi-subject', siteId: row.siteId, url: row.url }],

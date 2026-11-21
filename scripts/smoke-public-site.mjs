@@ -141,6 +141,11 @@ try {
   const ratedCatalog = await json('/api/work-lineage/works?status=rated&limit=1')
   assert.equal(health.ratedVisibleWorks, ratedCatalog.total)
 
+  const madokaAnthology = await json('/api/work-lineage/works/3798')
+  assert.ok(madokaAnthology.printEditions.some(edition => edition.isbn === '9784832240643' && edition.onSale === '2011-09-12'))
+  assert.ok(madokaAnthology.organizations.some(credit => credit.creatorId === '1002004' && credit.name === '芳文社'))
+  const madokaPage = await (await response('/works/w-3798')).text()
+  assert.ok(madokaPage.includes('纸书版本') && madokaPage.includes('2011-09-12 发售'))
   const translatedBook = await json('/api/work-lineage/works/4982')
   const originalPublisher = translatedBook.organizations.find(credit => credit.role === '原版出版社')
   assert.equal(originalPublisher?.creatorId, '700000002322')

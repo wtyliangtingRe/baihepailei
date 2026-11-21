@@ -100,7 +100,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
   const classes = ratingClassEntries(rating)
   const range = rangeLabel(rating)
   const hasBasicMetadata = Boolean(
-    work.firstPublished || work.creators.length || work.organizations.length,
+    work.firstPublished || work.printEditions?.length || work.creators.length || work.organizations.length,
   )
   const contentTags = work.publicTags.filter(tag => tag.group !== '评级来源')
   const references = collectWorkReferences(work)
@@ -232,6 +232,13 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
             {work.firstPublished || work.firstPublishedLabel ? (
               <div><dt>首次发行</dt><dd>{work.firstPublishedLabel || work.firstPublished}</dd></div>
             ) : null}
+            {work.printEditions?.map(edition => (
+              <div key={edition.isbn}>
+                <dt>纸书版本</dt>
+                <dd>{[edition.publisher, edition.onSale ? `${edition.onSale} 发售` : edition.issued && `${edition.issued} 出版`,
+                  `ISBN ${edition.isbn}`].filter(Boolean).join(' · ')}{referenceMarks([edition.url])}</dd>
+              </div>
+            ))}
             {work.firstPublishedPrecision ? (
               <div><dt>日期精度</dt><dd>{publicationPrecisionLabels[work.firstPublishedPrecision]}</dd></div>
             ) : null}

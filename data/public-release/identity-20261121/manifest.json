@@ -37,7 +37,7 @@
     {
       "file": "legacy-bindings.jsonl",
       "rows": 1054,
-      "sha256": "04fcd38fb08f8ce2ea004ae1c9442de8c590c8bbdd91775d50a1b79f41cf355a"
+      "sha256": "60fa75c9e51b601951a871ae1938dff8b9d9f7b9545604096b5690ceb8525598"
     }
   ],
   "counts": {
@@ -53,6 +53,9 @@
     "correctedBangumiMedia": 423,
     "correctedBangumiTitles": 15,
     "legacyBangumiBindings": 1054,
-    "mergedSourceRows": 151
+    "mergedSourceRows": 151,
+    "historicalPrintEditions": 335,
+    "historicalPrintPublisherCredits": 244,
+    "historicalPrintNewlyCreditedWorks": 143
   }
 }

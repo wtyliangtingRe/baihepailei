@@ -8,7 +8,7 @@ import { addPublicMetadata, readPublicMetadata } from '@/lib/publicMetadata'
 import { addBookCredits, addCatalogStaff } from '@/lib/publicBibliography'
 import { mergeCredits } from '@/lib/publicDescriptiveMerge'
 import { reviewedProviderAliases } from './reviewedProviderAliases.cjs'
-import { applyBangumiMetadata, applyReviewedMetadata, readIdentityReview, type IdentityReview, type RecoveredBangumiWork } from '@/lib/publicIdentityReview'
+import { addPrintPublisherCredits, applyBangumiMetadata, applyReviewedMetadata, readIdentityReview, type IdentityReview, type RecoveredBangumiWork } from '@/lib/publicIdentityReview'
 import { readPublicCreatorGraph, withCreatorIds, type CreatorKind, type PublicCreatorGraph } from '@/lib/publicCreatorGraph'
 
 import { isRadarRatingClass, radarClassDefinitions } from '@/lib/radar/ratingPolicy'
@@ -95,6 +95,7 @@ export type PublicWorkRecord = {
   firstPublished?: string
   firstPublishedLabel?: string
   firstPublishedPrecision?: 'day' | 'month' | 'year' | 'unknown'
+  printEditions?: Array<{ isbn: string; title: string; url: string; publisher?: string; onSale?: string; issued?: string }>
   cover?: PublicCover
   creators: PublicCredit[]
   organizations: PublicCredit[]
@@ -958,6 +959,7 @@ function loadRelease(): PublicReleaseCache {
   if (identityReview) {
     addBookCredits(directory, identities, merged.byWorkId, identityReview.entities, identityReview.creditsByWork)
     addCatalogStaff(directory, identities, merged.byWorkId, identityReview)
+    addPrintPublisherCredits(identityReview, merged.byWorkId)
   }
   const records = merged.records.map(record => {
     const members = merged.memberIdsByPrimary.get(record.workId) || [record.workId]

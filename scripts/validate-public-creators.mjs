@@ -116,8 +116,8 @@ assert.equal(release.getPublicCreatorById('not-an-id'), null)
 assert.equal(release.getPublicCreatorById(String(manifest.nextId)), null)
 const creditedWorks = records.filter(work => work.creators.length || work.organizations.length).length
 assert.equal(creditedWorks, manifest.counts.creditedWorks + reviewCounts.newlyCreditedWorks - reviewCounts.duplicateCreditedWorks +
-  bookCounts.newlyCreditedWorks + staffCounts.newlyCreditedWorks)
+  bookCounts.newlyCreditedWorks + staffCounts.newlyCreditedWorks + (reviewCounts.historicalPrintNewlyCreditedWorks || 0))
 if (currentReview) assert.equal(release.getPublicCreatorById('1010974'), null, 'Retired null Steam organization')
 console.log(JSON.stringify({ creators: entities.length + extraEntities.length - reviewCounts.removedEntities, publicWorks: records.length,
-  creditedWorks, supplementaryCredits: reviewCounts.credits + bookCounts.credits + staffCounts.credits, linkedCredits, relatedWorks, references,
+  creditedWorks, supplementaryCredits: reviewCounts.credits + bookCounts.credits + staffCounts.credits + (reviewCounts.historicalPrintPublisherCredits || 0), linkedCredits, relatedWorks, references,
   uniqueIds: true, originalCreditsPreserved: true, existingLinksPreserved: true, publicWorkIdsOnly: true, status: 'PASS' }, null, 2))

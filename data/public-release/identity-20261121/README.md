@@ -32,3 +32,5 @@
 逐作署名来自 2026 年 11 月 17 日的 Bangumi 公开归档。按作品和职务记录作者、绘者、导演、编剧、动画制作及出版等关系，限集数的署名仅适用于指定集数。每条新增署名都能回到对应版本的人员表。跨站动画另核对 Wikidata 或 bangumi-data 同一条记录的两个目录编号，并比对片名、首播时间及版本。[Bangumi 归档](https://github.com/bangumi/Archive) · [职务编号表](https://github.com/bangumi/common/blob/2ee87b9995353f77cf02e390e8635bf97dbc1fa2/subject_staffs.yml) · [署名文件校验](staff-manifest.json)
 
 一迅社的 ISBN 9784758072748 题名为《星降り坂一丁目三番地》。作品页使用出版社题名，旧目录的「星振り坂」仍可用于检索。[一迅社书目](https://data.ichijinsha.co.jp/detail/75807274)
+
+335 条旧站书籍已用 ISBN 与出版社登记书名再次核定纸书版本，330 条有明确的书店发售日。作品页分别列纸书发售或出版月份与连载等其他发行资料。244 条出版机构署名同时得到出版社登记和该版旧档案支持，并连接到已有机构页。其中 143 部之前没有任何署名。《魔法少女小圆》漫画选集第一卷由芳文社出版，书店发售日为 2011 年 9 月 12 日。[日本出版书志数据库](https://www.books.or.jp/book-details/9784832240643) · [芳文社分卷书目](https://www.dokidokivisual.com/comics/2992/)
