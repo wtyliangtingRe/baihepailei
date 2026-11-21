@@ -27,7 +27,7 @@ for (const entity of entities) {
 const identityRoot = join(root, 'data/public-release/identity-20261121')
 const currentReview = !process.env.BAIHEPAILEI_RELEASE_DIR?.trim()
 const reviewCounts = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'manifest.json'), 'utf8')).counts
-  : { extraEntities: 0, mergeGroups: 0, credits: 0, newlyCreditedWorks: 0, duplicateCreditedWorks: 0, removedEntities: 0 }
+  : { extraEntities: 0, releasedTitleMatches: 0, mergeGroups: 0, credits: 0, newlyCreditedWorks: 0, duplicateCreditedWorks: 0, removedEntities: 0 }
 const extraEntities = currentReview ? readFileSync(join(identityRoot, 'entities.jsonl'), 'utf8').trim().split('\n').map(JSON.parse) : []
 assert.equal(extraEntities.length, reviewCounts.extraEntities)
 if (currentReview) {
@@ -44,7 +44,7 @@ if (currentReview) {
   }
 }
 const records = release.getPublicCreatorGraphInput()
-assert.equal(records.length, manifest.counts.publicWorks - reviewCounts.mergeGroups)
+assert.equal(records.length, manifest.counts.publicWorks + reviewCounts.releasedTitleMatches - reviewCounts.mergeGroups)
 const publicIds = new Set(records.map(work => work.workId))
 let linkedCredits = 0, references = 0
 const expectedWorks = new Map()

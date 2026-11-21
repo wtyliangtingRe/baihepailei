@@ -3,9 +3,20 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { CatalogEquivalenceGroup, PublicCredit, PublicWorkRecord } from './publicRelease'
 import type { CreatorKind, PublicCreator, CreditEdge } from './publicCreatorGraph'
-import { mergeCredits, mergeSources } from './publicDescriptiveMerge'
+import { mergeCredits, mergeLocalizedTitles, mergeSources } from './publicDescriptiveMerge'
 
 type ReviewedGroup = CatalogEquivalenceGroup & { primaryWorkId: string }
+export type RecoveredBangumiWork = {
+  workId: string
+  siteId: string
+  catalogTitle: string
+  title: string
+  originalTitle: string
+  media: PublicWorkRecord['media']
+  url: string
+  isbn?: string
+  editionSource?: string
+}
 type Correction = {
   workId: string
   siteId: string | null
@@ -56,6 +67,16 @@ export function readIdentityReview(directory: string, identities: Map<string, st
     return rows
   }
   const groups = read<ReviewedGroup>('groups.jsonl')
+  const recovered = new Map<string, RecoveredBangumiWork>()
+  const siteIds = new Set<string>()
+  for (const row of read<RecoveredBangumiWork>('recovered-bangumi.jsonl')) {
+    const match = /^catalog-bangumi-([1-9]\d*)$/.exec(row.siteId)
+    if (!match || row.url !== `https://bgm.tv/subject/${match[1]}` || !identities.has(row.workId) ||
+        identities.get(row.workId) || !row.originalTitle || !row.title || !row.media.format ||
+        recovered.has(row.workId) || siteIds.has(row.siteId)) throw new Error(`Invalid recovered identity: ${row.workId}`)
+    recovered.set(row.workId, row)
+    siteIds.add(row.siteId)
+  }
   const entities = read<PublicCreator>('entities.jsonl')
   const corrections = new Map(read<Correction>('corrections.jsonl').map(row => {
     if (identities.get(row.workId) !== row.siteId || (row.siteId === null && !row.edition)) {
@@ -90,10 +111,30 @@ export function readIdentityReview(directory: string, identities: Map<string, st
     creditsByWork.set(fix.workId, edges)
   }
   const removedCreatorIds = new Set([...corrections.values()].flatMap(row => row.removedCreatorId ? [row.removedCreatorId] : []))
-  return { groups, entities, creditsByWork, corrections, removedCreatorIds }
+  return { groups, entities, creditsByWork, corrections, removedCreatorIds, recovered }
 }
 
 export type IdentityReview = ReturnType<typeof readIdentityReview>
+
+export function applyRecoveredBangumi(work: PublicWorkRecord, row: RecoveredBangumiWork): PublicWorkRecord {
+  const title = work.workId === row.workId ? row.title : work.title
+  const usable = (name: string) => !/[\u0080-\u009f\ufffd]/u.test(name)
+  const localizedTitles = work.localizedTitles.filter(item => usable(item.title))
+  return {
+    ...work,
+    title,
+    media: row.media,
+    aliases: [...new Set([...work.aliases, work.title, row.title, row.originalTitle].filter(name => name !== title && usable(name)))],
+    localizedTitles: mergeLocalizedTitles([...localizedTitles, { title: row.originalTitle, kind: 'original' },
+      ...(row.title === row.originalTitle ? [] : [{ title: row.title, kind: 'localized' as const }])]),
+    sources: mergeSources([...work.sources, { title: 'Bangumi 作品条目', url: row.url },
+      ...(row.editionSource ? [{ title: '国立国会图书馆书目', url: row.editionSource }] : [])]),
+    catalogIdentifiers: [...(work.catalogIdentifiers || []), { provider: 'bangumi-subject', siteId: row.siteId, url: row.url }],
+    ...(work.summary?.kind === 'identity_summary' && work.workId === row.workId && {
+      summary: { kind: 'identity_summary' as const, text: `《${title}》为${row.media.format}。`, sourceUrl: row.url },
+    }),
+  }
+}
 
 export function correctCredit<T extends PublicCredit>(workId: string, credit: T, review: IdentityReview): T {
   const fix = review?.corrections.get(workId)

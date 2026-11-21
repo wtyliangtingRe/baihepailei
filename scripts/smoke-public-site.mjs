@@ -129,9 +129,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411,
-      visibleWorks: 34_933,
-      mergedAway: 478,
-      mergedGroups: 478,
+      visibleWorks: 34_916,
+      mergedAway: 495,
+      mergedGroups: 495,
       largestMergedGroup: 2,
       ratedWorks: reviewManifest.ratedSourceRecords,
     },
@@ -164,10 +164,10 @@ try {
   assert.equal('identity' in taggedWork, false)
   assert.equal('ordinal' in taggedWork, false)
 
-  const uncertainWork = await json('/api/work-lineage/works/4971')
-  assert.equal(uncertainWork.rating.class, undefined)
-  assert.equal(uncertainWork.rating.uncertaintyKind, 'evidence_insufficient')
-  assert.equal(uncertainWork.rating.needsMoreResearch, true)
+  const remasteredCollection = await json('/api/work-lineage/works/4971')
+  assert.equal(remasteredCollection.rating.class, 'B-LIGHT')
+  assert.equal(remasteredCollection.rating.decidingSource, 'official')
+  assert.equal(remasteredCollection.rating.uncertaintyKind, undefined)
 
   for (const [id, grade] of [['12120','S'],['18154','B'],['19473','C'],['8506','D'],['7925','E'],['18574','F']]) {
     const work = await json(`/api/work-lineage/works/${id}`)
@@ -180,8 +180,10 @@ try {
     assert.ok(work.rating.reasoningSummary && work.rating.evidenceUrl)
     assert.equal(work.rating.needsMoreResearch, true)
   }
-  const skippedWork=await json('/api/work-lineage/works/38850')
-  assert.equal(skippedWork.rating.state,'not_assessed','Skipped records must not receive invented ratings')
+  const shortStoryCollection = await json('/api/work-lineage/works/38850')
+  assert.equal(shortStoryCollection.rating.class, 'B-LIGHT')
+  assert.ok(shortStoryCollection.rating.sourceFindings.some(finding =>
+    finding.kind === 'community' && finding.urls.includes('https://www.yurizukan.com/articles/articleDetail/5932')))
   const newClip=await json('/api/work-lineage/works/32107')
   assert.equal(newClip.workId,'15896','New evidence must preserve the established public Work node')
   assert.equal(newClip.rating.grade,'C')
@@ -219,6 +221,9 @@ try {
     ['36722', '36481'], // No Fap Island, full game rather than its separate demo
     ['36617', '31936'], // Kirakira Monstars, Windows release
     ['32484', '32572'], // The author renamed the same game in November 2023
+    ['32659', '6340'], // Original manga series
+    ['32671', '18148'], // Part one of the theatrical re-edit
+    ['32703', '29863'], // Tenth-anniversary OVA
     ['33202', '31879'], // Loren, original game and its Steam storefront
     ['5409', '30268'], // Adachi and Shimamura / 安達としまむら
     ['25236', '31618'], // Sky Girls 2007 TV
@@ -232,6 +237,9 @@ try {
 
   // Stale crosswalks and same-provider partial identities stay separate.
   for (const [left, right] of [
+    ['33116', '33117'], // Light novel and manga adaptation
+    ['32671', '32674'], // Madoka's two theatrical editions
+    ['32740', '32659'], // First printed volume and serial
     ['25237', '31618'],
     ['17926', '31034'],
     ['4142', '4978'],

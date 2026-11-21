@@ -17,7 +17,13 @@ export type SourceReview = {
   attributionOnly?: boolean
 }
 
-export function matchesReviewEdition(review: SourceReview, originalTitle: string, siteId: string | null) {
+export function matchesReviewEdition(review: SourceReview, originalTitle: string, siteId: string | null,
+  recovered?: { catalogTitle: string; siteId: string; isbn?: string }) {
+  if (recovered) {
+    if (siteId || recovered.catalogTitle !== originalTitle) return false
+    if (!review.edition) return review.siteId === recovered.siteId
+    if (!recovered.isbn || review.edition.isbn !== recovered.isbn) return false
+  }
   if (siteId) return review.siteId === siteId && !review.edition
   const edition = review.edition
   if (review.siteId !== null || !edition || edition.catalogTitle !== originalTitle ||

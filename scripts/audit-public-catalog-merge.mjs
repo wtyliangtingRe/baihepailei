@@ -89,7 +89,7 @@ function uniqueMergeNames(values, normalizeTitle) {
   return result
 }
 
-const records = baseRecords.map((base) => {
+const sourceRecords = baseRecords.map((base) => {
   const asset = assetsByWorkId.get(String(base.workId)) || {}
   const media = mediaByWorkId.get(String(base.workId)) || { group: 'unknown', type: 'unknown' }
   return {
@@ -103,7 +103,7 @@ const records = baseRecords.map((base) => {
   }
 })
 
-assert.equal(records.length, manifest.counts.catalogWorks, 'merge audit must cover the complete public catalog')
+assert.equal(sourceRecords.length, manifest.counts.catalogWorks, 'merge audit must cover the complete public catalog')
 
 function namesFor(record, normalizeTitle) {
   return uniqueMergeNames([
@@ -117,9 +117,10 @@ function titleKey(record, name, normalizeTitle) {
   return `${mediaMergeBucket(record.media.group)}|${normalizeTitle(name)}`
 }
 
-function ambiguousProviderTitleKeys(normalizeTitle) {
+function ambiguousProviderTitleKeys(normalizeTitle, records, recovered) {
   const claims = new Map()
   for (const record of records) {
+    if (recovered.has(record.workId)) continue
     if (!record.identity.provider || !record.identity.siteId) continue
     const provider = String(record.identity.provider).toLowerCase()
     for (const name of namesFor(record, normalizeTitle)) {
@@ -147,7 +148,13 @@ function runMerge({
   includeMergedGroups = false,
   explicitGroups = [],
   protectAllIdentityClaims = false,
+  recovered = new Map(),
 }) {
+  const records = sourceRecords.map(record => {
+    const row = recovered.get(record.workId)
+    return row ? { ...record, media: row.media,
+      identity: { state: 'exact', provider: 'bangumi-subject', siteId: row.siteId } } : record
+  })
   const parent = records.map((_, index) => index)
   const find = (index) => {
     let cursor = index
@@ -230,7 +237,7 @@ function runMerge({
   }
 
   const ambiguousKeys = rejectAmbiguousTitleKeys
-    ? ambiguousProviderTitleKeys(normalizeTitle)
+    ? ambiguousProviderTitleKeys(normalizeTitle, records, recovered)
     : new Set()
   let normalizedTitleLinks = 0
   let shortTitleLinks = 0
@@ -239,6 +246,7 @@ function runMerge({
   const titleOwner = new Map()
 
   records.forEach((record, index) => {
+    if (recovered.has(record.workId)) return
     for (const name of namesFor(record, normalizeTitle)) {
       const normalized = normalizeTitle(name)
       if (normalized.length < 2) continue
@@ -394,7 +402,13 @@ const hardenedTitleBaseline = runMerge({
 })
 const reviewedGroups = process.env.BAIHEPAILEI_RELEASE_DIR?.trim() ? []
   : readFileSync(join(releaseDir, '..', 'identity-20261121', 'groups.jsonl'), 'utf8').trim().split('\n').map(JSON.parse)
+const recovered = new Map(process.env.BAIHEPAILEI_RELEASE_DIR?.trim() ? []
+  : readFileSync(join(releaseDir, '..', 'identity-20261121', 'recovered-bangumi.jsonl'), 'utf8')
+    .trimEnd().split('\n').map(line => { const row = JSON.parse(line); return [row.workId, row] }))
+const releasedTitleMatches = recovered.size ? 28 : 0
+if (recovered.size) assert.equal(recovered.size, 531)
 const currentIdentitySafe = runMerge({
+  recovered,
   normalizeTitle: normalizeIdentitySafeTitle,
   rejectAmbiguousTitleKeys: true,
   includeMergedGroups: true,
@@ -416,11 +430,11 @@ assert.equal(currentIdentitySafe.sourceWorks, 35_411, 'unexpected public source-
 assert.equal(hardenedTitleBaseline.visibleWorks, 35_346, 'unexpected hardened baseline visible-work count')
 assert.equal(hardenedTitleBaseline.mergedAway, 65, 'unexpected hardened baseline merged-row count')
 assert.equal(hardenedTitleBaseline.multiWorkGroups, 65, 'unexpected hardened baseline merge-group count')
-assert.equal(currentIdentitySafe.visibleWorks, 34_940 - reviewedGroups.length, 'unexpected identity-safe visible-work count')
-assert.equal(currentIdentitySafe.mergedAway, 471 + reviewedGroups.length, 'unexpected identity-safe merged-row count')
-assert.equal(currentIdentitySafe.multiWorkGroups, 471 + reviewedGroups.length, 'unexpected identity-safe merged-group count')
+assert.equal(currentIdentitySafe.visibleWorks, 34_940 + releasedTitleMatches - reviewedGroups.length, 'unexpected identity-safe visible-work count')
+assert.equal(currentIdentitySafe.mergedAway, 471 - releasedTitleMatches + reviewedGroups.length, 'unexpected identity-safe merged-row count')
+assert.equal(currentIdentitySafe.multiWorkGroups, 471 - releasedTitleMatches + reviewedGroups.length, 'unexpected identity-safe merged-group count')
 assert.equal(currentIdentitySafe.largestGroup, 2, 'unexpected identity-safe largest merge group')
-assert.equal(currentIdentitySafe.mergedGroups.length, 471 + reviewedGroups.length, 'merge-group review list must be complete')
+assert.equal(currentIdentitySafe.mergedGroups.length, 471 - releasedTitleMatches + reviewedGroups.length, 'merge-group review list must be complete')
 assert.equal(currentIdentitySafe.ambiguousTitleKeysSkipped, 199, 'unexpected ambiguous title-key count')
 assert.equal(equivalenceGroups.length, 427, 'explicit equivalence-group count drift')
 assert.equal(titleEvidence.length, 5_619, 'title-evidence row count drift')

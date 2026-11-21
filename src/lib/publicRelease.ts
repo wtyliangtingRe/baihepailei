@@ -7,7 +7,7 @@ import { gunzipSync } from 'node:zlib'
 import { addPublicMetadata, readPublicMetadata } from '@/lib/publicMetadata'
 import { mergeCredits } from '@/lib/publicDescriptiveMerge'
 import { reviewedProviderAliases } from './reviewedProviderAliases.cjs'
-import { applyReviewedMetadata, readIdentityReview, type IdentityReview } from '@/lib/publicIdentityReview'
+import { applyRecoveredBangumi, applyReviewedMetadata, readIdentityReview, type IdentityReview, type RecoveredBangumiWork } from '@/lib/publicIdentityReview'
 import { readPublicCreatorGraph, withCreatorIds, type CreatorKind, type PublicCreatorGraph } from '@/lib/publicCreatorGraph'
 
 import { isRadarRatingClass, radarClassDefinitions } from '@/lib/radar/ratingPolicy'
@@ -104,6 +104,7 @@ export type PublicWorkRecord = {
     sourceUrl?: string
   }
   sources: PublicWorkSource[]
+  catalogIdentifiers?: Array<{ provider: string; siteId: string; url: string }>
   rating: PublicWorkRating
 }
 
@@ -611,6 +612,7 @@ function deduplicateCatalog(
   equivalenceGroups: CatalogEquivalenceGroup[],
   titleEvidenceByWorkId: Map<string, CatalogTitleEvidence>,
   stablePrimaryByWorkId?: Map<string, string>,
+  recovered?: ReadonlyMap<string, RecoveredBangumiWork>,
 ) {
   const parent = records.map((_, index) => index)
   const find = (index: number): number => {
@@ -642,6 +644,7 @@ function deduplicateCatalog(
 
   const ambiguousTitleClaims = new Map<string, Map<string, Set<string>>>()
   records.forEach((record, index) => {
+    if (recovered?.has(record.workId)) return
     const base = baseRecords[index]
     if (!base.identity.provider || !base.identity.siteId) return
     const provider = base.identity.provider.toLowerCase()
@@ -718,6 +721,7 @@ function deduplicateCatalog(
 
   const titleOwner = new Map<string, number>()
   records.forEach((record, index) => {
+    if (recovered?.has(record.workId)) return
     const bucket = mediaMergeBucket(record.media.group)
     for (const name of uniqueIdentityMergeNames(record)) {
       const normalized = normalizeIdentityMergeTitle(name)
@@ -847,6 +851,22 @@ function loadRelease(): PublicReleaseCache {
   )
   const assetByWorkId = new Map(assets.map((asset) => [asset.workId, asset]))
   const detailByWorkId = new Map(details.map((detail) => [detail.workId, detail]))
+  // Rating text and source counts must not rename previously published Work nodes.
+  const stablePrimaryByWorkId = manifest.displayIdentityBaseline
+    ? new Map((JSON.parse(gunzipSync(readFileSync(join(directory, manifest.displayIdentityBaseline))).toString('utf8')) as
+      Array<{ sourceWorkId: string; primaryWorkId: string }>).map(row => [row.sourceWorkId, row.primaryWorkId]))
+    : undefined
+  const identities = new Map(baseRecords.map(record => [record.workId, record.identity.siteId]))
+  const identityReview = readIdentityReview(directory, identities, stablePrimaryByWorkId)
+  const recovered = identityReview?.recovered
+  const effectiveBase = baseRecords.map(record => {
+    const row = recovered?.get(record.workId)
+    if (!row) return record
+    if (record.title !== row.catalogTitle || record.identity.siteId || record.identity.state !== 'repair_required') {
+      throw new Error(`Recovered catalog identity drift: ${record.workId}`)
+    }
+    return { ...record, identity: { ...record.identity, state: 'exact' as const, provider: 'bangumi-subject', siteId: row.siteId } }
+  })
   const ordinals = new Map(baseRecords.map((record) => [record.workId, record.ordinal]))
   const rawRecords = baseRecords.map((record) =>
     toPublicRecord(
@@ -864,7 +884,7 @@ function loadRelease(): PublicReleaseCache {
     for (const review of reviews) {
       const index = indexes.get(review.workId)
       if (index === undefined || seen.has(review.workId) || !matchesReviewEdition(
-        review, baseRecords[index].title, baseRecords[index].identity.siteId)) {
+        review, baseRecords[index].title, baseRecords[index].identity.siteId, recovered?.get(review.workId))) {
         throw new Error(`Assessment identity mismatch: ${review.workId}`)
       }
       seen.add(review.workId)
@@ -912,28 +932,33 @@ function loadRelease(): PublicReleaseCache {
     throw new Error('Catalog title evidence references a non-public Work ID')
   }
 
-  // Rating text and source counts must not rename previously published Work nodes.
-  const stablePrimaryByWorkId = manifest.displayIdentityBaseline
-    ? new Map((JSON.parse(gunzipSync(readFileSync(join(directory, manifest.displayIdentityBaseline))).toString('utf8')) as
-      Array<{ sourceWorkId: string; primaryWorkId: string }>).map(row => [row.sourceWorkId, row.primaryWorkId]))
-    : undefined
-  const identities = new Map(baseRecords.map(record => [record.workId, record.identity.siteId]))
-  const identityReview = readIdentityReview(directory, identities, stablePrimaryByWorkId)
+  if (stablePrimaryByWorkId && recovered) {
+    for (const [id, primary] of stablePrimaryByWorkId) {
+      if (recovered.has(id) || recovered.has(primary)) stablePrimaryByWorkId.set(id, id)
+    }
+  }
   for (const group of identityReview?.groups || []) {
     for (const id of group.workIds) stablePrimaryByWorkId?.set(id, group.primaryWorkId)
   }
   const merged = deduplicateCatalog(
     rawRecords,
-    baseRecords,
+    effectiveBase,
     ordinals,
     [...equivalenceGroups, ...(identityReview?.groups || [])],
     titleEvidenceByWorkId,
     stablePrimaryByWorkId,
+    recovered,
   )
   const metadata = readPublicMetadata(directory, identities)
-  const records = merged.records.map(record => applyReviewedMetadata(addPublicMetadata(record,
-    (merged.memberIdsByPrimary.get(record.workId) || [record.workId]).map(id => metadata.get(id)!),
-  ), identityReview))
+  const records = merged.records.map(record => {
+    const members = merged.memberIdsByPrimary.get(record.workId) || [record.workId]
+    let work = applyReviewedMetadata(addPublicMetadata(record, members.map(id => metadata.get(id)!)), identityReview)
+    for (const id of members) {
+      const row = recovered?.get(id)
+      if (row) work = applyRecoveredBangumi(work, row)
+    }
+    return work
+  })
   for (const work of records) {
     if (work.rating.decidingSource) {
       const key = work.rating.decidingSource === 'official' ? 'source-official' : 'source-community'

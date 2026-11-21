@@ -33,6 +33,11 @@ test('a recovered book must match its original title, valid ISBN and edition pag
   for (const changes of [{ isbn: '9784778320059' }, { sourceUrl: 'invalid' }, { sourceUrl: 'https://www.ohtabooks.com' }]) {
     assert.equal(matchesReviewEdition({ ...row, edition: { ...edition, ...changes } }, edition.catalogTitle, null), false)
   }
+  const restored = { catalogTitle: edition.catalogTitle, siteId: 'catalog-bangumi-5663', isbn: edition.isbn }
+  assert.ok(matchesReviewEdition(row, edition.catalogTitle, null, restored))
+  assert.ok(matchesReviewEdition({ siteId: restored.siteId }, edition.catalogTitle, null, restored))
+  assert.equal(matchesReviewEdition({ siteId: 'catalog-bangumi-1' }, edition.catalogTitle, null, restored), false)
+  assert.equal(matchesReviewEdition(row, edition.catalogTitle, null, { ...restored, isbn: '9784778320065' }), false)
   const book = getPublicWorkById('32740')
   assert.equal(book.media.format, '漫画单行本')
   assert.equal(book.rating.grade, 'F')
@@ -48,12 +53,14 @@ test('every reviewed source identity resolves to a visible grade at least as con
   const baseDir = 'data/public-release/v4/'
   const base = JSON.parse(readFileSync(baseDir+'manifest.json', 'utf8'))
   const catalog = new Map(base.shards.flatMap(s => readRows(baseDir+s.file)).map(w => [w.workId, w]))
+  const recovered = new Map(readRows('data/public-release/identity-20261121/recovered-bangumi.jsonl')
+    .map(row => [row.workId, row]))
   const grades = {...base.gradeCounts}
   const covered = new Set()
   const canonicalFindings = new Map()
   for (const row of reviews) {
     const before = catalog.get(row.workId)
-    assert.ok(matchesReviewEdition(row, before.title, before.identity.siteId), row.workId)
+    assert.ok(matchesReviewEdition(row, before.title, before.identity.siteId, recovered.get(row.workId)), row.workId)
     assert.ok(!covered.has(row.workId))
     covered.add(row.workId)
     const expected = [...row.findings].sort((a,b) => PUBLIC_GRADES.indexOf(b.grade)-PUBLIC_GRADES.indexOf(a.grade) ||
