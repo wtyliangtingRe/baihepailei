@@ -98,3 +98,19 @@ test('source filters retain the deciding source when combined with grade and pag
     assert.ok(filtered.items.every(work => work.rating.decidingSource === source && work.rating.grade === grade))
   }
 })
+
+test('edition research can resolve an obsolete grade and retain a supported lower grade', () => {
+  const cases = [
+    ['10891', 'S', 'official', 'S-MARRIAGE'],
+    ['11646', 'A', 'official', 'A-YURI-HAREM'],
+    ['10579', 'D', 'community', 'D-GENERAL'],
+    ['37189', 'E', 'official', 'E-PAST-MALE-ROMANCE'],
+  ]
+  for (const [workId, grade, source, code] of cases) {
+    const work = getPublicWorkById(workId)
+    assert.equal(work.rating.grade, grade, workId)
+    assert.equal(work.rating.decidingSource, source, workId)
+    assert.ok(work.rating.classes.includes(code), workId)
+    assert.deepEqual(work.publicTags.filter(tag => tag.group === '评级来源').map(tag => tag.key), ['source-' + source], workId)
+  }
+})
