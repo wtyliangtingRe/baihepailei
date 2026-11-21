@@ -5,9 +5,10 @@ import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 import { addPublicMetadata, readPublicMetadata } from '@/lib/publicMetadata'
+import { addBookCredits } from '@/lib/publicBibliography'
 import { mergeCredits } from '@/lib/publicDescriptiveMerge'
 import { reviewedProviderAliases } from './reviewedProviderAliases.cjs'
-import { applyRecoveredBangumi, applyReviewedMetadata, readIdentityReview, type IdentityReview, type RecoveredBangumiWork } from '@/lib/publicIdentityReview'
+import { applyBangumiMetadata, applyReviewedMetadata, readIdentityReview, type IdentityReview, type RecoveredBangumiWork } from '@/lib/publicIdentityReview'
 import { readPublicCreatorGraph, withCreatorIds, type CreatorKind, type PublicCreatorGraph } from '@/lib/publicCreatorGraph'
 
 import { isRadarRatingClass, radarClassDefinitions } from '@/lib/radar/ratingPolicy'
@@ -860,6 +861,8 @@ function loadRelease(): PublicReleaseCache {
   const identityReview = readIdentityReview(directory, identities, stablePrimaryByWorkId)
   const recovered = identityReview?.recovered
   const effectiveBase = baseRecords.map(record => {
+    const correction = identityReview?.bangumiCorrections.get(record.workId)
+    if (correction && record.title !== correction.catalogTitle) throw new Error(`Catalog title changed for ${record.workId}`)
     const row = recovered?.get(record.workId)
     if (!row) return record
     if (record.title !== row.catalogTitle || record.identity.siteId || record.identity.state !== 'repair_required') {
@@ -950,12 +953,13 @@ function loadRelease(): PublicReleaseCache {
     recovered,
   )
   const metadata = readPublicMetadata(directory, identities)
+  if (identityReview) addBookCredits(directory, identities, merged.byWorkId, identityReview.entities, identityReview.creditsByWork)
   const records = merged.records.map(record => {
     const members = merged.memberIdsByPrimary.get(record.workId) || [record.workId]
     let work = applyReviewedMetadata(addPublicMetadata(record, members.map(id => metadata.get(id)!)), identityReview)
     for (const id of members) {
-      const row = recovered?.get(id)
-      if (row) work = applyRecoveredBangumi(work, row)
+      const row = recovered?.get(id) || identityReview?.bangumiCorrections.get(id)
+      if (row) work = applyBangumiMetadata(work, row)
     }
     return work
   })

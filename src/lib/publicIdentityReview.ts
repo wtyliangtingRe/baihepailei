@@ -17,7 +17,15 @@ export type RecoveredBangumiWork = {
   isbn?: string
   editionSource?: string
 }
+type BangumiCorrection = Pick<RecoveredBangumiWork, 'workId' | 'siteId' | 'catalogTitle' | 'url'> &
+  Partial<Pick<RecoveredBangumiWork, 'title' | 'originalTitle' | 'media' | 'editionSource'>> & {
+    previous?: PublicWorkRecord['media']['group']
+  }
+type EditionCredit = Pick<CreditEdge, 'creatorId' | 'creditKind' | 'name' | 'role'> & { sourceUrl?: string }
 type Correction = {
+  catalogTitle?: string
+  media?: PublicWorkRecord['media']
+  releaseCredits?: EditionCredit[]
   workId: string
   siteId: string | null
   url: string
@@ -35,7 +43,7 @@ type Correction = {
   edition?: {
     isbn: string
     catalogTitle: string
-    credits: (Pick<CreditEdge, 'creatorId' | 'creditKind' | 'name' | 'role'> & { sourceUrl?: string })[]
+    credits: EditionCredit[]
   }
 }
 type ReviewedCredit = {
@@ -77,6 +85,16 @@ export function readIdentityReview(directory: string, identities: Map<string, st
     recovered.set(row.workId, row)
     siteIds.add(row.siteId)
   }
+  const bangumiCorrections = new Map<string, BangumiCorrection>()
+  for (const row of read<BangumiCorrection>('bangumi-corrections.jsonl')) {
+    const match = /^catalog-bangumi-([1-9]\d*)$/.exec(row.siteId)
+    if (!match || row.url !== `https://bgm.tv/subject/${match[1]}` || identities.get(row.workId) !== row.siteId ||
+        !row.catalogTitle || (!row.media && !row.title) || (!!row.media !== !!row.previous) ||
+        (!!row.title !== !!row.originalTitle) || bangumiCorrections.has(row.workId)) {
+      throw new Error(`Invalid Bangumi catalog correction: ${row.workId}`)
+    }
+    bangumiCorrections.set(row.workId, row)
+  }
   const entities = read<PublicCreator>('entities.jsonl')
   const corrections = new Map(read<Correction>('corrections.jsonl').map(row => {
     if (identities.get(row.workId) !== row.siteId || (row.siteId === null && !row.edition)) {
@@ -99,40 +117,47 @@ export function readIdentityReview(directory: string, identities: Map<string, st
   }
   for (const fix of corrections.values()) {
     const edition = fix.edition
-    if (!edition) continue
-    if (!/^97[89]\d{10}$/.test(edition.isbn) || !edition.catalogTitle || canonicalIds?.get(fix.workId) !== fix.workId) {
+    const credits = edition?.credits || fix.releaseCredits
+    if (!credits) continue
+    if (canonicalIds?.get(fix.workId) !== fix.workId || (edition && (!/^97[89]\d{10}$/.test(edition.isbn) || !edition.catalogTitle)) ||
+        (!edition && (!fix.siteId || !fix.catalogTitle))) {
       throw new Error(`Unbound publisher credit: ${fix.workId}`)
     }
     const edges = creditsByWork.get(fix.workId) || []
-    for (const { sourceUrl, ...credit } of edition.credits) {
+    for (const { sourceUrl, ...credit } of credits) {
       edges.push({ ...credit, workId: fix.workId, displayName: credit.name,
-        bindingBasis: 'publisher_edition', sourceUrls: [sourceUrl || fix.url] })
+        bindingBasis: edition ? 'publisher_edition' : 'publisher_release', sourceUrls: [sourceUrl || fix.url] })
     }
     creditsByWork.set(fix.workId, edges)
   }
   const removedCreatorIds = new Set([...corrections.values()].flatMap(row => row.removedCreatorId ? [row.removedCreatorId] : []))
-  return { groups, entities, creditsByWork, corrections, removedCreatorIds, recovered }
+  return { groups, entities, creditsByWork, corrections, removedCreatorIds, recovered, bangumiCorrections }
 }
 
 export type IdentityReview = ReturnType<typeof readIdentityReview>
 
-export function applyRecoveredBangumi(work: PublicWorkRecord, row: RecoveredBangumiWork): PublicWorkRecord {
-  const title = work.workId === row.workId ? row.title : work.title
-  const usable = (name: string) => !/[\u0080-\u009f\ufffd]/u.test(name)
-  const localizedTitles = work.localizedTitles.filter(item => usable(item.title))
+export function applyBangumiMetadata(work: PublicWorkRecord, row: BangumiCorrection): PublicWorkRecord {
+  if (row.previous && work.media.group !== row.previous) throw new Error(`Previous media changed for ${row.workId}`)
+  const title = row.title && work.workId === row.workId ? row.title : work.title
+  const clean = (name: string) => !/[\u0080-\u009f\ufffd]/u.test(name)
+  const localizedTitles = work.localizedTitles.filter(item => clean(item.title))
+  const translated = row.title && row.title !== row.originalTitle ? [{ title: row.title, kind: 'localized' as const }] : []
+  const original = row.originalTitle ? [{ title: row.originalTitle, kind: 'original' as const }] : []
+  const aliases = row.title && row.originalTitle ? [work.title, row.title, row.originalTitle] : []
+  const media = row.media || work.media
+  let summary = work.summary
+  if (summary?.kind === 'identity_summary' && work.workId === row.workId && row.title) {
+    const text = summary.text.replace(row.catalogTitle, title)
+    summary = { ...summary, text: clean(text) && text.includes(title) && !text.includes('类型待补')
+      ? text : `《${title}》为${media.format || '作品'}。`, sourceUrl: row.url }
+  }
   return {
-    ...work,
-    title,
-    media: row.media,
-    aliases: [...new Set([...work.aliases, work.title, row.title, row.originalTitle].filter(name => name !== title && usable(name)))],
-    localizedTitles: mergeLocalizedTitles([...localizedTitles, { title: row.originalTitle, kind: 'original' },
-      ...(row.title === row.originalTitle ? [] : [{ title: row.title, kind: 'localized' as const }])]),
+    ...work, title, media, summary,
+    aliases: [...new Set([...work.aliases, ...aliases].filter(name => name !== title && clean(name)))],
+    localizedTitles: mergeLocalizedTitles([...localizedTitles, ...original, ...translated]),
     sources: mergeSources([...work.sources, { title: 'Bangumi 作品条目', url: row.url },
       ...(row.editionSource ? [{ title: '国立国会图书馆书目', url: row.editionSource }] : [])]),
     catalogIdentifiers: [...(work.catalogIdentifiers || []), { provider: 'bangumi-subject', siteId: row.siteId, url: row.url }],
-    ...(work.summary?.kind === 'identity_summary' && work.workId === row.workId && {
-      summary: { kind: 'identity_summary' as const, text: `《${title}》为${row.media.format}。`, sourceUrl: row.url },
-    }),
   }
 }
 
@@ -146,17 +171,19 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
   const fix = review?.corrections.get(work.workId)
   const edges = review?.creditsByWork.get(work.workId)
   if (!fix && !edges) return work
-  if (fix?.edition && work.title !== fix.edition.catalogTitle) throw new Error(`Edition title drift: ${work.workId}`)
+  const editionTitle = fix?.edition?.catalogTitle || fix?.catalogTitle
+  if (editionTitle && work.title !== editionTitle) throw new Error(`Edition title drift: ${work.workId}`)
   const credits = (kind: CreatorKind) => (edges || []).filter(edge => edge.creditKind === kind)
-    .map(edge => ({ name: edge.name, role: edge.role, sourceUrl: edge.sourceUrls[0] }))
+    .map(edge => ({ name: edge.name, role: edge.role, sourceUrl: edge.sourceUrls[0], sourceUrls: edge.sourceUrls }))
   const correctedSources = work.sources.map(source =>
     fix?.wrongUrl && source.url === fix.wrongUrl ? { ...source, url: fix.url } : source)
   if (fix?.label) correctedSources.push({ title: '版本与收录范围', url: fix.url })
   if (fix?.edition) correctedSources.push({ title: `出版社书目 · ISBN ${fix.edition.isbn}`, url: fix.url })
-  else if (fix?.firstPublished) correctedSources.push({ title: '出版社书目与发售日期', url: fix.url })
+  else if (fix?.firstPublished) correctedSources.push({ title: fix.releaseCredits ? '发行方资料与首发日期' : '出版社书目与发售日期', url: fix.url })
   return {
     ...work,
     sources: mergeSources(correctedSources),
+    ...(fix?.media && { media: fix.media }),
     ...(fix?.firstPublished && {
       firstPublished: fix.firstPublished, firstPublishedLabel: fix.firstPublished,
       firstPublishedPrecision: 'day' as const,

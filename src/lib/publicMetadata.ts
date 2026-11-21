@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 import type { PublicCredit, PublicLocalizedTitle, PublicWorkRecord, PublicWorkSource } from './publicRelease'
 import { mergeCredits, mergeLocalizedTitles, mergeSources } from './publicDescriptiveMerge'
+import { addBookBibliography } from './publicBibliography'
 
 export const METADATA_DIRECTORY = 'metadata-20260905-v01'
 export type PublicMetadata = {
@@ -39,6 +40,7 @@ export function readPublicMetadata(directory: string, identities: Map<string, st
     if (row.schemaVersion !== 'baihepailei-public-metadata-v1' || !identities.has(row.workId) ||
         (identities.get(row.workId) || '') !== (row.siteId || '')) throw new Error(`Metadata identity mismatch: ${row.workId}`)
   }
+  if (!process.env.BAIHEPAILEI_RELEASE_DIR?.trim()) addBookBibliography(directory, byId)
   return byId
 }
 

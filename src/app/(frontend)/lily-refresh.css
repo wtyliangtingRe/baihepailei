@@ -241,6 +241,15 @@ body,
   .release-featured-card, .release-work-card { transition: none; }
 }
 
+.release-work-body .edition-original-title,
+.release-detail-heading .edition-original-title {
+  margin: .2rem 0 .5rem;
+  color: var(--library-muted);
+  font-size: .9rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 @media (min-width: 960px) {
   .release-filter-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .release-filter-grid label:first-child { grid-column: 1 / -1; }

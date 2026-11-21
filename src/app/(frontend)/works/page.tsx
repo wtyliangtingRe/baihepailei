@@ -12,6 +12,7 @@ import {
   type PublicWorkRecord,
 } from '@/lib/publicRelease'
 import {
+  chineseEditionTitle,
   compactCredits,
   gradeLabel,
   mediaGroupLabels,
@@ -168,6 +169,7 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
           {result.items.map((work) => {
             const classes = ratingClassEntries(work.rating)
             const credits = workCredits(work)
+            const translated = chineseEditionTitle(work.title, work.localizedTitles)
             return (
               <article className="release-work-card release-work-card-public" key={work.workId}>
                 <div className="release-work-rating">
@@ -188,7 +190,8 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
                     <span>{mediaLabel(work.media.group, work.media.type)}</span>
                     {work.rating.state !== 'rated' ? <span>{publicStatusLabels[work.rating.state]}</span> : null}
                   </div>
-                  <h2><Link href={canonicalContentUrl('works', work.workId)}>{work.title}</Link></h2>
+                  <h2><Link href={canonicalContentUrl('works', work.workId)}>{translated || work.title}</Link></h2>
+                  {translated ? <p className="edition-original-title">{work.title}</p> : null}
                   {credits ? <p className="release-credit-line">{credits}</p> : null}
                   <p className="result-text">{ratingLead(work.rating)}</p>
                   <div className="release-warning-row" aria-label="评级依据与警示">

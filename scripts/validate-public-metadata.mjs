@@ -82,6 +82,7 @@ if (currentReview) {
   }
 }
 const recovered = new Map(currentReview ? readLines(join(identityRoot,'recovered-bangumi.jsonl')).map(row => [row.workId,row]) : [])
+const bangumiCorrections = new Map(currentReview ? readLines(join(identityRoot,'bangumi-corrections.jsonl')).map(row => [row.workId,row]) : [])
 const groupTargets=new Map()
 if(currentReview) for(const group of readLines(join(identityRoot,'groups.jsonl'))) {
   for(const id of group.workIds) {
@@ -92,6 +93,7 @@ if(currentReview) for(const group of readLines(join(identityRoot,'groups.jsonl')
 const correctedUrls=new Map(currentReview ? readLines(join(identityRoot,'corrections.jsonl')).filter(row=>row.wrongUrl)
   .map(row=>[row.workId,row]) : [])
 if (currentReview) for (const row of readLines(join(identityRoot,'corrections.jsonl'))) {
+  if (row.media) reviewedMedia.set(row.workId,row.media.group)
   if (!row.firstPublished) continue
   const work=current.getPublicWorkById(row.workId)
   assert.equal(work.firstPublished,row.firstPublished)
@@ -111,12 +113,21 @@ for(const record of base){
   if (!restored && !recovered.has(before.primaryWorkId) && !groupTargets.has(before.primaryWorkId) && !ratingRevisions.has(before.primaryWorkId) && (before.rating.state!=='not_assessed' || !ratingAdditions.has(before.primaryWorkId))) {
     assert.equal(JSON.stringify(after.rating),JSON.stringify(before.rating),`Stable rating ${record.workId}`)
   }
+  const correctedCatalog = bangumiCorrections.get(record.workId)
+  if (correctedCatalog) {
+    assert.equal(record.identity.siteId,correctedCatalog.siteId)
+    assert.ok(after.sources.some(source => source.url === correctedCatalog.url))
+    if (correctedCatalog.title) {
+      assert.ok([after.title,...after.aliases,...after.localizedTitles.map(item => item.title)].includes(correctedCatalog.originalTitle))
+      assert.ok(!/[\u0080-\u009f\ufffd]/u.test(after.title))
+    }
+  }
   if (restored) {
     assert.ok(after.catalogIdentifiers.some(id => id.siteId === restored.siteId && id.url === restored.url))
     assert.ok(after.sources.some(source => source.url === restored.url))
     assert.ok([after.title,...after.aliases,...after.localizedTitles.map(item => item.title)].includes(restored.originalTitle))
   }
-  assert.equal(after.media.group,restored?.media.group || reviewedMedia.get(basePrimary) || before.media,`Stable media identity ${record.workId}`)
+  assert.equal(after.media.group,restored?.media.group || correctedCatalog?.media?.group || reviewedMedia.get(basePrimary) || before.media,`Stable media identity ${record.workId}`)
   publicWorks.set(after.workId,after)
 }
 const works=[...publicWorks.values()]

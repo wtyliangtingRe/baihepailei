@@ -11,6 +11,7 @@ import {
   gradeSummary,
   mediaLabel,
   publicStatusDescriptions,
+  chineseEditionTitle,
   publicStatusLabels,
   rangeLabel,
   ratingClassEntries,
@@ -89,6 +90,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
   if (work.workId !== workId) permanentRedirect(canonicalContentUrl('works', work.workId))
 
   const rating = work.rating
+  const translated = chineseEditionTitle(work.title, work.localizedTitles)
   const localizedTitleKeys = new Set([
     normalizedTitle(work.title),
     ...work.localizedTitles.map((title) => normalizedTitle(title.title)),
@@ -138,7 +140,8 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
           <p className="eyebrow">
             {mediaLabel(work.media.group, work.media.type)}
           </p>
-          <h1>{work.title}</h1>
+          <h1>{translated || work.title}</h1>
+          {translated ? <p className="edition-original-title">{work.title}</p> : null}
           <p className="release-detail-lead">{ratingLead(rating)}</p>
           <div className="release-warning-row" aria-label="评级依据与警示">
             {work.publicTags.map((tag) => (

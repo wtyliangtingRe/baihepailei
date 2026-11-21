@@ -1,6 +1,7 @@
 import type {
   PublicGrade,
   PublicMediaGroup,
+  PublicLocalizedTitle,
   PublicRatingState,
   PublicWorkRating,
 } from '@/lib/publicRelease'
@@ -66,6 +67,16 @@ export function ratingClassEntries(rating: PublicWorkRating) {
       code,
       definition: radarClassDefinitions[code],
     }))
+}
+
+export function chineseEditionTitle(catalogTitle: string, titles: PublicLocalizedTitle[]): string | undefined {
+  const normalized = (value: string) => value.normalize('NFKC').toLowerCase().replace(/\s+/gu, ' ').trim()
+  const chinese = titles.filter(row => row.language && ['zh-Hans', 'zh', 'zh-Hant'].includes(row.language))
+  if (chinese.some(row => normalized(row.title) === normalized(catalogTitle))) return undefined
+  for (const language of ['zh-Hans', 'zh', 'zh-Hant']) {
+    const row = chinese.find(title => title.language === language && title.kind !== 'romanized')
+    if (row) return row.title
+  }
 }
 
 export function ratingLead(rating: PublicWorkRating): string {

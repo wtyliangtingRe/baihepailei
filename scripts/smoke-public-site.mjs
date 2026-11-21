@@ -138,6 +138,17 @@ try {
   )
   assert.equal(health.visibleWorks + health.mergedAway, health.catalogWorks)
 
+  const translatedBook = await json('/api/work-lineage/works/4982')
+  const originalPublisher = translatedBook.organizations.find(credit => credit.role === '原版出版社')
+  assert.equal(originalPublisher?.creatorId, '700000002322')
+  const translatedPage = await (await response('/works/w-4982')).text()
+  for (const value of ['-6mm的禁忌', '-6mm no Taboo', 'マガジン・マガジン', '/organizations/o-700000002322']) {
+    assert.ok(translatedPage.includes(value), `Missing book or publisher identity: ${value}`)
+  }
+  const translatedSearch = await json('/api/work-lineage/works?q=' + encodeURIComponent('-6mm的禁忌'))
+  assert.ok(translatedSearch.items.some(work => work.workId === '4982'))
+  assert.equal((await response('/organizations/o-700000002322')).status, 200)
+
   for (const [id, grade] of [['29019', 'B'], ['28505', 'A'], ['23732', 'F']]) {
     const work = await json(`/api/work-lineage/works/${id}`)
     assert.equal(work.rating.grade, grade)
@@ -168,6 +179,20 @@ try {
   assert.equal(remasteredCollection.rating.class, 'B-LIGHT')
   assert.equal(remasteredCollection.rating.decidingSource, 'official')
   assert.equal(remasteredCollection.rating.uncertaintyKind, undefined)
+  assert.equal(remasteredCollection.media.group, 'visual_novel')
+  assert.equal(remasteredCollection.firstPublished, '2023-05-25')
+  assert.ok(remasteredCollection.summary.text.includes('同一张游戏卡'))
+  assert.ok(remasteredCollection.organizations.some(credit => credit.creatorId === '1013030' && credit.role === '发行'))
+  const collectionPage = await (await response('/works/w-4971')).text()
+  for (const expected of ['2023-05-25', 'サクセス', '/organizations/o-1013030', 'https://akaao.success-corp.co.jp/']) {
+    assert.ok(collectionPage.includes(expected), `Switch collection should display ${expected}`)
+  }
+  const successReleases = await (await response('/organizations/o-1013030?year=2023')).text()
+  assert.ok(successReleases.includes('/works/w-4971'))
+  assert.equal((await json('/api/work-lineage/works/30231')).media.group, 'visual_novel')
+  const repairedNovel = await json('/api/work-lineage/works/32114')
+  assert.equal(repairedNovel.title, '剑刻的银乙女')
+  assert.equal(repairedNovel.media.group, 'novel')
 
   for (const [id, grade] of [['12120','S'],['18154','B'],['19473','C'],['8506','D'],['7925','E'],['18574','F']]) {
     const work = await json(`/api/work-lineage/works/${id}`)

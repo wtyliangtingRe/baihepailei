@@ -1,0 +1,9 @@
+{
+  "credits": 7478,
+  "entities": 6,
+  "newlyCreditedWorks": 6172,
+  "sha256": {
+    "book-credits.jsonl.gz": "50e0aebb9af15d9fb95b8d7f0471b6e86d43cda89b5713caa9a7ae4c41590717",
+    "book-entities.jsonl.gz": "02a40e2a07c535b1262c45c47e29721753a2b4f8e5b7fb841653bacf5cc9117e"
+  }
+}
