@@ -5,6 +5,7 @@ import { gunzipSync } from 'node:zlib'
 import type { PublicCredit, PublicWorkRecord } from './publicRelease'
 import { descriptiveKey, mergeCredits } from './publicDescriptiveMerge'
 import { correctCredit, type IdentityReview } from './publicIdentityReview'
+import { readAnimationCreditNames } from './publicAnimationCreditNames'
 
 export type CreatorKind = 'person' | 'organization'
 export type PublicCreator = {
@@ -23,10 +24,12 @@ export type CreditEdge = {
   creditKind: CreatorKind
   sourceUrls: string[]
   bindingBasis: string
+  scope?: string
 }
-export type CreatorWork = { work: PublicWorkRecord; roles: string[]; names: string[]; year: string }
+export type CreatorWork = { work: PublicWorkRecord; roles: string[]; names: string[]; year: string; roleScopes?: Record<string, string[]> }
 export type PublicCreatorGraph = {
   entities: Map<string, PublicCreator>
+  redirects: Map<string, string>
   byCredit: Map<string, CreditEdge[]>
   works: Map<string, CreatorWork[]>
 }
@@ -58,10 +61,11 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
     if (rows.length !== descriptor.rows) throw new Error(`Creator graph count mismatch: ${file}`)
     return rows
   }
+  const creditNames = readAnimationCreditNames(directory, Boolean(review))
   const nodes = [...readRows<PublicCreator>('entities.jsonl.gz'), ...(review?.entities || [])]
   const entities = new Map<string, PublicCreator>()
   for (const node of nodes) {
-    if (review?.removedCreatorIds.has(node.creatorId)) continue
+    if (review?.removedCreatorIds.has(node.creatorId) || creditNames.redirects.has(node.creatorId)) continue
     if (!/^\d{7,12}$/.test(node.creatorId) || entities.has(node.creatorId) ||
         !['person', 'organization'].includes(node.kind) || !node.name.trim()) {
       throw new Error('Invalid or repeated CreatorId')
@@ -78,7 +82,9 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
   const seen = new Set<string>()
   const creditFiles = manifest.files.filter((row: { file: string }) => /^credits-\d{4}\.jsonl\.gz$/.test(row.file))
   if (!creditFiles.length) throw new Error('Missing creator credit shards')
-  const edges: CreditEdge[] = creditFiles.flatMap((row: { file: string }) => readRows<CreditEdge>(row.file))
+  const edges: CreditEdge[] = creditFiles.flatMap((row: { file: string }) => readRows<CreditEdge>(row.file)
+    .flatMap(edge => creditNames.resolve(edge, entities)))
+  creditNames.assertComplete()
   for (const reviewed of review?.creditsByWork.values() || []) edges.push(...reviewed)
   for (const original of edges) {
     if (review?.removedCreatorIds.has(original.creatorId)) continue
@@ -98,8 +104,13 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
     const key = creditKey(work.workId, edge.creditKind, edge.name, edge.role)
     byCredit.set(key, [...(byCredit.get(key) || []), edge])
     const works = perCreator.get(creator.creatorId) || new Map<string, CreatorWork>()
-    const entry = works.get(work.workId) || { work, roles: [], names: [], year: publicationYear(work) }
+    const entry: CreatorWork = works.get(work.workId) || { work, roles: [], names: [], year: publicationYear(work) }
     if (!entry.roles.includes(edge.role)) entry.roles.push(edge.role)
+    if (edge.scope) {
+      const scopes = entry.roleScopes ||= {}
+      const values = scopes[edge.role] ||= []
+      if (!values.includes(edge.scope)) values.push(edge.scope)
+    }
     if (!entry.names.includes(edge.displayName)) entry.names.push(edge.displayName)
     works.set(work.workId, entry)
     perCreator.set(creator.creatorId, works)
@@ -122,14 +133,14 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
     return (b.work.firstPublished || '').localeCompare(a.work.firstPublished || '') ||
       a.work.title.localeCompare(b.work.title, 'zh-CN') || Number(a.work.workId) - Number(b.work.workId)
   })]))
-  return { entities, byCredit, works }
+  return { entities, byCredit, works, redirects: creditNames.redirects }
 }
 
 export function withCreatorIds(work: PublicWorkRecord, graph: PublicCreatorGraph): PublicWorkRecord {
   function attach(credits: PublicCredit[], kind: CreatorKind): PublicCredit[] {
     return mergeCredits(credits.flatMap(credit => (graph.byCredit.get(creditKey(work.workId, kind, credit.name, credit.role)) || [])
       .map(edge => ({ ...credit, name: edge.displayName, originalName: credit.name, originalNames: [credit.name],
-        creatorId: edge.creatorId, creatorKind: graph.entities.get(edge.creatorId)!.kind,
+        creatorId: edge.creatorId, creatorKind: graph.entities.get(edge.creatorId)!.kind, scope: edge.scope,
         sourceUrls: [...new Set([...(credit.sourceUrls || []), ...edge.sourceUrls, ...(credit.sourceUrl ? [credit.sourceUrl] : [])])] }))))
   }
   return { ...work, creators: attach(work.creators, 'person'), organizations: attach(work.organizations, 'organization') }

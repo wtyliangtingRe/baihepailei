@@ -2,6 +2,18 @@ import type { PublicWorkRecord } from './publicRelease'
 
 export type WorkReference = { number: number; url: string; title: string; purpose: string; usages: string[]; tier?: string }
 
+const referenceTierLabels: Record<string, string> = {
+  official: '官方资料',
+  community: '社区资料',
+  secondary: '第三方资料',
+  official_metadata: '目录信息',
+}
+
+export function referenceDescription(reference: WorkReference): string {
+  const label = reference.tier && referenceTierLabels[reference.tier]
+  return label ? `${reference.purpose} · ${label}` : reference.purpose
+}
+
 export function referencePurpose(value: string): string {
   try {
     const url = new URL(value), host = url.hostname.toLowerCase()

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound, redirect } from 'next/navigation'
+import { notFound, permanentRedirect, redirect } from 'next/navigation'
 import { getPublicCreatorById, getPublicCreatorWorks } from '@/lib/publicRelease'
 import type { CreatorKind, CreatorWork } from '@/lib/publicCreatorGraph'
 import { gradeLabel, mediaLabel, publicStatusLabels } from '@/lib/radar/publicPresentation'
@@ -35,6 +35,7 @@ export default async function CreatorDetail({ kind, params, searchParams }: {
     if (page > 1) params.set('page', String(page))
     return `${route}${params.size ? `?${params}` : ''}`
   }
+  if (id !== creator.creatorId) permanentRedirect(href(Math.min(page, totalPages)))
   if (page > totalPages) redirect(href(totalPages))
   const groups = new Map<string, CreatorWork[]>()
   for (const entry of result.items) groups.set(entry.year, [...(groups.get(entry.year) || []), entry])
@@ -61,11 +62,11 @@ export default async function CreatorDetail({ kind, params, searchParams }: {
       {[...groups].map(([year, entries]) => <section className="creator-year-section" key={year} aria-labelledby={`year-${year}`}>
         <h2 id={`year-${year}`}>{year === 'unknown' ? '年份待确认' : `${year} 年`}</h2>
         <ul className="creator-works">
-          {entries.map(({ work, roles, names }) => <li key={work.workId}>
+          {entries.map(({ work, roles, roleScopes, names }) => <li key={work.workId}>
             <div className="creator-work-title">
               <Link href={canonicalContentUrl('works', work.workId)}>{work.title}</Link>
               <span>{mediaLabel(work.media.group, work.media.type)}{work.firstPublishedLabel || work.firstPublished ? ` · ${work.firstPublishedLabel || work.firstPublished}` : ''}</span>
-              <small>{roles.join(' / ')}{names.some(name => name !== creator.name) ? ` · 署名：${names.join('、')}` : ''}</small>
+              <small>{roles.map(role => roleScopes?.[role]?.length ? `${role}（${roleScopes[role].join('、')}）` : role).join(' / ')}{names.some(name => name !== creator.name) ? ` · 署名：${names.join('、')}` : ''}</small>
             </div>
             <Link className="creator-work-rating" href={canonicalContentUrl('works', work.workId)} aria-label={`查看《${work.title}》的作品资料与评级`}>
               {work.rating.grade ? <><span className={`rating-chip grade-${work.rating.grade}`}>{work.rating.grade}</span><small>{gradeLabel(work.rating.grade)}</small></> :

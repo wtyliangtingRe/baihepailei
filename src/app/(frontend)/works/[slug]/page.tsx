@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound, permanentRedirect } from 'next/navigation'
 
 import { getPublicWorkById, type PublicCredit } from '@/lib/publicRelease'
-import { collectWorkReferences } from '@/lib/publicWorkReferences'
+import { collectWorkReferences, referenceDescription } from '@/lib/publicWorkReferences'
 import {
   classTone,
   confidenceLabel,
@@ -61,7 +61,13 @@ const publicationPrecisionLabels: Record<string, string> = {
   unknown: '精度待确认',
 }
 
+function titleKindPriority(kind?: string): number {
+  if (kind === 'original') return 0
+  return kind === 'alias' ? 2 : 1
+}
+
 function localizedTitleLabel(language?: string, region?: string, kind?: string): string {
+  if (kind === 'alias' && !language && !region) return '其他别名'
   const languageLabel = language ? languageLabels[language] || language : ''
   const regionalLabel = [languageLabel, region && `（${region}）`].filter(Boolean).join('')
   const kindLabel = kind ? localizedTitleKindLabels[kind] || kind : ''
@@ -97,6 +103,19 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
     ...work.localizedTitles.map((title) => normalizedTitle(title.title)),
   ])
   const displayAliases = work.aliases.filter((title) => !localizedTitleKeys.has(normalizedTitle(title)))
+  const titleRows = [
+    ...work.localizedTitles,
+    ...displayAliases.map(title => ({ title, kind: 'alias', language: undefined, region: undefined })),
+  ].sort((left, right) => {
+    return titleKindPriority(left.kind) - titleKindPriority(right.kind)
+  })
+  const names = titleRows.map(title => (
+    <div key={`${title.language || 'und'}-${title.region || ''}-${title.kind || ''}-${title.title}`}>
+      <dt>{localizedTitleLabel(title.language, title.region, title.kind)}</dt>
+      <dd>{title.title}</dd>
+    </div>
+  ))
+  const visibleNames = names.length > 4 ? 3 : names.length
   const classes = ratingClassEntries(rating)
   const range = rangeLabel(rating)
   const hasBasicMetadata = Boolean(
@@ -123,7 +142,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
           <Link href={canonicalContentUrl((credit.creatorKind || defaultKind) === 'person' ? 'creators' : 'organizations', credit.creatorId!)}>{credit.name}</Link>
           {referenceMarks([credit.sourceUrl, ...(credit.sourceUrls || [])])}
         </div>
-        <span>{credit.role}</span>
+        <span>{credit.role}{credit.scope && `（${credit.scope}）`}</span>
       </li>
     ))
     return <section>
@@ -178,6 +197,14 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
             {rating.uncertaintyKind ? <span className="release-warning-chip warning-data">具体雷点未确认</span> : null}
             {rating.needsMoreResearch ? <span className="release-warning-chip warning-data">资料仍待补充</span> : null}
           </div>
+          {rating.reasoningSummary && (
+            <details className="work-story-evidence">
+              <summary>为什么这样评<span>含剧情</span></summary>
+              <p lang={likelyEnglish(rating.reasoningSummary) ? 'en' : 'zh-CN'}>
+                {rating.reasoningSummary}{referenceMarks([rating.evidenceUrl])}
+              </p>
+            </details>
+          )}
           <div className="collection-actions">
             <Link className="back-link" href="/works">返回作品列表</Link>
             {rating.grade ? <Link className="back-link" href={`/works?grade=${rating.grade}`}>查看同级作品</Link> : null}
@@ -202,21 +229,16 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
       <section id="work-info" className="detail-card release-title-alias-card" aria-label="译名与别名">
         <p className="eyebrow">名称资料</p>
         <h2>译名与别名</h2>
-        {work.localizedTitles.length || displayAliases.length ? (
-          <dl className="release-detail-list">
-            {work.localizedTitles.map((title) => (
-              <div key={`${title.language || 'und'}-${title.region || ''}-${title.kind || ''}-${title.title}`}>
-                <dt>{localizedTitleLabel(title.language, title.region, title.kind)}</dt>
-                <dd>{title.title}</dd>
-              </div>
-            ))}
-            {displayAliases.length ? (
-              <div>
-                <dt>其他别名</dt>
-                <dd>{displayAliases.join('、')}</dd>
-              </div>
-            ) : null}
-          </dl>
+        {names.length ? (
+          <>
+            <dl className="release-detail-list">{names.slice(0, visibleNames)}</dl>
+            {names.length > visibleNames && (
+              <details className="release-credit-more work-title-more">
+                <summary>其余 {names.length - visibleNames} 个名称</summary>
+                <dl className="release-detail-list">{names.slice(visibleNames)}</dl>
+              </details>
+            )}
+          </>
         ) : (
           <dl className="release-detail-list"><div><dt>当前收录名</dt><dd>{work.title}</dd></div></dl>
         )}
@@ -358,16 +380,6 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
           {rating.confidence ? <div><dt>资料把握</dt><dd>{confidenceLabel(rating.confidence)}</dd></div> : null}
           <div><dt>仍需补充</dt><dd>{!rating.grade || rating.needsMoreResearch ? '是' : '否'}</dd></div>
         </dl>
-
-        {rating.reasoningSummary ? (
-          <div className="release-reasoning">
-            <strong>为什么这样评</strong>
-            <p lang={likelyEnglish(rating.reasoningSummary) ? 'en' : 'zh-CN'}>{rating.reasoningSummary}</p>
-            {likelyEnglish(rating.reasoningSummary) ? (
-              <small>来源原文</small>
-            ) : null}
-          </div>
-        ) : null}
       </section>
 
       <section id="work-sources" className="detail-card release-sources-card">
@@ -385,7 +397,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
                 <span className="work-reference-number">[{reference.number}]</span>
                 <div>
                   <a href={reference.url} rel="noreferrer" target="_blank">{reference.title} ↗</a>
-                  <small>{reference.purpose}{reference.tier === 'community' ? ' · 社区书目' : reference.tier === 'official' ? ' · 官方资料' : reference.tier ? ` · ${reference.tier}` : ''}</small>
+                  <small>{referenceDescription(reference)}</small>
                   {reference.usages.length ? <p>{reference.usages.join('；')}</p> : null}
                 </div>
               </li>

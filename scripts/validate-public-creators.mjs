@@ -37,6 +37,8 @@ const staffCounts = currentReview ? JSON.parse(readFileSync(join(identityRoot, '
   : { entities: 0, credits: 0, newlyCreditedWorks: 0 }
 const licensedAnimation = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'licensed-animation-credits.json'), 'utf8'))
   : { credits: [], newlyCreditedWorks: 0 }
+const animationNames = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'animation-credit-names.json'), 'utf8'))
+  : { redirects: {}, rows: [] }
 if (currentReview) {
   const bookEntities = gunzipSync(readFileSync(join(bibliographyRoot, 'book-entities.jsonl.gz'))).toString('utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
   assert.equal(bookEntities.length, bookCounts.entities)
@@ -75,6 +77,15 @@ if (currentReview) {
 const records = release.getPublicCreatorGraphInput()
 assert.equal(records.length, manifest.counts.publicWorks + reviewCounts.releasedTitleMatches - (reviewCounts.mergedSourceRows ?? reviewCounts.mergeGroups))
 const publicIds = new Set(records.map(work => work.workId))
+const correctedSources = new Map()
+for (const edit of animationNames.rows) {
+  const workId = release.getPublicWorkById(edit.workId).workId
+  const list = correctedSources.get(workId) || new Set()
+  list.add(`https://bgm.tv/subject/${edit.subject}/persons`)
+  for (const target of edit.targets) list.add(`https://bgm.tv/person/${target.person}`)
+  if (edit.official) list.add(edit.official)
+  correctedSources.set(workId, list)
+}
 let linkedCredits = 0, references = 0
 const expectedWorks = new Map()
 for (const record of records) {
@@ -87,7 +98,8 @@ for (const record of records) {
     ...(record.rating.evidenceSources || []).map(source => source.url),
     ...[...record.creators, ...record.organizations].flatMap(credit => [credit.sourceUrl, ...(credit.sourceUrls || [])]),
   ].filter(Boolean))
-  assert.equal(urls.size, oldUrls.size, `External links preserved without additions: ${record.workId}`)
+  const expectedUrls = new Set([...oldUrls, ...(correctedSources.get(record.workId) || [])])
+  assert.deepEqual(urls, expectedUrls, `Unexpected change in source links for ${record.workId}`)
   for (const url of oldUrls) assert.ok(urls.has(url), `Lost source ${url}`)
   for (const field of ['creators', 'organizations']) {
     for (const credit of record[field]) {
@@ -107,6 +119,10 @@ for (const record of records) {
 }
 let relatedWorks = 0
 for (const entity of [...entities, ...extraEntities]) {
+  if (animationNames.redirects[entity.creatorId]) {
+    assert.equal(release.getPublicCreatorById(entity.creatorId)?.creatorId, animationNames.redirects[entity.creatorId])
+    continue
+  }
   const result = release.getPublicCreatorWorks(entity.creatorId, { limit: 100 })
   const rows = [...result.items]
   for (let offset = 100; offset < result.total; offset += 100) rows.push(...release.getPublicCreatorWorks(entity.creatorId, { offset, limit: 100 }).items)
@@ -125,6 +141,6 @@ const creditedWorks = records.filter(work => work.creators.length || work.organi
 assert.equal(creditedWorks, manifest.counts.creditedWorks + reviewCounts.newlyCreditedWorks - reviewCounts.duplicateCreditedWorks +
   bookCounts.newlyCreditedWorks + staffCounts.newlyCreditedWorks + licensedAnimation.newlyCreditedWorks + (reviewCounts.historicalPrintNewlyCreditedWorks || 0))
 if (currentReview) assert.equal(release.getPublicCreatorById('1010974'), null, 'Retired null Steam organization')
-console.log(JSON.stringify({ creators: entities.length + extraEntities.length - reviewCounts.removedEntities, publicWorks: records.length,
+console.log(JSON.stringify({ creators: entities.length + extraEntities.length - reviewCounts.removedEntities - Object.keys(animationNames.redirects).length, publicWorks: records.length,
   creditedWorks, supplementaryCredits: reviewCounts.credits + bookCounts.credits + staffCounts.credits + licensedAnimation.credits.length + (reviewCounts.historicalPrintPublisherCredits || 0) - (reviewCounts.publicationRoleReplacements || 0), linkedCredits, relatedWorks, references,
   uniqueIds: true, originalCreditsPreserved: true, existingLinksPreserved: true, publicWorkIdsOnly: true, status: 'PASS' }, null, 2))

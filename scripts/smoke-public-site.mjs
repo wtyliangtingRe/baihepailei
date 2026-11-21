@@ -208,10 +208,15 @@ try {
   assert.equal(repairedNovel.title, '剑刻的银乙女')
   assert.equal(repairedNovel.media.group, 'novel')
 
-  for (const [id, grade] of [['12120','S'],['18154','B'],['19473','C'],['8506','D'],['7925','E'],['18574','F']]) {
+  for (const [id, grade] of [['12120','S'],['18154','B'],['3934','C'],['19473','D'],['8506','D'],['7925','E'],['18574','F']]) {
     const work = await json(`/api/work-lineage/works/${id}`)
     assert.equal(work.rating.grade,grade,`New assessment ${id}`)
     assert.ok(work.rating.reasoningSummary && work.rating.evidenceUrl)
+  }
+  for (const [id, source] of [['4206', 'source-official'], ['6093', 'source-community']]) {
+    const work = await json(`/api/work-lineage/works/${id}`)
+    assert.equal(work.rating.grade, 'E')
+    assert.deepEqual(work.publicTags.filter(tag => tag.group === '评级来源').map(tag => tag.key), [source])
   }
   for (const id of ['15053', '15056']) {
     const work = await json(`/api/work-lineage/works/${id}`)
@@ -354,6 +359,11 @@ try {
   ]) {
     assert.ok(taggedDetail.includes(expected), `tagged detail should include ${expected}`)
   }
+  assert.match(taggedDetail, /<details class="work-story-evidence">/)
+  assert.ok(taggedDetail.indexOf('为什么这样评') < taggedDetail.indexOf('译名与别名'))
+  assert.match(taggedDetail, /<details class="release-credit-more work-title-more">/)
+  assert.ok(taggedDetail.includes('资料来源 · 目录信息'))
+  assert.equal(taggedDetail.includes('资料来源 · official_metadata'), false)
   assert.ok(taggedDetail.indexOf('作品基本资料') < taggedDetail.indexOf('排雷结论'))
   assert.ok(taggedDetail.indexOf('作品介绍') < taggedDetail.indexOf('排雷结论'))
   assert.ok(taggedDetail.indexOf('排雷结论') < taggedDetail.indexOf('资料来源'))

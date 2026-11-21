@@ -33,6 +33,7 @@ export type PublicMediaGroup = (typeof PUBLIC_MEDIA_GROUPS)[number]
 export type PublicCredit = {
   name: string
   role: string
+  scope?: string
   sourceUrl?: string
   sourceUrls?: string[]
   creatorId?: string
@@ -1041,11 +1042,13 @@ export function getPublicCreatorGraphInput(): PublicWorkRecord[] {
 
 export function getPublicCreatorById(creatorId: string) {
   if (!/^\d{7,12}$/.test(creatorId)) return null
-  return getCreatorGraph().entities.get(creatorId) || null
+  const graph = getCreatorGraph()
+  return graph.entities.get(graph.redirects.get(creatorId) || creatorId) || null
 }
 
 export function getPublicCreatorWorks(creatorId: string, input: { year?: string; offset?: number; limit?: number } = {}) {
-  const all = getCreatorGraph().works.get(creatorId) || []
+  const graph = getCreatorGraph()
+  const all = graph.works.get(graph.redirects.get(creatorId) || creatorId) || []
   const years = [...new Set(all.map(entry => entry.year))]
   const matched = input.year ? all.filter(entry => entry.year === input.year) : all
   const offset = normalizeOffset(input.offset), limit = normalizeLimit(input.limit)

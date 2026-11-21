@@ -104,6 +104,9 @@ type CatalogStaff = Pick<BookCredit, 'sourceWorkId' | 'siteId' | 'creatorId' | '
 type AnimationCredit = Pick<BookCredit, 'sourceWorkId' | 'siteId' | 'creatorId' | 'kind' | 'name' | 'role'> & {
   programUrl: string
   productionUrl: string
+  subject?: number
+  person?: number
+  editionRegistry?: string
 }
 
 export function addCatalogStaff(directory: string, identities: Map<string, string | null | undefined>,
@@ -155,6 +158,14 @@ export function addCatalogStaff(directory: string, identities: Map<string, strin
     }
     const links = review.creditsByWork.get(workId) || []
     const sourceUrls = [row.programUrl, row.productionUrl]
+    if (row.editionRegistry || row.subject || row.person) {
+      if (!Number.isSafeInteger(row.subject) || !row.subject || row.subject < 1 ||
+          !Number.isSafeInteger(row.person) || !row.person || row.person < 1 ||
+          !/^https:\/\/(?:www\.wikidata\.org\/wiki\/Q[1-9]\d*|github\.com\/bangumi-data\/bangumi-data\/blob\/[0-9a-f]{40}\/data\/items\/\d{4}\/\d{2}\.json#L[1-9]\d*)$/.test(row.editionRegistry || '')) {
+        throw new Error(`Invalid licensed staff registry for ${row.sourceWorkId}`)
+      }
+      sourceUrls.push(`https://bgm.tv/subject/${row.subject}/persons`, `https://bgm.tv/person/${row.person}`, row.editionRegistry!)
+    }
     const existing = links.find(item => item.creatorId === row.creatorId && item.creditKind === row.kind && item.role === row.role)
     if (existing) {
       existing.sourceUrls = [...new Set([...existing.sourceUrls, ...sourceUrls])]

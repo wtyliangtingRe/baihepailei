@@ -1069,6 +1069,38 @@ body {
   font-size: clamp(16px, 2vw, 19px) !important;
 }
 
+.work-story-evidence {
+  max-width: 45rem;
+  margin-block: 14px;
+  padding: 0 14px;
+  border-inline-start: 3px solid var(--release-line);
+}
+
+.work-story-evidence summary {
+  width: fit-content;
+  padding-block: 6px;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.work-story-evidence summary span {
+  margin-inline-start: 0.65em;
+  color: var(--release-muted);
+  font-size: 0.82em;
+  font-weight: 400;
+}
+
+.work-story-evidence p {
+  margin: 0;
+  padding-block: 5px 8px;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
+.work-title-more {
+  margin-block-start: 6px;
+}
+
 .release-risk-banner {
   display: flex;
   align-items: center;
