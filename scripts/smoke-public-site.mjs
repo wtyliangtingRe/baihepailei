@@ -197,7 +197,7 @@ try {
     assert.equal(work.sources.some(source => source.url === yuriReview), includesReview)
     assert.equal(work.rating.evidenceSources.some(source => source.url === yuriReview), includesReview)
   }
-  for (const [original, remake, appId] of [['30533', '30530', '282900'], ['30536', '30531', '351710'], ['30999', null, '1901370']]) {
+  for (const [original, remake, appId] of [['30533', '30530', '282900'], ['30536', '30531', '351710'], ['31486', '31485', '353270'], ['30999', null, '1901370']]) {
     const sources = (await json(`/api/work-lineage/works/${original}`)).sources
     assert.ok(sources.some(source => source.tier === 'official'))
     assert.ok(!sources.some(source => source.url.includes(`steampowered.com/app/${appId}`)))
