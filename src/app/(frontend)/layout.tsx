@@ -68,8 +68,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   {item.label}
                 </Link>
               ))}
-              <ThemeToggle />
             </nav>
+            <ThemeToggle />
           </header>
           <div className="site-review-notice" role="note">
             <strong>AI 综合，待复核</strong>
