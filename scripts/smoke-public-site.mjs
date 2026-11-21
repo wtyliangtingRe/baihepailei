@@ -179,6 +179,8 @@ try {
   assert.ok(author.sourceUrls.some(url => url.includes('mangaupdates.com/author/')))
   assert.ok(translatedBook.sources.some(source => source.url === 'https://bgm.tv/subject/26072'))
   const shortManga = await json('/api/work-lineage/works/5048')
+  const forumManga = await json('/api/work-lineage/works/5121')
+  assert.ok(forumManga.sources.some(source => source.tier === 'community' && source.url === 'https://dynasty-scans.com/forum/topics/20307-100-days-until-the-president-and-new-hire-have-xxx-discussion'))
   assert.ok(shortManga.sources.some(source => source.tier === 'official' && source.url === 'https://www.pixiv.net/artworks/95560265'))
   assert.ok(shortManga.sources.some(source => source.tier === 'community' && source.url === 'https://mangadex.org/title/931b2dc4-0c44-43cf-a2b3-a15d629c95c6'))
   const creditedManga = await json('/api/work-lineage/works/5072')

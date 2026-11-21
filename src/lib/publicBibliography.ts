@@ -72,8 +72,9 @@ export function addBookBibliography(directory: string, metadata: Map<string, Pub
         (url.host === 'www.books.or.jp' && /^\/book-details\/97[89]\d{10}$/.test(url.pathname)) ||
         (url.host === 'www.cmoa.jp' && /^\/title\/[1-9]\d*\/$/.test(url.pathname)) ||
         (url.host === 'booklive.jp' && /^\/product\/index\/title_id\/\d+\/vol_no\/\d+$/.test(url.pathname)))
-      const isReader = source.sourceType === 'reader' && url.host === 'booklive.jp' &&
-        /^\/review\/list\/title_id\/\d+\/vol_no\/\d+$/.test(url.pathname)
+      const isReader = source.sourceType === 'reader' && (
+        (url.host === 'booklive.jp' && /^\/review\/list\/title_id\/\d+\/vol_no\/\d+$/.test(url.pathname)) ||
+        (url.host === 'dynasty-scans.com' && /^\/forum\/topics\/[1-9]\d*-[a-z0-9_-]+$/.test(url.pathname)))
       const isOriginal = source.sourceType === 'author' && url.host === 'www.pixiv.net' &&
         /^\/artworks\/[1-9]\d*$/.test(url.pathname)
       const isCreditedPublisher = source.sourceType === 'creditedPublisher' &&
