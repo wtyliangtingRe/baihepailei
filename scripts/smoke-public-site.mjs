@@ -141,8 +141,12 @@ try {
   const translatedBook = await json('/api/work-lineage/works/4982')
   const originalPublisher = translatedBook.organizations.find(credit => credit.role === '原版出版社')
   assert.equal(originalPublisher?.creatorId, '700000002322')
+  const author = translatedBook.creators.find(credit => credit.role === '作者')
+  assert.equal(author?.creatorId, '503223358886')
+  assert.ok(translatedBook.creators.some(credit => credit.role === '绘者' && credit.creatorId === author.creatorId))
+  assert.ok(author.sourceUrls.some(url => url.includes('mangaupdates.com/author/')))
   const translatedPage = await (await response('/works/w-4982')).text()
-  for (const value of ['-6mm的禁忌', '-6mm no Taboo', 'マガジン・マガジン', '/organizations/o-700000002322']) {
+  for (const value of ['-6mm的禁忌', '-6mm no Taboo', 'マガジン・マガジン', '/organizations/o-700000002322', '/creators/c-503223358886']) {
     assert.ok(translatedPage.includes(value), `Missing book or publisher identity: ${value}`)
   }
   const translatedSearch = await json('/api/work-lineage/works?q=' + encodeURIComponent('-6mm的禁忌'))

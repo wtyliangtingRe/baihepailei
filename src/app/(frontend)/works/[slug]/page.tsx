@@ -75,10 +75,11 @@ export async function generateMetadata(
   const workId = recordIdFromContentRoute('works', slug)
   const work = workId ? getPublicWorkById(workId) : null
   if (!work) return {}
+  const title = chineseEditionTitle(work.title, work.localizedTitles) || work.title
   const description = work.rating.grade
-    ? `${work.title}：${work.rating.grade} 级（${gradeLabel(work.rating.grade)}）及具体排雷警示。`
-    : `${work.title} 的作品资料与评级进度。`
-  return { title: work.title, description }
+    ? `《${title}》的评级为 ${work.rating.grade} 级（${gradeLabel(work.rating.grade)}），可查阅具体警示及依据。`
+    : `《${title}》的作品资料与评级进度。`
+  return { title, description }
 }
 
 export default async function WorkDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -356,7 +357,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
           {rating.grade ? <div><dt>核心等级</dt><dd>{rating.grade} · {gradeLabel(rating.grade)}</dd></div> : null}
           {range ? <div><dt>结论范围</dt><dd>{range}</dd></div> : null}
           {rating.confidence ? <div><dt>资料把握</dt><dd>{confidenceLabel(rating.confidence)}</dd></div> : null}
-          <div><dt>仍需补充</dt><dd>{rating.needsMoreResearch ? '是' : '否'}</dd></div>
+          <div><dt>仍需补充</dt><dd>{!rating.grade || rating.needsMoreResearch ? '是' : '否'}</dd></div>
         </dl>
 
         {rating.reasoningSummary ? (
@@ -385,7 +386,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
                 <span className="work-reference-number">[{reference.number}]</span>
                 <div>
                   <a href={reference.url} rel="noreferrer" target="_blank">{reference.title} ↗</a>
-                  <small>{reference.purpose}{reference.tier ? ` · 资料层级 ${reference.tier}` : ''}</small>
+                  <small>{reference.purpose}{reference.tier === 'community' ? ' · 社区书目' : reference.tier === 'official' ? ' · 官方资料' : reference.tier ? ` · ${reference.tier}` : ''}</small>
                   {reference.usages.length ? <p>{reference.usages.join('；')}</p> : null}
                 </div>
               </li>

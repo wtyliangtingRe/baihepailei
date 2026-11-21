@@ -5,3 +5,5 @@
 资料来自 [MangaBaka](https://mangabaka.org/developers/dumps) 及其列明的书目提供者 AniList、Anime-Planet、Kitsu、MangaUpdates、MyAnimeList、Shikimori。来源说明和非商业使用条件见 [MangaBaka 的署名与使用条款](https://mangabaka.org/about/data-license)。作品页面提供相应条目的链接。
 
 原版出版社依据同一版本的两份书目及出版社条目核对。作品页署名附有 MangaUpdates 版本页、出版社资料与 MangaBaka 书目，可从出版社页反查对应作品。出版社参与发行与作品的具体评级分开记录。
+
+作者和绘者也按版本与职务核对。两份书目都须列出该创作者及对应职务，作品页链接到具体版本与创作者资料页。复用站内既有作者编号时，还须与该作者已署名的作品产生交集。同一人兼任创作与绘制时，作品页列出两项署名，作者页只列这部作品一次。

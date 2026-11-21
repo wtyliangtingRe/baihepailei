@@ -6,6 +6,8 @@ import type { PublicMetadata } from './publicMetadata'
 import type { CreditEdge, CreatorKind, PublicCreator } from './publicCreatorGraph'
 import type { PublicLocalizedTitle } from './publicRelease'
 
+const bookUrl = /^https:\/\/mangabaka\.org\/(?:manga|manhwa|manhua|oel|novel)\/[1-9]\d*\//
+
 type BookBibliography = {
   workId: string
   siteId: string
@@ -30,7 +32,7 @@ export function addBookBibliography(directory: string, metadata: Map<string, Pub
   for (const row of readRows<BookBibliography>(root, 'books.jsonl.gz', manifest.sha256, manifest.records)) {
     const existing = metadata.get(row.workId)
     if (!existing || existing.siteId !== row.siteId || seen.has(row.workId) ||
-        !/^https:\/\/mangabaka\.org\/manga\/[1-9]\d*\//.test(row.url)) {
+        !bookUrl.test(row.url)) {
       throw new Error(`Book bibliography identity mismatch for ${row.workId}`)
     }
     seen.add(row.workId)
@@ -68,7 +70,7 @@ export function addBookCredits(directory: string, identities: Map<string, string
     if (!workId || identities.get(row.sourceWorkId) !== row.siteId ||
         !/^https:\/\/www\.mangaupdates\.com\/series\/[a-z0-9]+(?:\/|$)/.test(row.url) ||
         !/^https:\/\/www\.mangaupdates\.com\/(?:publisher|author)\/[a-z0-9]+(?:\/|$)/.test(row.authorityUrl) ||
-        !/^https:\/\/mangabaka\.org\/manga\/[1-9]\d*\//.test(row.bibliographyUrl)) {
+        !bookUrl.test(row.bibliographyUrl)) {
       throw new Error(`Book credit identity mismatch for ${row.sourceWorkId}`)
     }
     const edges = creditsByWork.get(workId) || []
