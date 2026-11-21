@@ -105,6 +105,8 @@ test('edition research can resolve an obsolete grade and retain a supported lowe
     ['11646', 'A', 'official', 'A-YURI-HAREM'],
     ['10579', 'D', 'community', 'D-GENERAL'],
     ['37189', 'E', 'official', 'E-PAST-MALE-ROMANCE'],
+    ['38240', 'B', 'community', 'B-POWER-IMBALANCE'],
+    ['38574', 'B', 'official', 'B-LIGHT'],
   ]
   for (const [workId, grade, source, code] of cases) {
     const work = getPublicWorkById(workId)
