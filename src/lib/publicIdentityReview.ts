@@ -61,6 +61,7 @@ type ReviewedCredit = {
   creatorId: string
   creditKind: CreatorKind
   role: string
+  roleSourceUrl?: string
 }
 
 export function readIdentityReview(directory: string, identities: Map<string, string | null | undefined>,
@@ -131,7 +132,7 @@ export function readIdentityReview(directory: string, identities: Map<string, st
     const edges = creditsByWork.get(row.workId) || []
     edges.push({ workId: row.workId, sourceWorkId: row.sourceWorkId, creatorId: row.creatorId, creditKind: row.creditKind,
       role: row.role, name: row.name, displayName: row.name, bindingBasis: 'wikidata',
-      sourceUrls: [`https://www.wikidata.org/wiki/${row.wikidataWork}`] })
+      sourceUrls: [`https://www.wikidata.org/wiki/${row.wikidataWork}`, ...(row.roleSourceUrl ? [row.roleSourceUrl] : [])] })
     creditsByWork.set(row.workId, edges)
   }
   for (const fix of corrections.values()) {

@@ -129,9 +129,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411,
-      visibleWorks: 34_672,
-      mergedAway: 739,
-      mergedGroups: 715,
+      visibleWorks: 34_551,
+      mergedAway: 860,
+      mergedGroups: 836,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords,
     },
@@ -153,6 +153,10 @@ try {
   assert.ok(collection.sources.some(source => source.url === 'https://data.ichijinsha.co.jp/detail/75807681'))
 
   const watanare = await json('/api/work-lineage/works/28502')
+  assert.equal(watanare.rating.grade, 'B')
+  const imprint = watanare.organizations.find(org => org.creatorId === '90011345416')
+  assert.equal(imprint?.role, '出版品牌')
+  assert.ok(imprint.sourceUrls.includes('https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498'))
   for (const [id, role] of [['1007912', '原作'], ['1007803', '漫画'], ['1007923', '角色原案']]) {
     const credit = watanare.creators.find(author => author.creatorId === id && author.role === role)
     assert.ok(credit?.sourceUrls.includes('https://www.s-manga.net/items/contents.html?isbn=9784088934327'))
@@ -161,6 +165,18 @@ try {
   assert.notEqual(webComic.workId, redrawnComic.workId)
   assert.equal(webComic.rating.grade, 'E')
   assert.equal(redrawnComic.rating.grade, 'F')
+
+  const [ada, adaEntry] = await Promise.all(['5407', '38870'].map(id => json('/api/work-lineage/works/' + id)))
+  assert.equal(ada.workId, adaEntry.workId)
+  assert.equal(ada.rating.grade, 'S')
+  const [officeClover, sistersClover, clampClover] = await Promise.all(['8579', '8580', '8581'].map(id => json('/api/work-lineage/works/' + id)))
+  assert.equal(new Set([officeClover.workId, sistersClover.workId, clampClover.workId]).size, 3)
+  assert.equal(officeClover.rating.grade, 'F')
+  assert.equal(sistersClover.rating.grade, 'E')
+  assert.equal(clampClover.rating.grade, 'F')
+  const sistersReview = 'https://okazu.yuricon.com/2008/12/26/yuri-manga-clover/'
+  assert.ok(sistersClover.sources.some(source => source.url === sistersReview))
+  assert.ok([officeClover, clampClover].every(work => !work.sources.some(source => source.url === sistersReview)))
 
   const twoDk = await json('/api/work-lineage/works/5221')
   assert.equal(twoDk.workId, (await json('/api/work-lineage/works/4260')).workId)

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { loadPublicModule } from './lib/load-public-release.mjs'
 import { reviewedProviderAliases } from '../src/lib/reviewedProviderAliases.cjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -150,6 +151,7 @@ function runMerge({
   protectAllIdentityClaims = false,
   recovered = new Map(),
   reviewedMedia = new Map(),
+  reviewedRatings = new Map(),
 }) {
   const records = sourceRecords.map(record => {
     const row = recovered.get(record.workId)
@@ -317,8 +319,9 @@ function runMerge({
       if (effectiveMedia.group !== 'unknown' && effectiveMedia.group !== 'other') {
         knownMedia.add(mediaMergeBucket(effectiveMedia.group))
       }
-      if (record.rating.state) states.add(record.rating.state)
-      if (record.rating.state === 'rated' && record.rating.grade) grades.add(record.rating.grade)
+      const rating = reviewedRatings.get(record.workId) || record.rating
+      if (rating.state) states.add(rating.state)
+      if (rating.state === 'rated' && rating.grade) grades.add(rating.grade)
       if (record.identity.provider && record.identity.siteId) {
         const provider = String(record.identity.provider).toLowerCase()
         const ids = providerIds.get(provider) || new Set()
@@ -338,8 +341,8 @@ function runMerge({
         identityState: record.identity.state || null,
         provider: record.identity.provider || null,
         siteId: record.identity.siteId || null,
-        ratingState: record.rating.state || null,
-        grade: record.rating.grade || null,
+        ratingState: rating.state || null,
+        grade: rating.grade || null,
       }
     })
 
@@ -430,7 +433,22 @@ if (recovered.size) {
     reviewedMedia.set(row.workId, row.media)
   }
 }
+const reviewedRatings = new Map()
+if (!process.env.BAIHEPAILEI_RELEASE_DIR?.trim()) {
+  const { matchesReviewEdition, resolveReview } = loadPublicModule(repoRoot, 'src/lib/sourceReview.ts')
+  const originals = new Map(sourceRecords.map(record => [record.workId, record]))
+  const reviews = readFileSync(join(releaseDir, '..', 'review-20261121', 'reviews.jsonl'), 'utf8')
+    .trimEnd().split('\n').map(JSON.parse)
+  for (const review of reviews) {
+    const original = originals.get(review.workId)
+    assert.ok(original && !reviewedRatings.has(review.workId), `Unbound or repeated review: ${review.workId}`)
+    assert.ok(matchesReviewEdition(review, original.title, original.identity.siteId, recovered.get(review.workId)),
+      `Review belongs to a different edition: ${review.workId}`)
+    reviewedRatings.set(review.workId, resolveReview(review, original.rating, ['S', 'A', 'B', 'C', 'D', 'E', 'F']))
+  }
+}
 const currentIdentitySafe = runMerge({
+  reviewedRatings,
   recovered,
   reviewedMedia,
   normalizeTitle: normalizeIdentitySafeTitle,

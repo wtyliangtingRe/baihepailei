@@ -94,7 +94,7 @@
 {"workId":"5450","sourceWorkId":"5450","anilistId":"4970","wikidataWork":"Q14936043","wikidataCreator":"Q3090837","name":"木﨑文智","creatorId":"90003090837","creditKind":"person","role":"导演"}
 {"workId":"5454","sourceWorkId":"5454","anilistId":"138577","wikidataWork":"Q130267100","wikidataCreator":"Q38277491","name":"江野スミ","creatorId":"90038277491","creditKind":"person","role":"作者"}
 {"workId":"5454","sourceWorkId":"5454","anilistId":"138577","wikidataWork":"Q130267100","wikidataCreator":"Q38277491","name":"江野スミ","creatorId":"90038277491","creditKind":"person","role":"绘者"}
-{"workId":"5473","sourceWorkId":"5473","anilistId":"30870","wikidataWork":"Q91478","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"5473","sourceWorkId":"5473","anilistId":"30870","wikidataWork":"Q91478","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"5473","sourceWorkId":"5473","anilistId":"30870","wikidataWork":"Q91478","wikidataCreator":"Q106688023","name":"ガムコミックス","creatorId":"90106688023","creditKind":"organization","role":"出版社"}
 {"workId":"5473","sourceWorkId":"5473","anilistId":"30870","wikidataWork":"Q91478","wikidataCreator":"Q3514132","name":"松本嵩春","creatorId":"90003514132","creditKind":"person","role":"作者"}
 {"workId":"5473","sourceWorkId":"5473","anilistId":"30870","wikidataWork":"Q91478","wikidataCreator":"Q3514132","name":"松本嵩春","creatorId":"90003514132","creditKind":"person","role":"绘者"}
@@ -131,7 +131,7 @@
 {"workId":"5732","sourceWorkId":"5732","anilistId":"98188","wikidataWork":"Q48745729","wikidataCreator":"Q115693326","name":"MFC キューンシリーズ","creatorId":"90115693326","creditKind":"organization","role":"出版社"}
 {"workId":"5739","sourceWorkId":"5739","anilistId":"96140","wikidataWork":"Q3544616","wikidataCreator":"Q115707563","name":"アクションコミックス","creatorId":"90115707563","creditKind":"organization","role":"出版社"}
 {"workId":"5746","sourceWorkId":"5746","anilistId":"131548","wikidataWork":"Q106197008","wikidataCreator":"Q141713442","name":"黒木美幸","creatorId":"90141713442","creditKind":"person","role":"导演"}
-{"workId":"5747","sourceWorkId":"5747","anilistId":"98305","wikidataWork":"Q48755428","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"5747","sourceWorkId":"5747","anilistId":"98305","wikidataWork":"Q48755428","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"5764","sourceWorkId":"5764","anilistId":"31818","wikidataWork":"Q141514789","wikidataCreator":"Q7850047","name":"ことぶきつかさ","creatorId":"90007850047","creditKind":"person","role":"作者"}
 {"workId":"5764","sourceWorkId":"5764","anilistId":"31818","wikidataWork":"Q141514789","wikidataCreator":"Q7850047","name":"ことぶきつかさ","creatorId":"90007850047","creditKind":"person","role":"绘者"}
 {"workId":"5770","sourceWorkId":"5770","anilistId":"47","wikidataWork":"Q1905968","wikidataCreator":"Q378710","name":"大友克洋","creatorId":"90000378710","creditKind":"person","role":"导演"}
@@ -445,7 +445,7 @@
 {"workId":"7346","sourceWorkId":"7346","anilistId":"172598","wikidataWork":"Q141245216","wikidataCreator":"Q11548141","name":"水あさと","creatorId":"90011548141","creditKind":"person","role":"作者"}
 {"workId":"7346","sourceWorkId":"7346","anilistId":"172598","wikidataWork":"Q141245216","wikidataCreator":"Q11548141","name":"水あさと","creatorId":"90011548141","creditKind":"person","role":"绘者"}
 {"workId":"7347","sourceWorkId":"7347","anilistId":"2142","wikidataWork":"Q2408681","wikidataCreator":"Q6547448","name":"ユキヒロマツシタ","creatorId":"90006547448","creditKind":"person","role":"导演"}
-{"workId":"7362","sourceWorkId":"7362","anilistId":"31479","wikidataWork":"Q601489","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"7362","sourceWorkId":"7362","anilistId":"31479","wikidataWork":"Q601489","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"7362","sourceWorkId":"7362","anilistId":"31479","wikidataWork":"Q601489","wikidataCreator":"Q1051001","name":"髙橋ツトム","creatorId":"90001051001","creditKind":"person","role":"作者"}
 {"workId":"7374","sourceWorkId":"7374","anilistId":"107237","wikidataWork":"Q74458180","wikidataCreator":"Q130260503","name":"アフタヌーンKC","creatorId":"90130260503","creditKind":"organization","role":"出版社"}
 {"workId":"7374","sourceWorkId":"7374","anilistId":"107237","wikidataWork":"Q74458180","wikidataCreator":"Q134715686","name":"Kodansha Comics","creatorId":"90134715686","creditKind":"organization","role":"出版社"}
@@ -464,7 +464,7 @@
 {"workId":"7435","sourceWorkId":"7435","anilistId":"31457","wikidataWork":"Q869083","wikidataCreator":"Q16482544","name":"花とゆめコミックス","creatorId":"90016482544","creditKind":"organization","role":"出版社"}
 {"workId":"7435","sourceWorkId":"7435","anilistId":"31457","wikidataWork":"Q869083","wikidataCreator":"Q241885","name":"高屋奈月","creatorId":"90000241885","creditKind":"person","role":"作者"}
 {"workId":"7435","sourceWorkId":"7435","anilistId":"31457","wikidataWork":"Q869083","wikidataCreator":"Q241885","name":"高屋奈月","creatorId":"90000241885","creditKind":"person","role":"绘者"}
-{"workId":"7438","sourceWorkId":"7438","anilistId":"85213","wikidataWork":"Q17217745","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"7438","sourceWorkId":"7438","anilistId":"85213","wikidataWork":"Q17217745","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"7438","sourceWorkId":"7438","anilistId":"85213","wikidataWork":"Q17217745","wikidataCreator":"Q17159929","name":"杉戸アキラ","creatorId":"90017159929","creditKind":"person","role":"作者"}
 {"workId":"7438","sourceWorkId":"7438","anilistId":"85213","wikidataWork":"Q17217745","wikidataCreator":"Q17159929","name":"杉戸アキラ","creatorId":"90017159929","creditKind":"person","role":"绘者"}
 {"workId":"7447","sourceWorkId":"7447","anilistId":"30655","wikidataWork":"Q571579","wikidataCreator":"Q16482544","name":"花とゆめコミックス","creatorId":"90016482544","creditKind":"organization","role":"出版社"}
@@ -849,7 +849,7 @@
 {"workId":"9998","sourceWorkId":"9998","anilistId":"32585","wikidataWork":"Q5349248","wikidataCreator":"Q7446734","name":"松山せいじ","creatorId":"90007446734","creditKind":"person","role":"作者"}
 {"workId":"10030","sourceWorkId":"10030","anilistId":"5945","wikidataWork":"Q491585","wikidataCreator":"Q11445826","name":"奥村よしあき","creatorId":"90011445826","creditKind":"person","role":"导演"}
 {"workId":"10041","sourceWorkId":"10041","anilistId":"1045","wikidataWork":"Q107080945","wikidataCreator":"Q6381790","name":"片山一良","creatorId":"90006381790","creditKind":"person","role":"导演"}
-{"workId":"10049","sourceWorkId":"10049","anilistId":"30933","wikidataWork":"Q214771","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"10049","sourceWorkId":"10049","anilistId":"30933","wikidataWork":"Q214771","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"10049","sourceWorkId":"10049","anilistId":"30933","wikidataWork":"Q214771","wikidataCreator":"Q467750","name":"岡本倫","creatorId":"90000467750","creditKind":"person","role":"作者"}
 {"workId":"10049","sourceWorkId":"10049","anilistId":"30933","wikidataWork":"Q214771","wikidataCreator":"Q467750","name":"岡本倫","creatorId":"90000467750","creditKind":"person","role":"绘者"}
 {"workId":"10076","sourceWorkId":"10076","anilistId":"30729","wikidataWork":"Q1137447","wikidataCreator":"Q126734743","name":"ビームコミックス","creatorId":"90126734743","creditKind":"organization","role":"出版社"}
@@ -972,7 +972,7 @@
 {"workId":"11004","sourceWorkId":"11004","anilistId":"176245","wikidataWork":"Q125054540","wikidataCreator":"Q67222674","name":"櫻木優平","creatorId":"90067222674","creditKind":"person","role":"导演"}
 {"workId":"11008","sourceWorkId":"11008","anilistId":"198117","wikidataWork":"Q135996435","wikidataCreator":"Q11562366","name":"渡辺歩","creatorId":"90011562366","creditKind":"person","role":"导演"}
 {"workId":"11014","sourceWorkId":"11014","anilistId":"384","wikidataWork":"Q59262674","wikidataCreator":"Q8194377","name":"板野一郎","creatorId":"90008194377","creditKind":"person","role":"导演"}
-{"workId":"11015","sourceWorkId":"11015","anilistId":"30564","wikidataWork":"Q1057617","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"11015","sourceWorkId":"11015","anilistId":"30564","wikidataWork":"Q1057617","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"11024","sourceWorkId":"11024","anilistId":"151017","wikidataWork":"Q133248819","wikidataCreator":"Q550018","name":"山田尚子","creatorId":"1016354","creditKind":"person","role":"导演"}
 {"workId":"11033","sourceWorkId":"11033","anilistId":"782","wikidataWork":"Q1495051","wikidataCreator":"Q6934700","name":"高橋良輔","creatorId":"90006934700","creditKind":"person","role":"导演"}
 {"workId":"11044","sourceWorkId":"11044","anilistId":"30321","wikidataWork":"Q124331677","wikidataCreator":"Q3814276","name":"後藤圭二","creatorId":"1016573","creditKind":"person","role":"绘者"}
@@ -1071,7 +1071,7 @@
 {"workId":"11557","sourceWorkId":"11557","anilistId":"35454","wikidataWork":"Q5882322","wikidataCreator":"Q8964576","name":"高尾滋","creatorId":"90008964576","creditKind":"person","role":"作者"}
 {"workId":"11559","sourceWorkId":"11559","anilistId":"86559","wikidataWork":"Q19781419","wikidataCreator":"Q660288","name":"ビズメディア","creatorId":"90000660288","creditKind":"organization","role":"出版社"}
 {"workId":"11559","sourceWorkId":"11559","anilistId":"86559","wikidataWork":"Q19781419","wikidataCreator":"Q3719318","name":"エディツィオニBD","creatorId":"90003719318","creditKind":"organization","role":"出版社"}
-{"workId":"11559","sourceWorkId":"11559","anilistId":"86559","wikidataWork":"Q19781419","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"11559","sourceWorkId":"11559","anilistId":"86559","wikidataWork":"Q19781419","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"11559","sourceWorkId":"11559","anilistId":"86559","wikidataWork":"Q19781419","wikidataCreator":"Q63610473","name":"Milky Way Ediciones","creatorId":"90063610473","creditKind":"organization","role":"出版社"}
 {"workId":"11559","sourceWorkId":"11559","anilistId":"86559","wikidataWork":"Q19781419","wikidataCreator":"Q11645932","name":"野田サトル","creatorId":"90011645932","creditKind":"person","role":"作者"}
 {"workId":"11559","sourceWorkId":"11559","anilistId":"86559","wikidataWork":"Q19781419","wikidataCreator":"Q11645932","name":"野田サトル","creatorId":"90011645932","creditKind":"person","role":"绘者"}
@@ -1617,7 +1617,7 @@
 {"workId":"16984","sourceWorkId":"16984","anilistId":"4198","wikidataWork":"Q92808","wikidataCreator":"Q6963367","name":"明比正行","creatorId":"90006963367","creditKind":"person","role":"导演"}
 {"workId":"16991","sourceWorkId":"16991","anilistId":"2157","wikidataWork":"Q1077672","wikidataCreator":"Q3811238","name":"川越淳","creatorId":"90003811238","creditKind":"person","role":"导演"}
 {"workId":"17012","sourceWorkId":"17012","anilistId":"182814","wikidataWork":"Q130483374","wikidataCreator":"Q8973485","name":"岩崎良明","creatorId":"1016405","creditKind":"person","role":"导演"}
-{"workId":"17013","sourceWorkId":"17013","anilistId":"112544","wikidataWork":"Q86736171","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"17013","sourceWorkId":"17013","anilistId":"112544","wikidataWork":"Q86736171","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"17013","sourceWorkId":"17013","anilistId":"112544","wikidataWork":"Q86736171","wikidataCreator":"Q22126225","name":"眉月じゅん","creatorId":"90022126225","creditKind":"person","role":"作者"}
 {"workId":"17013","sourceWorkId":"17013","anilistId":"112544","wikidataWork":"Q86736171","wikidataCreator":"Q22126225","name":"眉月じゅん","creatorId":"90022126225","creditKind":"person","role":"绘者"}
 {"workId":"17026","sourceWorkId":"17026","anilistId":"148969","wikidataWork":"Q111986637","wikidataCreator":"Q17130402","name":"古賀一臣","creatorId":"90017130402","creditKind":"person","role":"导演"}
@@ -1666,7 +1666,7 @@
 {"workId":"17499","sourceWorkId":"17499","anilistId":"31193","wikidataWork":"Q483557","wikidataCreator":"Q550311","name":"冨樫義博","creatorId":"90000550311","creditKind":"person","role":"作者"}
 {"workId":"17504","sourceWorkId":"17504","anilistId":"32154","wikidataWork":"Q3237222","wikidataCreator":"Q3049381","name":"大塚英志","creatorId":"90003049381","creditKind":"person","role":"作者"}
 {"workId":"17504","sourceWorkId":"17504","anilistId":"32154","wikidataWork":"Q3237222","wikidataCreator":"Q11626418","name":"衣谷遊","creatorId":"90011626418","creditKind":"person","role":"绘者"}
-{"workId":"17519","sourceWorkId":"17519","anilistId":"31649","wikidataWork":"Q1368978","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"17519","sourceWorkId":"17519","anilistId":"31649","wikidataWork":"Q1368978","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"17519","sourceWorkId":"17519","anilistId":"31649","wikidataWork":"Q1368978","wikidataCreator":"Q872923","name":"甲斐谷忍","creatorId":"90000872923","creditKind":"person","role":"作者"}
 {"workId":"17519","sourceWorkId":"17519","anilistId":"31649","wikidataWork":"Q1368978","wikidataCreator":"Q872923","name":"甲斐谷忍","creatorId":"90000872923","creditKind":"person","role":"绘者"}
 {"workId":"17533","sourceWorkId":"17533","anilistId":"99458","wikidataWork":"Q116025492","wikidataCreator":"Q139553081","name":"花音コミックス","creatorId":"90139553081","creditKind":"organization","role":"出版社"}
@@ -2197,7 +2197,7 @@
 {"workId":"21861","sourceWorkId":"21861","anilistId":"116065","wikidataWork":"Q114934576","wikidataCreator":"Q113567023","name":"米代恭","creatorId":"90113567023","creditKind":"person","role":"绘者"}
 {"workId":"21864","sourceWorkId":"21864","anilistId":"35284","wikidataWork":"Q1067962","wikidataCreator":"Q1059934","name":"細川智栄子","creatorId":"90001059934","creditKind":"person","role":"作者"}
 {"workId":"21864","sourceWorkId":"21864","anilistId":"35284","wikidataWork":"Q1067962","wikidataCreator":"Q1059934","name":"細川智栄子","creatorId":"90001059934","creditKind":"person","role":"绘者"}
-{"workId":"21865","sourceWorkId":"21865","anilistId":"99380","wikidataWork":"Q131454243","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"21865","sourceWorkId":"21865","anilistId":"99380","wikidataWork":"Q131454243","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"21874","sourceWorkId":"21874","anilistId":"853","wikidataWork":"Q109421585","wikidataCreator":"Q1043203","name":"五十嵐卓哉","creatorId":"90001043203","creditKind":"person","role":"导演"}
 {"workId":"21875","sourceWorkId":"21875","anilistId":"30030","wikidataWork":"Q327773","wikidataCreator":"Q238087","name":"葉鳥ビスコ","creatorId":"90000238087","creditKind":"person","role":"作者"}
 {"workId":"21875","sourceWorkId":"21875","anilistId":"30030","wikidataWork":"Q327773","wikidataCreator":"Q238087","name":"葉鳥ビスコ","creatorId":"90000238087","creditKind":"person","role":"绘者"}
@@ -2378,7 +2378,7 @@
 {"workId":"22696","sourceWorkId":"22696","anilistId":"35374","wikidataWork":"Q1088851","wikidataCreator":"Q467415","name":"北条司","creatorId":"90000467415","creditKind":"person","role":"作者"}
 {"workId":"22701","sourceWorkId":"22701","anilistId":"32913","wikidataWork":"Q1075110","wikidataCreator":"Q11318247","name":"チャンピオンREDコミックス","creatorId":"90011318247","creditKind":"organization","role":"出版社"}
 {"workId":"22711","sourceWorkId":"22711","anilistId":"213469","wikidataWork":"Q140329422","wikidataCreator":"Q421414","name":"silver link.","creatorId":"1011630","creditKind":"organization","role":"制作公司"}
-{"workId":"22714","sourceWorkId":"22714","anilistId":"30657","wikidataWork":"Q547895","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"22714","sourceWorkId":"22714","anilistId":"30657","wikidataWork":"Q547895","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"22714","sourceWorkId":"22714","anilistId":"30657","wikidataWork":"Q547895","wikidataCreator":"Q459911","name":"井上雄彦","creatorId":"90000459911","creditKind":"person","role":"作者"}
 {"workId":"22714","sourceWorkId":"22714","anilistId":"30657","wikidataWork":"Q547895","wikidataCreator":"Q459911","name":"井上雄彦","creatorId":"90000459911","creditKind":"person","role":"绘者"}
 {"workId":"22716","sourceWorkId":"22716","anilistId":"85250","wikidataWork":"Q17213148","wikidataCreator":"Q115734785","name":"少年マガジンコミックス","creatorId":"90115734785","creditKind":"organization","role":"出版社"}
@@ -2784,7 +2784,7 @@
 {"workId":"24992","sourceWorkId":"24992","anilistId":"2311","wikidataWork":"Q11464623","wikidataCreator":"Q3342565","name":"大林宣彦","creatorId":"90003342565","creditKind":"person","role":"导演"}
 {"workId":"24994","sourceWorkId":"24994","anilistId":"30827","wikidataWork":"Q7776773","wikidataCreator":"Q132704918","name":"ウィングス・コミックス","creatorId":"90132704918","creditKind":"organization","role":"出版社"}
 {"workId":"24994","sourceWorkId":"24994","anilistId":"30827","wikidataWork":"Q7776773","wikidataCreator":"Q8061567","name":"なるしまゆり","creatorId":"90008061567","creditKind":"person","role":"作者"}
-{"workId":"24998","sourceWorkId":"24998","anilistId":"116186","wikidataWork":"Q104679780","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"24998","sourceWorkId":"24998","anilistId":"116186","wikidataWork":"Q104679780","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"24998","sourceWorkId":"24998","anilistId":"116186","wikidataWork":"Q104679780","wikidataCreator":"Q22131037","name":"峰浪りょう","creatorId":"90022131037","creditKind":"person","role":"作者"}
 {"workId":"25000","sourceWorkId":"25000","anilistId":"53284","wikidataWork":"Q11464639","wikidataCreator":"Q726081","name":"kodansha","creatorId":"1010343","creditKind":"organization","role":"出版社"}
 {"workId":"25000","sourceWorkId":"25000","anilistId":"53284","wikidataWork":"Q11464639","wikidataCreator":"Q10851321","name":"講談社USA","creatorId":"90010851321","creditKind":"organization","role":"出版社"}
@@ -2945,7 +2945,7 @@
 {"workId":"25835","sourceWorkId":"25835","anilistId":"30429","wikidataWork":"Q865603","wikidataCreator":"Q38842","name":"安野モヨコ","creatorId":"90000038842","creditKind":"person","role":"绘者"}
 {"workId":"25852","sourceWorkId":"25852","anilistId":"30847","wikidataWork":"Q2256885","wikidataCreator":"Q983424","name":"木城ゆきと","creatorId":"90000983424","creditKind":"person","role":"作者"}
 {"workId":"25852","sourceWorkId":"25852","anilistId":"30847","wikidataWork":"Q2256885","wikidataCreator":"Q983424","name":"木城ゆきと","creatorId":"90000983424","creditKind":"person","role":"绘者"}
-{"workId":"25854","sourceWorkId":"25854","anilistId":"117230","wikidataWork":"Q113159318","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"25854","sourceWorkId":"25854","anilistId":"117230","wikidataWork":"Q113159318","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"25854","sourceWorkId":"25854","anilistId":"117230","wikidataWork":"Q113159318","wikidataCreator":"Q11364184","name":"中山敦支","creatorId":"90011364184","creditKind":"person","role":"作者"}
 {"workId":"25870","sourceWorkId":"25870","anilistId":"112235","wikidataWork":"Q120336518","wikidataCreator":"Q130356054","name":"ジャンプコミックス+","creatorId":"90130356054","creditKind":"organization","role":"出版社"}
 {"workId":"25892","sourceWorkId":"25892","anilistId":"148080","wikidataWork":"Q124879766","wikidataCreator":"Q131379474","name":"Tomotaka Shibayama","creatorId":"90131379474","creditKind":"person","role":"导演"}
@@ -3009,7 +3009,7 @@
 {"workId":"26405","sourceWorkId":"26405","anilistId":"174070","wikidataWork":"Q124360155","wikidataCreator":"Q7688325","name":"佐藤竜雄","creatorId":"1015509","creditKind":"person","role":"导演"}
 {"workId":"26407","sourceWorkId":"26407","anilistId":"4427","wikidataWork":"Q136831136","wikidataCreator":"Q6963367","name":"明比正行","creatorId":"90006963367","creditKind":"person","role":"导演"}
 {"workId":"26413","sourceWorkId":"26413","anilistId":"99703","wikidataWork":"Q106610190","wikidataCreator":"Q115693085","name":"百合姫コミックス","creatorId":"90115693085","creditKind":"organization","role":"出版社"}
-{"workId":"26418","sourceWorkId":"26418","anilistId":"200765","wikidataWork":"Q136979890","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"26418","sourceWorkId":"26418","anilistId":"200765","wikidataWork":"Q136979890","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"26455","sourceWorkId":"26455","anilistId":"31709","wikidataWork":"Q948087","wikidataCreator":"Q11310204","name":"ジャンプ・コミックス","creatorId":"90011310204","creditKind":"organization","role":"出版社"}
 {"workId":"26455","sourceWorkId":"26455","anilistId":"31709","wikidataWork":"Q948087","wikidataCreator":"Q3136401","name":"浅田弘幸","creatorId":"90003136401","creditKind":"person","role":"作者"}
 {"workId":"26455","sourceWorkId":"26455","anilistId":"31709","wikidataWork":"Q948087","wikidataCreator":"Q3136401","name":"浅田弘幸","creatorId":"90003136401","creditKind":"person","role":"绘者"}
@@ -3029,7 +3029,7 @@
 {"workId":"26524","sourceWorkId":"26524","anilistId":"33078","wikidataWork":"Q11442947","wikidataCreator":"Q1986176","name":"うたたねひろゆき","creatorId":"90001986176","creditKind":"person","role":"绘者"}
 {"workId":"26525","sourceWorkId":"26525","anilistId":"155783","wikidataWork":"Q117344872","wikidataCreator":"Q117344886","name":"森大貴","creatorId":"90117344886","creditKind":"person","role":"导演"}
 {"workId":"26538","sourceWorkId":"26538","anilistId":"174","wikidataWork":"Q120434272","wikidataCreator":"Q3241677","name":"川瀬敏文","creatorId":"90003241677","creditKind":"person","role":"导演"}
-{"workId":"26539","sourceWorkId":"26539","anilistId":"30073","wikidataWork":"Q613634","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"26539","sourceWorkId":"26539","anilistId":"30073","wikidataWork":"Q613634","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"26539","sourceWorkId":"26539","anilistId":"30073","wikidataWork":"Q613634","wikidataCreator":"Q553105","name":"大暮維人","creatorId":"90000553105","creditKind":"person","role":"作者"}
 {"workId":"26539","sourceWorkId":"26539","anilistId":"30073","wikidataWork":"Q613634","wikidataCreator":"Q553105","name":"大暮維人","creatorId":"90000553105","creditKind":"person","role":"绘者"}
 {"workId":"26555","sourceWorkId":"26555","anilistId":"182","wikidataWork":"Q92560","wikidataCreator":"Q2571816","name":"赤根和樹","creatorId":"90002571816","creditKind":"person","role":"导演"}
@@ -3261,7 +3261,7 @@
 {"workId":"27594","sourceWorkId":"27594","anilistId":"162785","wikidataWork":"Q117213023","wikidataCreator":"Q2708110","name":"阿部記之","creatorId":"90002708110","creditKind":"person","role":"导演"}
 {"workId":"27607","sourceWorkId":"27607","anilistId":"158108","wikidataWork":"Q133874313","wikidataCreator":"Q11341668","name":"マーガレットコミックス","creatorId":"90011341668","creditKind":"organization","role":"出版社"}
 {"workId":"27609","sourceWorkId":"27609","anilistId":"33334","wikidataWork":"Q3076815","wikidataCreator":"Q619018","name":"北川みゆき","creatorId":"90000619018","creditKind":"person","role":"作者"}
-{"workId":"27633","sourceWorkId":"27633","anilistId":"138478","wikidataWork":"Q110825828","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"27633","sourceWorkId":"27633","anilistId":"138478","wikidataWork":"Q110825828","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"27633","sourceWorkId":"27633","anilistId":"138478","wikidataWork":"Q110825828","wikidataCreator":"Q111111969","name":"tomomi","creatorId":"90111111969","creditKind":"person","role":"作者"}
 {"workId":"27635","sourceWorkId":"27635","anilistId":"103081","wikidataWork":"Q113187822","wikidataCreator":"Q115693085","name":"百合姫コミックス","creatorId":"90115693085","creditKind":"organization","role":"出版社"}
 {"workId":"27657","sourceWorkId":"27657","anilistId":"1198","wikidataWork":"Q140389828","wikidataCreator":"Q7497526","name":"木村真一郎","creatorId":"90007497526","creditKind":"person","role":"导演"}
@@ -3302,7 +3302,7 @@
 {"workId":"27824","sourceWorkId":"27824","anilistId":"30956","wikidataWork":"Q1028599","wikidataCreator":"Q266996","name":"吉住渉","creatorId":"90000266996","creditKind":"person","role":"作者"}
 {"workId":"27824","sourceWorkId":"27824","anilistId":"30956","wikidataWork":"Q1028599","wikidataCreator":"Q266996","name":"吉住渉","creatorId":"90000266996","creditKind":"person","role":"绘者"}
 {"workId":"27826","sourceWorkId":"27826","anilistId":"32105","wikidataWork":"Q11252217","wikidataCreator":"Q11648718","name":"鈴木央","creatorId":"90011648718","creditKind":"person","role":"作者"}
-{"workId":"27835","sourceWorkId":"27835","anilistId":"119247","wikidataWork":"Q104336957","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"27835","sourceWorkId":"27835","anilistId":"119247","wikidataWork":"Q104336957","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"27835","sourceWorkId":"27835","anilistId":"119247","wikidataWork":"Q104336957","wikidataCreator":"Q38278592","name":"伊藤隼之介","creatorId":"90038278592","creditKind":"person","role":"作者"}
 {"workId":"27853","sourceWorkId":"27853","anilistId":"212105","wikidataWork":"Q139740765","wikidataCreator":"Q16264057","name":"石立太一","creatorId":"1017597","creditKind":"person","role":"导演"}
 {"workId":"27854","sourceWorkId":"27854","anilistId":"137614","wikidataWork":"Q111250005","wikidataCreator":"Q123142098","name":"たらちねジョン","creatorId":"90123142098","creditKind":"person","role":"作者"}
@@ -3404,7 +3404,7 @@
 {"workId":"28462","sourceWorkId":"28462","anilistId":"119506","wikidataWork":"Q116030695","wikidataCreator":"Q115693347","name":"電撃コミックスNEXT","creatorId":"90115693347","creditKind":"organization","role":"出版社"}
 {"workId":"28469","sourceWorkId":"28469","anilistId":"165670","wikidataWork":"Q139836455","wikidataCreator":"Q11482472","name":"平尾隆之","creatorId":"90011482472","creditKind":"person","role":"导演"}
 {"workId":"28495","sourceWorkId":"28495","anilistId":"196146","wikidataWork":"Q141680094","wikidataCreator":"Q141680513","name":"尾野凛","creatorId":"90141680513","creditKind":"person","role":"作者"}
-{"workId":"28502","sourceWorkId":"28502","anilistId":"119650","wikidataWork":"Q109558007","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"28502","sourceWorkId":"28502","anilistId":"119650","wikidataWork":"Q109558007","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"28506","sourceWorkId":"28506","anilistId":"58533","wikidataWork":"Q1113182","wikidataCreator":"Q2067115","name":"エン・プレス","creatorId":"90002067115","creditKind":"organization","role":"出版社"}
 {"workId":"28506","sourceWorkId":"28506","anilistId":"58533","wikidataWork":"Q1113182","wikidataCreator":"Q130317165","name":"ガンガンコミックスONLINE","creatorId":"90130317165","creditKind":"organization","role":"出版社"}
 {"workId":"28519","sourceWorkId":"28519","anilistId":"102841","wikidataWork":"Q55080328","wikidataCreator":"Q115693085","name":"百合姫コミックス","creatorId":"90115693085","creditKind":"organization","role":"出版社"}
@@ -3502,7 +3502,7 @@
 {"workId":"29218","sourceWorkId":"29218","anilistId":"2009","wikidataWork":"Q112656702","wikidataCreator":"Q516966","name":"浅香守生","creatorId":"1017253","creditKind":"person","role":"导演"}
 {"workId":"29234","sourceWorkId":"29234","anilistId":"30767","wikidataWork":"Q1418748","wikidataCreator":"Q276378","name":"立野真琴","creatorId":"90000276378","creditKind":"person","role":"作者"}
 {"workId":"29281","sourceWorkId":"29281","anilistId":"30549","wikidataWork":"Q563020","wikidataCreator":"Q112408880","name":"Kang-Won Kim","creatorId":"90112408880","creditKind":"person","role":"作者"}
-{"workId":"29290","sourceWorkId":"29290","anilistId":"31155","wikidataWork":"Q3460238","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"29290","sourceWorkId":"29290","anilistId":"31155","wikidataWork":"Q3460238","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"29321","sourceWorkId":"29321","anilistId":"34236","wikidataWork":"Q131761800","wikidataCreator":"Q11612250","name":"脳みそホエホエ","creatorId":"90011612250","creditKind":"person","role":"绘者"}
 {"workId":"29322","sourceWorkId":"29322","anilistId":"1543","wikidataWork":"Q131761801","wikidataCreator":"Q11444460","name":"太田雅彦","creatorId":"1016041","creditKind":"person","role":"导演"}
 {"workId":"29327","sourceWorkId":"29327","anilistId":"138066","wikidataWork":"Q141678570","wikidataCreator":"Q141572490","name":"筒井 いつき","creatorId":"90141572490","creditKind":"person","role":"作者"}
@@ -3616,7 +3616,7 @@
 {"workId":"30089","sourceWorkId":"30089","anilistId":"35450","wikidataWork":"Q187976","wikidataCreator":"Q850642","name":"MF文庫J","creatorId":"90000850642","creditKind":"organization","role":"出版社"}
 {"workId":"30089","sourceWorkId":"30089","anilistId":"35450","wikidataWork":"Q187976","wikidataCreator":"Q982575","name":"ヤマグチノボル","creatorId":"90000982575","creditKind":"person","role":"作者"}
 {"workId":"30089","sourceWorkId":"30089","anilistId":"35450","wikidataWork":"Q187976","wikidataCreator":"Q865181","name":"兎塚エイジ","creatorId":"90000865181","creditKind":"person","role":"绘者"}
-{"workId":"30098","sourceWorkId":"30098","anilistId":"31534","wikidataWork":"Q196866","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版社"}
+{"workId":"30098","sourceWorkId":"30098","anilistId":"31534","wikidataWork":"Q196866","wikidataCreator":"Q11345416","name":"ヤングジャンプ・コミックス","creatorId":"90011345416","creditKind":"organization","role":"出版品牌","roleSourceUrl":"https://prtimes.jp/a/?c=1227&f=d1227-20140217-9965.pdf&r=498"}
 {"workId":"30098","sourceWorkId":"30098","anilistId":"31534","wikidataWork":"Q196866","wikidataCreator":"Q452246","name":"桂正和","creatorId":"90000452246","creditKind":"person","role":"作者"}
 {"workId":"30098","sourceWorkId":"30098","anilistId":"31534","wikidataWork":"Q196866","wikidataCreator":"Q452246","name":"桂正和","creatorId":"90000452246","creditKind":"person","role":"绘者"}
 {"workId":"30107","sourceWorkId":"30107","anilistId":"36624","wikidataWork":"Q8069775","wikidataCreator":"Q16482544","name":"花とゆめコミックス","creatorId":"90016482544","creditKind":"organization","role":"出版社"}
