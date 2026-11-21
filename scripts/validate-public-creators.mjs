@@ -66,7 +66,7 @@ if (currentReview) {
   }
 }
 const records = release.getPublicCreatorGraphInput()
-assert.equal(records.length, manifest.counts.publicWorks + reviewCounts.releasedTitleMatches - reviewCounts.mergeGroups)
+assert.equal(records.length, manifest.counts.publicWorks + reviewCounts.releasedTitleMatches - (reviewCounts.mergedSourceRows ?? reviewCounts.mergeGroups))
 const publicIds = new Set(records.map(work => work.workId))
 let linkedCredits = 0, references = 0
 const expectedWorks = new Map()

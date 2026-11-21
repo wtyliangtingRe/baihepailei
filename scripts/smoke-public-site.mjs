@@ -129,10 +129,10 @@ try {
     {
       ok: true,
       catalogWorks: 35_411,
-      visibleWorks: 34_838,
-      mergedAway: 573,
-      mergedGroups: 573,
-      largestMergedGroup: 2,
+      visibleWorks: 34_817,
+      mergedAway: 594,
+      mergedGroups: 581,
+      largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords,
     },
   )
@@ -251,6 +251,12 @@ try {
     ['19062', '38373'], // One Mikanuji short-story collection
     ['36714', '31964'], // The Gaze of The Eternal Sun, full Steam app
     ['36722', '36481'], // No Fap Island, full game rather than its separate demo
+    ['8384', '32723'], // Cosmic Princess Kaguya!, same streaming film
+    ['9874', '32690'], // Sword Oratoria, TV adaptation
+    ['36579', '31411'], // Cinderella Gray, second cour
+    ['36586', '31414'], // Pretty Derby, third season
+    ['3899', '25104'], // Three records for one edition
+    ['33042', '25104'],
     ['36617', '31936'], // Kirakira Monstars, Windows release
     ['32484', '32572'], // The author renamed the same game in November 2023
     ['32659', '6340'], // Original manga series

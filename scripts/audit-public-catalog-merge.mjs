@@ -406,6 +406,8 @@ const recovered = new Map(process.env.BAIHEPAILEI_RELEASE_DIR?.trim() ? []
   : readFileSync(join(releaseDir, '..', 'identity-20261121', 'recovered-bangumi.jsonl'), 'utf8')
     .trimEnd().split('\n').map(line => { const row = JSON.parse(line); return [row.workId, row] }))
 const releasedTitleMatches = recovered.size ? 28 : 0
+const reviewedMergedRows = reviewedGroups.reduce((count, group) => count + group.workIds.length - 1, 0)
+const largestReviewedGroup = Math.max(2, ...reviewedGroups.map(group => group.workIds.length))
 if (recovered.size) assert.equal(recovered.size, 531)
 const currentIdentitySafe = runMerge({
   recovered,
@@ -430,10 +432,10 @@ assert.equal(currentIdentitySafe.sourceWorks, 35_411, 'unexpected public source-
 assert.equal(hardenedTitleBaseline.visibleWorks, 35_346, 'unexpected hardened baseline visible-work count')
 assert.equal(hardenedTitleBaseline.mergedAway, 65, 'unexpected hardened baseline merged-row count')
 assert.equal(hardenedTitleBaseline.multiWorkGroups, 65, 'unexpected hardened baseline merge-group count')
-assert.equal(currentIdentitySafe.visibleWorks, 34_940 + releasedTitleMatches - reviewedGroups.length, 'unexpected identity-safe visible-work count')
-assert.equal(currentIdentitySafe.mergedAway, 471 - releasedTitleMatches + reviewedGroups.length, 'unexpected identity-safe merged-row count')
+assert.equal(currentIdentitySafe.visibleWorks, 34_940 + releasedTitleMatches - reviewedMergedRows, 'unexpected identity-safe visible-work count')
+assert.equal(currentIdentitySafe.mergedAway, 471 - releasedTitleMatches + reviewedMergedRows, 'unexpected identity-safe merged-row count')
 assert.equal(currentIdentitySafe.multiWorkGroups, 471 - releasedTitleMatches + reviewedGroups.length, 'unexpected identity-safe merged-group count')
-assert.equal(currentIdentitySafe.largestGroup, 2, 'unexpected identity-safe largest merge group')
+assert.equal(currentIdentitySafe.largestGroup, largestReviewedGroup, 'unexpected identity-safe largest merge group')
 assert.equal(currentIdentitySafe.mergedGroups.length, 471 - releasedTitleMatches + reviewedGroups.length, 'merge-group review list must be complete')
 assert.equal(currentIdentitySafe.ambiguousTitleKeysSkipped, 199, 'unexpected ambiguous title-key count')
 assert.equal(equivalenceGroups.length, 427, 'explicit equivalence-group count drift')
@@ -460,7 +462,7 @@ for (const group of currentIdentitySafe.mergedGroups) {
 }
 const sameGroup = (left, right) => groupByWorkId.get(String(left))?.has(String(right)) === true
 for (const [left, right] of [
-  ...reviewedGroups.map(group => group.workIds),
+  ...reviewedGroups.flatMap(({ workIds }) => workIds.slice(1).map(id => [workIds[0], id])),
   ['25236', '31618'], // Sky Girls 2007 TV
   ['25237', '31619'], // Sky Girls 2006 OVA
   ['17930', '31034'], // Lycoris Recoil: Friends are thieves of time.
