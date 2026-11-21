@@ -6201,5 +6201,84 @@
         }
       ]
     }
+  ],
+  "organizations": [
+    {
+      "creatorId": "1010117",
+      "name": "J.C.STAFF",
+      "authority": "https://ssl.jcstaff.co.jp/kaisya/enkaku/enkaku.htm",
+      "spellings": {
+        "1010117": "j.c.staff",
+        "1010115": "j.c. staff"
+      }
+    },
+    {
+      "creatorId": "1013353",
+      "name": "亜細亜堂",
+      "authority": "https://ajiado.co.jp/",
+      "spellings": {
+        "1013353": "亜細亜堂",
+        "1008565": "ajia-do",
+        "1008567": "ajiado"
+      }
+    },
+    {
+      "creatorId": "1011968",
+      "name": "STUDIO4℃",
+      "authority": "https://www.studio4c.co.jp/",
+      "spellings": {
+        "1011968": "studio4°c",
+        "1011784": "studio 4°c"
+      }
+    },
+    {
+      "creatorId": "1012035",
+      "name": "SynergySP",
+      "authority": "https://synergy-sp.com/company/",
+      "spellings": {
+        "1012035": "synergysp",
+        "1012034": "synergy sp"
+      }
+    },
+    {
+      "creatorId": "1011068",
+      "name": "P.A.WORKS",
+      "authority": "https://www.pa-works.jp/works/angelbeats/",
+      "spellings": {
+        "1011068": "p.a.works",
+        "1011067": "p.a. works"
+      }
+    },
+    {
+      "creatorId": "1012987",
+      "name": "エイトビット",
+      "authority": "https://8bit-studio.co.jp/company",
+      "spellings": {
+        "1012987": "エイトビット",
+        "1008476": "8 bit",
+        "1008477": "8-bit",
+        "1008479": "8bit",
+        "1008480": "8bit corp, inc.",
+        "1009439": "eightbit"
+      }
+    },
+    {
+      "creatorId": "1009536",
+      "name": "FelixFilm",
+      "authority": "https://felixfilm.co.jp/company/",
+      "spellings": {
+        "1009536": "felixfilm",
+        "1009535": "felix film"
+      }
+    },
+    {
+      "creatorId": "1008749",
+      "name": "アスリード",
+      "authority": "https://www.asread.net/company.html",
+      "spellings": {
+        "1008749": "asread",
+        "1008750": "asread."
+      }
+    }
   ]
 }

@@ -4,7 +4,8 @@
     "1015085": "1013198",
     "1014759": "815000030847",
     "1014760": "815000030847",
-    "1014993": "815000018936"
+    "1014993": "815000018936",
+    "1014527": "1011068"
   },
   "credits": [
     {
@@ -943,6 +944,20 @@
       "role": "原作",
       "urls": [
         "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "30816",
+      "subject": 22759,
+      "source": "catalog",
+      "oldId": "1014527",
+      "oldName": "P.A.WORKS",
+      "oldRole": "原作",
+      "creatorId": "1011068",
+      "name": "P.A.WORKS",
+      "role": "原作",
+      "urls": [
+        "https://www.pa-works.jp/works/hanairo/"
       ]
     }
   ]

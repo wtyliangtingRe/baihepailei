@@ -168,6 +168,7 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
         <section className="release-work-list">
           {result.items.map((work) => {
             const classes = ratingClassEntries(work.rating)
+            const assessment = work.rating.gradeReviewed && work.rating.reviewMethod === 'assessment' ? work.rating.reasoningSummary : undefined
             const credits = workCredits(work)
             const translated = chineseEditionTitle(work.title, work.localizedTitles)
             return (
@@ -193,7 +194,7 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
                   <h2><Link href={canonicalContentUrl('works', work.workId)}>{translated || work.title}</Link></h2>
                   {translated ? <p className="edition-original-title">{work.title}</p> : null}
                   {credits ? <p className="release-credit-line">{credits}</p> : null}
-                  <p className="result-text">{ratingLead(work.rating)}</p>
+                  {!assessment && <p className="result-text">{ratingLead(work.rating)}</p>}
                   <div className="release-warning-row" aria-label="评级依据与警示">
                     {work.publicTags.slice(0, 2).map((tag) => (
                       <span className="release-warning-chip warning-preference" key={tag.key}>{tag.label}</span>
@@ -209,12 +210,14 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
                       <span className="release-warning-chip warning-data">细分依据待补录</span>
                     ) : null}
                   </div>
+                  {assessment && (
+                    <details className="card-assessment-reason">
+                      <summary>评级理由<span>含剧透</span></summary>
+                      <p>{assessment}</p>
+                    </details>
+                  )}
                   <div className="release-work-footer">
-                    <span>
-                      {work.firstPublished ? `首发 ${work.firstPublished.slice(0, 10)}` : null}
-                      {work.summary ? (work.firstPublished ? ' · 有来源摘要' : '有来源摘要') : null}
-                      {!work.firstPublished && !work.summary ? '作品资料仍待补充' : null}
-                    </span>
+                    {work.firstPublished && <span>首发 <time dateTime={work.firstPublished}>{work.firstPublishedLabel || work.firstPublished.slice(0, 10)}</time></span>}
                     <Link className="result-link" href={canonicalContentUrl('works', work.workId)}>查看详情</Link>
                   </div>
                 </div>

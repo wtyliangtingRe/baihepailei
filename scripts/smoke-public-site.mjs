@@ -442,6 +442,10 @@ try {
   assert.ok(enrichedDetail.includes('id="ref-1"'))
   assert.ok(enrichedDetail.includes('资料来源与获取方式'))
 
+  const reasonDirectory = await (await response('/works?q=' + encodeURIComponent('合法百合夫婦本'))).text()
+  assert.match(reasonDirectory, /<details class="card-assessment-reason"><summary>评级理由<span>含剧透<\/span><\/summary><p>[^<]+<\/p>/)
+  const originalStudio = await (await response('/organizations/o-1011068')).text()
+  assert.ok(originalStudio.includes('机构官方资料') && originalStudio.includes('P.A.WORKS'))
   const taggedDetail = await (await response('/works/w-18556')).text()
   for (const expected of [
     'AI 综合，待复核',

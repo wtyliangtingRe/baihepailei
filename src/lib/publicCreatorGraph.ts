@@ -15,6 +15,7 @@ export type PublicCreator = {
   kind: CreatorKind
   name: string
   names: string[]
+  authorityUrl?: string
   identityBasis: 'external_id' | 'name_only' | 'unresolved_name'
 }
 export type CreditEdge = {
@@ -78,6 +79,7 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
     entities.set(node.creatorId, { creatorId: node.creatorId, kind: node.kind,
       name: node.name, names: node.names, identityBasis: node.identityBasis })
   }
+  creditNames.applyStudioNames(entities, nodes)
   const byWorkId = new Map(records.map(work => [work.workId, work]))
   const reviewedPrimary = new Map((review?.groups || []).flatMap(group =>
     group.workIds.map(id => [id, group.primaryWorkId] as const)))
@@ -93,7 +95,7 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
   for (const reviewed of review?.creditsByWork.values() || []) edges.push(...reviewed)
   for (const original of edges) {
     if (review?.removedCreatorIds.has(original.creatorId)) continue
-    const corrected = correctCredit(original.workId, original, review)
+    const corrected = creditNames.resolveStudio(correctCredit(original.workId, original, review))
     const primary = reviewedPrimary.get(original.workId)
     const edge = primary ? { ...corrected, workId: primary } : corrected
     const creator = entities.get(edge.creatorId)
@@ -103,7 +105,7 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
     const credits = edge.creditKind === 'person' ? work.creators : work.organizations
     if (!credits.some(credit => descriptiveKey(credit.name) === descriptiveKey(edge.name) &&
         descriptiveKey(credit.role) === descriptiveKey(edge.role))) throw new Error(`Creator credit drift for ${original.workId} → ${edge.workId}: ${edge.name} (${edge.role}, ${edge.bindingBasis})`)
-    const unique = JSON.stringify([original.sourceWorkId || original.workId, edge.bindingBasis, edge.creatorId, edge.name, edge.displayName, edge.role, edge.scope])
+    const unique = JSON.stringify([original.sourceWorkId || original.workId, edge.bindingBasis, original.creatorId, edge.creatorId, edge.name, original.displayName, edge.role, edge.scope])
     if (seen.has(unique)) throw new Error(`Repeated creator credit for ${edge.workId}: ${edge.name} (${edge.role}, ${edge.bindingBasis})`)
     seen.add(unique)
     const key = creditKey(work.workId, edge.creditKind, edge.name, edge.role)

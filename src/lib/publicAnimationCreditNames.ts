@@ -12,6 +12,13 @@ type NameCorrection = {
   targets: { creatorId: string; person: number; name: string; scope?: string }[]
 }
 
+type Studio = {
+  creatorId: string
+  name: string
+  authority: string
+  spellings: Record<string, string>
+}
+
 function key(workId: string, creatorId: string, name: string, role: string) {
   return JSON.stringify([workId, creatorId, name, role])
 }
@@ -19,10 +26,22 @@ function key(workId: string, creatorId: string, name: string, role: string) {
 export function readAnimationCreditNames(directory: string, enabled: boolean) {
   const rows = new Map<string, NameCorrection>()
   const redirects = new Map<string, string>()
+  const studios: Studio[] = []
+  const studioById = new Map<string, Studio>()
   if (enabled) {
     const file = join(directory, '..', 'identity-20261121', 'animation-credit-names.json')
-    const data: { rows: NameCorrection[]; redirects: Record<string, string> } = JSON.parse(readFileSync(file, 'utf8'))
+    const data: { rows: NameCorrection[]; redirects: Record<string, string>; organizations: Studio[] } = JSON.parse(readFileSync(file, 'utf8'))
     for (const [from, to] of Object.entries(data.redirects)) redirects.set(from, to)
+    for (const studio of data.organizations) {
+      if (!studio.spellings[studio.creatorId] || !studio.name.trim() || new URL(studio.authority).protocol !== 'https:')
+        throw new Error('Invalid studio profile ' + studio.creatorId)
+      studios.push(studio)
+      for (const id of Object.keys(studio.spellings)) {
+        if (studioById.has(id) || redirects.has(id)) throw new Error('Conflicting studio identity ' + id)
+        studioById.set(id, studio)
+        if (id !== studio.creatorId) redirects.set(id, studio.creatorId)
+      }
+    }
     for (const row of data.rows) {
       const id = key(row.workId, row.oldCreatorId, row.oldName, row.role)
       if (rows.has(id) || !Number.isSafeInteger(row.subject) || row.subject < 1 || !row.targets.length)
@@ -51,7 +70,29 @@ export function readAnimationCreditNames(directory: string, enabled: boolean) {
         bindingBasis: 'edition_staff_roster', sourceUrls: [...new Set(sources)] }
     })
   }
-  return { redirects, resolve, assertComplete() {
+  function applyStudioNames(entities: Map<string, PublicCreator>, originals: PublicCreator[]) {
+    const previous = new Map(originals.map(node => [node.creatorId, node]))
+    for (const studio of studios) {
+      const target = entities.get(studio.creatorId)
+      if (!target || target.kind !== 'organization') throw new Error('Missing studio ' + studio.creatorId)
+      const names = new Set([studio.name, ...target.names])
+      for (const [id, spelling] of Object.entries(studio.spellings)) {
+        const old = previous.get(id)
+        if (old?.kind !== 'organization' || old.name !== spelling) throw new Error('Unbound studio spelling ' + id)
+        for (const alias of [old.name, ...old.names]) names.add(alias)
+      }
+      target.name = studio.name
+      target.names = [...names]
+      target.authorityUrl = studio.authority
+    }
+  }
+  function resolveStudio(edge: CreditEdge): CreditEdge {
+    const studio = studioById.get(edge.creatorId)
+    if (!studio) return edge
+    if (edge.creditKind !== 'organization') throw new Error('Unexpected studio role ' + edge.creatorId)
+    return { ...edge, creatorId: studio.creatorId, displayName: studio.name }
+  }
+  return { redirects, resolve, applyStudioNames, resolveStudio, assertComplete() {
     if (rows.size) throw new Error(`Unmatched animation credit correction: ${rows.keys().next().value}`)
   } }
 }

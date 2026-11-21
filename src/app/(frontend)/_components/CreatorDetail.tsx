@@ -22,7 +22,11 @@ export default async function CreatorDetail({ kind, params, searchParams }: {
   const collection = kind === 'person' ? 'creators' : 'organizations'
   const id = recordIdFromContentRoute(collection, slug)
   const creator = id ? getPublicCreatorById(id) : null
-  if (!creator || creator.kind !== kind) notFound()
+  if (!creator) notFound()
+  if (creator.kind !== kind && id !== creator.creatorId) {
+    permanentRedirect(canonicalContentUrl(creator.kind === 'organization' ? 'organizations' : 'creators', creator.creatorId))
+  }
+  if (creator.kind !== kind) notFound()
   const query = await searchParams, page = pageNumber(firstParam(query.page)), limit = 60
   const rawYear = firstParam(query.year)
   const year = /^(\d{4}|unknown)$/.test(rawYear) ? rawYear : ''
@@ -49,6 +53,7 @@ export default async function CreatorDetail({ kind, params, searchParams }: {
         <div className="collection-actions">
           <Link className="back-link" href={`/${collection}`}>全部{kind === 'person' ? '作者 / 主创' : '创作机构'}</Link>
           <Link className="back-link" href="/works">作品目录</Link>
+          {creator.authorityUrl && <a className="back-link" href={creator.authorityUrl}>机构官方资料</a>}
         </div>
       </section>
       <form className="creator-year-filter" action={route}>

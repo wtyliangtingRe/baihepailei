@@ -185,6 +185,13 @@ body,
 .release-work-card-public { border-radius: .7rem; background: var(--library-paper); }
 .release-work-body h2 { overflow-wrap: anywhere; line-height: 1.45; }
 .release-work-footer { color: var(--library-muted); }
+.release-work-footer .result-link { margin-inline-start: auto; }
+.card-assessment-reason { margin-block: .65rem .25rem; }
+.card-assessment-reason summary { width: fit-content; cursor: pointer; font-weight: 600; }
+.card-assessment-reason summary span { margin-inline-start: .55em; font-size: .82em; color: var(--library-muted); font-weight: 400; }
+.card-assessment-reason summary:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.card-assessment-reason p { max-width: 46em; margin: .45rem 0; line-height: 1.85; overflow-wrap: anywhere; }
+
 .release-work-card-public .result-text { max-width: 45em; line-height: 1.8; }
 .release-warning-chip, .release-public-meta span,
 .release-work-card-public .release-work-rating small,

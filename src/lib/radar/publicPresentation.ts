@@ -121,8 +121,15 @@ export function classTone(code: RadarRatingClass): 'positive' | 'notice' | 'warn
 }
 
 export function compactCredits(
-  credits: Array<{ name: string; role: string }>,
+  credits: Array<{ name: string; role: string; creatorId?: string }>,
   limit = 3,
 ): string {
-  return credits.slice(0, limit).map((credit) => `${credit.name}（${credit.role}）`).join('、')
+  const shown = new Map<string, { name: string; roles: Set<string> }>()
+  for (const credit of credits) {
+    const key = credit.creatorId ? `id:${credit.creatorId}` : `name:${credit.name}`
+    const entry = shown.get(key)
+    if (entry) entry.roles.add(credit.role)
+    else if (shown.size < limit) shown.set(key, { name: credit.name, roles: new Set([credit.role]) })
+  }
+  return [...shown.values()].map(({ name, roles }) => `${name}（${[...roles].join('、')}）`).join('、')
 }

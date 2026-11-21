@@ -40,11 +40,22 @@ const authorCounts = currentReview ? JSON.parse(readFileSync(join(bibliographyRo
 const licensedAnimation = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'licensed-animation-credits.json'), 'utf8'))
   : { credits: [], newlyCreditedWorks: 0 }
 const animationNames = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'animation-credit-names.json'), 'utf8'))
-  : { redirects: {}, rows: [] }
+  : { redirects: {}, rows: [], organizations: [] }
 const { catalogStaffRedirects } = loadPublicModule(root, 'src/lib/publicCatalogStaffIdentities.ts')
 const { readHistoricalOrganizations } = loadPublicModule(root, 'src/lib/publicHistoricalOrganizations.ts')
 const baseDirectory = join(root, 'data/public-release/v4')
-const entityRedirects = { ...animationNames.redirects, ...Object.fromEntries(readHistoricalOrganizations(baseDirectory, currentReview).redirects),
+const studioRedirects = Object.fromEntries(animationNames.organizations.flatMap(studio =>
+  Object.keys(studio.spellings).filter(id => id !== studio.creatorId).map(id => [id, studio.creatorId])))
+for (const studio of animationNames.organizations) {
+  const canonical = release.getPublicCreatorById(studio.creatorId)
+  assert.equal(canonical.name, studio.name)
+  assert.equal(canonical.authorityUrl, studio.authority)
+  for (const [id, spelling] of Object.entries(studio.spellings)) {
+    assert.equal(release.getPublicCreatorById(id).creatorId, canonical.creatorId)
+    assert.ok(canonical.names.includes(spelling))
+  }
+}
+const entityRedirects = { ...animationNames.redirects, ...studioRedirects, ...Object.fromEntries(readHistoricalOrganizations(baseDirectory, currentReview).redirects),
   ...(currentReview ? Object.fromEntries(catalogStaffRedirects(baseDirectory)) : {}) }
 if (currentReview) {
   const bookEntities = gunzipSync(readFileSync(join(bibliographyRoot, 'book-entities.jsonl.gz'))).toString('utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
@@ -61,7 +72,7 @@ if (currentReview) {
   const corrections = readFileSync(join(identityRoot, 'corrections.jsonl'), 'utf8').trim().split('\n').map(JSON.parse)
   for (const correction of corrections.filter(row => row.releaseCredits)) {
     const work = release.getPublicWorkById(correction.workId)
-    assert.equal(work.title, correction.catalogTitle)
+    assert.equal(work.title, correction.label ? `${correction.catalogTitle}（${correction.label}）` : correction.catalogTitle)
     for (const credit of correction.releaseCredits) {
       const rows = credit.creditKind === 'person' ? work.creators : work.organizations
       assert.ok(rows.some(row => row.creatorId === credit.creatorId && row.role === credit.role &&
