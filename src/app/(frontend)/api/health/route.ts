@@ -14,6 +14,7 @@ export function GET() {
       catalogWorks: manifest.counts.catalogWorks,
       visibleWorks: merge.visibleWorks,
       ratedVisibleWorks: merge.ratedVisibleWorks,
+      reviewedVisibleWorks: merge.reviewedVisibleWorks,
       unratedVisibleWorks: merge.visibleWorks - merge.ratedVisibleWorks,
       mergedAway: merge.mergedAway,
       mergedGroups: merge.multiWorkGroups,

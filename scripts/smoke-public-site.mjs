@@ -138,6 +138,7 @@ try {
   )
   assert.equal(health.visibleWorks + health.mergedAway, health.catalogWorks)
   assert.equal(health.ratedVisibleWorks + health.unratedVisibleWorks, health.visibleWorks)
+  assert.ok(health.reviewedVisibleWorks > 0 && health.reviewedVisibleWorks <= health.ratedVisibleWorks)
   const ratedCatalog = await json('/api/work-lineage/works?status=rated&limit=1')
   assert.equal(health.ratedVisibleWorks, ratedCatalog.total)
 
@@ -176,6 +177,24 @@ try {
   assert.equal(author?.creatorId, '503223358886')
   assert.ok(translatedBook.creators.some(credit => credit.role === '绘者' && credit.creatorId === author.creatorId))
   assert.ok(author.sourceUrls.some(url => url.includes('mangaupdates.com/author/')))
+  assert.ok(translatedBook.sources.some(source => source.url === 'https://bgm.tv/subject/26072'))
+  const yuriReview = 'https://www.ishiyuri.com/entry/20100723/p1'
+  for (const [id, grade, includesReview] of [['12686', 'E', false], ['12853', 'B', true]]) {
+    const work = await json(`/api/work-lineage/works/${id}`)
+    assert.equal(work.rating.grade, grade)
+    assert.equal(work.rating.decidingSource, 'official')
+    assert.equal(work.sources.some(source => source.url === yuriReview), includesReview)
+    assert.equal(work.rating.evidenceSources.some(source => source.url === yuriReview), includesReview)
+  }
+  for (const [original, remake, appId] of [['30533', '30530', '282900'], ['30536', '30531', '351710'], ['30999', null, '1901370']]) {
+    const sources = (await json(`/api/work-lineage/works/${original}`)).sources
+    assert.ok(sources.some(source => source.tier === 'official'))
+    assert.ok(!sources.some(source => source.url.includes(`steampowered.com/app/${appId}`)))
+    if (remake) {
+      const entry = await json(`/api/work-lineage/works/${remake}`)
+      assert.ok(entry.sources.some(source => source.url === `https://store.steampowered.com/app/${appId}/`))
+    }
+  }
   const translatedPage = await (await response('/works/w-4982')).text()
   for (const value of ['-6mm的禁忌', '-6mm no Taboo', 'マガジン・マガジン', '/organizations/o-700000002322', '/creators/c-503223358886']) {
     assert.ok(translatedPage.includes(value), `Missing book or publisher identity: ${value}`)

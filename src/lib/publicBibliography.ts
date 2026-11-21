@@ -45,6 +45,36 @@ export function addBookBibliography(directory: string, metadata: Map<string, Pub
     }
     existing.sources.push({ title: 'MangaBaka 书目 · 译名与出版资料', url: row.url, tier: 'community' })
   }
+  const japanese = JSON.parse(readFileSync(join(root, 'japanese-sources-manifest.json'), 'utf8'))
+  type EditionSource = { title: string; url: string; sourceType: 'catalog' | 'publisher' | 'reader' }
+  type JapaneseBook = { workId: string; siteId: string; sources: EditionSource[] }
+  const checkedBooks = new Set<string>()
+  let totalLinks = 0
+  for (const row of readRows<JapaneseBook>(root, 'japanese-book-sources.jsonl.gz', japanese.sha256, japanese.records)) {
+    const existing = metadata.get(row.workId)
+    if (!existing || existing.siteId !== row.siteId || checkedBooks.has(row.workId) || !row.sources.length) {
+      throw new Error(`Japanese book identity mismatch for ${row.workId}`)
+    }
+    checkedBooks.add(row.workId)
+    for (const source of row.sources) {
+      const url = new URL(source.url)
+      const isCatalog = source.sourceType === 'catalog' && (
+        (url.host === 'anilist.co' && source.url === `https://anilist.co/manga/${row.siteId.replace('catalog-anilist-', '')}`) ||
+        (url.host === 'bgm.tv' && /^\/subject\/[1-9]\d*$/.test(url.pathname)))
+      const isPublisher = source.sourceType === 'publisher' && (
+        (url.host === 'www.books.or.jp' && /^\/book-details\/97[89]\d{10}$/.test(url.pathname)) ||
+        (url.host === 'www.cmoa.jp' && /^\/title\/[1-9]\d*\/$/.test(url.pathname)) ||
+        (url.host === 'booklive.jp' && /^\/product\/index\/title_id\/\d+\/vol_no\/\d+$/.test(url.pathname)))
+      const isReader = source.sourceType === 'reader' && url.host === 'booklive.jp' &&
+        /^\/review\/list\/title_id\/\d+\/vol_no\/\d+$/.test(url.pathname)
+      if (url.protocol !== 'https:' || url.username || url.password || !source.title || !(isCatalog || isPublisher || isReader)) {
+        throw new Error(`Invalid Japanese edition source for ${row.workId}`)
+      }
+      existing.sources.push({ title: source.title, url: source.url, tier: isPublisher ? 'official' : 'community' })
+      totalLinks++
+    }
+  }
+  if (totalLinks !== japanese.links) throw new Error('Japanese book source count mismatch')
   const national = JSON.parse(readFileSync(join(root, 'national-manifest.json'), 'utf8'))
   type PrintEdition = { workId: string; siteId: string; isbn: string; volume: string; nationalLibrary: string }
   for (const row of readRows<PrintEdition>(root, 'national-books.jsonl.gz', national.sha256, national.records)) {

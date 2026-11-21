@@ -204,7 +204,7 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
                       </span>
                     ))}
                     {work.rating.uncertaintyKind ? <span className="release-warning-chip warning-data">具体雷点未确认</span> : null}
-                    {work.rating.needsMoreResearch ? <span className="release-warning-chip warning-data">资料仍待补充</span> : null}
+                    {work.rating.needsMoreResearch && !work.rating.gradeReviewed ? <span className="release-warning-chip warning-data">资料仍待补充</span> : null}
                     {work.rating.state === 'rated' && !classes.length && !work.rating.uncertaintyKind ? (
                       <span className="release-warning-chip warning-data">细分依据待补录</span>
                     ) : null}

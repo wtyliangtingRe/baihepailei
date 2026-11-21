@@ -1,0 +1,949 @@
+{
+  "schemaVersion": "baihepailei-historical-organization-staff-v1",
+  "redirects": {
+    "1015085": "1013198",
+    "1014759": "815000030847",
+    "1014760": "815000030847",
+    "1014993": "815000018936"
+  },
+  "credits": [
+    {
+      "workId": "3982",
+      "subject": 530066,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "6925",
+      "subject": 454684,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "6927",
+      "subject": 246431,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "6928",
+      "subject": 428735,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "6932",
+      "subject": 583729,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "7971",
+      "subject": 640282,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/",
+        "https://comic-growl.com/series/36ad1cc86300b"
+      ]
+    },
+    {
+      "workId": "7972",
+      "subject": 440878,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "7973",
+      "subject": 440881,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "7974",
+      "subject": 440880,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "7976",
+      "subject": 327772,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "8852",
+      "subject": 377556,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "10786",
+      "subject": 242978,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "10786",
+      "subject": 242978,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原案",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原案",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "11013",
+      "subject": 540449,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/",
+        "https://anime.bang-dream.com/bandorichan/staff-cast/"
+      ]
+    },
+    {
+      "workId": "15580",
+      "subject": 176478,
+      "source": "catalog",
+      "oldId": "1014759",
+      "oldName": "けものフレンズプロジェクト",
+      "oldRole": "原作",
+      "creatorId": "815000030847",
+      "name": "けものフレンズプロジェクト",
+      "role": "原作",
+      "urls": [
+        "https://kemono-friends-20170110.jp/staff/",
+        "https://www.value-press.com/pressrelease/180534"
+      ]
+    },
+    {
+      "workId": "15580",
+      "subject": 176478,
+      "source": "catalog",
+      "oldId": "1014760",
+      "oldName": "けものフレンズプロジェクト（ファミマ・ドット・コム、テレビ東京、KADOKAWA、JVCケンウッド・ビクターエンタテインメント、クランチロールSCアニメファンド、AT-X、エス・ワイ・エス、ジンミャク、Age Global Networks、ジャストプロ、ドコモ・アニメストア、ブシロード、クロックワークス）",
+      "oldRole": "原作",
+      "creatorId": "815000030847",
+      "name": "けものフレンズプロジェクト",
+      "role": "原作",
+      "urls": [
+        "https://kemono-friends-20170110.jp/staff/",
+        "https://www.value-press.com/pressrelease/180534"
+      ]
+    },
+    {
+      "workId": "15580",
+      "subject": 176478,
+      "source": "staff",
+      "person": 19306,
+      "oldId": "1001996",
+      "oldName": "KADOKAWA",
+      "oldRole": "原作",
+      "creatorId": "1001996",
+      "name": "KADOKAWA",
+      "role": "原作项目成员",
+      "urls": [
+        "https://kemono-friends-20170110.jp/staff/",
+        "https://www.value-press.com/pressrelease/180534"
+      ]
+    },
+    {
+      "workId": "15580",
+      "subject": 176478,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作项目成员",
+      "urls": [
+        "https://kemono-friends-20170110.jp/staff/",
+        "https://www.value-press.com/pressrelease/180534"
+      ]
+    },
+    {
+      "workId": "15580",
+      "subject": 176478,
+      "source": "staff",
+      "person": 1492,
+      "oldId": "815000001492",
+      "oldName": "クロックワークス",
+      "oldRole": "原作",
+      "creatorId": "815000001492",
+      "name": "クロックワークス",
+      "role": "原作项目成员",
+      "urls": [
+        "https://kemono-friends-20170110.jp/staff/",
+        "https://www.value-press.com/pressrelease/180534"
+      ]
+    },
+    {
+      "workId": "15580",
+      "subject": 176478,
+      "source": "staff",
+      "person": 30847,
+      "oldId": "815000030847",
+      "oldName": "けものフレンズプロジェクト",
+      "oldRole": "原作",
+      "creatorId": "815000030847",
+      "name": "けものフレンズプロジェクト",
+      "role": "原作",
+      "urls": [
+        "https://kemono-friends-20170110.jp/staff/",
+        "https://www.value-press.com/pressrelease/180534"
+      ]
+    },
+    {
+      "workId": "15580",
+      "subject": 176478,
+      "source": "staff",
+      "person": 33747,
+      "oldId": "815000033747",
+      "oldName": "クランチロールSCアニメファンド",
+      "oldRole": "原作",
+      "creatorId": "815000033747",
+      "name": "クランチロールSCアニメファンド",
+      "role": "原作项目成员",
+      "urls": [
+        "https://kemono-friends-20170110.jp/staff/",
+        "https://www.value-press.com/pressrelease/180534"
+      ]
+    },
+    {
+      "workId": "15580",
+      "subject": 176478,
+      "source": "staff",
+      "person": 34080,
+      "oldId": "815000034080",
+      "oldName": "ドコモ・アニメストア",
+      "oldRole": "原作",
+      "creatorId": "815000034080",
+      "name": "ドコモ・アニメストア",
+      "role": "原作项目成员",
+      "urls": [
+        "https://kemono-friends-20170110.jp/staff/",
+        "https://www.value-press.com/pressrelease/180534"
+      ]
+    },
+    {
+      "workId": "24970",
+      "subject": 214265,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/",
+        "https://over-lap.co.jp/Form/Product/ProductDetail.aspx?cat=ANM&pid=ANM0017&shop=0&swrd=&vid="
+      ]
+    },
+    {
+      "workId": "24972",
+      "subject": 294135,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/",
+        "https://cinema.revuestarlight.com/cast-staff/"
+      ]
+    },
+    {
+      "workId": "24973",
+      "subject": 294134,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "30464",
+      "subject": 257608,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/",
+        "https://prtimes.jp/main/html/rd/p/000001392.000014827.html"
+      ]
+    },
+    {
+      "workId": "30969",
+      "subject": 305059,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "31029",
+      "subject": 473828,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "发行",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "发行",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "31451",
+      "subject": 414737,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "31451",
+      "subject": 414737,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "发行",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "发行",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "31632",
+      "subject": 303627,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "发行",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "发行",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32045",
+      "subject": 8560,
+      "source": "catalog",
+      "oldId": "1014993",
+      "oldName": "ブシロード、クロノギアクリエイティヴ",
+      "oldRole": "原作",
+      "creatorId": "815000018936",
+      "name": "クロノギアクリエイティヴ",
+      "role": "原作",
+      "urls": [
+        "https://www.lantis.jp/special/milkyholmes/",
+        "https://bgm.tv/person/18936"
+      ]
+    },
+    {
+      "workId": "32045",
+      "subject": 8560,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード、クロノギアクリエイティヴ",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32046",
+      "subject": 144465,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32047",
+      "subject": 22287,
+      "source": "catalog",
+      "oldId": "1014993",
+      "oldName": "ブシロード、クロノギアクリエイティヴ",
+      "oldRole": "原作",
+      "creatorId": "815000018936",
+      "name": "クロノギアクリエイティヴ",
+      "role": "原作",
+      "urls": [
+        "https://www.lantis.jp/special/milkyholmes/",
+        "https://bgm.tv/person/18936",
+        "https://www.bnfw.sotsu.co.jp/property/details/0076"
+      ]
+    },
+    {
+      "workId": "32047",
+      "subject": 22287,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード、クロノギアクリエイティヴ",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/",
+        "https://www.bnfw.sotsu.co.jp/property/details/0076"
+      ]
+    },
+    {
+      "workId": "32048",
+      "subject": 182886,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32049",
+      "subject": 22756,
+      "source": "catalog",
+      "oldId": "1014993",
+      "oldName": "ブシロード、クロノギアクリエイティヴ",
+      "oldRole": "原作",
+      "creatorId": "815000018936",
+      "name": "クロノギアクリエイティヴ",
+      "role": "原作",
+      "urls": [
+        "https://www.lantis.jp/special/milkyholmes/",
+        "https://bgm.tv/person/18936"
+      ]
+    },
+    {
+      "workId": "32049",
+      "subject": 22756,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード、クロノギアクリエイティヴ",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32050",
+      "subject": 259070,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32051",
+      "subject": 230295,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32052",
+      "subject": 113631,
+      "source": "catalog",
+      "oldId": "1014993",
+      "oldName": "ブシロード、クロノギアクリエイティヴ",
+      "oldRole": "原作",
+      "creatorId": "815000018936",
+      "name": "クロノギアクリエイティヴ",
+      "role": "原作",
+      "urls": [
+        "https://www.lantis.jp/special/milkyholmes/",
+        "https://bgm.tv/person/18936"
+      ]
+    },
+    {
+      "workId": "32052",
+      "subject": 113631,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード、クロノギアクリエイティヴ",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32136",
+      "subject": 246429,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32137",
+      "subject": 246430,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32138",
+      "subject": 621188,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "发行",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "发行",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32139",
+      "subject": 208415,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "发行",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "发行",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32139",
+      "subject": 208415,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "开发",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "开发",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32141",
+      "subject": 338400,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32142",
+      "subject": 296295,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32143",
+      "subject": 373931,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32145",
+      "subject": 305058,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32146",
+      "subject": 315490,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32147",
+      "subject": 279219,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32149",
+      "subject": 385928,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32175",
+      "subject": 299372,
+      "source": "catalog",
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32176",
+      "subject": 317328,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "发行",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "发行",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32244",
+      "subject": 467960,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "发行",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "发行",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32258",
+      "subject": 226234,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "发行",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "发行",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32282",
+      "subject": 448391,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32711",
+      "subject": 302228,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32718",
+      "subject": 473832,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    },
+    {
+      "workId": "32719",
+      "subject": 473833,
+      "source": "staff",
+      "person": 10556,
+      "oldId": "1015085",
+      "oldName": "ブシロード",
+      "oldRole": "原作",
+      "creatorId": "1013198",
+      "name": "ブシロード",
+      "role": "原作",
+      "urls": [
+        "https://bushiroad.co.jp/company/overview/"
+      ]
+    }
+  ]
+}

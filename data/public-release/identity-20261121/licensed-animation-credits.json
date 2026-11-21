@@ -2,6 +2,45 @@
   "newlyCreditedWorks": 0,
   "credits": [
     {
+      "sourceWorkId": "5241",
+      "siteId": "catalog-anilist-162890",
+      "creatorId": "90001324593",
+      "kind": "person",
+      "name": "空知英秋",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/9334/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=28339",
+      "subject": 425208,
+      "person": 2930,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/10.json#L3067"
+    },
+    {
+      "sourceWorkId": "5327",
+      "siteId": "catalog-anilist-177761",
+      "creatorId": "1000002",
+      "kind": "organization",
+      "name": "ぱれっと",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/9190/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=28060",
+      "subject": 496973,
+      "person": 7389,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/07.json#L5353"
+    },
+    {
+      "sourceWorkId": "5603",
+      "siteId": "catalog-anilist-155525",
+      "creatorId": "1015687",
+      "kind": "person",
+      "name": "千葉美鈴",
+      "role": "剧本",
+      "programUrl": "https://www.b-ch.com/titles/7834/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26040",
+      "subject": 351713,
+      "person": 26528,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2022/07.json#L5126"
+    },
+    {
       "sourceWorkId": "5614",
       "siteId": "catalog-anilist-101",
       "creatorId": "1010294",
@@ -69,6 +108,32 @@
       "subject": 431370,
       "person": 3313,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/10.json#L1483"
+    },
+    {
+      "sourceWorkId": "6038",
+      "siteId": "catalog-anilist-176642",
+      "creatorId": "1016964",
+      "kind": "person",
+      "name": "柿原優子",
+      "role": "剧本",
+      "programUrl": "https://www.b-ch.com/titles/8969/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27653",
+      "subject": 488177,
+      "person": 3326,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/01.json#L5223"
+    },
+    {
+      "sourceWorkId": "6386",
+      "siteId": "catalog-anilist-180675",
+      "creatorId": "1016719",
+      "kind": "person",
+      "name": "春藤佳奈",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/9071/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27747",
+      "subject": 509986,
+      "person": 26580,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/04.json#L1861"
     },
     {
       "sourceWorkId": "6437",
@@ -147,6 +212,45 @@
       "subject": 10404,
       "person": 1874,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1970/04.json#L55"
+    },
+    {
+      "sourceWorkId": "6900",
+      "siteId": "catalog-anilist-184279",
+      "creatorId": "1009458",
+      "kind": "organization",
+      "name": "EMTスクエアード",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/9070/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27746",
+      "subject": 524123,
+      "person": 19639,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/04.json#L3250"
+    },
+    {
+      "sourceWorkId": "6977",
+      "siteId": "catalog-anilist-155890",
+      "creatorId": "1015848",
+      "kind": "person",
+      "name": "國澤真理子",
+      "role": "系列构成",
+      "programUrl": "https://www.b-ch.com/titles/8544/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27038",
+      "subject": 405660,
+      "person": 3715,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/04.json#L3548"
+    },
+    {
+      "sourceWorkId": "7017",
+      "siteId": "catalog-anilist-5082",
+      "creatorId": "1015492",
+      "kind": "person",
+      "name": "佐藤 大",
+      "role": "系列构成",
+      "programUrl": "https://www.b-ch.com/titles/4048/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=22359",
+      "subject": 55144,
+      "person": 921,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2008/09.json#L2"
     },
     {
       "sourceWorkId": "7205",
@@ -257,6 +361,32 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2000/03.json#L174"
     },
     {
+      "sourceWorkId": "7368",
+      "siteId": "catalog-anilist-163146",
+      "creatorId": "1012987",
+      "kind": "organization",
+      "name": "エイトビット",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/8730/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27336",
+      "subject": 426123,
+      "person": 6885,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/10.json#L1100"
+    },
+    {
+      "sourceWorkId": "7369",
+      "siteId": "catalog-anilist-163147",
+      "creatorId": "1012987",
+      "kind": "organization",
+      "name": "エイトビット",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/8731/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27337",
+      "subject": 426124,
+      "person": 6885,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/04.json#L6235"
+    },
+    {
       "sourceWorkId": "7540",
       "siteId": "catalog-anilist-1222",
       "creatorId": "1017513",
@@ -268,6 +398,19 @@
       "subject": 1275,
       "person": 3182,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2006/07.json#L509"
+    },
+    {
+      "sourceWorkId": "7657",
+      "siteId": "catalog-anilist-156039",
+      "creatorId": "1015848",
+      "kind": "person",
+      "name": "國澤真理子",
+      "role": "系列构成",
+      "programUrl": "https://www.b-ch.com/titles/8287/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26620",
+      "subject": 406180,
+      "person": 3715,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2023/10.json#L3951"
     },
     {
       "sourceWorkId": "7725",
@@ -294,6 +437,19 @@
       "subject": 15176,
       "person": 257,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1987/02.json#L48"
+    },
+    {
+      "sourceWorkId": "7728",
+      "siteId": "catalog-anilist-165254",
+      "creatorId": "1015585",
+      "kind": "person",
+      "name": "内海紘子",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/8428/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26815",
+      "subject": 436745,
+      "person": 11000,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/01.json#L3585"
     },
     {
       "sourceWorkId": "7810",
@@ -333,6 +489,45 @@
       "subject": 9304,
       "person": 1399,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1983/07.json#L105"
+    },
+    {
+      "sourceWorkId": "8152",
+      "siteId": "catalog-anilist-151514",
+      "creatorId": "1017285",
+      "kind": "person",
+      "name": "清水健一",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/8948/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27589",
+      "subject": 389156,
+      "person": 12968,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/10.json#L5919"
+    },
+    {
+      "sourceWorkId": "8178",
+      "siteId": "catalog-anilist-173692",
+      "creatorId": "1015983",
+      "kind": "person",
+      "name": "大沢美奈",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/9391/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=28255",
+      "subject": 476323,
+      "person": 19857,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/10.json#L1805"
+    },
+    {
+      "sourceWorkId": "8273",
+      "siteId": "catalog-anilist-2881",
+      "creatorId": "90001721423",
+      "kind": "person",
+      "name": "かわぐちかいじ",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/4803/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=22655",
+      "subject": 48679,
+      "person": 2018,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1995/12.json#L278"
     },
     {
       "sourceWorkId": "8329",
@@ -492,6 +687,19 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1998/10.json#L212"
     },
     {
+      "sourceWorkId": "8845",
+      "siteId": "catalog-anilist-1482",
+      "creatorId": "1018203",
+      "kind": "person",
+      "name": "鍋島 修",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/4422/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=20406",
+      "subject": 488,
+      "person": 1066,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2006/10.json#L1198"
+    },
+    {
       "sourceWorkId": "9142",
       "siteId": "catalog-anilist-1535",
       "creatorId": "90000313703",
@@ -538,6 +746,19 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2002/04.json#L350"
     },
     {
+      "sourceWorkId": "9365",
+      "siteId": "catalog-anilist-3031",
+      "creatorId": "90003976778",
+      "kind": "person",
+      "name": "富田祐弘",
+      "role": "剧本",
+      "programUrl": "https://www.b-ch.com/titles/4779/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=20857",
+      "subject": 3139,
+      "person": 486,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2002/07.json#L292"
+    },
+    {
       "sourceWorkId": "9759",
       "siteId": "catalog-anilist-225",
       "creatorId": "90000208582",
@@ -549,6 +770,45 @@
       "subject": 9566,
       "person": 629,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1996/02.json#L2"
+    },
+    {
+      "sourceWorkId": "9761",
+      "siteId": "catalog-anilist-6033",
+      "creatorId": "90000208582",
+      "kind": "person",
+      "name": "鳥山 明",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/4289/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=20038",
+      "subject": 2103,
+      "person": 629,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2009/04.json#L1512"
+    },
+    {
+      "sourceWorkId": "9856",
+      "siteId": "catalog-anilist-4443",
+      "creatorId": "1018191",
+      "kind": "person",
+      "name": "鈴木輪流郎",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/4941/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26923",
+      "subject": 293614,
+      "person": 2769,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2004/04.json#L2126"
+    },
+    {
+      "sourceWorkId": "9954",
+      "siteId": "catalog-anilist-150957",
+      "creatorId": "1008983",
+      "kind": "organization",
+      "name": "C2C",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/8119/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26280",
+      "subject": 387803,
+      "person": 12875,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2023/04.json#L2233"
     },
     {
       "sourceWorkId": "9968",
@@ -605,6 +865,19 @@
       "role": "导演",
       "programUrl": "https://www.b-ch.com/titles/7333/",
       "productionUrl": "https://avex-pictures.co.jp/lineup/36906/"
+    },
+    {
+      "sourceWorkId": "10309",
+      "siteId": "catalog-anilist-178312",
+      "creatorId": "1013205",
+      "kind": "organization",
+      "name": "ブリッジ",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/8927/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27497",
+      "subject": 500356,
+      "person": 8537,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/01.json#L1269"
     },
     {
       "sourceWorkId": "10322",
@@ -751,6 +1024,32 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2002/02.json#L195"
     },
     {
+      "sourceWorkId": "11159",
+      "siteId": "catalog-anilist-18465",
+      "creatorId": "90002005281",
+      "kind": "person",
+      "name": "木尾士目",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/3711/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=10905",
+      "subject": 71802,
+      "person": 1812,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2013/07.json#L461"
+    },
+    {
+      "sourceWorkId": "11166",
+      "siteId": "catalog-anilist-484",
+      "creatorId": "90000445265",
+      "kind": "person",
+      "name": "峰倉かずや",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/8850/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27296",
+      "subject": 20580,
+      "person": 987,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2001/08.json#L95"
+    },
+    {
       "sourceWorkId": "11264",
       "siteId": "catalog-anilist-201090",
       "creatorId": "1009464",
@@ -842,6 +1141,19 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2006/10.json#L2022"
     },
     {
+      "sourceWorkId": "11352",
+      "siteId": "catalog-anilist-7472",
+      "creatorId": "1015938",
+      "kind": "person",
+      "name": "大和屋 暁",
+      "role": "剧本",
+      "programUrl": "https://www.b-ch.com/titles/3671/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=24364",
+      "subject": 4475,
+      "person": 1184,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2010/04.json#L1657"
+    },
+    {
       "sourceWorkId": "11399",
       "siteId": "catalog-anilist-14131",
       "creatorId": "1012952",
@@ -863,6 +1175,71 @@
       "subject": 290993,
       "person": 19857,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2020/08.json#L158"
+    },
+    {
+      "sourceWorkId": "11430",
+      "siteId": "catalog-anilist-175199",
+      "creatorId": "1015983",
+      "kind": "person",
+      "name": "大沢美奈",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/9010/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=28244",
+      "subject": 452627,
+      "person": 19857,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/09.json#L239"
+    },
+    {
+      "sourceWorkId": "11431",
+      "siteId": "catalog-anilist-134710",
+      "creatorId": "1015983",
+      "kind": "person",
+      "name": "大沢美奈",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/8335/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26785",
+      "subject": 337433,
+      "person": 19857,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2021/12.json#L511"
+    },
+    {
+      "sourceWorkId": "11661",
+      "siteId": "catalog-anilist-5477",
+      "creatorId": "1012952",
+      "kind": "organization",
+      "name": "アクタス",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/6469/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=23376",
+      "subject": 98608,
+      "person": 222,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1999/10.json#L885"
+    },
+    {
+      "sourceWorkId": "11661",
+      "siteId": "catalog-anilist-5477",
+      "creatorId": "90011598854",
+      "kind": "person",
+      "name": "竹内啓雄",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/6469/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=23376",
+      "subject": 98608,
+      "person": 1204,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1999/10.json#L885"
+    },
+    {
+      "sourceWorkId": "11783",
+      "siteId": "catalog-anilist-163204",
+      "creatorId": "1015969",
+      "kind": "person",
+      "name": "大張正己",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/8266/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26575",
+      "subject": 434818,
+      "person": 257,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2023/10.json#L6418"
     },
     {
       "sourceWorkId": "11929",
@@ -896,6 +1273,32 @@
       "subject": 1935,
       "person": 1427,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2005/07.json#L954"
+    },
+    {
+      "sourceWorkId": "12037",
+      "siteId": "catalog-anilist-3710",
+      "creatorId": "1013746",
+      "kind": "organization",
+      "name": "東映アニメーション",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/6356/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=11227",
+      "subject": 4016,
+      "person": 3045,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2008/01.json#L847"
+    },
+    {
+      "sourceWorkId": "12043",
+      "siteId": "catalog-anilist-99483",
+      "creatorId": "1015373",
+      "kind": "person",
+      "name": "井上英紀",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/5880/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=21945",
+      "subject": 219568,
+      "person": 2540,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2018/01.json#L711"
     },
     {
       "sourceWorkId": "12255",
@@ -935,6 +1338,32 @@
       "subject": 2216,
       "person": 130,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2001/10.json#L764"
+    },
+    {
+      "sourceWorkId": "12610",
+      "siteId": "catalog-anilist-777",
+      "creatorId": "1015547",
+      "kind": "person",
+      "name": "倉田英之",
+      "role": "剧本",
+      "programUrl": "https://www.b-ch.com/titles/6492/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=22811",
+      "subject": 493,
+      "person": 375,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2006/02.json#L223"
+    },
+    {
+      "sourceWorkId": "12610",
+      "siteId": "catalog-anilist-777",
+      "creatorId": "90000445903",
+      "kind": "person",
+      "name": "平野耕太",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/6492/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=22811",
+      "subject": 493,
+      "person": 129,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2006/02.json#L223"
     },
     {
       "sourceWorkId": "12732",
@@ -987,6 +1416,19 @@
       "subject": 3496,
       "person": 3118,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2006/04.json#L1294"
+    },
+    {
+      "sourceWorkId": "13214",
+      "siteId": "catalog-anilist-171110",
+      "creatorId": "1015848",
+      "kind": "person",
+      "name": "國澤真理子",
+      "role": "系列构成",
+      "programUrl": "https://www.b-ch.com/titles/9666/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=28852",
+      "subject": 469104,
+      "person": 3715,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2026/04.json#L6636"
     },
     {
       "sourceWorkId": "13228",
@@ -1093,6 +1535,45 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2022/07.json#L287"
     },
     {
+      "sourceWorkId": "14658",
+      "siteId": "catalog-anilist-253",
+      "creatorId": "1007276",
+      "kind": "person",
+      "name": "金田一蓮十郎",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/4292/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=11293",
+      "subject": 3291,
+      "person": 622,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2001/04.json#L366"
+    },
+    {
+      "sourceWorkId": "14716",
+      "siteId": "catalog-anilist-153",
+      "creatorId": "90001207530",
+      "kind": "person",
+      "name": "小野不由美",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/3246/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=11296",
+      "subject": 1856,
+      "person": 117,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2002/04.json#L727"
+    },
+    {
+      "sourceWorkId": "14735",
+      "siteId": "catalog-anilist-1991",
+      "creatorId": "1015969",
+      "kind": "person",
+      "name": "大張正己",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/7603/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=25015",
+      "subject": 10306,
+      "person": 257,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2007/02.json#L132"
+    },
+    {
       "sourceWorkId": "14774",
       "siteId": "catalog-anilist-171025",
       "creatorId": "1017252",
@@ -1117,6 +1598,19 @@
       "subject": 461307,
       "person": 3715,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/05.json#L166"
+    },
+    {
+      "sourceWorkId": "15043",
+      "siteId": "catalog-anilist-196029",
+      "creatorId": "1016229",
+      "kind": "person",
+      "name": "小林雄次",
+      "role": "系列构成",
+      "programUrl": "https://www.b-ch.com/titles/9683/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=28817",
+      "subject": 570584,
+      "person": 14146,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2026/04.json#L2235"
     },
     {
       "sourceWorkId": "15067",
@@ -1179,6 +1673,32 @@
       "role": "剧本",
       "programUrl": "https://www.b-ch.com/titles/2390/",
       "productionUrl": "https://www.production-ig.co.jp/xebec/anime/kanokon/episode13.html"
+    },
+    {
+      "sourceWorkId": "15306",
+      "siteId": "catalog-anilist-2204",
+      "creatorId": "1016214",
+      "kind": "person",
+      "name": "小林利充",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/6862/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=23739",
+      "subject": 4040,
+      "person": 275,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1999/10.json#L602"
+    },
+    {
+      "sourceWorkId": "15317",
+      "siteId": "catalog-anilist-170503",
+      "creatorId": "815000062961",
+      "kind": "person",
+      "name": "山室有紀子",
+      "role": "剧本",
+      "programUrl": "https://www.b-ch.com/titles/8520/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26985",
+      "subject": 461338,
+      "person": 62961,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/04.json#L2421"
     },
     {
       "sourceWorkId": "15354",
@@ -1253,6 +1773,19 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/10.json#L4311"
     },
     {
+      "sourceWorkId": "15793",
+      "siteId": "catalog-anilist-3670",
+      "creatorId": "90003976778",
+      "kind": "person",
+      "name": "富田祐弘",
+      "role": "系列构成",
+      "programUrl": "https://www.b-ch.com/titles/7449/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=10895",
+      "subject": 37169,
+      "person": 486,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1983/10.json#L2"
+    },
+    {
       "sourceWorkId": "15816",
       "siteId": "catalog-anilist-1087",
       "creatorId": "1018431",
@@ -1264,6 +1797,19 @@
       "subject": 2042,
       "person": 489,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1987/04.json#L83"
+    },
+    {
+      "sourceWorkId": "16092",
+      "siteId": "catalog-anilist-162796",
+      "creatorId": "1008394",
+      "kind": "person",
+      "name": "深見真",
+      "role": "系列构成",
+      "programUrl": "https://www.b-ch.com/titles/8629/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27644",
+      "subject": 424853,
+      "person": 8267,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/07.json#L662"
     },
     {
       "sourceWorkId": "16099",
@@ -1427,6 +1973,45 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2005/04.json#L244"
     },
     {
+      "sourceWorkId": "16991",
+      "siteId": "catalog-anilist-2157",
+      "creatorId": "1012952",
+      "kind": "organization",
+      "name": "アクタス",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/8592/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=11289",
+      "subject": 14538,
+      "person": 222,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2007/04.json#L1410"
+    },
+    {
+      "sourceWorkId": "17052",
+      "siteId": "catalog-anilist-177508",
+      "creatorId": "1016367",
+      "kind": "person",
+      "name": "山田靖智",
+      "role": "系列构成",
+      "programUrl": "https://www.b-ch.com/titles/9701/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=28873",
+      "subject": 493804,
+      "person": 26,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2026/04.json#L4024"
+    },
+    {
+      "sourceWorkId": "17313",
+      "siteId": "catalog-anilist-161647",
+      "creatorId": "1015969",
+      "kind": "person",
+      "name": "大張正己",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/8192/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26536",
+      "subject": 420047,
+      "person": 257,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2023/08.json#L212"
+    },
+    {
       "sourceWorkId": "17314",
       "siteId": "catalog-anilist-10456",
       "creatorId": "1018169",
@@ -1477,6 +2062,19 @@
       "subject": 459725,
       "person": 37219,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/04.json#L1433"
+    },
+    {
+      "sourceWorkId": "18011",
+      "siteId": "catalog-anilist-168623",
+      "creatorId": "1006655",
+      "kind": "person",
+      "name": "東出祐一郎",
+      "role": "系列构成",
+      "programUrl": "https://www.b-ch.com/titles/8655/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27208",
+      "subject": 446175,
+      "person": 6306,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/07.json#L3335"
     },
     {
       "sourceWorkId": "18069",
@@ -1531,6 +2129,19 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2009/10.json#L1956"
     },
     {
+      "sourceWorkId": "18087",
+      "siteId": "catalog-anilist-3660",
+      "creatorId": "90011675620",
+      "kind": "person",
+      "name": "鴫野 彰",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/8614/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27149",
+      "subject": 67781,
+      "person": 2624,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1986/03.json#L356"
+    },
+    {
       "sourceWorkId": "18102",
       "siteId": "catalog-anilist-604",
       "creatorId": "1018431",
@@ -1568,6 +2179,19 @@
       "subject": 292970,
       "person": 12875,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2020/10.json#L1144"
+    },
+    {
+      "sourceWorkId": "18310",
+      "siteId": "catalog-anilist-153818",
+      "creatorId": "1018347",
+      "kind": "person",
+      "name": "飯島弘也",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/8429/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26787",
+      "subject": 396595,
+      "person": 828,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/01.json#L4677"
     },
     {
       "sourceWorkId": "18574",
@@ -1609,6 +2233,19 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2003/04.json#L512"
     },
     {
+      "sourceWorkId": "18683",
+      "siteId": "catalog-anilist-180460",
+      "creatorId": "1017207",
+      "kind": "person",
+      "name": "池田臨太郎",
+      "role": "系列构成",
+      "programUrl": "https://www.b-ch.com/titles/9194/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=28135",
+      "subject": 509216,
+      "person": 28901,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/07.json#L3091"
+    },
+    {
       "sourceWorkId": "18692",
       "siteId": "catalog-anilist-10721",
       "creatorId": "1017978",
@@ -1620,6 +2257,19 @@
       "subject": 18624,
       "person": 6847,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2011/07.json#L1668"
+    },
+    {
+      "sourceWorkId": "18746",
+      "siteId": "catalog-anilist-165171",
+      "creatorId": "1009464",
+      "kind": "organization",
+      "name": "ENGI",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/8959/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27620",
+      "subject": 430699,
+      "person": 32696,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/01.json#L116"
     },
     {
       "sourceWorkId": "18767",
@@ -1648,6 +2298,32 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2001/05.json#L270"
     },
     {
+      "sourceWorkId": "19131",
+      "siteId": "catalog-anilist-5713",
+      "creatorId": "90005158759",
+      "kind": "person",
+      "name": "桜場コハル",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/6740/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=23143",
+      "subject": 3016,
+      "person": 3120,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2009/06.json#L386"
+    },
+    {
+      "sourceWorkId": "19479",
+      "siteId": "catalog-anilist-173533",
+      "creatorId": "1015958",
+      "kind": "person",
+      "name": "大嶋実句",
+      "role": "剧本",
+      "programUrl": "https://www.b-ch.com/titles/8662/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27567",
+      "subject": 475354,
+      "person": 13833,
+      "editionRegistry": "https://www.wikidata.org/wiki/Q124310059"
+    },
+    {
       "sourceWorkId": "19599",
       "siteId": "catalog-anilist-352",
       "creatorId": "1016366",
@@ -1674,6 +2350,19 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2006/07.json#L362"
     },
     {
+      "sourceWorkId": "19831",
+      "siteId": "catalog-anilist-151189",
+      "creatorId": "1004286",
+      "kind": "person",
+      "name": "野口征恒",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/8078/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26252",
+      "subject": 388067,
+      "person": 36499,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2023/04.json#L3426"
+    },
+    {
       "sourceWorkId": "19846",
       "siteId": "catalog-anilist-2926",
       "creatorId": "1001974",
@@ -1685,6 +2374,58 @@
       "subject": 306,
       "person": 3496,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2007/10.json#L1189"
+    },
+    {
+      "sourceWorkId": "20034",
+      "siteId": "catalog-anilist-142598",
+      "creatorId": "1018014",
+      "kind": "person",
+      "name": "諏訪壮大",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/8161/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26440",
+      "subject": 362006,
+      "person": 37219,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2023/07.json#L1843"
+    },
+    {
+      "sourceWorkId": "20231",
+      "siteId": "catalog-anilist-184989",
+      "creatorId": "1015848",
+      "kind": "person",
+      "name": "國澤真理子",
+      "role": "系列构成",
+      "programUrl": "https://www.b-ch.com/titles/9779/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=29109",
+      "subject": 525642,
+      "person": 3715,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/04.json#L2425"
+    },
+    {
+      "sourceWorkId": "20882",
+      "siteId": "catalog-anilist-168992",
+      "creatorId": "90000038842",
+      "kind": "person",
+      "name": "安野モヨコ",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/8312/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26633",
+      "subject": 453630,
+      "person": 2875,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2023/10.json#L3048"
+    },
+    {
+      "sourceWorkId": "20903",
+      "siteId": "catalog-anilist-165426",
+      "creatorId": "1009464",
+      "kind": "organization",
+      "name": "ENGI",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/9554/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=28618",
+      "subject": 437502,
+      "person": 32696,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2023/08.json#L51"
     },
     {
       "sourceWorkId": "20986",
@@ -1711,6 +2452,58 @@
       "subject": 14879,
       "person": 1011,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2004/06.json#L193"
+    },
+    {
+      "sourceWorkId": "21178",
+      "siteId": "catalog-anilist-465",
+      "creatorId": "1016073",
+      "kind": "person",
+      "name": "宇田鋼之介",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/3488/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26994",
+      "subject": 1995,
+      "person": 291,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2006/03.json#L319"
+    },
+    {
+      "sourceWorkId": "21301",
+      "siteId": "catalog-anilist-187387",
+      "creatorId": "1004723",
+      "kind": "person",
+      "name": "森田和明",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/9177/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=28057",
+      "subject": 541945,
+      "person": 3300,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/07.json#L3812"
+    },
+    {
+      "sourceWorkId": "21368",
+      "siteId": "catalog-anilist-164440",
+      "creatorId": "90140621628",
+      "kind": "person",
+      "name": "オ ジング",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/8545/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27042",
+      "subject": 433072,
+      "person": 26731,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/04.json#L4001"
+    },
+    {
+      "sourceWorkId": "21408",
+      "siteId": "catalog-anilist-159886",
+      "creatorId": "90000504482",
+      "kind": "person",
+      "name": "弐瓶 勉",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/8484/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27411",
+      "subject": 414590,
+      "person": 2283,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2023/10.json#L6269"
     },
     {
       "sourceWorkId": "21908",
@@ -1804,6 +2597,19 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2005/07.json#L615"
     },
     {
+      "sourceWorkId": "22410",
+      "siteId": "catalog-anilist-98505",
+      "creatorId": "1012952",
+      "kind": "organization",
+      "name": "アクタス",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/5666/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=22954",
+      "subject": 211936,
+      "person": 222,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2017/07.json#L1054"
+    },
+    {
       "sourceWorkId": "22414",
       "siteId": "catalog-anilist-2547",
       "creatorId": "1016632",
@@ -1815,6 +2621,19 @@
       "subject": 53778,
       "person": 2175,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1985/01.json#L45"
+    },
+    {
+      "sourceWorkId": "22473",
+      "siteId": "catalog-anilist-204011",
+      "creatorId": "1015995",
+      "kind": "person",
+      "name": "大熊 白",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/9957/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=29263",
+      "subject": 614640,
+      "person": 64591,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2026/10.json#L6199"
     },
     {
       "sourceWorkId": "22648",
@@ -1830,6 +2649,19 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2015/10.json#L851"
     },
     {
+      "sourceWorkId": "22713",
+      "siteId": "catalog-anilist-169417",
+      "creatorId": "1018379",
+      "kind": "person",
+      "name": "高岡淳一",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/8539/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26984",
+      "subject": 455345,
+      "person": 2186,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/04.json#L3676"
+    },
+    {
       "sourceWorkId": "22860",
       "siteId": "catalog-anilist-186744",
       "creatorId": "1017705",
@@ -1841,6 +2673,19 @@
       "subject": 537722,
       "person": 33380,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2026/04.json#L1134"
+    },
+    {
+      "sourceWorkId": "23029",
+      "siteId": "catalog-anilist-2111",
+      "creatorId": "1017851",
+      "kind": "person",
+      "name": "荒木憲一",
+      "role": "剧本",
+      "programUrl": "https://www.b-ch.com/titles/8832/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27449",
+      "subject": 5229,
+      "person": 475,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2005/03.json#L396"
     },
     {
       "sourceWorkId": "23043",
@@ -1867,6 +2712,58 @@
       "subject": 1026,
       "person": 3118,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2005/10.json#L129"
+    },
+    {
+      "sourceWorkId": "23303",
+      "siteId": "catalog-anilist-156891",
+      "creatorId": "1011898",
+      "kind": "organization",
+      "name": "STUDIO MASSKET",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/8420/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26675",
+      "subject": 407697,
+      "person": 35123,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/01.json#L3464"
+    },
+    {
+      "sourceWorkId": "23304",
+      "siteId": "catalog-anilist-201514",
+      "creatorId": "1016449",
+      "kind": "person",
+      "name": "川島 尚",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/9843/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=29081",
+      "subject": 602733,
+      "person": 3741,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2026/07.json#L748"
+    },
+    {
+      "sourceWorkId": "23372",
+      "siteId": "catalog-anilist-3515",
+      "creatorId": "90000725387",
+      "kind": "person",
+      "name": "車田正美",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/4153/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=20132",
+      "subject": 1486,
+      "person": 800,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2008/03.json#L328"
+    },
+    {
+      "sourceWorkId": "23449",
+      "siteId": "catalog-anilist-114",
+      "creatorId": "90011645030",
+      "kind": "person",
+      "name": "野中英次",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/7148/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=24355",
+      "subject": 4043,
+      "person": 1532,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2003/10.json#L637"
     },
     {
       "sourceWorkId": "23486",
@@ -1906,6 +2803,19 @@
       "subject": 254,
       "person": 596,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2004/05.json#L2"
+    },
+    {
+      "sourceWorkId": "23551",
+      "siteId": "catalog-anilist-419",
+      "creatorId": "90000749265",
+      "kind": "person",
+      "name": "上条明峰",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/8873/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27440",
+      "subject": 4164,
+      "person": 7523,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2002/07.json#L500"
     },
     {
       "sourceWorkId": "23732",
@@ -2103,6 +3013,19 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2009/10.json#L1135"
     },
     {
+      "sourceWorkId": "24036",
+      "siteId": "catalog-anilist-20371",
+      "creatorId": "90002663665",
+      "kind": "person",
+      "name": "中村春菊",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/5156/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=20001",
+      "subject": 79419,
+      "person": 6917,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2014/03.json#L226"
+    },
+    {
       "sourceWorkId": "24044",
       "siteId": "catalog-anilist-4063",
       "creatorId": "1015728",
@@ -2181,6 +3104,19 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2008/11.json#L101"
     },
     {
+      "sourceWorkId": "24332",
+      "siteId": "catalog-anilist-151970",
+      "creatorId": "1008983",
+      "kind": "organization",
+      "name": "C2C",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/8284/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26601",
+      "subject": 390980,
+      "person": 12875,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2023/10.json#L598"
+    },
+    {
       "sourceWorkId": "24424",
       "siteId": "catalog-anilist-180746",
       "creatorId": "1017207",
@@ -2192,6 +3128,19 @@
       "subject": 510753,
       "person": 28901,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2026/01.json#L2086"
+    },
+    {
+      "sourceWorkId": "24568",
+      "siteId": "catalog-anilist-4067",
+      "creatorId": "90011598854",
+      "kind": "person",
+      "name": "竹内啓雄",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/4461/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=23380",
+      "subject": 40380,
+      "person": 1204,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2000/10.json#L50"
     },
     {
       "sourceWorkId": "24672",
@@ -2220,6 +3169,19 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2004/04.json#L942"
     },
     {
+      "sourceWorkId": "24681",
+      "siteId": "catalog-anilist-163292",
+      "creatorId": "1017187",
+      "kind": "person",
+      "name": "江口麻里",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/8617/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27625",
+      "subject": 427059,
+      "person": 42588,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/07.json#L1029"
+    },
+    {
       "sourceWorkId": "25070",
       "siteId": "catalog-anilist-190143",
       "creatorId": "1015325",
@@ -2231,6 +3193,32 @@
       "subject": 551455,
       "person": 14250,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2026/03.json#L2"
+    },
+    {
+      "sourceWorkId": "25117",
+      "siteId": "catalog-anilist-155657",
+      "creatorId": "1009458",
+      "kind": "organization",
+      "name": "E M T スクエアード",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/8504/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27009",
+      "subject": 404809,
+      "person": 19639,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/04.json#L1760"
+    },
+    {
+      "sourceWorkId": "25214",
+      "siteId": "catalog-anilist-124153",
+      "creatorId": "1015585",
+      "kind": "person",
+      "name": "内海紘子",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/7198/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=24455",
+      "subject": 315456,
+      "person": 11000,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2021/01.json#L2717"
     },
     {
       "sourceWorkId": "25241",
@@ -2354,6 +3342,19 @@
       "productionUrl": "https://www.satelight.co.jp/works/%E5%89%B5%E8%81%96%E3%81%AE%E3%82%A2%E3%82%AF%E3%82%A8%E3%83%AA%E3%82%AA%E3%83%B3/"
     },
     {
+      "sourceWorkId": "25675",
+      "siteId": "catalog-anilist-158928",
+      "creatorId": "90003981526",
+      "kind": "person",
+      "name": "遠藤達哉",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/8678/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27461",
+      "subject": 411428,
+      "person": 22315,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2023/12.json#L426"
+    },
+    {
       "sourceWorkId": "25834",
       "siteId": "catalog-anilist-1642",
       "creatorId": "90000331400",
@@ -2378,6 +3379,19 @@
       "subject": 10160,
       "person": 2875,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2005/07.json#L476"
+    },
+    {
+      "sourceWorkId": "25941",
+      "siteId": "catalog-anilist-1837",
+      "creatorId": "90011657442",
+      "kind": "person",
+      "name": "阿智太郎",
+      "role": "原作",
+      "programUrl": "https://www.b-ch.com/titles/3569/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=10687",
+      "subject": 10415,
+      "person": 19821,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2003/07.json#L349"
     },
     {
       "sourceWorkId": "26181",
@@ -2432,6 +3446,45 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2008/10.json#L463"
     },
     {
+      "sourceWorkId": "26421",
+      "siteId": "catalog-anilist-2102",
+      "creatorId": "1006013",
+      "kind": "person",
+      "name": "荒木英樹",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/3369/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=11216",
+      "subject": 77746,
+      "person": 1979,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1996/04.json#L791"
+    },
+    {
+      "sourceWorkId": "26452",
+      "siteId": "catalog-anilist-198709",
+      "creatorId": "1015983",
+      "kind": "person",
+      "name": "大沢美奈",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/9826/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=29079",
+      "subject": 584641,
+      "person": 19857,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2026/07.json#L2338"
+    },
+    {
+      "sourceWorkId": "26632",
+      "siteId": "catalog-anilist-187941",
+      "creatorId": "1016265",
+      "kind": "person",
+      "name": "小野田将人",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/9530/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=28634",
+      "subject": 544106,
+      "person": 13334,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2026/01.json#L3885"
+    },
+    {
       "sourceWorkId": "26913",
       "siteId": "catalog-anilist-3455",
       "creatorId": "1015938",
@@ -2482,6 +3535,32 @@
       "subject": 390618,
       "person": 942,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2023/01.json#L928"
+    },
+    {
+      "sourceWorkId": "27291",
+      "siteId": "catalog-anilist-3672",
+      "creatorId": "1018203",
+      "kind": "person",
+      "name": "鍋島 修",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/8778/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27270",
+      "subject": 114807,
+      "person": 1066,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1994/04.json#L273"
+    },
+    {
+      "sourceWorkId": "27315",
+      "siteId": "catalog-anilist-173263",
+      "creatorId": "1015848",
+      "kind": "person",
+      "name": "國澤真理子",
+      "role": "系列构成",
+      "programUrl": "https://www.b-ch.com/titles/8861/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27348",
+      "subject": 474801,
+      "person": 3715,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/10.json#L3373"
     },
     {
       "sourceWorkId": "27366",
@@ -2601,6 +3680,19 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/10.json#L996"
     },
     {
+      "sourceWorkId": "28783",
+      "siteId": "catalog-anilist-180367",
+      "creatorId": "1018345",
+      "kind": "person",
+      "name": "飯塚晴子",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/9073/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=27788",
+      "subject": 506672,
+      "person": 3313,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2025/04.json#L544"
+    },
+    {
       "sourceWorkId": "29077",
       "siteId": "catalog-anilist-4615",
       "creatorId": "815000001899",
@@ -2640,6 +3732,58 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2013/01.json#L1296"
     },
     {
+      "sourceWorkId": "29135",
+      "siteId": "catalog-anilist-207141",
+      "creatorId": "1016907",
+      "kind": "person",
+      "name": "松浦 力",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/9790/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=29040",
+      "subject": 622206,
+      "person": 30195,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2026/07.json#L1452"
+    },
+    {
+      "sourceWorkId": "29135",
+      "siteId": "catalog-anilist-207141",
+      "creatorId": "1014696",
+      "kind": "person",
+      "name": "あおしまたかし",
+      "role": "剧本",
+      "programUrl": "https://www.b-ch.com/titles/9790/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=29040",
+      "subject": 622206,
+      "person": 2639,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2026/07.json#L1452"
+    },
+    {
+      "sourceWorkId": "29201",
+      "siteId": "catalog-anilist-1891",
+      "creatorId": "1018303",
+      "kind": "person",
+      "name": "難波日登志",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/8450/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26804",
+      "subject": 197883,
+      "person": 942,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1996/10.json#L2"
+    },
+    {
+      "sourceWorkId": "29680",
+      "siteId": "catalog-anilist-4651",
+      "creatorId": "1016366",
+      "kind": "person",
+      "name": "山田隆司",
+      "role": "系列构成",
+      "programUrl": "https://www.b-ch.com/titles/3523/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=25719",
+      "subject": 9266,
+      "person": 1011,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/1997/09.json#L2"
+    },
+    {
       "sourceWorkId": "29712",
       "siteId": "catalog-anilist-6586",
       "creatorId": "1016366",
@@ -2653,6 +3797,32 @@
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2009/10.json#L650"
     },
     {
+      "sourceWorkId": "29909",
+      "siteId": "catalog-anilist-165598",
+      "creatorId": "1016791",
+      "kind": "person",
+      "name": "本村晃一",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/8443/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26820",
+      "subject": 438187,
+      "person": 11923,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/01.json#L3367"
+    },
+    {
+      "sourceWorkId": "29909",
+      "siteId": "catalog-anilist-165598",
+      "creatorId": "1015969",
+      "kind": "person",
+      "name": "大張正己",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/8443/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=26820",
+      "subject": 438187,
+      "person": 257,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2024/01.json#L3367"
+    },
+    {
       "sourceWorkId": "29946",
       "siteId": "catalog-anilist-195515",
       "creatorId": "1015983",
@@ -2664,6 +3834,45 @@
       "subject": 525816,
       "person": 19857,
       "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2026/01.json#L1318"
+    },
+    {
+      "sourceWorkId": "29949",
+      "siteId": "catalog-anilist-150695",
+      "creatorId": "1009458",
+      "kind": "organization",
+      "name": "EMTスクエアード",
+      "role": "动画制作",
+      "programUrl": "https://www.b-ch.com/titles/7900/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=25773",
+      "subject": 383631,
+      "person": 19639,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2022/10.json#L550"
+    },
+    {
+      "sourceWorkId": "30081",
+      "siteId": "catalog-anilist-4444",
+      "creatorId": "1018191",
+      "kind": "person",
+      "name": "鈴木輪流郎",
+      "role": "导演",
+      "programUrl": "https://www.b-ch.com/titles/9676/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=28904",
+      "subject": 293616,
+      "person": 2769,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2007/04.json#L2865"
+    },
+    {
+      "sourceWorkId": "30168",
+      "siteId": "catalog-anilist-1746",
+      "creatorId": "1017326",
+      "kind": "person",
+      "name": "渡部圭祐",
+      "role": "人物设定",
+      "programUrl": "https://www.b-ch.com/titles/9406/",
+      "productionUrl": "https://animestore.docomo.ne.jp/animestore/ci_pc?workId=28374",
+      "subject": 26016,
+      "person": 12,
+      "editionRegistry": "https://github.com/bangumi-data/bangumi-data/blob/645575fad6ec737e1dd7c7ae0d60101e460f1c69/data/items/2004/10.json#L654"
     }
   ]
 }

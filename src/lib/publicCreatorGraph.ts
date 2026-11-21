@@ -6,7 +6,8 @@ import type { PublicCredit, PublicWorkRecord } from './publicRelease'
 import { descriptiveKey, mergeCredits } from './publicDescriptiveMerge'
 import { correctCredit, type IdentityReview } from './publicIdentityReview'
 import { readAnimationCreditNames } from './publicAnimationCreditNames'
-import { publisherRedirects } from './publicPublisherIdentities'
+import { catalogStaffRedirects } from './publicCatalogStaffIdentities'
+import { readHistoricalOrganizations } from './publicHistoricalOrganizations'
 
 export type CreatorKind = 'person' | 'organization'
 export type PublicCreator = {
@@ -64,6 +65,7 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
     return rows
   }
   const creditNames = readAnimationCreditNames(directory, Boolean(review))
+  const historicalOrganizations = readHistoricalOrganizations(directory, Boolean(review))
   const nodes = [...readRows<PublicCreator>('entities.jsonl.gz'), ...(review?.entities || [])]
   const entities = new Map<string, PublicCreator>()
   for (const node of nodes) {
@@ -85,8 +87,9 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
   const creditFiles = manifest.files.filter((row: { file: string }) => /^credits-\d{4}\.jsonl\.gz$/.test(row.file))
   if (!creditFiles.length) throw new Error('Missing creator credit shards')
   const edges: CreditEdge[] = creditFiles.flatMap((row: { file: string }) => readRows<CreditEdge>(row.file)
-    .flatMap(edge => creditNames.resolve(edge, entities)))
+    .flatMap(edge => creditNames.resolve(edge, entities)).map(historicalOrganizations.correctCatalog))
   creditNames.assertComplete()
+  historicalOrganizations.assertCatalogComplete()
   for (const reviewed of review?.creditsByWork.values() || []) edges.push(...reviewed)
   for (const original of edges) {
     if (review?.removedCreatorIds.has(original.creatorId)) continue
@@ -135,7 +138,7 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
     return (b.work.firstPublished || '').localeCompare(a.work.firstPublished || '') ||
       a.work.title.localeCompare(b.work.title, 'zh-CN') || Number(a.work.workId) - Number(b.work.workId)
   })]))
-  const redirects = new Map([...creditNames.redirects, ...(review ? publisherRedirects(directory) : [])])
+  const redirects = new Map([...creditNames.redirects, ...historicalOrganizations.redirects, ...(review ? catalogStaffRedirects(directory) : [])])
   return { entities, byCredit, works, redirects }
 }
 

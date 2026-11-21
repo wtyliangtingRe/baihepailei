@@ -40,3 +40,14 @@ test('multiple cited sources stay attached to their own merged assessment', () =
   assert.equal(result.reasoningSummary, second.rating.reasoningSummary)
   assert.deepEqual(result.evidenceSources, second.rating.evidenceSources)
 })
+
+test('only a reassessment supporting the final grade counts towards review coverage', () => {
+  const old = work({ grade: 'E', reviewMethod: 'attribution', decidingSource: 'official', reasoningSummary: '旧评级的出处' })
+  const higher = work({ grade: 'A', reviewMethod: 'assessment', decidingSource: 'community' })
+  assert.equal(selectMergedRating([old, higher]).gradeReviewed, undefined)
+  const same = work({ grade: 'E', reviewMethod: 'assessment', decidingSource: 'community' })
+  const result = selectMergedRating([old, higher, same])
+  assert.equal(result.gradeReviewed, true)
+  assert.equal(result.decidingSource, 'official')
+  assert.equal(result.reviewMethod, 'attribution')
+})

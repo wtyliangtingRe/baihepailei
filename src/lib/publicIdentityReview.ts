@@ -35,6 +35,8 @@ type Correction = {
   firstPublished?: string
   format?: string
   wrongUrl?: string
+  unrelatedUrls?: string[]
+  editionSources?: PublicWorkRecord['sources']
   creditName?: string
   oldRole?: string
   newRole?: string
@@ -210,22 +212,39 @@ export function correctCredit<T extends PublicCredit>(workId: string, credit: T,
   return { ...credit, role: fix.newRole, sourceUrls: [...new Set([...(credit.sourceUrls || []), fix.url])] }
 }
 
+function editionLinkKey(value: string): string {
+  const steam = /^https?:\/\/store\.steampowered\.com\/app\/(\d+)(?:[/?#]|$)/i.exec(value)
+  return steam ? `steam:${steam[1]}` : value
+}
+
 export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityReview, members = [work.workId]): PublicWorkRecord {
   if (!review) return work
   const fix = review.corrections.get(work.workId)
   const edges = members.flatMap(id => review.creditsByWork.get(id) || [])
   const correctedUrls = new Map<string, string>()
+  const unrelated = new Set<string>()
+  const editionSources: PublicWorkRecord['sources'] = []
   for (const id of members) {
     const correction = review.corrections.get(id)
+    for (const url of correction?.unrelatedUrls || []) unrelated.add(editionLinkKey(url))
+    editionSources.push(...correction?.editionSources || [])
     if (correction?.wrongUrl) correctedUrls.set(correction.wrongUrl, correction.url)
   }
-  if (!fix && !edges.length && !correctedUrls.size) return work
+  if (!fix && !edges.length && !correctedUrls.size && !editionSources.length && !unrelated.size) return work
   const editionTitle = fix?.edition?.catalogTitle || fix?.catalogTitle
   if (editionTitle && work.title !== editionTitle) throw new Error(`Edition title drift: ${work.workId}`)
   const credits = (kind: CreatorKind) => edges.filter(edge => edge.creditKind === kind)
     .map(edge => ({ name: edge.name, role: edge.role, sourceUrl: edge.sourceUrls[0], sourceUrls: edge.sourceUrls }))
-  const correctedSources = work.sources.map(source =>
+  if (unrelated.size) {
+    const citations = [work.rating.evidenceUrl, ...(work.rating.evidenceSources || []).map(source => source.url),
+      ...(work.rating.sourceFindings || []).flatMap(finding => finding.urls), work.summary?.sourceUrl]
+    if (citations.some(value => value && unrelated.has(editionLinkKey(value)))) {
+      throw new Error(`Evidence from another edition on ${work.workId}`)
+    }
+  }
+  const correctedSources = work.sources.filter(source => !unrelated.has(editionLinkKey(source.url))).map(source =>
     correctedUrls.has(source.url) ? { ...source, url: correctedUrls.get(source.url)! } : source)
+  correctedSources.push(...editionSources)
   if (fix?.label) correctedSources.push({ title: '版本与收录范围', url: fix.url })
   if (fix?.edition) correctedSources.push({ title: `出版社书目 · ISBN ${fix.edition.isbn}`, url: fix.url })
   else if (fix?.firstPublished) correctedSources.push({ title: fix.releaseCredits ? '发行方资料与首发日期' : '出版社书目与发售日期', url: fix.url })

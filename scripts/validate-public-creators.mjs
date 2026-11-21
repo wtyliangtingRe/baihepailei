@@ -41,9 +41,11 @@ const licensedAnimation = currentReview ? JSON.parse(readFileSync(join(identityR
   : { credits: [], newlyCreditedWorks: 0 }
 const animationNames = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'animation-credit-names.json'), 'utf8'))
   : { redirects: {}, rows: [] }
-const publisherIdentities = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'publisher-identities.json'), 'utf8')).publishers : []
-const entityRedirects = { ...animationNames.redirects, ...Object.fromEntries(publisherIdentities
-  .filter(publisher => publisher.sourceId !== publisher.organizationId).map(publisher => [publisher.sourceId, publisher.organizationId])) }
+const { catalogStaffRedirects } = loadPublicModule(root, 'src/lib/publicCatalogStaffIdentities.ts')
+const { readHistoricalOrganizations } = loadPublicModule(root, 'src/lib/publicHistoricalOrganizations.ts')
+const baseDirectory = join(root, 'data/public-release/v4')
+const entityRedirects = { ...animationNames.redirects, ...Object.fromEntries(readHistoricalOrganizations(baseDirectory, currentReview).redirects),
+  ...(currentReview ? Object.fromEntries(catalogStaffRedirects(baseDirectory)) : {}) }
 if (currentReview) {
   const bookEntities = gunzipSync(readFileSync(join(bibliographyRoot, 'book-entities.jsonl.gz'))).toString('utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
   assert.equal(bookEntities.length, bookCounts.entities)

@@ -42,7 +42,8 @@ export default function UpdatesPage() {
         </div>
         <p>
           合并同一作品的重复记录后，可浏览 {catalog.visibleWorks.toLocaleString('zh-CN')} 部作品。
-          其中 {catalog.ratedVisibleWorks.toLocaleString('zh-CN')} 部已有 S–F 评级，
+          其中 {catalog.reviewedVisibleWorks.toLocaleString('zh-CN')} 部已按本轮规则复评，
+          {(catalog.ratedVisibleWorks - catalog.reviewedVisibleWorks).toLocaleString('zh-CN')} 部沿用先前评级，
           {(catalog.visibleWorks - catalog.ratedVisibleWorks).toLocaleString('zh-CN')} 部待评级。
         </p>
         <Link className="result-link" href="/ratings">查看评级分布</Link>

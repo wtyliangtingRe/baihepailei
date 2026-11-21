@@ -6,7 +6,8 @@ import { join, resolve } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 import { addPublicMetadata, readPublicMetadata } from '@/lib/publicMetadata'
 import { addBookCredits, addCatalogStaff, addVerifiedBookAuthors } from '@/lib/publicBibliography'
-import { applyPublisherIdentities } from '@/lib/publicPublisherIdentities'
+import { applyCatalogStaffIdentities } from '@/lib/publicCatalogStaffIdentities'
+import { readHistoricalOrganizations } from '@/lib/publicHistoricalOrganizations'
 import { mergeCredits } from '@/lib/publicDescriptiveMerge'
 import { reviewedProviderAliases } from './reviewedProviderAliases.cjs'
 import { addPrintPublisherCredits, applyBangumiMetadata, applyReviewedMetadata, readIdentityReview, type IdentityReview, type RecoveredBangumiWork } from '@/lib/publicIdentityReview'
@@ -65,6 +66,7 @@ export type PublicWorkSource = {
 
 export type PublicWorkRating = {
   reviewMethod?: 'attribution' | 'assessment'
+  gradeReviewed?: boolean
   decidingSource?: SourceFinding['kind']
   sourceFindings?: SourceFinding[]
   state: PublicRatingState
@@ -273,6 +275,7 @@ export type PublicCatalogMergeStats = {
   sourceWorks: number
   visibleWorks: number
   ratedVisibleWorks: number
+  reviewedVisibleWorks: number
   mergedAway: number
   multiWorkGroups: number
   largestGroup: number
@@ -524,6 +527,7 @@ export function selectMergedRating(records: PublicWorkRecord[]): PublicWorkRatin
     classes,
     reasoningSummary: reasonRecord?.rating.reasoningSummary,
     reviewMethod: evidenceRecord?.rating.reviewMethod,
+    ...(selectedGrade && candidates.some(record => record.rating.reviewMethod === 'assessment') && { gradeReviewed: true }),
     decidingSource: evidenceRecord?.rating.decidingSource,
     sourceFindings: reviewedFindings.length ? reviewedFindings : undefined,
     evidenceUrl: evidenceRecord?.rating.evidenceUrl,
@@ -785,6 +789,7 @@ function deduplicateCatalog(
       sourceWorks: records.length,
       visibleWorks: mergedRecords.length,
       ratedVisibleWorks: mergedRecords.filter(record => record.rating.state === 'rated' && record.rating.grade).length,
+      reviewedVisibleWorks: mergedRecords.filter(record => record.rating.gradeReviewed).length,
       mergedAway: records.length - mergedRecords.length,
       multiWorkGroups,
       largestGroup,
@@ -961,16 +966,19 @@ function loadRelease(): PublicReleaseCache {
     recovered,
   )
   const metadata = readPublicMetadata(directory, identities)
+  const historicalOrganizations = readHistoricalOrganizations(directory, Boolean(identityReview))
   if (identityReview) {
     addBookCredits(directory, identities, merged.byWorkId, identityReview.entities, identityReview.creditsByWork)
     addVerifiedBookAuthors(directory, identities, merged.byWorkId, identityReview)
     addCatalogStaff(directory, identities, merged.byWorkId, identityReview)
     addPrintPublisherCredits(identityReview, merged.byWorkId)
-    applyPublisherIdentities(directory, merged.byWorkId, identityReview)
+    applyCatalogStaffIdentities(directory, merged.byWorkId, identityReview)
+    historicalOrganizations.applyStaff(identityReview)
   }
   const records = merged.records.map(record => {
     const members = merged.memberIdsByPrimary.get(record.workId) || [record.workId]
-    let work = applyReviewedMetadata(addPublicMetadata(record, members.map(id => metadata.get(id)!)), identityReview, members)
+    const described = addPublicMetadata(record, members.map(id => metadata.get(id)!))
+    let work = applyReviewedMetadata(historicalOrganizations.applyMetadata(described, members), identityReview, members)
     for (const id of members) {
       const legacy = identityReview?.legacyBindings.get(id)
       if (legacy) {

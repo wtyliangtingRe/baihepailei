@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "baihepailei-bangumi-author-identities-v1",
+  "authors": [
+    {
+      "person": 1498,
+      "sourceId": "815000001498",
+      "name": "藤田春香",
+      "creatorId": "815000001498",
+      "authority": "https://violet-evergarden.jp/sidestory/",
+      "additionalAuthority": "https://violet-evergarden.jp/special/interview/"
+    },
+    {
+      "person": 1523,
+      "sourceId": "815000001523",
+      "name": "藤子・F・不二雄",
+      "creatorId": "90000017572",
+      "authority": "https://fujiko-museum.com/welcome/",
+      "additionalAuthority": "https://www.wikidata.org/wiki/Q17572"
+    },
+    {
+      "person": 6040,
+      "sourceId": "815000006040",
+      "name": "藤真拓哉",
+      "creatorId": "1008308",
+      "authority": "https://kamiesai.com/2021/artists/fujima/",
+      "additionalAuthority": "https://www.kadokawa.co.jp/product/200910000064/"
+    },
+    {
+      "person": 8552,
+      "sourceId": "815000008552",
+      "name": "きづきあきら",
+      "creatorId": "1007203",
+      "authority": "https://hirameki.genron.co.jp/blog/2024/04/03/19046/",
+      "additionalAuthority": "https://bgm.tv/subject/18123/persons"
+    },
+    {
+      "person": 44007,
+      "sourceId": "815000044007",
+      "name": "金丸祐基",
+      "creatorId": "815000044007",
+      "authority": "https://www.kadokawa.co.jp/product/321806000622/",
+      "additionalAuthority": "https://license.kadokawa.co.jp/anime/2022autumn/entry-11357.html"
+    },
+    {
+      "person": 62217,
+      "sourceId": "815000062217",
+      "name": "永島ひろあき",
+      "creatorId": "815000062217",
+      "authority": "https://mypage.syosetu.com/mypageblog/view/userid/128004/blogkey/1427383/",
+      "additionalAuthority": "https://www.hanmoto.com/bd/isbn/9784434345135"
+    },
+    {
+      "person": 71204,
+      "sourceId": "815000071204",
+      "name": "樋渡昇一郎",
+      "creatorId": "815000071204",
+      "authority": "https://kumarba.com/blogs/news/124",
+      "additionalAuthority": "https://kumarba.com/pages/tv-anime"
+    },
+    {
+      "person": 72715,
+      "sourceId": "815000072715",
+      "name": "ユキムラ",
+      "creatorId": "541715575304",
+      "authority": "https://note.com/yukimura92/n/n463261ee5dda",
+      "additionalAuthority": "https://www.mangaupdates.com/author/j5wdjwo/yukimura"
+    },
+    {
+      "person": 83054,
+      "sourceId": "815000083054",
+      "name": "えんじゅ",
+      "creatorId": "815000083054",
+      "authority": "https://ncode.syosetu.com/n3290gx/",
+      "additionalAuthority": "https://kusunokitei.com/books/"
+    }
+  ]
+}

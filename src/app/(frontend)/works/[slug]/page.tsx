@@ -195,7 +195,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
               </span>
             ))}
             {rating.uncertaintyKind ? <span className="release-warning-chip warning-data">具体雷点未确认</span> : null}
-            {rating.needsMoreResearch ? <span className="release-warning-chip warning-data">资料仍待补充</span> : null}
+            {rating.needsMoreResearch && !rating.gradeReviewed ? <span className="release-warning-chip warning-data">资料仍待补充</span> : null}
           </div>
           {rating.reasoningSummary && (
             <details className="work-story-evidence">
@@ -378,7 +378,11 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
           {rating.grade ? <div><dt>核心等级</dt><dd>{rating.grade} · {gradeLabel(rating.grade)}</dd></div> : null}
           {range ? <div><dt>结论范围</dt><dd>{range}</dd></div> : null}
           {rating.confidence ? <div><dt>资料把握</dt><dd>{confidenceLabel(rating.confidence)}</dd></div> : null}
-          <div><dt>仍需补充</dt><dd>{!rating.grade || rating.needsMoreResearch ? '是' : '否'}</dd></div>
+          {rating.gradeReviewed ? (
+            <div><dt>逐作复评</dt><dd>本轮已按所列版本和来源核定当前等级。</dd></div>
+          ) : (
+            <div><dt>仍需补充</dt><dd>{!rating.grade || rating.needsMoreResearch ? '是' : '否'}</dd></div>
+          )}
         </dl>
       </section>
 

@@ -33,6 +33,7 @@ test('publisher staff appear as organizations on the edition and their original 
     const work = release.getPublicWorkById(credit.sourceWorkId)
     const reference = `https://bgm.tv/subject/${credit.subject}/persons`
     const roles = credit.role === '出版社' ? ['出版社', '原版出版社', '译本出版社', '中文版出版社', '英文版出版社'] : [credit.role]
+    if (credit.subject === 176478 && credit.person === 19306) roles.push('原作项目成员')
     assert.ok(!work.creators.some(item => item.creatorId === publisher.sourceId || item.creatorId === publisher.organizationId))
     assert.ok(work.organizations.some(item => item.creatorId === publisher.organizationId && roles.includes(item.role) &&
       item.sourceUrls.includes(reference) && item.sourceUrls.includes(`https://bgm.tv/person/${publisher.person}`) &&
