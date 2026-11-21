@@ -186,6 +186,9 @@ try {
   const creditedManga = await json('/api/work-lineage/works/5072')
   assert.ok(creditedManga.sources.some(source => source.tier === 'official' && source.url === 'https://flowercomics.jp/title/2867'))
 
+  const darkKnight = await json('/api/work-lineage/works/10891')
+  assert.ok(darkKnight.sources.some(source => source.tier === 'community' && source.url === 'https://www.yurimiru.com/works/f34397fc-e4e1-4c54-bb85-daf1d9a0e99e'))
+
   const yuriReview = 'https://www.ishiyuri.com/entry/20100723/p1'
   for (const [id, grade, includesReview] of [['12686', 'E', false], ['12853', 'B', true]]) {
     const work = await json(`/api/work-lineage/works/${id}`)

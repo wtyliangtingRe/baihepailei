@@ -67,6 +67,7 @@ export function addBookBibliography(directory: string, metadata: Map<string, Pub
       const isCatalog = source.sourceType === 'catalog' && (
         (url.host === 'anilist.co' && source.url === `https://anilist.co/manga/${row.siteId.replace('catalog-anilist-', '')}`) ||
         (url.host === 'bgm.tv' && /^\/subject\/[1-9]\d*$/.test(url.pathname)) ||
+        (url.host === 'www.yurimiru.com' && /^\/works\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(url.pathname) && !url.search && !url.hash) ||
         (url.host === 'mangadex.org' && /^\/title\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(url.pathname)))
       const isPublisher = source.sourceType === 'publisher' && (
         (url.host === 'www.books.or.jp' && /^\/book-details\/97[89]\d{10}$/.test(url.pathname)) ||
