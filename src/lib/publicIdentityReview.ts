@@ -75,6 +75,14 @@ export function readIdentityReview(directory: string, identities: Map<string, st
     return rows
   }
   const groups = read<ReviewedGroup>('groups.jsonl')
+  const legacyBindings = new Map<string, BangumiCorrection>()
+  for (const row of read<BangumiCorrection & { catalogSiteId: string }>('legacy-bindings.jsonl')) {
+    const match = /^catalog-bangumi-([1-9]\d*)$/.exec(row.siteId)
+    if (!match || row.url !== `https://bgm.tv/subject/${match[1]}` || !row.catalogSiteId.startsWith('work:mgv2-') ||
+        identities.get(row.workId) !== row.catalogSiteId || !row.originalTitle || !row.catalogTitle || !row.title ||
+        legacyBindings.has(row.workId)) throw new Error(`Invalid legacy catalog edition: ${row.workId}`)
+    legacyBindings.set(row.workId, row)
+  }
   const recovered = new Map<string, RecoveredBangumiWork>()
   const siteIds = new Set<string>()
   for (const row of read<RecoveredBangumiWork>('recovered-bangumi.jsonl')) {
@@ -131,7 +139,7 @@ export function readIdentityReview(directory: string, identities: Map<string, st
     creditsByWork.set(fix.workId, edges)
   }
   const removedCreatorIds = new Set([...corrections.values()].flatMap(row => row.removedCreatorId ? [row.removedCreatorId] : []))
-  return { groups, entities, creditsByWork, corrections, removedCreatorIds, recovered, bangumiCorrections }
+  return { groups, entities, creditsByWork, corrections, removedCreatorIds, recovered, bangumiCorrections, legacyBindings }
 }
 
 export type IdentityReview = ReturnType<typeof readIdentityReview>
@@ -157,7 +165,8 @@ export function applyBangumiMetadata(work: PublicWorkRecord, row: BangumiCorrect
     localizedTitles: mergeLocalizedTitles([...localizedTitles, ...original, ...translated]),
     sources: mergeSources([...work.sources, { title: 'Bangumi 作品条目', url: row.url },
       ...(row.editionSource ? [{ title: '国立国会图书馆书目', url: row.editionSource }] : [])]),
-    catalogIdentifiers: [...(work.catalogIdentifiers || []), { provider: 'bangumi-subject', siteId: row.siteId, url: row.url }],
+    catalogIdentifiers: [...(work.catalogIdentifiers || []).filter(item => item.siteId !== row.siteId),
+      { provider: 'bangumi-subject', siteId: row.siteId, url: row.url }],
   }
 }
 

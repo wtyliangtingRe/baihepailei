@@ -960,6 +960,12 @@ function loadRelease(): PublicReleaseCache {
     const members = merged.memberIdsByPrimary.get(record.workId) || [record.workId]
     let work = applyReviewedMetadata(addPublicMetadata(record, members.map(id => metadata.get(id)!)), identityReview)
     for (const id of members) {
+      const legacy = identityReview?.legacyBindings.get(id)
+      if (legacy) {
+        const media = work.media.group === 'unknown' ? legacy.media :
+          work.media.group === legacy.media?.group && !work.media.format ? { ...work.media, format: legacy.media.format } : undefined
+        work = applyBangumiMetadata(work, { ...legacy, media })
+      }
       const row = recovered?.get(id) || identityReview?.bangumiCorrections.get(id)
       if (row) work = applyBangumiMetadata(work, row)
     }

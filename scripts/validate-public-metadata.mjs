@@ -83,6 +83,7 @@ if (currentReview) {
 }
 const recovered = new Map(currentReview ? readLines(join(identityRoot,'recovered-bangumi.jsonl')).map(row => [row.workId,row]) : [])
 const bangumiCorrections = new Map(currentReview ? readLines(join(identityRoot,'bangumi-corrections.jsonl')).map(row => [row.workId,row]) : [])
+const legacyBindings = new Map(currentReview ? readLines(join(identityRoot,'legacy-bindings.jsonl')).map(row => [row.workId,row]) : [])
 const groupTargets=new Map()
 if(currentReview) for(const group of readLines(join(identityRoot,'groups.jsonl'))) {
   for(const id of group.workIds) {
@@ -114,6 +115,13 @@ for(const record of base){
     assert.equal(JSON.stringify(after.rating),JSON.stringify(before.rating),`Stable rating ${record.workId}`)
   }
   const correctedCatalog = bangumiCorrections.get(record.workId)
+  const legacy = legacyBindings.get(record.workId)
+  if (legacy) {
+    assert.equal(record.identity.siteId,legacy.catalogSiteId)
+    assert.equal(record.title,legacy.catalogTitle)
+    assert.ok(after.catalogIdentifiers.some(id => id.siteId === legacy.siteId && id.url === legacy.url))
+    assert.ok([after.title,...after.aliases,...after.localizedTitles.map(item => item.title)].includes(legacy.originalTitle))
+  }
   if (correctedCatalog) {
     assert.equal(record.identity.siteId,correctedCatalog.siteId)
     assert.ok(after.sources.some(source => source.url === correctedCatalog.url))
@@ -127,7 +135,8 @@ for(const record of base){
     assert.ok(after.sources.some(source => source.url === restored.url))
     assert.ok([after.title,...after.aliases,...after.localizedTitles.map(item => item.title)].includes(restored.originalTitle))
   }
-  assert.equal(after.media.group,restored?.media.group || correctedCatalog?.media?.group || reviewedMedia.get(basePrimary) || before.media,`Stable media identity ${record.workId}`)
+  const previousMedia = restored?.media.group || correctedCatalog?.media?.group || reviewedMedia.get(basePrimary) || before.media
+  assert.equal(after.media.group,previousMedia === 'unknown' && legacy?.media ? legacy.media.group : previousMedia,`Stable media identity ${record.workId}`)
   publicWorks.set(after.workId,after)
 }
 const works=[...publicWorks.values()]
