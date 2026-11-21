@@ -35,14 +35,22 @@ const bookCounts = currentReview ? JSON.parse(readFileSync(join(bibliographyRoot
   : { entities: 0, credits: 0, newlyCreditedWorks: 0 }
 const staffCounts = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'staff-manifest.json'), 'utf8'))
   : { entities: 0, credits: 0, newlyCreditedWorks: 0 }
+const authorCounts = currentReview ? JSON.parse(readFileSync(join(bibliographyRoot, 'verified-authors-manifest.json'), 'utf8'))
+  : { entities: 0, credits: 0, newlyCreditedWorks: 0 }
 const licensedAnimation = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'licensed-animation-credits.json'), 'utf8'))
   : { credits: [], newlyCreditedWorks: 0 }
 const animationNames = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'animation-credit-names.json'), 'utf8'))
   : { redirects: {}, rows: [] }
+const publisherIdentities = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'publisher-identities.json'), 'utf8')).publishers : []
+const entityRedirects = { ...animationNames.redirects, ...Object.fromEntries(publisherIdentities
+  .filter(publisher => publisher.sourceId !== publisher.organizationId).map(publisher => [publisher.sourceId, publisher.organizationId])) }
 if (currentReview) {
   const bookEntities = gunzipSync(readFileSync(join(bibliographyRoot, 'book-entities.jsonl.gz'))).toString('utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
   assert.equal(bookEntities.length, bookCounts.entities)
   extraEntities.push(...bookEntities)
+  const authorEntities = gunzipSync(readFileSync(join(bibliographyRoot, 'verified-author-entities.jsonl.gz'))).toString('utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
+  assert.equal(authorEntities.length, authorCounts.entities)
+  extraEntities.push(...authorEntities)
   const staffEntities = gunzipSync(readFileSync(join(identityRoot, 'staff-entities.jsonl.gz'))).toString('utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
   assert.equal(staffEntities.length, staffCounts.entities)
   extraEntities.push(...staffEntities)
@@ -119,8 +127,8 @@ for (const record of records) {
 }
 let relatedWorks = 0
 for (const entity of [...entities, ...extraEntities]) {
-  if (animationNames.redirects[entity.creatorId]) {
-    assert.equal(release.getPublicCreatorById(entity.creatorId)?.creatorId, animationNames.redirects[entity.creatorId])
+  if (entityRedirects[entity.creatorId]) {
+    assert.equal(release.getPublicCreatorById(entity.creatorId)?.creatorId, entityRedirects[entity.creatorId])
     continue
   }
   const result = release.getPublicCreatorWorks(entity.creatorId, { limit: 100 })
@@ -139,8 +147,8 @@ assert.equal(release.getPublicCreatorById('not-an-id'), null)
 assert.equal(release.getPublicCreatorById(String(manifest.nextId)), null)
 const creditedWorks = records.filter(work => work.creators.length || work.organizations.length).length
 assert.equal(creditedWorks, manifest.counts.creditedWorks + reviewCounts.newlyCreditedWorks - reviewCounts.duplicateCreditedWorks +
-  bookCounts.newlyCreditedWorks + staffCounts.newlyCreditedWorks + licensedAnimation.newlyCreditedWorks + (reviewCounts.historicalPrintNewlyCreditedWorks || 0))
+  bookCounts.newlyCreditedWorks + authorCounts.newlyCreditedWorks + staffCounts.newlyCreditedWorks + licensedAnimation.newlyCreditedWorks + (reviewCounts.historicalPrintNewlyCreditedWorks || 0))
 if (currentReview) assert.equal(release.getPublicCreatorById('1010974'), null, 'Retired null Steam organization')
-console.log(JSON.stringify({ creators: entities.length + extraEntities.length - reviewCounts.removedEntities - Object.keys(animationNames.redirects).length, publicWorks: records.length,
-  creditedWorks, supplementaryCredits: reviewCounts.credits + bookCounts.credits + staffCounts.credits + licensedAnimation.credits.length + (reviewCounts.historicalPrintPublisherCredits || 0) - (reviewCounts.publicationRoleReplacements || 0), linkedCredits, relatedWorks, references,
+console.log(JSON.stringify({ creators: entities.length + extraEntities.length - reviewCounts.removedEntities - Object.keys(entityRedirects).length, publicWorks: records.length,
+  creditedWorks, supplementaryCredits: reviewCounts.credits + bookCounts.credits + authorCounts.credits + staffCounts.credits + licensedAnimation.credits.length + (reviewCounts.historicalPrintPublisherCredits || 0) - (reviewCounts.publicationRoleReplacements || 0), linkedCredits, relatedWorks, references,
   uniqueIds: true, originalCreditsPreserved: true, existingLinksPreserved: true, publicWorkIdsOnly: true, status: 'PASS' }, null, 2))

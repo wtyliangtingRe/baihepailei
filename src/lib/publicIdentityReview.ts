@@ -126,7 +126,7 @@ export function readIdentityReview(directory: string, identities: Map<string, st
       throw new Error(`Unbound Wikidata credit: ${row.sourceWorkId}`)
     }
     const edges = creditsByWork.get(row.workId) || []
-    edges.push({ workId: row.workId, creatorId: row.creatorId, creditKind: row.creditKind,
+    edges.push({ workId: row.workId, sourceWorkId: row.sourceWorkId, creatorId: row.creatorId, creditKind: row.creditKind,
       role: row.role, name: row.name, displayName: row.name, bindingBasis: 'wikidata',
       sourceUrls: [`https://www.wikidata.org/wiki/${row.wikidataWork}`] })
     creditsByWork.set(row.workId, edges)
@@ -159,7 +159,7 @@ export function addPrintPublisherCredits(review: NonNullable<IdentityReview>, wo
     const workId = works.get(row.workId)?.workId
     if (!workId) throw new Error(`Missing print edition work: ${row.workId}`)
     const edges = review.creditsByWork.get(workId) || []
-    edges.push({ workId, creatorId: edition.publisherId, name: edition.publisher, displayName: edition.publisher,
+    edges.push({ workId, sourceWorkId: row.workId, creatorId: edition.publisherId, name: edition.publisher, displayName: edition.publisher,
       creditKind: 'organization', role: '出版社', bindingBasis: 'publisher_edition', sourceUrls: [edition.url, row.url] })
     review.creditsByWork.set(workId, edges)
   }
@@ -210,16 +210,22 @@ export function correctCredit<T extends PublicCredit>(workId: string, credit: T,
   return { ...credit, role: fix.newRole, sourceUrls: [...new Set([...(credit.sourceUrls || []), fix.url])] }
 }
 
-export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityReview): PublicWorkRecord {
-  const fix = review?.corrections.get(work.workId)
-  const edges = review?.creditsByWork.get(work.workId)
-  if (!fix && !edges) return work
+export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityReview, members = [work.workId]): PublicWorkRecord {
+  if (!review) return work
+  const fix = review.corrections.get(work.workId)
+  const edges = members.flatMap(id => review.creditsByWork.get(id) || [])
+  const correctedUrls = new Map<string, string>()
+  for (const id of members) {
+    const correction = review.corrections.get(id)
+    if (correction?.wrongUrl) correctedUrls.set(correction.wrongUrl, correction.url)
+  }
+  if (!fix && !edges.length && !correctedUrls.size) return work
   const editionTitle = fix?.edition?.catalogTitle || fix?.catalogTitle
   if (editionTitle && work.title !== editionTitle) throw new Error(`Edition title drift: ${work.workId}`)
-  const credits = (kind: CreatorKind) => (edges || []).filter(edge => edge.creditKind === kind)
+  const credits = (kind: CreatorKind) => edges.filter(edge => edge.creditKind === kind)
     .map(edge => ({ name: edge.name, role: edge.role, sourceUrl: edge.sourceUrls[0], sourceUrls: edge.sourceUrls }))
   const correctedSources = work.sources.map(source =>
-    fix?.wrongUrl && source.url === fix.wrongUrl ? { ...source, url: fix.url } : source)
+    correctedUrls.has(source.url) ? { ...source, url: correctedUrls.get(source.url)! } : source)
   if (fix?.label) correctedSources.push({ title: '版本与收录范围', url: fix.url })
   if (fix?.edition) correctedSources.push({ title: `出版社书目 · ISBN ${fix.edition.isbn}`, url: fix.url })
   else if (fix?.firstPublished) correctedSources.push({ title: fix.releaseCredits ? '发行方资料与首发日期' : '出版社书目与发售日期', url: fix.url })
@@ -241,8 +247,8 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
       aliases: [...new Set([work.title, ...work.aliases])],
       media: { ...work.media, format: fix.format },
     }),
-    ...(fix?.wrongUrl && {
-      rating: work.rating.evidenceUrl === fix.wrongUrl ? { ...work.rating, evidenceUrl: fix.url } : work.rating,
+    ...(work.rating.evidenceUrl && correctedUrls.has(work.rating.evidenceUrl) && {
+      rating: { ...work.rating, evidenceUrl: correctedUrls.get(work.rating.evidenceUrl) },
     }),
     creators: mergeCredits([...work.creators.map(credit => correctCredit(work.workId, credit, review)), ...credits('person')]),
     organizations: mergeCredits([...work.organizations.filter(credit => credit.name !== fix?.placeholder), ...credits('organization')]),

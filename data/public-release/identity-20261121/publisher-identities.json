@@ -1,0 +1,164 @@
+{
+  "schemaVersion": "baihepailei-bangumi-publisher-identities-v1",
+  "publishers": [
+    {
+      "person": 6991,
+      "sourceId": "815000006991",
+      "name": "SBクリエイティブ",
+      "organizationId": "1002022",
+      "organizationName": "SBクリエイティブ",
+      "legalName": "SBクリエイティブ株式会社",
+      "authority": "https://www.softbankcr.co.jp/ja/info/profile/"
+    },
+    {
+      "person": 7097,
+      "sourceId": "815000007097",
+      "name": "一迅社",
+      "organizationId": "1002019",
+      "organizationName": "一迅社",
+      "legalName": "株式会社一迅社",
+      "authority": "https://www.ichijinsha.co.jp/company/"
+    },
+    {
+      "person": 7658,
+      "sourceId": "815000007658",
+      "name": "新書館",
+      "organizationId": "1002012",
+      "organizationName": "新書館",
+      "legalName": "株式会社新書館",
+      "authority": "https://www.shinshokan.co.jp/company/"
+    },
+    {
+      "person": 8050,
+      "sourceId": "815000008050",
+      "name": "文化傳信",
+      "organizationId": "90011079569",
+      "organizationName": "文化伝信",
+      "legalName": "文化傳信集團有限公司",
+      "authority": "https://culturecom.com.hk/tcn/col.jsp?id=144"
+    },
+    {
+      "person": 8297,
+      "sourceId": "815000008297",
+      "name": "早川書房",
+      "organizationId": "1002043",
+      "organizationName": "早川書房",
+      "legalName": "株式会社早川書房",
+      "authority": "https://www.hayakawa-online.co.jp/company/information/"
+    },
+    {
+      "person": 8304,
+      "sourceId": "815000008304",
+      "name": "リブレ",
+      "organizationId": "90000865434",
+      "organizationName": "リブレ",
+      "legalName": "株式会社リブレ",
+      "authority": "https://www.animate.co.jp/company/libre/"
+    },
+    {
+      "person": 8589,
+      "sourceId": "815000008589",
+      "name": "祥伝社",
+      "organizationId": "1002066",
+      "organizationName": "祥伝社",
+      "legalName": "株式会社祥伝社",
+      "authority": "https://www.shodensha.co.jp/corporate.html"
+    },
+    {
+      "person": 14910,
+      "sourceId": "815000014910",
+      "name": "浙江人民美术出版社",
+      "organizationId": "815000014910",
+      "organizationName": "浙江人民美术出版社",
+      "legalName": "浙江人民美术出版社有限公司",
+      "authority": "https://dataclouds.cninfo.com.cn/shgonggao/hsomarket/2026/20260330/908f931e1d0e40ecb6f44e510b017358.PDF"
+    },
+    {
+      "person": 19306,
+      "sourceId": "815000019306",
+      "name": "KADOKAWA",
+      "organizationId": "1001996",
+      "organizationName": "KADOKAWA",
+      "legalName": "株式会社KADOKAWA",
+      "authority": "https://group.kadokawa.co.jp/company/outline.html"
+    },
+    {
+      "person": 45092,
+      "sourceId": "815000045092",
+      "name": "Yen Press",
+      "organizationId": "90002067115",
+      "organizationName": "エン・プレス",
+      "legalName": "Yen Press, LLC",
+      "authority": "https://yenpress.com/about"
+    },
+    {
+      "person": 49732,
+      "sourceId": "815000049732",
+      "name": "河出書房新社",
+      "organizationId": "1002061",
+      "organizationName": "河出書房新社",
+      "legalName": "株式会社河出書房新社",
+      "authority": "https://www.kawade.co.jp/corporate/"
+    },
+    {
+      "person": 57174,
+      "sourceId": "815000057174",
+      "name": "에이템포미디어",
+      "organizationId": "1014202",
+      "organizationName": "에이템포미디어",
+      "authority": "https://sangsangbiz.seoul.go.kr/company-info.php?idx=760"
+    },
+    {
+      "person": 63562,
+      "sourceId": "815000063562",
+      "name": "二十張出版",
+      "organizationId": "815000063562",
+      "organizationName": "二十張出版",
+      "authority": "https://www.bookrepclub.com.tw/index.php?at=press&cl=press&id=64&md=index&page=1"
+    },
+    {
+      "person": 63627,
+      "sourceId": "815000063627",
+      "name": "更生文化設計",
+      "organizationId": "815000063627",
+      "organizationName": "更生文化設計",
+      "legalName": "更生文化設計有限公司",
+      "authority": "https://info.technews.tw/company/42825217-%E6%9B%B4%E7%94%9F%E6%96%87%E5%8C%96%E8%A8%AD%E8%A8%88%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8"
+    },
+    {
+      "person": 63728,
+      "sourceId": "815000063728",
+      "name": "책끝을접다",
+      "organizationId": "1014207",
+      "organizationName": "책끝을접다",
+      "authority": "https://ridibooks.com/books/4158000122"
+    },
+    {
+      "person": 65083,
+      "sourceId": "815000065083",
+      "name": "海豚出版社",
+      "organizationId": "815000065083",
+      "organizationName": "海豚出版社",
+      "legalName": "海豚出版社有限责任公司",
+      "authority": "https://www.cicg.org.cn/2026-02/10/content_43354728.htm"
+    },
+    {
+      "person": 72400,
+      "sourceId": "815000072400",
+      "name": "Amarin Printing and Publishing",
+      "organizationId": "815000072400",
+      "organizationName": "Amarin Printing and Publishing",
+      "legalName": "Amarin Corporations Public Company Limited",
+      "authority": "https://amarin.co.th/app/uploads/2025/04/AW_ANNUAL2567_ENG_2025.pdf"
+    },
+    {
+      "person": 79342,
+      "sourceId": "815000079342",
+      "name": "国文出版社",
+      "organizationId": "815000079342",
+      "organizationName": "国文出版社",
+      "legalName": "国文出版社有限责任公司",
+      "authority": "https://www.nppa.gov.cn/xxfb/tzgs/202611/P020261112556147585962.pdf"
+    }
+  ]
+}

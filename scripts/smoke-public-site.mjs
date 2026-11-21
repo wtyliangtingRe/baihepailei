@@ -129,9 +129,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411,
-      visibleWorks: 34_804,
-      mergedAway: 607,
-      mergedGroups: 593,
+      visibleWorks: 34_679,
+      mergedAway: 732,
+      mergedGroups: 708,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords,
     },
@@ -140,6 +140,23 @@ try {
   assert.equal(health.ratedVisibleWorks + health.unratedVisibleWorks, health.visibleWorks)
   const ratedCatalog = await json('/api/work-lineage/works?status=rated&limit=1')
   assert.equal(health.ratedVisibleWorks, ratedCatalog.total)
+
+  const twoDk = await json('/api/work-lineage/works/5221')
+  assert.equal(twoDk.workId, (await json('/api/work-lineage/works/4260')).workId)
+  assert.ok(twoDk.organizations.some(row => row.name.toLowerCase() === 'altraverse'))
+  const twoDkAuthor = twoDk.creators.find(row => row.creatorId === '1007880' && row.role === '作者')
+  assert.ok(twoDkAuthor?.sourceUrls.includes('https://anilist.co/staff/110537'))
+  assert.ok(twoDkAuthor?.sourceUrls.includes('https://bgm.tv/subject/140536/persons'))
+  const keionManga = await json('/api/work-lineage/works/14748')
+  assert.equal(keionManga.workId, (await json('/api/work-lineage/works/32611')).workId)
+  assert.equal(keionManga.media.group, 'manga')
+  const keionAnime = await json('/api/work-lineage/works/14749')
+  assert.equal(keionAnime.media.group, 'anime')
+  assert.notEqual(keionAnime.workId, keionManga.workId)
+  const happyGoLucky = await json('/api/work-lineage/works/9706')
+  assert.equal(happyGoLucky.workId, '32594')
+  assert.ok(happyGoLucky.sources.some(source => source.url === 'https://anilist.co/manga/35750'))
+  assert.ok(!JSON.stringify(happyGoLucky).includes('https://anilist.co/manga/30294'))
 
   const originalCitrus = await json('/api/work-lineage/works/4402')
   const sequelCitrus = await json('/api/work-lineage/works/36758')

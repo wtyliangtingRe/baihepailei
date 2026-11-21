@@ -89,7 +89,7 @@ export function addBookCredits(directory: string, identities: Map<string, string
       throw new Error(`Book credit identity mismatch for ${row.sourceWorkId}`)
     }
     const edges = creditsByWork.get(workId) || []
-    edges.push({ workId, creatorId: row.creatorId, name: row.name, displayName: row.name, role: row.role,
+    edges.push({ workId, sourceWorkId: row.sourceWorkId, creatorId: row.creatorId, name: row.name, displayName: row.name, role: row.role,
       creditKind: row.kind, bindingBasis: 'book_bibliography', sourceUrls: [row.url, row.authorityUrl, row.bibliographyUrl] })
     creditsByWork.set(workId, edges)
   }
@@ -99,6 +99,40 @@ type CatalogStaff = Pick<BookCredit, 'sourceWorkId' | 'siteId' | 'creatorId' | '
   subject: number
   person: number
   registryUrl?: string
+}
+
+type VerifiedBookAuthor = {
+  workId: string
+  siteId: string
+  subject: number
+  person: number
+  staff: number
+  creatorId: string
+  name: string
+  publicRole: string
+}
+
+export function addVerifiedBookAuthors(directory: string, identities: Map<string, string | null | undefined>,
+  works: Map<string, { workId: string }>, review: NonNullable<IdentityReview>) {
+  const root = join(directory, '..', 'bibliography-20261121')
+  const manifest = JSON.parse(readFileSync(join(root, 'verified-authors-manifest.json'), 'utf8'))
+  const entities = 'verified-author-entities.jsonl.gz'
+  review.entities.push(...readRows<PublicCreator>(root, entities, manifest.sha256[entities], manifest.entities))
+  const credits = 'verified-authors.jsonl.gz'
+  for (const row of readRows<VerifiedBookAuthor>(root, credits, manifest.sha256[credits], manifest.credits)) {
+    const catalogId = row.siteId.match(/^catalog-anilist-([1-9]\d*)$/)?.[1]
+    const workId = works.get(row.workId)?.workId
+    if (!workId || !catalogId || identities.get(row.workId) !== row.siteId ||
+        ![row.subject, row.person, row.staff].every(id => Number.isSafeInteger(id) && id > 0)) {
+      throw new Error(`Book author identity mismatch for ${row.workId}`)
+    }
+    const links = review.creditsByWork.get(workId) || []
+    links.push({ workId, sourceWorkId: row.workId, creatorId: row.creatorId, name: row.name,
+      displayName: row.name, role: row.publicRole, creditKind: 'person', bindingBasis: 'book_edition_author',
+      sourceUrls: [`https://anilist.co/manga/${catalogId}`, `https://anilist.co/staff/${row.staff}`,
+        `https://bgm.tv/subject/${row.subject}/persons`, `https://bgm.tv/person/${row.person}`] })
+    review.creditsByWork.set(workId, links)
+  }
 }
 
 type AnimationCredit = Pick<BookCredit, 'sourceWorkId' | 'siteId' | 'creatorId' | 'kind' | 'name' | 'role'> & {
@@ -143,7 +177,7 @@ export function addCatalogStaff(directory: string, identities: Map<string, strin
       edge.sourceUrls = [...new Set([...edge.sourceUrls, ...sourceUrls])]
       continue
     }
-    links.push({ workId, creatorId: row.creatorId, creditKind: row.kind, name: row.name, displayName: row.name,
+    links.push({ workId, sourceWorkId: row.sourceWorkId, creatorId: row.creatorId, creditKind: row.kind, name: row.name, displayName: row.name,
       role: row.role, bindingBasis: 'bangumi_staff', sourceUrls })
     review.creditsByWork.set(workId, links)
   }
@@ -170,7 +204,7 @@ export function addCatalogStaff(directory: string, identities: Map<string, strin
     if (existing) {
       existing.sourceUrls = [...new Set([...existing.sourceUrls, ...sourceUrls])]
     } else {
-      links.push({ workId, creatorId: row.creatorId, creditKind: row.kind, name: row.name, displayName: row.name,
+      links.push({ workId, sourceWorkId: row.sourceWorkId, creatorId: row.creatorId, creditKind: row.kind, name: row.name, displayName: row.name,
         role: row.role, bindingBasis: 'licensed_animation_edition', sourceUrls })
     }
     review.creditsByWork.set(workId, links)

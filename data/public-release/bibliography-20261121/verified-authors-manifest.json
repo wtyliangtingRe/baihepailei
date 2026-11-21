@@ -1,0 +1,10 @@
+{
+  "entities": 543,
+  "credits": 3567,
+  "works": 3171,
+  "newlyCreditedWorks": 614,
+  "sha256": {
+    "verified-author-entities.jsonl.gz": "4d4ee192b4bf52d458f3d85aab6f6dcbd0fdadc6c2c59ff8c31179bcd7c2d690",
+    "verified-authors.jsonl.gz": "2d59b4da8faff1b06cc31d9a42aafedc9d850b092e39d001cd5ee293f1333f63"
+  }
+}

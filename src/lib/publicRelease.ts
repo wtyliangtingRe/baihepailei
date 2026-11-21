@@ -5,7 +5,8 @@ import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 import { addPublicMetadata, readPublicMetadata } from '@/lib/publicMetadata'
-import { addBookCredits, addCatalogStaff } from '@/lib/publicBibliography'
+import { addBookCredits, addCatalogStaff, addVerifiedBookAuthors } from '@/lib/publicBibliography'
+import { applyPublisherIdentities } from '@/lib/publicPublisherIdentities'
 import { mergeCredits } from '@/lib/publicDescriptiveMerge'
 import { reviewedProviderAliases } from './reviewedProviderAliases.cjs'
 import { addPrintPublisherCredits, applyBangumiMetadata, applyReviewedMetadata, readIdentityReview, type IdentityReview, type RecoveredBangumiWork } from '@/lib/publicIdentityReview'
@@ -962,12 +963,14 @@ function loadRelease(): PublicReleaseCache {
   const metadata = readPublicMetadata(directory, identities)
   if (identityReview) {
     addBookCredits(directory, identities, merged.byWorkId, identityReview.entities, identityReview.creditsByWork)
+    addVerifiedBookAuthors(directory, identities, merged.byWorkId, identityReview)
     addCatalogStaff(directory, identities, merged.byWorkId, identityReview)
     addPrintPublisherCredits(identityReview, merged.byWorkId)
+    applyPublisherIdentities(directory, merged.byWorkId, identityReview)
   }
   const records = merged.records.map(record => {
     const members = merged.memberIdsByPrimary.get(record.workId) || [record.workId]
-    let work = applyReviewedMetadata(addPublicMetadata(record, members.map(id => metadata.get(id)!)), identityReview)
+    let work = applyReviewedMetadata(addPublicMetadata(record, members.map(id => metadata.get(id)!)), identityReview, members)
     for (const id of members) {
       const legacy = identityReview?.legacyBindings.get(id)
       if (legacy) {
