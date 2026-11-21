@@ -19,6 +19,7 @@ export type RecoveredBangumiWork = {
 }
 type BangumiCorrection = Pick<RecoveredBangumiWork, 'workId' | 'siteId' | 'catalogTitle' | 'url'> &
   Partial<Pick<RecoveredBangumiWork, 'title' | 'originalTitle' | 'media' | 'editionSource'>> & {
+    previousOriginalTitle?: string
     editionSourceLabel?: string
     printEdition?: NonNullable<PublicWorkRecord['printEditions']>[number] & { publisherId?: string }
     previous?: PublicWorkRecord['media']['group']
@@ -171,8 +172,9 @@ export function applyBangumiMetadata(work: PublicWorkRecord, row: BangumiCorrect
   const edition = row.printEdition
   const title = row.title && work.workId === row.workId ? row.title : work.title
   const clean = (name: string) => !/[\u0080-\u009f\ufffd]/u.test(name)
+  const previousOriginal = row.previousOriginalTitle || row.catalogTitle
   const localizedTitles = work.localizedTitles.filter(item => clean(item.title)).map(item =>
-    row.originalTitle && row.originalTitle !== row.catalogTitle && item.title === row.catalogTitle && item.kind === 'original'
+    row.originalTitle && row.originalTitle !== previousOriginal && item.title === previousOriginal && item.kind === 'original'
       ? { ...item, kind: 'alias' as const } : item)
   const translated = row.title && row.title !== row.originalTitle ? [{ title: row.title, kind: 'localized' as const }] : []
   const originalName = row.originalTitle
@@ -181,6 +183,7 @@ export function applyBangumiMetadata(work: PublicWorkRecord, row: BangumiCorrect
     /\p{Script=Hangul}/u.test(originalName || '') ? 'ko' : undefined
   const original = originalName ? [{ title: originalName, language: knownLanguage || scriptLanguage, kind: 'original' as const }] : []
   const aliases = row.title && row.originalTitle ? [work.title, row.title, row.originalTitle] : []
+  if (row.previousOriginalTitle) aliases.push(row.previousOriginalTitle)
   const media = row.media || work.media
   let summary = work.summary
   if (summary?.kind === 'identity_summary' && work.workId === row.workId && row.title) {

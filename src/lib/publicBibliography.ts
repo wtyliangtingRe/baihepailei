@@ -9,6 +9,12 @@ import type { IdentityReview } from './publicIdentityReview'
 
 const bookUrl = /^https:\/\/mangabaka\.org\/(?:manga|manhwa|manhua|oel|novel)\/[1-9]\d*\//
 
+const creditedBookPublishers = new Set([
+  'comic-days.com', 'comic-walker.com', 'data.ichijinsha.co.jp', 'flowercomics.jp', 'j-novel.club',
+  'pocket.shonenmagazine.com', 'shonenjumpplus.com', 'tonarinoyj.jp', 'www.hakusensha.co.jp',
+  'www.ichijinsha.co.jp', 'www.kadokawa.co.jp', 'www.kodansha.co.jp', 'www.viz.com', 'yenpress.com',
+])
+
 type BookBibliography = {
   workId: string
   siteId: string
@@ -46,7 +52,7 @@ export function addBookBibliography(directory: string, metadata: Map<string, Pub
     existing.sources.push({ title: 'MangaBaka 书目 · 译名与出版资料', url: row.url, tier: 'community' })
   }
   const japanese = JSON.parse(readFileSync(join(root, 'japanese-sources-manifest.json'), 'utf8'))
-  type EditionSource = { title: string; url: string; sourceType: 'catalog' | 'publisher' | 'reader' }
+  type EditionSource = { title: string; url: string; sourceType: 'catalog' | 'publisher' | 'reader' | 'author' | 'creditedPublisher' }
   type JapaneseBook = { workId: string; siteId: string; sources: EditionSource[] }
   const checkedBooks = new Set<string>()
   let totalLinks = 0
@@ -60,17 +66,26 @@ export function addBookBibliography(directory: string, metadata: Map<string, Pub
       const url = new URL(source.url)
       const isCatalog = source.sourceType === 'catalog' && (
         (url.host === 'anilist.co' && source.url === `https://anilist.co/manga/${row.siteId.replace('catalog-anilist-', '')}`) ||
-        (url.host === 'bgm.tv' && /^\/subject\/[1-9]\d*$/.test(url.pathname)))
+        (url.host === 'bgm.tv' && /^\/subject\/[1-9]\d*$/.test(url.pathname)) ||
+        (url.host === 'mangadex.org' && /^\/title\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(url.pathname)))
       const isPublisher = source.sourceType === 'publisher' && (
         (url.host === 'www.books.or.jp' && /^\/book-details\/97[89]\d{10}$/.test(url.pathname)) ||
         (url.host === 'www.cmoa.jp' && /^\/title\/[1-9]\d*\/$/.test(url.pathname)) ||
         (url.host === 'booklive.jp' && /^\/product\/index\/title_id\/\d+\/vol_no\/\d+$/.test(url.pathname)))
       const isReader = source.sourceType === 'reader' && url.host === 'booklive.jp' &&
         /^\/review\/list\/title_id\/\d+\/vol_no\/\d+$/.test(url.pathname)
-      if (url.protocol !== 'https:' || url.username || url.password || !source.title || !(isCatalog || isPublisher || isReader)) {
+      const isOriginal = source.sourceType === 'author' && url.host === 'www.pixiv.net' &&
+        /^\/artworks\/[1-9]\d*$/.test(url.pathname)
+      const isCreditedPublisher = source.sourceType === 'creditedPublisher' &&
+        creditedBookPublishers.has(url.host) && url.pathname.length > 1
+      const official = isPublisher || isOriginal || isCreditedPublisher
+      if (url.protocol !== 'https:' || url.username || url.password || !source.title || !(isCatalog || official || isReader)) {
         throw new Error(`Invalid Japanese edition source for ${row.workId}`)
       }
-      existing.sources.push({ title: source.title, url: source.url, tier: isPublisher ? 'official' : 'community' })
+      const tier = official ? 'official' : 'community'
+      if (!existing.sources.some(ref => ref.url === source.url && ref.tier === tier)) {
+        existing.sources.push({ title: source.title, url: source.url, tier })
+      }
       totalLinks++
     }
   }

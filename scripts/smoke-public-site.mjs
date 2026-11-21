@@ -178,6 +178,12 @@ try {
   assert.ok(translatedBook.creators.some(credit => credit.role === '绘者' && credit.creatorId === author.creatorId))
   assert.ok(author.sourceUrls.some(url => url.includes('mangaupdates.com/author/')))
   assert.ok(translatedBook.sources.some(source => source.url === 'https://bgm.tv/subject/26072'))
+  const shortManga = await json('/api/work-lineage/works/5048')
+  assert.ok(shortManga.sources.some(source => source.tier === 'official' && source.url === 'https://www.pixiv.net/artworks/95560265'))
+  assert.ok(shortManga.sources.some(source => source.tier === 'community' && source.url === 'https://mangadex.org/title/931b2dc4-0c44-43cf-a2b3-a15d629c95c6'))
+  const creditedManga = await json('/api/work-lineage/works/5072')
+  assert.ok(creditedManga.sources.some(source => source.tier === 'official' && source.url === 'https://flowercomics.jp/title/2867'))
+
   const yuriReview = 'https://www.ishiyuri.com/entry/20100723/p1'
   for (const [id, grade, includesReview] of [['12686', 'E', false], ['12853', 'B', true]]) {
     const work = await json(`/api/work-lineage/works/${id}`)
@@ -250,7 +256,13 @@ try {
   assert.equal(repairedNovel.title, '剑刻的银乙女')
   assert.equal(repairedNovel.media.group, 'novel')
 
-  for (const [id, grade] of [['12120','S'],['18154','B'],['3934','C'],['19473','D'],['8506','D'],['7925','E'],['18574','F']]) {
+  const rainbows = await json('/api/work-lineage/works/12120')
+  assert.equal(rainbows.rating.grade, 'B')
+  assert.equal(rainbows.rating.decidingSource, 'community')
+  assert.ok(rainbows.rating.sourceFindings.some(finding => finding.kind === 'official' && finding.classes.includes('S-RELATIONSHIP')))
+  assert.ok(rainbows.rating.sourceFindings.some(finding => finding.kind === 'community' && finding.classes.includes('B-MALE-NOISE')))
+
+  for (const [id, grade] of [['23622','S'],['18154','B'],['3934','C'],['19473','D'],['8506','D'],['7925','E'],['18574','F']]) {
     const work = await json(`/api/work-lineage/works/${id}`)
     assert.equal(work.rating.grade,grade,`New assessment ${id}`)
     assert.ok(work.rating.reasoningSummary && work.rating.evidenceUrl)
