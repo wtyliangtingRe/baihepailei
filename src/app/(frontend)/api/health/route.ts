@@ -13,6 +13,8 @@ export function GET() {
       releaseId: manifest.releaseId,
       catalogWorks: manifest.counts.catalogWorks,
       visibleWorks: merge.visibleWorks,
+      ratedVisibleWorks: merge.ratedVisibleWorks,
+      unratedVisibleWorks: merge.visibleWorks - merge.ratedVisibleWorks,
       mergedAway: merge.mergedAway,
       mergedGroups: merge.multiWorkGroups,
       largestMergedGroup: merge.largestGroup,

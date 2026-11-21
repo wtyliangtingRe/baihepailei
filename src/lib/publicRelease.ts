@@ -269,6 +269,7 @@ export type PublicReleaseManifest = {
 export type PublicCatalogMergeStats = {
   sourceWorks: number
   visibleWorks: number
+  ratedVisibleWorks: number
   mergedAway: number
   multiWorkGroups: number
   largestGroup: number
@@ -780,6 +781,7 @@ function deduplicateCatalog(
     stats: {
       sourceWorks: records.length,
       visibleWorks: mergedRecords.length,
+      ratedVisibleWorks: mergedRecords.filter(record => record.rating.state === 'rated' && record.rating.grade).length,
       mergedAway: records.length - mergedRecords.length,
       multiWorkGroups,
       largestGroup,

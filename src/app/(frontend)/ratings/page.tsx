@@ -20,7 +20,7 @@ const readingAdvice: Record<PublicGrade, string> = {
   A: '适合优先浏览，但连载终局、开放结局或尚未正式确立的边界仍应结合细分类理解。',
   B: '先查看轻度条件来自男性邻接噪声、关系体验、创作者交付风险，还是仅有定位基线。',
   C: '重点确认百合是中心关系、配角关系、友情以上，还是仅在某条可规避路线中成立。',
-  D: '必须区分具体 D 类警示与“资料不足型 D”；后者没有确认任何具体雷点。',
+  D: '查看细分类，区分一般向收录、支线百合和影响主要关系的具体情节。',
   E: '建议阅读具体警示后再决定观看或购买，尤其关注男性关系、路线污染和设定边界。',
   F: '建议先读完依据与来源；该层通常涉及终局、核心男性亲密、NTR 或实质欺诈。',
 }
@@ -128,7 +128,7 @@ export default function RatingsPage() {
         </div>
       </section>
 
-      <section className="release-method-note release-d-unclear-note">
+      {manifest.counts.dUnclearRatings > 0 ? <section className="release-method-note release-d-unclear-note">
         <div>
           <p className="eyebrow">特别说明</p>
           <h2>资料不足型 D</h2>
@@ -139,7 +139,7 @@ export default function RatingsPage() {
           不能据此推断男性结局、NTR、异性路线或任何其他具体情节。
         </p>
         <Link className="result-link" href="/works?grade=D">查看 D 级作品</Link>
-      </section>
+      </section> : null}
 
       <section className="detail-card release-rating-principles">
         <p className="eyebrow">三个阅读原则</p>

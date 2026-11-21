@@ -44,6 +44,20 @@ export function addBookBibliography(directory: string, metadata: Map<string, Pub
     }
     existing.sources.push({ title: 'MangaBaka 书目 · 译名与出版资料', url: row.url, tier: 'community' })
   }
+  const national = JSON.parse(readFileSync(join(root, 'national-manifest.json'), 'utf8'))
+  type PrintEdition = { workId: string; siteId: string; isbn: string; volume: string; nationalLibrary: string }
+  for (const row of readRows<PrintEdition>(root, 'national-books.jsonl.gz', national.sha256, national.records)) {
+    const existing = metadata.get(row.workId)
+    if (!existing || existing.siteId !== row.siteId || !/^97[89]\d{10}$/.test(row.isbn) ||
+        !row.nationalLibrary.startsWith('https://ndlsearch.ndl.go.jp/books/')) {
+      throw new Error(`Invalid national library edition for ${row.workId}`)
+    }
+    const volume = /^\d+$/.test(row.volume) ? `第 ${row.volume} 卷` : row.volume
+    existing.sources.push({
+      title: ['日本国立国会图书馆书目', volume, `ISBN ${row.isbn}`].filter(Boolean).join(' · '),
+      url: row.nationalLibrary, tier: 'official',
+    })
+  }
 }
 
 type BookCredit = {

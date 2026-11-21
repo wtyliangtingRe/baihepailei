@@ -137,6 +137,9 @@ try {
     },
   )
   assert.equal(health.visibleWorks + health.mergedAway, health.catalogWorks)
+  assert.equal(health.ratedVisibleWorks + health.unratedVisibleWorks, health.visibleWorks)
+  const ratedCatalog = await json('/api/work-lineage/works?status=rated&limit=1')
+  assert.equal(health.ratedVisibleWorks, ratedCatalog.total)
 
   const translatedBook = await json('/api/work-lineage/works/4982')
   const originalPublisher = translatedBook.organizations.find(credit => credit.role === '原版出版社')

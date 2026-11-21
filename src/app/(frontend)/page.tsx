@@ -7,6 +7,7 @@ import {
   getPublicWorkList,
 } from '@/lib/publicRelease'
 import {
+  chineseEditionTitle,
   compactCredits,
   gradeLabel,
   mediaLabel,
@@ -25,7 +26,7 @@ export default function HomePage() {
   const manifest = getPublicReleaseManifest()
   const enrichment = getPublicEnrichmentManifest()
   const merge = getPublicCatalogMergeStats()
-  const ratedVisible = getPublicWorkList({ status: 'rated', limit: 1 }).total
+  const ratedVisible = merge.ratedVisibleWorks
   const safeVisible =
     getPublicWorkList({ grade: 'S', status: 'rated', limit: 1 }).total +
     getPublicWorkList({ grade: 'A', status: 'rated', limit: 1 }).total
@@ -100,7 +101,7 @@ export default function HomePage() {
                 <Link className="release-featured-card" href={canonicalContentUrl('works', work.workId)} key={work.workId}>
                   <span className={`rating-chip grade-${work.rating.grade}`}>{work.rating.grade}</span>
                   <div>
-                    <h3>{work.title}</h3>
+                    <h3>{chineseEditionTitle(work.title, work.localizedTitles) || work.title}</h3>
                     <p>
                       {mediaLabel(work.media.group, work.media.type)} · {firstClass?.definition.label || gradeLabel(work.rating.grade!)}
                       {credits ? ` · ${credits}` : ''}

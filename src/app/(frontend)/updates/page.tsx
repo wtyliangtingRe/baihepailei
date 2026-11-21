@@ -2,13 +2,13 @@ import Link from 'next/link'
 
 import {
   getPublicEnrichmentManifest,
-  getPublicReleaseManifest,
+  getPublicCatalogMergeStats,
 } from '@/lib/publicRelease'
 
 export const dynamic = 'force-dynamic'
 
 export default function UpdatesPage() {
-  const manifest = getPublicReleaseManifest()
+  const catalog = getPublicCatalogMergeStats()
   const enrichment = getPublicEnrichmentManifest()
 
   return (
@@ -41,10 +41,9 @@ export default function UpdatesPage() {
           <h2>目录收录情况</h2>
         </div>
         <p>
-          发布 {manifest.counts.catalogWorks.toLocaleString('zh-CN')} 条可检索作品、
-          {manifest.counts.ratedWorks.toLocaleString('zh-CN')} 条 S–F 评级和
-          {manifest.counts.nonratingTerminalWorks.toLocaleString('zh-CN')} 条显式非评级终态。
-
+          合并同一作品的重复记录后，可浏览 {catalog.visibleWorks.toLocaleString('zh-CN')} 部作品。
+          其中 {catalog.ratedVisibleWorks.toLocaleString('zh-CN')} 部已有 S–F 评级，
+          {(catalog.visibleWorks - catalog.ratedVisibleWorks).toLocaleString('zh-CN')} 部待评级。
         </p>
         <Link className="result-link" href="/ratings">查看评级分布</Link>
       </article>
