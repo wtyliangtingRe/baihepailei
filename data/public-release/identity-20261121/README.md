@@ -26,3 +26,7 @@
 - 书目来源为 2026 年 11 月 21 日取得的 Wikidata 结构化资料（CC0）。作品页的每条新增署名都可回到对应的 Wikidata 条目核查。历史 v4 文件保留原样，完整性校验值见 [manifest.json](manifest.json)。
 
 署名核验与作品书目分开计算。网站的创作者检查逐一验证作品至人物／机构及其反向作品关系，归并审计同时覆盖全部归并组和同名分卷、系列及改编反例。
+
+逐作署名来自 2026 年 11 月 17 日的 Bangumi 公开归档。按作品和职务记录作者、绘者、导演、编剧、动画制作及出版等关系，限集数的署名仅适用于指定集数。每条新增署名都能回到对应版本的人员表。跨站动画另核对 Wikidata 或 bangumi-data 同一条记录的两个目录编号，并比对片名、首播时间及版本。[Bangumi 归档](https://github.com/bangumi/Archive) · [职务编号表](https://github.com/bangumi/common/blob/2ee87b9995353f77cf02e390e8635bf97dbc1fa2/subject_staffs.yml) · [署名文件校验](staff-manifest.json)
+
+一迅社的 ISBN 9784758072748 题名为《星降り坂一丁目三番地》。作品页使用出版社题名，旧目录的「星振り坂」仍可用于检索。[一迅社书目](https://data.ichijinsha.co.jp/detail/75807274)

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, permanentRedirect } from 'next/navigation'
 
-import { getPublicWorkById } from '@/lib/publicRelease'
+import { getPublicWorkById, type PublicCredit } from '@/lib/publicRelease'
 import { collectWorkReferences } from '@/lib/publicWorkReferences'
 import {
   classTone,
@@ -112,6 +112,28 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
     return numbers.length ? <sup className="work-reference-marks">
       {numbers.map(number => <a key={number} href={`#ref-${number}`} role="doc-noteref" aria-label={`查看注释 ${number}`}>[{number}]</a>)}
     </sup> : null
+  }
+
+  function creditGroup(heading: string, credits: PublicCredit[], defaultKind: 'person' | 'organization') {
+    if (!credits.length) return null
+    const visible = 6
+    const items = credits.map(credit => (
+      <li key={`${credit.creatorId}-${credit.role}-${credit.name}`}>
+        <div>
+          <Link href={canonicalContentUrl((credit.creatorKind || defaultKind) === 'person' ? 'creators' : 'organizations', credit.creatorId!)}>{credit.name}</Link>
+          {referenceMarks([credit.sourceUrl, ...(credit.sourceUrls || [])])}
+        </div>
+        <span>{credit.role}</span>
+      </li>
+    ))
+    return <section>
+      <h3>{heading}</h3>
+      <ul>{items.slice(0, visible)}</ul>
+      {items.length > visible && <details className="release-credit-more">
+        <summary>其余 {items.length - visible} 条署名</summary>
+        <ul>{items.slice(visible)}</ul>
+      </details>}
+    </section>
   }
 
   return (
@@ -226,38 +248,8 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
           <h2>创作信息</h2>
           {work.creators.length || work.organizations.length ? (
             <div className="release-credit-groups">
-              {work.creators.length ? (
-                <section>
-                  <h3>作者 / 主创</h3>
-                  <ul>
-                    {work.creators.map((credit) => (
-                      <li key={`${credit.creatorId}-${credit.role}-${credit.name}`}>
-                        <div>
-                          <Link href={canonicalContentUrl(credit.creatorKind === 'organization' ? 'organizations' : 'creators', credit.creatorId!)}>{credit.name}</Link>
-                          {referenceMarks([credit.sourceUrl, ...(credit.sourceUrls || [])])}
-                        </div>
-                        <span>{credit.role}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ) : null}
-              {work.organizations.length ? (
-                <section>
-                  <h3>制作 / 出版方</h3>
-                  <ul>
-                    {work.organizations.map((credit) => (
-                      <li key={`${credit.creatorId}-${credit.role}-${credit.name}`}>
-                        <div>
-                          <Link href={canonicalContentUrl(credit.creatorKind === 'person' ? 'creators' : 'organizations', credit.creatorId!)}>{credit.name}</Link>
-                          {referenceMarks([credit.sourceUrl, ...(credit.sourceUrls || [])])}
-                        </div>
-                        <span>{credit.role}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ) : null}
+              {creditGroup('作者 / 主创', work.creators, 'person')}
+              {creditGroup('制作 / 出版方', work.organizations, 'organization')}
             </div>
           ) : (
             <div className="release-missing-detail compact">

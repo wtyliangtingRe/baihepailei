@@ -139,6 +139,12 @@ for(const record of base){
   assert.equal(after.media.group,previousMedia === 'unknown' && legacy?.media ? legacy.media.group : previousMedia,`Stable media identity ${record.workId}`)
   publicWorks.set(after.workId,after)
 }
+if (bangumiCorrections.has('31834')) {
+  const book = current.getPublicWorkById('31834')
+  assert.equal(book.title, '星降り坂一丁目三番地')
+  assert.ok(book.aliases.includes('星振り坂一丁目三番地'))
+  assert.ok(book.sources.some(s => s.title === '出版社书目' && s.url === 'https://data.ichijinsha.co.jp/detail/75807274'))
+}
 const works=[...publicWorks.values()]
 const count=fn=>works.filter(fn).length
 const report={sourceWorks:base.length,visibleWorks:works.length,stableCanonicalIds:true,unreviewedRatingsPreserved:true,

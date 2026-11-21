@@ -1,0 +1,9 @@
+{
+  "entities": 4196,
+  "credits": 22693,
+  "newlyCreditedWorks": 924,
+  "sha256": {
+    "staff-entities.jsonl.gz": "23839402629b5404d335a60c7fe8ac4a6894f937b8e33a46ff7c18cdcbd16507",
+    "staff-credits.jsonl.gz": "03710c875755d57e88231cca2c530acb6222c4ffdef45a024d207e20659e164b"
+  }
+}

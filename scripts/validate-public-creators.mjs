@@ -33,10 +33,15 @@ assert.equal(extraEntities.length, reviewCounts.extraEntities)
 const bibliographyRoot = join(root, 'data/public-release/bibliography-20261121')
 const bookCounts = currentReview ? JSON.parse(readFileSync(join(bibliographyRoot, 'credits-manifest.json'), 'utf8'))
   : { entities: 0, credits: 0, newlyCreditedWorks: 0 }
+const staffCounts = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'staff-manifest.json'), 'utf8'))
+  : { entities: 0, credits: 0, newlyCreditedWorks: 0 }
 if (currentReview) {
   const bookEntities = gunzipSync(readFileSync(join(bibliographyRoot, 'book-entities.jsonl.gz'))).toString('utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
   assert.equal(bookEntities.length, bookCounts.entities)
   extraEntities.push(...bookEntities)
+  const staffEntities = gunzipSync(readFileSync(join(identityRoot, 'staff-entities.jsonl.gz'))).toString('utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
+  assert.equal(staffEntities.length, staffCounts.entities)
+  extraEntities.push(...staffEntities)
 }
 if (currentReview) {
   const corrections = readFileSync(join(identityRoot, 'corrections.jsonl'), 'utf8').trim().split('\n').map(JSON.parse)
@@ -110,8 +115,9 @@ for (const entity of [...entities, ...extraEntities]) {
 assert.equal(release.getPublicCreatorById('not-an-id'), null)
 assert.equal(release.getPublicCreatorById(String(manifest.nextId)), null)
 const creditedWorks = records.filter(work => work.creators.length || work.organizations.length).length
-assert.equal(creditedWorks, manifest.counts.creditedWorks + reviewCounts.newlyCreditedWorks - reviewCounts.duplicateCreditedWorks + bookCounts.newlyCreditedWorks)
+assert.equal(creditedWorks, manifest.counts.creditedWorks + reviewCounts.newlyCreditedWorks - reviewCounts.duplicateCreditedWorks +
+  bookCounts.newlyCreditedWorks + staffCounts.newlyCreditedWorks)
 if (currentReview) assert.equal(release.getPublicCreatorById('1010974'), null, 'Retired null Steam organization')
 console.log(JSON.stringify({ creators: entities.length + extraEntities.length - reviewCounts.removedEntities, publicWorks: records.length,
-  creditedWorks, supplementaryCredits: reviewCounts.credits + bookCounts.credits, linkedCredits, relatedWorks, references,
+  creditedWorks, supplementaryCredits: reviewCounts.credits + bookCounts.credits + staffCounts.credits, linkedCredits, relatedWorks, references,
   uniqueIds: true, originalCreditsPreserved: true, existingLinksPreserved: true, publicWorkIdsOnly: true, status: 'PASS' }, null, 2))

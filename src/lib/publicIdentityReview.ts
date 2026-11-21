@@ -164,7 +164,7 @@ export function applyBangumiMetadata(work: PublicWorkRecord, row: BangumiCorrect
     aliases: [...new Set([...work.aliases, ...aliases].filter(name => name !== title && clean(name)))],
     localizedTitles: mergeLocalizedTitles([...localizedTitles, ...original, ...translated]),
     sources: mergeSources([...work.sources, { title: 'Bangumi 作品条目', url: row.url },
-      ...(row.editionSource ? [{ title: '国立国会图书馆书目', url: row.editionSource }] : [])]),
+      ...(row.editionSource ? [{ title: row.editionSource.startsWith('https://ndlsearch.ndl.go.jp/') ? '国立国会图书馆书目' : '出版社书目', url: row.editionSource }] : [])]),
     catalogIdentifiers: [...(work.catalogIdentifiers || []).filter(item => item.siteId !== row.siteId),
       { provider: 'bangumi-subject', siteId: row.siteId, url: row.url }],
   }

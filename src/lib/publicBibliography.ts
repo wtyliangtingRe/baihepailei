@@ -5,6 +5,7 @@ import { gunzipSync } from 'node:zlib'
 import type { PublicMetadata } from './publicMetadata'
 import type { CreditEdge, CreatorKind, PublicCreator } from './publicCreatorGraph'
 import type { PublicLocalizedTitle } from './publicRelease'
+import type { IdentityReview } from './publicIdentityReview'
 
 const bookUrl = /^https:\/\/mangabaka\.org\/(?:manga|manhwa|manhua|oel|novel)\/[1-9]\d*\//
 
@@ -91,5 +92,41 @@ export function addBookCredits(directory: string, identities: Map<string, string
     edges.push({ workId, creatorId: row.creatorId, name: row.name, displayName: row.name, role: row.role,
       creditKind: row.kind, bindingBasis: 'book_bibliography', sourceUrls: [row.url, row.authorityUrl, row.bibliographyUrl] })
     creditsByWork.set(workId, edges)
+  }
+}
+
+type CatalogStaff = Pick<BookCredit, 'sourceWorkId' | 'siteId' | 'creatorId' | 'kind' | 'name' | 'role'> & {
+  subject: number
+  person: number
+  registryUrl?: string
+}
+
+export function addCatalogStaff(directory: string, identities: Map<string, string | null | undefined>,
+  works: Map<string, { workId: string }>, review: NonNullable<IdentityReview>) {
+  const root = join(directory, '..', 'identity-20261121')
+  const manifest = JSON.parse(readFileSync(join(root, 'staff-manifest.json'), 'utf8'))
+  const entities = 'staff-entities.jsonl.gz'
+  review.entities.push(...readRows<PublicCreator>(root, entities, manifest.sha256[entities], manifest.entities))
+  const credits = 'staff-credits.jsonl.gz'
+  for (const row of readRows<CatalogStaff>(root, credits, manifest.sha256[credits], manifest.credits)) {
+    const workId = works.get(row.sourceWorkId)?.workId
+    const siteId = identities.get(row.sourceWorkId) || review.recovered.get(row.sourceWorkId)?.siteId
+    const subjectId = `catalog-bangumi-${row.subject}`
+    const registry = row.registryUrl
+    const isCatalogRegistry = registry && (
+      /^https:\/\/www\.wikidata\.org\/wiki\/Q[1-9]\d*$/.test(registry) ||
+      /^https:\/\/github\.com\/bangumi-data\/bangumi-data\/blob\/[0-9a-f]{40}\/data\/items\/\d{4}\/\d{2}\.json#L[1-9]\d*$/.test(registry)
+    ) && /^(?:catalog-anilist-|ANILIST-)[1-9]\d*$/.test(row.siteId)
+    const legacy = review.legacyBindings.get(row.sourceWorkId)
+    if (!workId || row.siteId !== siteId || !Number.isSafeInteger(row.subject) || row.subject <= 0 ||
+        !Number.isSafeInteger(row.person) || row.person <= 0 || (registry && !isCatalogRegistry) || (!isCatalogRegistry && subjectId !== siteId && legacy?.siteId !== subjectId)) {
+      throw new Error(`Unbound catalog staff credit for ${row.sourceWorkId}`)
+    }
+    const sourceUrls = [`https://bgm.tv/subject/${row.subject}/persons`, `https://bgm.tv/person/${row.person}`]
+    if (registry) sourceUrls.push(registry)
+    const links = review.creditsByWork.get(workId) || []
+    links.push({ workId, creatorId: row.creatorId, creditKind: row.kind, name: row.name, displayName: row.name,
+      role: row.role, bindingBasis: 'bangumi_staff', sourceUrls })
+    review.creditsByWork.set(workId, links)
   }
 }

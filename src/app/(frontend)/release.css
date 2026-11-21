@@ -1381,6 +1381,14 @@ body {
   border-top: 1px solid var(--release-line);
 }
 
+.release-credit-more summary {
+  padding: 10px 0;
+  color: var(--release-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .release-credit-groups li span {
   color: #918698;
   font-size: 12px;
