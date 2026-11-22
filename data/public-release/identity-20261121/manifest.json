@@ -6,8 +6,8 @@
   "files": [
     {
       "file": "groups.jsonl",
-      "rows": 398,
-      "sha256": "40bf47ae0784cd780cf58908f05cc6e7696852e6568e15e9fcd8590c1bb7cf0d"
+      "rows": 399,
+      "sha256": "4fe2fdf46848a6a932f624e13c4add57d7301e525a30cf23f6e86561c4a4fcb7"
     },
     {
       "file": "entities.jsonl",
@@ -21,8 +21,8 @@
     },
     {
       "file": "corrections.jsonl",
-      "rows": 134,
-      "sha256": "741e8d6d240322476d6f9424f7719848e84cd05432492a4564153238adf6a660"
+      "rows": 139,
+      "sha256": "63127183f80649dfde08d2f25ad8c22740d062bbf5b1b3c433cc87459ede2b16"
     },
     {
       "file": "recovered-bangumi.jsonl",
@@ -42,18 +42,18 @@
   ],
   "counts": {
     "extraEntities": 1309,
-    "credits": 3783,
-    "creditWorks": 2407,
-    "newlyCreditedWorks": 1277,
-    "mergeGroups": 398,
-    "duplicateCreditedWorks": 222,
+    "credits": 3785,
+    "creditWorks": 2409,
+    "newlyCreditedWorks": 1279,
+    "mergeGroups": 399,
+    "duplicateCreditedWorks": 223,
     "removedEntities": 2,
     "recoveredBangumiWorks": 531,
     "releasedTitleMatches": 28,
     "correctedBangumiMedia": 424,
     "correctedBangumiTitles": 19,
     "legacyBangumiBindings": 1065,
-    "mergedSourceRows": 425,
+    "mergedSourceRows": 426,
     "historicalPrintEditions": 340,
     "historicalPrintPublisherCredits": 244,
     "historicalPrintNewlyCreditedWorks": 143,
