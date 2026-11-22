@@ -192,6 +192,13 @@ try {
   assert.ok(intake.entries.some(entry => entry.workId === natori.workId && entry.releasedOn === '2026-10-09'))
   assert.ok(natori.printEditions.some(edition => edition.isbn === '9784098548392' && edition.onSale === '2026-10-09'))
 
+  const vtuber = await json('/api/work-lineage/works/22762')
+  assert.equal(vtuber.firstPublished, '2026-04-24')
+  assert.equal(vtuber.rating.grade, 'B')
+  assert.equal(vtuber.rating.decidingSource, 'official')
+  assert.ok(vtuber.printEditions.some(edition => edition.isbn === '9784049721812' && edition.onSale === '2026-09-07'))
+  assert.ok(intake.entries.some(entry => entry.workId === vtuber.workId && entry.releasedOn === '2026-09-07'))
+
   const [butterflyNovel, butterflyNovelIndex, butterflySerial, butterflyVolume] = await Promise.all(
     ['4124', '37195', '8406', '38635'].map(id => json('/api/work-lineage/works/' + id)),
   )
@@ -365,7 +372,7 @@ try {
   assert.ok(rainbows.rating.sourceFindings.some(finding => finding.kind === 'official' && finding.classes.includes('S-RELATIONSHIP')))
   assert.ok(rainbows.rating.sourceFindings.some(finding => finding.kind === 'community' && finding.classes.includes('B-MALE-NOISE')))
 
-  for (const [id, grade] of [['23622','S'],['18154','B'],['3934','C'],['19473','D'],['8506','D'],['7925','E'],['18574','F']]) {
+  for (const [id, grade] of [['23622','S'],['18154','B'],['3934','C'],['19473','D'],['8506','D'],['12159','E'],['7925','F'],['18574','F']]) {
     const work = await json(`/api/work-lineage/works/${id}`)
     assert.equal(work.rating.grade,grade,`New assessment ${id}`)
     assert.ok(work.rating.reasoningSummary && work.rating.evidenceUrl)
