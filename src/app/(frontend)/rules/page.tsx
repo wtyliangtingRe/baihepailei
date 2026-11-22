@@ -7,9 +7,6 @@ import {
   type RadarGrade,
   type RadarRatingClass,
 } from '@/lib/radar/ratingPolicy'
-import { getPublicReleaseManifest } from '@/lib/publicRelease'
-
-export const dynamic = 'force-dynamic'
 
 const gradeOrder: RadarGrade[] = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X']
 
@@ -27,20 +24,15 @@ function classBadges(code: RadarRatingClass, definition: (typeof radarClassEntri
 }
 
 export default function RulesIndexPage() {
-  const manifest = getPublicReleaseManifest()
-
   return (
     <main className="page collection-page release-rules-page">
       <section className="page-heading collection-heading">
-        <p className="eyebrow">现行排雷规则 · v0.6 + 当前增补</p>
-        <h1>50 条细则，完整公开。</h1>
-        <p>
-          规则先描述可核验的关系、结局、设定与项目事实，再绑定到 S–X 等级。
-          作品页展示的是当前已有结论；本页说明每个标签究竟需要什么证据、又不能拿什么来误判。
-        </p>
+        <p className="eyebrow">v0.6 · 含现行增补</p>
+        <h1>排雷规则</h1>
+        <p>查看 {radarClassEntries.length} 条细则的证据要求和适用范围。</p>
         <div className="collection-actions">
-          <Link className="result-link" href="/ratings">先看等级阅读指南</Link>
-          <Link className="back-link" href="/works?status=rated">浏览实际评级</Link>
+          <Link className="result-link" href="/ratings">等级指南</Link>
+          <Link className="back-link" href="/works?status=rated">查看已评级作品</Link>
         </div>
       </section>
 
@@ -60,18 +52,6 @@ export default function RulesIndexPage() {
           <h2>未知不等于安全</h2>
           <p>可核实的情节按细则判级，同时注明已查到的卷数、路线或结局。尚在复核队列的作品会显示进度。只有完成检索后仍仅有名称的作品，才符合免予评级的条件。</p>
         </article>
-      </section>
-
-      <section className="release-method-note">
-        <div>
-          <p className="eyebrow">当前快照的特殊数据状态</p>
-          <h2>D-UNCLEAR 不是现行规则类别。</h2>
-        </div>
-        <p>
-          当前 {manifest.counts.dUnclearRatings.toLocaleString('zh-CN')} 条资料不足型 D 继承自早期快照，
-          页面会把它显示为“具体雷点未确认”。它不在下面 50 条现行细则里，也不声称命中了任何 D 级剧情或设定事实。
-        </p>
-        <Link className="result-link" href="/works?grade=D">查看页面如何展示</Link>
       </section>
 
       <nav className="release-rule-jump" aria-label="跳到各等级规则">

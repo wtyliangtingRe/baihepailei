@@ -77,7 +77,8 @@ for (const expected of ['TS / 性别转换', '扶她设定', 'ABO 设定', '男�
   assert.match(publicTags, new RegExp(expected))
 }
 
-assert.match(rules, /50 条细则，完整公开/)
+assert.match(rules, /<h1>排雷规则<\/h1>/)
+assert.match(rules, /radarClassEntries\.length/)
 assert.match(publicRelease, /deduplicateCatalog\(/)
 assert.match(publicRelease, /normalizeIdentityMergeTitle\(/)
 assert.match(publicRelease, /ambiguousTitleKeys/)

@@ -74,6 +74,13 @@ try {
     assert.equal(result.status, 200, `${path} should return 200`)
   }
 
+  const rules = (await (await response('/rules')).text()).replaceAll('<!-- -->', '')
+  const ruleCount = [...rules.matchAll(/<article class="release-rule-card /g)].length
+  assert.ok(ruleCount > 0)
+  assert.match(rules, /<h1>排雷规则<\/h1>/)
+  assert.ok(rules.includes(`查看 ${ruleCount} 条细则的证据要求和适用范围。`))
+  assert.doesNotMatch(rules, /当前快照的特殊数据状态|D-UNCLEAR/)
+
   const publisherFile = await response('/ads.txt')
   assert.equal(publisherFile.status, 200)
   assert.match(publisherFile.headers.get('content-type') || '', /^text\/plain\b/)
