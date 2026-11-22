@@ -1563,6 +1563,15 @@
         "白藍まこと"
       ],
       "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "892097822703",
+      "kind": "person",
+      "name": "梢",
+      "names": [
+        "梢"
+      ],
+      "identityBasis": "name_only"
     }
   ],
   "entries": [
@@ -4650,6 +4659,119 @@
       "title": "Miss Sasami is Losing Her Mind!"
     },
     {
+      "workId": "40103",
+      "releasedOn": "2026-10-27",
+      "scope": "柚原もけ漫画单行本第 9 卷",
+      "edition": {
+        "title": "安达与岛村（漫画第9卷）",
+        "provider": "recent",
+        "url": "https://www.kadokawa.co.jp/product/322607000765/",
+        "media": {
+          "group": "manga",
+          "type": "manga",
+          "format": "柚原もけ漫画单行本第 9 卷"
+        },
+        "aliases": [
+          "安達與島村 第9卷",
+          "安達としまむら 9",
+          "Adachi and Shimamura manga vol. 9"
+        ],
+        "localizedTitles": [
+          {
+            "title": "安達としまむら（９）",
+            "kind": "original"
+          }
+        ],
+        "summary": {
+          "kind": "source_summary",
+          "text": "成为恋人后的第二个圣诞节到了。安达直接表达心意，岛村在自己的步调里认真面对感情，也试着把珍视对方的心情说出口。",
+          "sourceUrl": "https://www.kadokawa.co.jp/product/322607000765/"
+        },
+        "sources": [
+          {
+            "title": "发行与版本资料",
+            "url": "https://www.kadokawa.co.jp/product/322607000765/",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://bookwalker.jp/de441fa442-b5f0-4a11-b6c9-1906169b2865/",
+            "tier": "official"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://note.com/kd51310046/n/ncce26d101138",
+            "tier": "community"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "1007284",
+            "kind": "person",
+            "name": "柚原もけ",
+            "role": "漫画",
+            "sourceUrl": "https://www.kadokawa.co.jp/product/322607000765/"
+          },
+          {
+            "creatorId": "1007828",
+            "kind": "person",
+            "name": "入間人間",
+            "role": "原作",
+            "sourceUrl": "https://www.kadokawa.co.jp/product/322607000765/"
+          },
+          {
+            "creatorId": "1008005",
+            "kind": "person",
+            "name": "のん",
+            "role": "角色原案",
+            "sourceUrl": "https://www.kadokawa.co.jp/product/322607000765/"
+          },
+          {
+            "creatorId": "1001996",
+            "kind": "organization",
+            "name": "KADOKAWA",
+            "role": "出版社",
+            "sourceUrl": "https://www.kadokawa.co.jp/product/322607000765/"
+          }
+        ],
+        "review": {
+          "siteId": "recent-kadokawa-9784049525045",
+          "rationale": "核对2026年10月27日KADOKAWA漫画第9卷，ISBN 9784049525045。出版社明确这是安达和岛村交往后的第二个圣诞节，两人持续互相表达心意。11月独立读者逐话记录了第58话岛村亲吻安达的手背及第59话的关系发展。此记录仅适用于柚原もけ漫画第9卷，原作小说单独评级。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "S",
+              "classes": [
+                "S-RELATIONSHIP"
+              ],
+              "urls": [
+                "https://www.kadokawa.co.jp/product/322607000765/"
+              ]
+            },
+            {
+              "kind": "community",
+              "grade": "S",
+              "classes": [
+                "S-RELATIONSHIP"
+              ],
+              "urls": [
+                "https://note.com/kd51310046/n/ncce26d101138"
+              ]
+            }
+          ],
+          "workId": "40103"
+        },
+        "printEdition": {
+          "isbn": "9784049525045",
+          "title": "安達としまむら（９）",
+          "url": "https://www.kadokawa.co.jp/product/322607000765/",
+          "onSale": "2026-10-27",
+          "issued": "2026-10",
+          "publisher": "KADOKAWA"
+        }
+      }
+    },
+    {
       "workId": "36750",
       "releasedOn": "2026-10-27",
       "scope": "首发正式版；部分地区的 Steam 商店登录后可见，开发者发行公告与 SteamDB 上架时刻均可核查",
@@ -7159,6 +7281,76 @@
           "url": "https://www.penguinrandomhouse.com/books/830860/happily-ever-afterlife-by-emma-r-alban/paperback/",
           "publisher": "Alcove Press",
           "onSale": "2026-09-29"
+        }
+      }
+    },
+    {
+      "workId": "40102",
+      "releasedOn": "2026-09-27",
+      "scope": "電撃コミック レグルス 2026年短篇选拔赛独立作品",
+      "edition": {
+        "title": "リユナイテッド・ルナ",
+        "provider": "recent",
+        "url": "https://comic-walker.com/detail/KC_020317_S/episodes/KC_0203170000200011_E",
+        "media": {
+          "group": "manga",
+          "type": "manga",
+          "format": "電撃コミック レグルス 2026年短篇选拔赛独立作品"
+        },
+        "aliases": [
+          "Reunited Luna"
+        ],
+        "localizedTitles": [],
+        "summary": {
+          "kind": "source_summary",
+          "text": "向往自由的王女索露莉亚在海中遇见人鱼露娜。与露娜说话的日子给她带来难得的快乐。邻国婚约渐近，露娜提出两人一起逃走。",
+          "sourceUrl": "https://comic-walker.com/detail/KC_020317_S/episodes/KC_0203170000200011_E"
+        },
+        "sources": [
+          {
+            "title": "发行与版本资料",
+            "url": "https://comic-walker.com/detail/KC_020317_S/episodes/KC_0203170000200011_E",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://comic-walker.com/label/regulus/news/01a0b29c-932c-7c52-b74f-115fedde1b8d",
+            "tier": "official"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "892097822703",
+            "kind": "person",
+            "name": "梢",
+            "role": "作者",
+            "sourceUrl": "https://comic-walker.com/detail/KC_020317_S/episodes/KC_0203170000200011_E"
+          },
+          {
+            "creatorId": "895292605626",
+            "kind": "organization",
+            "name": "KADOKAWA",
+            "role": "出版社",
+            "sourceUrl": "https://comic-walker.com/detail/KC_020317_S/episodes/KC_0203170000200011_E"
+          }
+        ],
+        "review": {
+          "siteId": "recent-kadocomi-kc-020317",
+          "rationale": "KADOKAWA 声明2026年9月27日在電撃コミック レグルス首发。故事明确给中心女性索露莉亚安排了迫近的、与特定邻国王子落实的政略婚姻，并由此直接促成与人鱼露娜的逃走提议，符合 D-FUTURE-HET-HINT。已核官方公开简介，现有证据未确认与男性已经形成恋情、履行婚约或形成异性终局。独立已读者表示后半发展符合预期，未明确具体婚姻结果，作为核验背景，不单列社区评级。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "D",
+              "classes": [
+                "D-FUTURE-HET-HINT"
+              ],
+              "urls": [
+                "https://comic-walker.com/detail/KC_020317_S/episodes/KC_0203170000200011_E",
+                "https://comic-walker.com/label/regulus/news/01a0b29c-932c-7c52-b74f-115fedde1b8d"
+              ]
+            }
+          ],
+          "workId": "40102"
         }
       }
     },

@@ -76,9 +76,12 @@ if (currentReview) {
 }
 if (currentReview) {
   const corrections = readFileSync(join(identityRoot, 'corrections.jsonl'), 'utf8').trim().split('\n').map(JSON.parse)
+  const legacyDisplayTitles = new Map(readFileSync(join(identityRoot, 'legacy-bindings.jsonl'), 'utf8')
+    .trim().split('\n').map(JSON.parse).map(row => [row.workId, row.title]))
   for (const correction of corrections.filter(row => row.releaseCredits)) {
     const work = release.getPublicWorkById(correction.workId)
-    assert.equal(work.title, correction.label ? `${correction.catalogTitle}（${correction.label}）` : correction.catalogTitle)
+    const releaseTitle = correction.label ? `${correction.catalogTitle}（${correction.label}）` : correction.catalogTitle
+    assert.equal(work.title, legacyDisplayTitles.get(correction.workId) ?? releaseTitle)
     for (const credit of correction.releaseCredits) {
       const rows = credit.creditKind === 'person' ? work.creators : work.organizations
       assert.ok(rows.some(row => row.creatorId === credit.creatorId && row.role === credit.role &&
