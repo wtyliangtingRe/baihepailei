@@ -28,6 +28,7 @@ type BangumiCorrection = Pick<RecoveredBangumiWork, 'workId' | 'siteId' | 'catal
 type EditionCredit = Pick<CreditEdge, 'creatorId' | 'creditKind' | 'name' | 'role'> & { sourceUrl?: string; replacesCatalogRole?: string }
 type Correction = {
   catalogTitle?: string
+  title?: string
   media?: PublicWorkRecord['media']
   releaseCredits?: EditionCredit[]
   workId: string
@@ -126,6 +127,10 @@ export function readIdentityReview(directory: string, identities: Map<string, st
   const corrections = new Map(read<Correction>('corrections.jsonl').map(row => {
     if (identities.get(row.workId) !== row.siteId || (row.siteId === null && !row.edition)) {
       throw new Error(`Correction identity drift: ${row.workId}`)
+    }
+    if (row.title && (!row.catalogTitle ||
+        !row.editionSources?.some(source => source.url === row.url && source.tier === 'official'))) {
+      throw new Error(`Unbound title correction: ${row.workId}`)
     }
     if (row.withdrawnReleaseDate && (row.firstPublished ||
         !row.editionSources?.some(source => source.url === row.url && source.tier === 'official'))) {
@@ -287,6 +292,7 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
   }
   return {
     ...work,
+    ...(fix?.title && { title: fix.title }),
     sources: mergeSources(correctedSources),
     ...(fix?.media && { media: fix.media }),
     ...(fix?.firstPublished && {
@@ -301,8 +307,11 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
       ...(work.printEditions || []).filter(edition => !printEditions.some(print => print.isbn === edition.isbn)),
       ...printEditions,
     ] }),
-    ...(fix?.placeholder && {
-      aliases: [...new Set([...work.aliases.filter(alias => alias !== fix.placeholder), ...(fix.aliases || [])])],
+    ...((fix?.title || fix?.placeholder || fix?.aliases) && {
+      aliases: [...new Set([
+        ...work.aliases.filter(alias => alias !== fix.placeholder && alias !== fix.title),
+        ...(fix.title ? [work.title] : []), ...(fix.aliases || []),
+      ])],
     }),
     ...((fix?.placeholder || fix?.localizedTitles) && {
       localizedTitles: mergeLocalizedTitles([
@@ -311,8 +320,8 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
     }),
     ...(fix?.summary && { summary: { kind: 'source_summary' as const, text: fix.summary, sourceUrl: fix.url } }),
     ...(fix?.label && {
-      title: `${work.title}（${fix.label}）`,
-      aliases: [...new Set([work.title, ...work.aliases])],
+      title: `${fix.title || work.title}（${fix.label}）`,
+      aliases: [...new Set([work.title, ...work.aliases, ...(fix.aliases || [])])],
       media: { ...work.media, format: fix.format },
     }),
     ...(work.rating.evidenceUrl && correctedUrls.has(work.rating.evidenceUrl) && {

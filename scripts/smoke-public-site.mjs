@@ -447,6 +447,17 @@ try {
   const renamedGame = await json('/api/work-lineage/works/32002')
   assert.equal(renamedGame.title, '鸢之歌：归途')
   assert.ok(renamedGame.aliases.includes('鸢之歌2:星纪元'))
+  const renamedVisualNovel = await json('/api/work-lineage/works/34243')
+  assert.equal(renamedVisualNovel.title, 'Dissolution of the Silent Union')
+  assert.ok(renamedVisualNovel.aliases.includes('Velyograd HS-12'))
+  assert.equal(renamedVisualNovel.rating.grade, 'B')
+  assert.equal(renamedVisualNovel.rating.decidingSource, 'official')
+  for (const [id, isbn] of [['23083', '9784758070980'], ['28836', '9784883563944']]) {
+    const work = await json(`/api/work-lineage/works/${id}`)
+    const book = work.printEditions.find(edition => edition.isbn === isbn)
+    assert.ok(book, `Original collected edition ${id}`)
+    assert.ok(work.sources.some(source => source.url === book.url && source.tier === 'official'))
+  }
   for (const [id, source] of [['4206', 'source-official'], ['6093', 'source-community']]) {
     const work = await json(`/api/work-lineage/works/${id}`)
     assert.equal(work.rating.grade, 'E')
