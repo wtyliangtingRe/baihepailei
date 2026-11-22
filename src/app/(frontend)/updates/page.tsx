@@ -28,14 +28,14 @@ export default function UpdatesPage() {
           <div><h2 id="recent-works-title">2026 年秋季新作评级</h2><p>9 月 1 日至 11 月 22 日 · {recent.length} 部 · 按发行日期排列</p></div>
         </div>
         <ul className="creator-works">
-          {recent.map(({ work, releasedOn, scope }) => (
+          {recent.map(({ work, releasedOn, scope, title }) => (
             <li key={work.workId}>
               <div className="creator-work-title">
-                <Link href={canonicalContentUrl('works', work.workId)}>{work.title}</Link>
+                <Link href={canonicalContentUrl('works', work.workId)}>{title}</Link>
                 <span><time dateTime={releasedOn}>{releasedOn}</time> · {mediaLabel(work.media.group, work.media.type)}</span>
                 <small>{scope}</small>
               </div>
-              <Link className="creator-work-rating" href={canonicalContentUrl('works', work.workId)} aria-label={`查看《${work.title}》的评级`}>
+              <Link className="creator-work-rating" href={canonicalContentUrl('works', work.workId)} aria-label={`查看《${title}》的评级`}>
                 <span className={`rating-chip grade-${work.rating.grade}`}>{work.rating.grade}</span>
                 <small>{gradeLabel(work.rating.grade!)} · {work.rating.decidingSource === 'official' ? '官方来源' : '社区来源'}</small>
               </Link>

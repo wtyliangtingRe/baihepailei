@@ -147,6 +147,7 @@ try {
   if (intake.entries.length) {
     const recent = await (await response('/updates')).text()
     assert.ok(recent.includes('2026 年秋季新作评级'))
+    assert.ok(recent.includes('銀の河に星の城'), 'Featured existing work should use its publication title')
     const contested = additions.find(entry => entry.edition.review.siteId === 'STEAM-3863090')
     const result = await json('/api/work-lineage/works/' + contested.workId)
     assert.equal(result.rating.grade, 'F')
@@ -210,6 +211,20 @@ try {
   const dismantledWork = await json('/api/work-lineage/works/' + dismantled.workId)
   assert.equal(dismantledWork.firstPublished, '2026-02-18')
   assert.equal(dismantledWork.rating.grade, 'B')
+
+  const robinRelease = additions.find(entry => entry.edition.review.siteId === 'recent-isbn-9784781625980')
+  const [robinOriginal, robinCollected] = await Promise.all([
+    json('/api/work-lineage/works/39338'),
+    json('/api/work-lineage/works/' + robinRelease.workId),
+  ])
+  assert.notEqual(robinOriginal.workId, robinCollected.workId)
+  assert.equal(robinOriginal.firstPublished, '2025-10-10')
+  assert.equal(robinOriginal.rating.grade, 'D')
+  assert.equal(robinCollected.firstPublished, '2026-10-19')
+  assert.equal(robinCollected.rating.grade, 'F')
+  assert.equal(robinCollected.rating.decidingSource, 'community')
+  assert.deepEqual(robinCollected.printEditions.map(edition => edition.isbn), ['9784781625980', '9784781625997'])
+  assert.equal(robinOriginal.creators[0].creatorId, robinCollected.creators[0].creatorId)
 
   const [butterflyNovel, butterflyNovelIndex, butterflySerial, butterflyVolume] = await Promise.all(
     ['4124', '37195', '8406', '38635'].map(id => json('/api/work-lineage/works/' + id)),

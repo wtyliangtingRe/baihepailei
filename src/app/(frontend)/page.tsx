@@ -90,10 +90,10 @@ export default function HomePage() {
             <Link className="back-link" href="/updates#recent-works">查看本期新作</Link>
           </div>
           <div className="release-featured-grid">
-            {recent.map(({ work, releasedOn }) => (
+            {recent.map(({ work, releasedOn, title }) => (
               <Link className="release-featured-card" href={canonicalContentUrl('works', work.workId)} key={work.workId}>
                 <span className={`rating-chip grade-${work.rating.grade}`}>{work.rating.grade}</span>
-                <div><h3>{work.title}</h3><p><time dateTime={releasedOn}>{releasedOn}</time> · {mediaLabel(work.media.group, work.media.type)}</p></div>
+                <div><h3>{title}</h3><p><time dateTime={releasedOn}>{releasedOn}</time> · {mediaLabel(work.media.group, work.media.type)}</p></div>
               </Link>
             ))}
           </div>

@@ -1392,9 +1392,465 @@
       ],
       "identityBasis": "external_id",
       "authorityUrl": "https://id.ndl.go.jp/auth/ndlna/001168875"
+    },
+    {
+      "creatorId": "897927200348",
+      "kind": "person",
+      "name": "長篠もき",
+      "names": [
+        "長篠もき"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "896609220160",
+      "kind": "person",
+      "name": "コナタエル",
+      "names": [
+        "コナタエル"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "899001941336",
+      "kind": "organization",
+      "name": "オーバーラップ",
+      "names": [
+        "オーバーラップ"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "899971465359",
+      "kind": "person",
+      "name": "奈須きのこ",
+      "names": [
+        "奈須きのこ"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "892875140426",
+      "kind": "person",
+      "name": "竹内將",
+      "names": [
+        "竹内將"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "897541457854",
+      "kind": "person",
+      "name": "近藤光",
+      "names": [
+        "近藤光"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "890385757900",
+      "kind": "person",
+      "name": "都築萌",
+      "names": [
+        "都築萌"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "895539978374",
+      "kind": "person",
+      "name": "こやまひろかず",
+      "names": [
+        "こやまひろかず"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "893018831995",
+      "kind": "person",
+      "name": "武内崇",
+      "names": [
+        "武内崇"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "890976401437",
+      "kind": "person",
+      "name": "永森雅人",
+      "names": [
+        "永森雅人"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "892492428128",
+      "kind": "person",
+      "name": "深澤秀行",
+      "names": [
+        "深澤秀行"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "892283284578",
+      "kind": "organization",
+      "name": "TYPE-MOON",
+      "names": [
+        "TYPE-MOON"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "898988570362",
+      "kind": "person",
+      "name": "五十嵐海",
+      "names": [
+        "五十嵐海"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "895591057011",
+      "kind": "person",
+      "name": "Bartosz Sztybor",
+      "names": [
+        "Bartosz Sztybor"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "890744072682",
+      "kind": "person",
+      "name": "菅野一期",
+      "names": [
+        "菅野一期"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "891773860335",
+      "kind": "person",
+      "name": "Phantom",
+      "names": [
+        "Phantom"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "895093063040",
+      "kind": "organization",
+      "name": "Phantom",
+      "names": [
+        "Phantom"
+      ],
+      "identityBasis": "name_only"
     }
   ],
   "entries": [
+    {
+      "workId": "40098",
+      "releasedOn": "2026-11-20",
+      "scope": "ufotable 2026 年版，11 月 20 日起日本院线正式公映的 130 分钟首部电影。片尾告知续作制作，评级仅覆盖这次公开发行的电影。",
+      "edition": {
+        "title": "魔法使之夜",
+        "provider": "anilist",
+        "url": "https://mahoyo-movie.com/",
+        "media": {
+          "group": "anime",
+          "type": "anime",
+          "format": "movie"
+        },
+        "aliases": [
+          "剧场动画 魔法使之夜",
+          "劇場アニメーション 魔法使いの夜",
+          "Mahoutsukai no Yoru",
+          "Witch on the Holy Night"
+        ],
+        "localizedTitles": [
+          {
+            "title": "魔法使いの夜",
+            "kind": "original"
+          }
+        ],
+        "summary": {
+          "kind": "source_summary",
+          "text": "见习魔法使苍崎青子和同住的魔女久远寺有珠一起修习魔术。转学生静希草十郎闯入两人的秘密，青子选择保住他的性命，也因此与有珠产生分歧。",
+          "sourceUrl": "https://mahoyo-movie.com/"
+        },
+        "sources": [
+          {
+            "title": "发行与版本资料",
+            "url": "https://mahoyo-movie.com/",
+            "tier": "official"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://eiga.com/movie/96352/review/07241388/",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://filmarks.com/movies/100866/reviews/227437646",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://skypenguin.net/2026/11/20/post-177609/",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://note.com/yuzu_nmtm/n/n3e9eb46b01d4",
+            "tier": "community"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "899971465359",
+            "kind": "person",
+            "name": "奈須きのこ",
+            "role": "原作",
+            "sourceUrl": "https://mahoyo-movie.com/"
+          },
+          {
+            "creatorId": "892875140426",
+            "kind": "person",
+            "name": "竹内將",
+            "role": "导演",
+            "sourceUrl": "https://mahoyo-movie.com/"
+          },
+          {
+            "creatorId": "897541457854",
+            "kind": "person",
+            "name": "近藤光",
+            "role": "总导演",
+            "sourceUrl": "https://mahoyo-movie.com/"
+          },
+          {
+            "creatorId": "890385757900",
+            "kind": "person",
+            "name": "都築萌",
+            "role": "角色设计",
+            "sourceUrl": "https://mahoyo-movie.com/"
+          },
+          {
+            "creatorId": "895539978374",
+            "kind": "person",
+            "name": "こやまひろかず",
+            "role": "原作角色设计",
+            "sourceUrl": "https://mahoyo-movie.com/"
+          },
+          {
+            "creatorId": "893018831995",
+            "kind": "person",
+            "name": "武内崇",
+            "role": "原作角色原案",
+            "sourceUrl": "https://mahoyo-movie.com/"
+          },
+          {
+            "creatorId": "890976401437",
+            "kind": "person",
+            "name": "永森雅人",
+            "role": "总作画监督",
+            "sourceUrl": "https://mahoyo-movie.com/"
+          },
+          {
+            "creatorId": "892492428128",
+            "kind": "person",
+            "name": "深澤秀行",
+            "role": "音乐",
+            "sourceUrl": "https://mahoyo-movie.com/"
+          },
+          {
+            "creatorId": "1012403",
+            "kind": "organization",
+            "name": "ufotable",
+            "role": "动画制作",
+            "sourceUrl": "https://mahoyo-movie.com/"
+          },
+          {
+            "creatorId": "1013741",
+            "kind": "organization",
+            "name": "東宝",
+            "role": "发行",
+            "sourceUrl": "https://mahoyo-movie.com/"
+          },
+          {
+            "creatorId": "1008669",
+            "kind": "organization",
+            "name": "Aniplex",
+            "role": "发行",
+            "sourceUrl": "https://mahoyo-movie.com/"
+          },
+          {
+            "creatorId": "892283284578",
+            "kind": "organization",
+            "name": "TYPE-MOON",
+            "role": "原作",
+            "sourceUrl": "https://mahoyo-movie.com/"
+          }
+        ],
+        "review": {
+          "siteId": "catalog-anilist-143103",
+          "rationale": "有珠与青子同住并一起练习魔术。有珠担心青子为草十郎冒险，对她肯为他拼命流露不满，构成观众关注两人感情的具体场面。草十郎临近片尾对青子说喜欢，青子因此动摇，草十郎表达的喜欢尚未明确指向交往。现有电影仅证实一处具体的异性恋走向信号，未形成持续男性恋爱轴或情侣结局。",
+          "findings": [
+            {
+              "kind": "community",
+              "grade": "D",
+              "classes": [
+                "D-FUTURE-HET-HINT"
+              ],
+              "urls": [
+                "https://note.com/yuzu_nmtm/n/n3e9eb46b01d4",
+                "https://skypenguin.net/2026/11/20/post-177609/",
+                "https://filmarks.com/movies/100866/reviews/227437646",
+                "https://eiga.com/movie/96352/review/07241388/"
+              ]
+            }
+          ],
+          "workId": "40098"
+        }
+      }
+    },
+    {
+      "workId": "40097",
+      "releasedOn": "2026-11-20",
+      "scope": "日本漫画改编第 1 卷 · 8 月已开始连载",
+      "edition": {
+        "title": "優等生がアダルトグッズを買いに来た",
+        "provider": "bangumi-subject",
+        "url": "https://comic-gardo.com/episode/12207421984094260425",
+        "media": {
+          "group": "manga",
+          "type": "manga",
+          "format": "漫画"
+        },
+        "aliases": [
+          "アダきた"
+        ],
+        "localizedTitles": [
+          {
+            "title": "優等生がアダルトグッズを買いに来た",
+            "kind": "original"
+          }
+        ],
+        "summary": {
+          "kind": "source_summary",
+          "text": "在旧书店打工的水城绫偶然撞见同班优等生茅野有季。绫为她守住秘密，两人也渐渐能对彼此说出平时难以开口的话。",
+          "sourceUrl": "https://comic-gardo.com/episode/12207421984094260425"
+        },
+        "sources": [
+          {
+            "title": "连载首发",
+            "url": "https://comic-gardo.com/episode/12207421984094260425",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://over-lap.co.jp/%E5%84%AA%E7%AD%89%E7%94%9F%E3%81%8C%E3%82%A2%E3%83%80%E3%83%AB%E3%83%88%E3%82%B0%E3%83%83%E3%82%BA%E3%82%92%E8%B2%B7%E3%81%84%E3%81%AB%E6%9D%A5%E3%81%9F%2B1/product/0/9784824019424/?cat=CGB&swrd=",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://www.shosen.co.jp/fair/47303/",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://www.maruzenjunkudo.co.jp/products/9784824019424",
+            "tier": "official"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://fuyuri.seesaa.net/article/t20261118amenochiyuki.html",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://yurinavi.com/2026/08/19/yuutouseiga-comic-start/",
+            "tier": "community"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://ebookstore.sony.jp/title/11597985/",
+            "tier": "official"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "896609220160",
+            "kind": "person",
+            "name": "コナタエル",
+            "role": "漫画",
+            "sourceUrl": "https://comic-gardo.com/episode/12207421984094260425"
+          },
+          {
+            "creatorId": "1014220",
+            "kind": "person",
+            "name": "4kaえんぴつ",
+            "role": "原作",
+            "sourceUrl": "https://comic-gardo.com/episode/12207421984094260425"
+          },
+          {
+            "creatorId": "1007206",
+            "kind": "person",
+            "name": "千種みのり",
+            "role": "角色原案",
+            "sourceUrl": "https://comic-gardo.com/episode/12207421984094260425"
+          },
+          {
+            "creatorId": "899001941336",
+            "kind": "organization",
+            "name": "オーバーラップ",
+            "role": "出版社",
+            "sourceUrl": "https://comic-gardo.com/episode/12207421984094260425"
+          }
+        ],
+        "review": {
+          "siteId": "catalog-bangumi-694128",
+          "rationale": "漫画于2026年8月17日在 Comic Gardo 正式开载，11月20日出版第1卷，绘者为コナタエル。出版社的首卷书介明确写出有季被倾听者绫吸引，交往说法是校园传言。百合ナビ对首话的阅读核对了两人的秘密与关系升温，另有读者追读后续漫画时描述两人以尚未交往的身份询问影院优惠，支持目前按单向情愫评级。原轻小说由4kaえんぴつ撰写、千種みのり插画，站内已有29966与39210，首卷上册书号9784824013668。原作小说第2卷恰与漫画第1卷同日发售，本条只评漫画。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "B",
+              "classes": [
+                "B-LIGHT"
+              ],
+              "urls": [
+                "https://comic-gardo.com/episode/12207421984094260425",
+                "https://over-lap.co.jp/%E5%84%AA%E7%AD%89%E7%94%9F%E3%81%8C%E3%82%A2%E3%83%80%E3%83%AB%E3%83%88%E3%82%B0%E3%83%83%E3%82%BA%E3%82%92%E8%B2%B7%E3%81%84%E3%81%AB%E6%9D%A5%E3%81%9F%2B1/product/0/9784824019424/?cat=CGB&swrd=",
+                "https://ebookstore.sony.jp/title/11597985/"
+              ]
+            },
+            {
+              "kind": "community",
+              "grade": "B",
+              "classes": [
+                "B-LIGHT"
+              ],
+              "urls": [
+                "https://yurinavi.com/2026/08/19/yuutouseiga-comic-start/",
+                "https://fuyuri.seesaa.net/article/t20261118amenochiyuki.html"
+              ]
+            }
+          ],
+          "workId": "40097"
+        },
+        "printEdition": {
+          "isbn": "9784824019424",
+          "title": "優等生がアダルトグッズを買いに来た 1",
+          "url": "https://over-lap.co.jp/%E5%84%AA%E7%AD%89%E7%94%9F%E3%81%8C%E3%82%A2%E3%83%80%E3%83%AB%E3%83%88%E3%82%B0%E3%83%83%E3%82%BA%E3%82%92%E8%B2%B7%E3%81%84%E3%81%AB%E6%9D%A5%E3%81%9F%2B1/product/0/9784824019424/?cat=CGB&swrd=",
+          "publisher": "オーバーラップ",
+          "onSale": "2026-11-20",
+          "issued": "2026-11"
+        },
+        "firstPublication": {
+          "date": "2026-08-17",
+          "sourceUrl": "https://comic-gardo.com/episode/12207421984094260425"
+        }
+      }
+    },
     {
       "workId": "40078",
       "releasedOn": "2026-11-20",
@@ -2445,12 +2901,14 @@
     {
       "workId": "22656",
       "releasedOn": "2026-11-13",
-      "scope": "日本院线续作"
+      "scope": "日本院线续作",
+      "title": "乐园追放 心之共鸣"
     },
     {
       "workId": "33667",
       "releasedOn": "2026-11-11",
-      "scope": "Steam 正式版（同作旧试玩存 itch.io）"
+      "scope": "Steam 正式版（同作旧试玩存 itch.io）",
+      "title": "Imperial Grace"
     },
     {
       "workId": "40088",
@@ -3037,7 +3495,8 @@
     {
       "workId": "11301",
       "releasedOn": "2026-11-10",
-      "scope": "日本电子单行本第 1 卷 · 2025 年已开始连载"
+      "scope": "日本电子单行本第 1 卷 · 2025 年已开始连载",
+      "title": "銀の河に星の城"
     },
     {
       "workId": "40084",
@@ -3320,7 +3779,8 @@
     {
       "workId": "4196",
       "releasedOn": "2026-11-06",
-      "scope": "KADOKAWA 商业版单行本全 2 卷同日发行"
+      "scope": "KADOKAWA 商业版单行本全 2 卷同日发行",
+      "title": "ひとりみです"
     },
     {
       "workId": "40089",
@@ -3507,7 +3967,8 @@
     {
       "workId": "11721",
       "releasedOn": "2026-11-06",
-      "scope": "日本院线版 · 7 月 24 日曾在 Fantasia 首映"
+      "scope": "日本院线版 · 7 月 24 日曾在 Fantasia 首映",
+      "title": "GROTESQQQUE"
     },
     {
       "workId": "40085",
@@ -3687,6 +4148,98 @@
           "url": "https://www.hachettebookgroup.com/titles/rae-wilde/happily-ever-after-the-murders/9781538784549/",
           "publisher": "Legacy Lit",
           "onSale": "2026-11-03"
+        }
+      }
+    },
+    {
+      "workId": "40100",
+      "releasedOn": "2026-10-31",
+      "scope": "独立的万圣节短篇，核对公开下载的 0.8 版。作者标示 10 月 31 日发售，itch.io 的公开时间是 11 月 1 日 00:35（UTC）。",
+      "edition": {
+        "title": "Nostalgic 1999: Halloween Night",
+        "provider": "itch",
+        "url": "https://phantom-gd.itch.io/nostalgic1999hn",
+        "media": {
+          "group": "visual_novel",
+          "type": "visual_novel",
+          "format": "独立的万圣节短篇，核对公开下载的 0.8 版。作者标示 10 月 31 日发售，itch.io 的公开时间是 11 月 1 日 00:35（UTC）。"
+        },
+        "aliases": [],
+        "localizedTitles": [],
+        "summary": {
+          "kind": "source_summary",
+          "text": "娜奥米、艾普丽尔和达科塔商量万圣节的装扮，结伴逛商场并看恐怖录像。",
+          "sourceUrl": "https://phantom-gd.itch.io/nostalgic1999hn"
+        },
+        "sources": [
+          {
+            "title": "发行与版本资料",
+            "url": "https://phantom-gd.itch.io/nostalgic1999hn",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://img.itch.zone/aW1hZ2UvNTI3NTQ3Ni8zMTY1MzQyNy5wbmc=/original/LBvrrE.png",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://img.itch.zone/aW1hZ2UvNTI3NTQ3Ni8zMTY1MzQyNi5wbmc=/original/bFICpj.png",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://img.itch.zone/aW1hZ2UvNTI3NTQ3Ni8zMTY1MzQyNC5wbmc=/original/CyVZVs.png",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://img.itch.zone/aW1hZ2UvNTI3NTQ3Ni8zMTY1MzQyMy5wbmc=/original/Mtv9uw.png",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://phantom-gd.itch.io/nostalgic1999hn/purchase",
+            "tier": "official"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "891773860335",
+            "kind": "person",
+            "name": "Phantom",
+            "role": "主创、编剧、美术、音乐、程序",
+            "sourceUrl": "https://phantom-gd.itch.io/nostalgic1999hn"
+          },
+          {
+            "creatorId": "895093063040",
+            "kind": "organization",
+            "name": "Phantom",
+            "role": "开发",
+            "sourceUrl": "https://phantom-gd.itch.io/nostalgic1999hn"
+          }
+        ],
+        "review": {
+          "siteId": "ITCH-phantom-gd/nostalgic1999hn",
+          "rationale": "作者发布的本篇实机画面显示，艾普丽尔和达科塔在选装、乘车及店内挑选游戏时彼此打趣。看恐怖录像时，达科塔喊娜奥米看她被吓出来的鸡皮疙瘩。三名女性的日常同伴互动构成短篇的主体，现有画面支持友情群像的判定。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "D",
+              "classes": [
+                "D-GENERAL"
+              ],
+              "urls": [
+                "https://phantom-gd.itch.io/nostalgic1999hn",
+                "https://phantom-gd.itch.io/nostalgic1999hn/purchase",
+                "https://img.itch.zone/aW1hZ2UvNTI3NTQ3Ni8zMTY1MzQyMy5wbmc=/original/Mtv9uw.png",
+                "https://img.itch.zone/aW1hZ2UvNTI3NTQ3Ni8zMTY1MzQyNC5wbmc=/original/CyVZVs.png",
+                "https://img.itch.zone/aW1hZ2UvNTI3NTQ3Ni8zMTY1MzQyNi5wbmc=/original/bFICpj.png",
+                "https://img.itch.zone/aW1hZ2UvNTI3NTQ3Ni8zMTY1MzQyNy5wbmc=/original/LBvrrE.png"
+              ]
+            }
+          ],
+          "workId": "40100"
         }
       }
     },
@@ -3931,17 +4484,20 @@
     {
       "workId": "34275",
       "releasedOn": "2026-10-30",
-      "scope": "首发两条完整路线，开发者另计划更新第三条。itch 发布 22:01 UTC 即北京时间 10-31，Steam 日期记录10-30。"
+      "scope": "首发两条完整路线，开发者另计划更新第三条。itch 发布 22:01 UTC 即北京时间 10-31，Steam 日期记录10-30。",
+      "title": "The Community Notes Are Wrong"
     },
     {
       "workId": "36733",
       "releasedOn": "2026-10-28",
-      "scope": "正式版；Steam 部分地区显示前一天，itch 开发者公告带 UTC 时间为 10-28"
+      "scope": "正式版；Steam 部分地区显示前一天，itch 开发者公告带 UTC 时间为 10-28",
+      "title": "Miss Sasami is Losing Her Mind!"
     },
     {
       "workId": "36750",
       "releasedOn": "2026-10-27",
-      "scope": "首发正式版；部分地区的 Steam 商店登录后可见，开发者发行公告与 SteamDB 上架时刻均可核查"
+      "scope": "首发正式版；部分地区的 Steam 商店登录后可见，开发者发行公告与 SteamDB 上架时刻均可核查",
+      "title": "Exhibition of the Heart"
     },
     {
       "workId": "40091",
@@ -5016,6 +5572,294 @@
       }
     },
     {
+      "workId": "40099",
+      "releasedOn": "2026-10-20",
+      "scope": "CD PROJEKT RED 与 TRIGGER 合作的独立第二部动画，2026 年 10 月 20 日 07:00 UTC 在 Netflix 一次上线全 10 集。本次仅复评这 10 集。",
+      "edition": {
+        "title": "赛博朋克：边缘行者 2",
+        "provider": "anilist",
+        "url": "https://www.cyberpunk.net/en/edgerunners2",
+        "media": {
+          "group": "anime",
+          "type": "anime",
+          "format": "ona"
+        },
+        "aliases": [
+          "赛博朋克：边缘行者 第二季",
+          "電馭叛客：邊緣行者 2",
+          "サイバーパンク: エッジランナーズ2",
+          "Cyberpunk: Edgerunners II"
+        ],
+        "localizedTitles": [
+          {
+            "title": "Cyberpunk: Edgerunners 2",
+            "kind": "original"
+          }
+        ],
+        "summary": {
+          "kind": "source_summary",
+          "text": "夜之城的四条命运交织在一起。塔莉亚卷入意识芯片争夺，退役佣兵金斯利应她母亲阿维达之托来救她，流浪者 D 则为遭屠杀的族人追查企业机密。",
+          "sourceUrl": "https://www.cyberpunk.net/en/edgerunners2"
+        },
+        "sources": [
+          {
+            "title": "发行与版本资料",
+            "url": "https://www.cyberpunk.net/en/edgerunners2",
+            "tier": "official"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://www.reddit.com/r/anime/comments/1xalifx/cyberpunk_edgerunners_2_episode_8_discussion/",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://www.gamesradar.com/entertainment/anime-shows/cyberpunk-edgerunners-season-2-ending-explained-who-dies/",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://nexuspointnews.com/review-cyberpunk-edgerunners-2/",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://rurigani.com/en/2026/10/20/cyberpunk-edgerunners2-review/",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://rurigani.com/en/2026/10/19/cyberpunk-edgerunners2-ep1-pre-screening/",
+            "tier": "community"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://press.cdprojektred.com/en/news/1876/edgerunners-2-update-announced-for-cyberpunk-2077",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://media.netflix.com/en/only-on-netflix/81054853",
+            "tier": "official"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "898988570362",
+            "kind": "person",
+            "name": "五十嵐海",
+            "role": "导演",
+            "sourceUrl": "https://www.cyberpunk.net/en/edgerunners2"
+          },
+          {
+            "creatorId": "895591057011",
+            "kind": "person",
+            "name": "Bartosz Sztybor",
+            "role": "剧本、制作人",
+            "sourceUrl": "https://www.cyberpunk.net/en/edgerunners2"
+          },
+          {
+            "creatorId": "890744072682",
+            "kind": "person",
+            "name": "菅野一期",
+            "role": "角色设计",
+            "sourceUrl": "https://www.cyberpunk.net/en/edgerunners2"
+          },
+          {
+            "creatorId": "1012331",
+            "kind": "organization",
+            "name": "TRIGGER",
+            "role": "动画制作",
+            "sourceUrl": "https://www.cyberpunk.net/en/edgerunners2"
+          },
+          {
+            "creatorId": "1009016",
+            "kind": "organization",
+            "name": "CD PROJEKT RED",
+            "role": "联合制作",
+            "sourceUrl": "https://www.cyberpunk.net/en/edgerunners2"
+          },
+          {
+            "creatorId": "1010839",
+            "kind": "organization",
+            "name": "Netflix",
+            "role": "发行",
+            "sourceUrl": "https://www.cyberpunk.net/en/edgerunners2"
+          }
+        ],
+        "review": {
+          "siteId": "catalog-anilist-195539",
+          "rationale": "塔莉亚与女性形象的数字意识卡普里短暂共享身体，卡普里逆转她一度恶化的病势，但后来接管肉身并在终局与她分离。奥米与优比在本体因复仇手段发生冲突。官方确认阿维达曾与金斯利相恋，现为企业主管基里尔的妻子。第一集重逢，第 6 至 8 集两人持续因这段关系联手，阿维达临死把女儿托付给金斯利，他的哀伤延续至终局。这条既往恋爱在本季重新成为贯穿的情感轴，按较低证据判 F。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "E",
+              "classes": [
+                "E-PAST-MALE-ROMANCE"
+              ],
+              "urls": [
+                "https://www.cyberpunk.net/en/edgerunners2",
+                "https://media.netflix.com/en/only-on-netflix/81054853",
+                "https://press.cdprojektred.com/en/news/1876/edgerunners-2-update-announced-for-cyberpunk-2077"
+              ]
+            },
+            {
+              "kind": "community",
+              "grade": "F",
+              "classes": [
+                "F-MALE-ROMANTIC-AXIS"
+              ],
+              "urls": [
+                "https://rurigani.com/en/2026/10/19/cyberpunk-edgerunners2-ep1-pre-screening/",
+                "https://rurigani.com/en/2026/10/20/cyberpunk-edgerunners2-review/",
+                "https://nexuspointnews.com/review-cyberpunk-edgerunners-2/",
+                "https://www.gamesradar.com/entertainment/anime-shows/cyberpunk-edgerunners-season-2-ending-explained-who-dies/",
+                "https://www.reddit.com/r/anime/comments/1xalifx/cyberpunk_edgerunners_2_episode_8_discussion/"
+              ]
+            }
+          ],
+          "workId": "40099"
+        }
+      }
+    },
+    {
+      "workId": "40096",
+      "releasedOn": "2026-10-19",
+      "scope": "イースト・プレス 商业增订版上下卷同日发行",
+      "edition": {
+        "title": "誰が駒鳥逃がしたの？",
+        "provider": "recent",
+        "url": "https://www.eastpress.co.jp/goods/detail/9784781625980",
+        "media": {
+          "group": "manga",
+          "type": "manga",
+          "format": "イースト・プレス 商业增订版上下卷同日发行"
+        },
+        "aliases": [
+          "誰が駒鳥を逃がしたの？",
+          "The Adventurer For Lady Margaret"
+        ],
+        "localizedTitles": [
+          {
+            "title": "誰が駒鳥逃がしたの？",
+            "kind": "original"
+          }
+        ],
+        "summary": {
+          "kind": "source_summary",
+          "text": "维多利亚时代的伦敦，女侦探罗宾常拉着童年好友玛格丽特一起办案。一次新的调查牵动两人的家庭往事，也考验了她们多年维系的关系。",
+          "sourceUrl": "https://www.eastpress.co.jp/goods/detail/9784781625980"
+        },
+        "sources": [
+          {
+            "title": "发行与版本资料",
+            "url": "https://www.eastpress.co.jp/goods/detail/9784781625980",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://eastpress.co.jp/goods/detail/9784781625997",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://www.cmoa.jp/title/338638/",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://comitia.co.jp/html/151.html",
+            "tier": "official"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://ebookstore.sony.jp/review/title/11571376/id/LT000255513004770133/",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://www.reads.jp/books/2935657",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://ameblo.jp/shunncha/entry-12983919739.html",
+            "tier": "community"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://bookwalker.jp/dee71d37dc-892f-44c6-8389-74beb7bb60e6/",
+            "tier": "official"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "897927200348",
+            "kind": "person",
+            "name": "長篠もき",
+            "role": "漫画",
+            "sourceUrl": "https://www.eastpress.co.jp/goods/detail/9784781625980"
+          },
+          {
+            "creatorId": "1002037",
+            "kind": "organization",
+            "name": "イースト・プレス",
+            "role": "出版社",
+            "sourceUrl": "https://www.eastpress.co.jp/goods/detail/9784781625980"
+          }
+        ],
+        "review": {
+          "siteId": "recent-isbn-9784781625980",
+          "rationale": "原同人纸本在2025年2月16日的 COMITIA151 公开发售，同人电子第1册于2025年10月10日由ナンバーナイン发行，站内编号39338。2026年10月19日，正式商业上下卷同步发行，分别比原来增绘46页和51页。玛格丽特与童年好友罗宾互有爱意，后来明确表达感情。其间，玛格丽特和男医生结婚、生女，也长期离开罗宾。两人晚年重逢，罗宾告知她的丈夫仍在世，随后她们携手继续冒险。末尾没有确认恋人或配偶名分。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "B",
+              "classes": [
+                "B-LIGHT"
+              ],
+              "urls": [
+                "https://www.eastpress.co.jp/goods/detail/9784781625980",
+                "https://eastpress.co.jp/goods/detail/9784781625997",
+                "https://bookwalker.jp/dee71d37dc-892f-44c6-8389-74beb7bb60e6/"
+              ]
+            },
+            {
+              "kind": "community",
+              "grade": "F",
+              "classes": [
+                "F-MALE-INTIMACY"
+              ],
+              "urls": [
+                "https://ameblo.jp/shunncha/entry-12983919739.html",
+                "https://www.reads.jp/books/2935657",
+                "https://ebookstore.sony.jp/review/title/11571376/id/LT000255513004770133/"
+              ]
+            }
+          ],
+          "workId": "40096"
+        },
+        "printEditions": [
+          {
+            "isbn": "9784781625980",
+            "title": "誰が駒鳥逃がしたの？（上）",
+            "url": "https://www.eastpress.co.jp/goods/detail/9784781625980",
+            "publisher": "イースト・プレス",
+            "onSale": "2026-10-19",
+            "issued": "2026-10"
+          },
+          {
+            "isbn": "9784781625997",
+            "title": "誰が駒鳥逃がしたの？（下）",
+            "url": "https://eastpress.co.jp/goods/detail/9784781625997",
+            "publisher": "イースト・プレス",
+            "onSale": "2026-10-19",
+            "issued": "2026-10"
+          }
+        ]
+      }
+    },
+    {
       "workId": "40073",
       "releasedOn": "2026-10-19",
       "scope": "RIDI 电子单行本全三册",
@@ -5081,7 +5925,8 @@
     {
       "workId": "22719",
       "releasedOn": "2026-10-16",
-      "scope": "日本单行本第 4 卷完结 · 9 月刊载最终话"
+      "scope": "日本单行本第 4 卷完结 · 9 月刊载最终话",
+      "title": "現実世界でも幸せにしてくださいね？"
     },
     {
       "workId": "40069",
@@ -5386,17 +6231,20 @@
     {
       "workId": "26920",
       "releasedOn": "2026-10-09",
-      "scope": "2026 电视动画，核至第 7 集"
+      "scope": "2026 电视动画，核至第 7 集",
+      "title": "某暗部的少女共栖"
     },
     {
       "workId": "20128",
       "releasedOn": "2026-10-09",
-      "scope": "日本单行本第 1 卷 · 5 月已开始连载"
+      "scope": "日本单行本第 1 卷 · 5 月已开始连载",
+      "title": "なとりとしずは"
     },
     {
       "workId": "26732",
       "releasedOn": "2026-10-08",
-      "scope": "2026 电视动画，核至第 7 集"
+      "scope": "2026 电视动画，核至第 7 集",
+      "title": "てつりょー！meet with 鉄道むすめ"
     },
     {
       "workId": "40094",
@@ -5494,7 +6342,8 @@
     {
       "workId": "24027",
       "releasedOn": "2026-10-07",
-      "scope": "2026 日本电视动画，10 月 7 日 22:00 在 TOKYO MX 首播。截至 11 月 22 日核至第 7 集。"
+      "scope": "2026 日本电视动画，10 月 7 日 22:00 在 TOKYO MX 首播。截至 11 月 22 日核至第 7 集。",
+      "title": "世界最强的魔女，就此开始"
     },
     {
       "workId": "40009",
@@ -5600,7 +6449,8 @@
     {
       "workId": "17325",
       "releasedOn": "2026-10-06",
-      "scope": "2026 日本电视动画，两季度连续播出。9 月 22 日有公开售票的第 1–3 集先行场，10 月 6 日 21:25 正式首播。截至 11 月 22 日核至第 7 集。"
+      "scope": "2026 日本电视动画，两季度连续播出。9 月 22 日有公开售票的第 1–3 集先行场，10 月 6 日 21:25 正式首播。截至 11 月 22 日核至第 7 集。",
+      "title": "乱世千金倪亚·利斯顿"
     },
     {
       "workId": "40068",
@@ -7010,7 +7860,8 @@
     {
       "workId": "23392",
       "releasedOn": "2026-09-11",
-      "scope": "日本院线后篇 · 电影新增场景"
+      "scope": "日本院线后篇 · 电影新增场景",
+      "title": "吹响吧！上低音号 最终乐章 后篇"
     },
     {
       "workId": "40080",
@@ -7346,12 +8197,14 @@
     {
       "workId": "36739",
       "releasedOn": "2026-09-07",
-      "scope": "正式版"
+      "scope": "正式版",
+      "title": "My Darling Dark Elf"
     },
     {
       "workId": "22762",
       "releasedOn": "2026-09-07",
-      "scope": "日本单行本第 1 卷 · 连载已到第 8 话后篇"
+      "scope": "日本单行本第 1 卷 · 连载已到第 8 话后篇",
+      "title": "令嬢VTuberはメイドの夜食に蹂躙される～禁断ご飯で食レポ生配信～"
     },
     {
       "workId": "40044",
@@ -7654,7 +8507,8 @@
     {
       "workId": "36692",
       "releasedOn": "2026-09-01",
-      "scope": "1.0 正式版（旧抢先体验不含结局）"
+      "scope": "1.0 正式版（旧抢先体验不含结局）",
+      "title": "DEVIL'S LIMINAL"
     }
   ]
 }

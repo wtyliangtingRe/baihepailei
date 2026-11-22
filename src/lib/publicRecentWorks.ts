@@ -10,11 +10,12 @@ type Edition = Pick<PublicWorkRecord, 'title' | 'aliases' | 'localizedTitles' | 
   url: string
   firstPublication?: { date: string; sourceUrl: string }
   printEdition?: NonNullable<PublicWorkRecord['printEditions']>[number]
+  printEditions?: NonNullable<PublicWorkRecord['printEditions']>
   credits: { creatorId: string; kind: CreatorKind; name: string; role: string; sourceUrl: string }[]
   review: SourceReview
 }
 
-type RecentEntry = { workId: string; releasedOn: string; scope: string; edition?: Edition }
+type RecentEntry = { workId: string; releasedOn: string; scope: string; title?: string; edition?: Edition }
 
 function isPublicationDate(value: string) {
   const parsed = new Date(value)
@@ -35,29 +36,32 @@ export function readRecentWorks(directory: string, grades: readonly PublicGrade[
   const redirects = new Map(data.entities.filter(entity => entity.canonicalCreatorId)
     .map(entity => [entity.creatorId, entity.canonicalCreatorId!]))
   const credits = new Map<string, CreditEdge[]>()
-  const featured: Omit<RecentEntry, 'edition'>[] = []
+  const featured: (Omit<RecentEntry, 'edition'> & { title: string })[] = []
   const order = [...data.entries].sort((a, b) => b.releasedOn.localeCompare(a.releasedOn) || a.workId.localeCompare(b.workId))
-  for (const { workId, releasedOn, scope, edition } of order) {
+  for (const { workId, releasedOn, scope, title: releaseTitle, edition } of order) {
     if (!isPublicationDate(releasedOn) || releasedOn > data.assessedOn) {
       throw new Error(`Invalid recent release date for ${workId}`)
     }
     const existing = works.get(workId)
     const displayId = existing?.workId || workId
+    const displayedTitle = releaseTitle?.trim() || existing?.title || edition?.title
+    if (!displayedTitle) throw new Error(`Missing recent work title for ${workId}`)
     if (displayedIds.has(displayId)) throw new Error(`Repeated recent work ${displayId}`)
     displayedIds.add(displayId)
-    featured.push({ workId: displayId, releasedOn, scope })
+    featured.push({ workId: displayId, releasedOn, scope, title: displayedTitle })
     if (!edition) {
       if (!existing?.rating.gradeReviewed) throw new Error(`Recent catalog work ${workId} has no confirmed review`)
       continue
     }
-    const { review, title, provider, url, printEdition, firstPublication, ...metadata } = edition
+    const { review, title, provider, url, firstPublication, ...metadata } = edition
+    const printEditions = edition.printEditions ?? (edition.printEdition ? [edition.printEdition] : [])
     const { siteId } = review
     if (existing || !/^\d{5,9}$/.test(workId) || review.workId !== workId || !siteId?.trim() ||
         existingSiteIds.has(siteId) || !title.trim() || !provider.trim() || review.edition || review.attributionOnly ||
         !metadata.sources.some(source => source.url === url) ||
-        (printEdition && (!/^97[89]\d{10}$/.test(printEdition.isbn) ||
-          [...printEdition.isbn].reduce((sum, digit, index) => sum + Number(digit) * (index % 2 ? 3 : 1), 0) % 10 !== 0 ||
-          !metadata.sources.some(source => source.url === printEdition.url)))) throw new Error(`Invalid new work identity ${workId}`)
+        printEditions.some(print => !/^97[89]\d{10}$/.test(print.isbn) ||
+          [...print.isbn].reduce((sum, digit, index) => sum + Number(digit) * (index % 2 ? 3 : 1), 0) % 10 !== 0 ||
+          !metadata.sources.some(source => source.url === print.url))) throw new Error(`Invalid new work identity ${workId}`)
     if (firstPublication && (!isPublicationDate(firstPublication.date) || firstPublication.date > releasedOn ||
         !metadata.sources.some(source => source.url === firstPublication.sourceUrl && source.tier === 'official'))) {
       throw new Error(`Invalid first publication for ${workId}`)
@@ -84,7 +88,7 @@ export function readRecentWorks(directory: string, grades: readonly PublicGrade[
       schemaVersion: 'baihepailei-public-work-view-v2',
       workId, title, aliases: metadata.aliases, localizedTitles: metadata.localizedTitles, media: metadata.media,
       summary: metadata.summary, sources: metadata.sources, firstPublished, firstPublishedLabel: firstPublished,
-      firstPublishedPrecision: 'day', ...(printEdition && { printEditions: [printEdition] }),
+      firstPublishedPrecision: 'day', ...(printEditions.length > 0 && { printEditions }),
       creators: creditRows('person'), organizations: creditRows('organization'),
       rating: { ...rating, gradeReviewed: true }, publicTags: publicTagsFor([], review.findings.flatMap(finding => finding.classes)),
       catalogIdentifiers: [{ provider, siteId, url }],
