@@ -144,9 +144,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411 + additions.length,
-      visibleWorks: 34_542 + additions.length,
-      mergedAway: 869,
-      mergedGroups: 841,
+      visibleWorks: 34_540 + additions.length,
+      mergedAway: 871,
+      mergedGroups: 843,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords + additions.length,
     },
@@ -484,6 +484,8 @@ try {
     ['37053', '10465'], // 2019 Fragtime theatrical OVA
     ['4612', '11811'], // Gurenki, the same Japanese collected manga series
     ['38644', '10470'], // Free Soul, the same Shodensha single-volume manga
+    ['4130', '19875'], // The same Korean Another Revolution Story
+    ['4341', '25029'], // The same Team Gaji webtoon
     ['36714', '31964'], // The Gaze of The Eternal Sun, full Steam app
     ['36722', '36481'], // No Fap Island, full game rather than its separate demo
     ['8384', '32723'], // Cosmic Princess Kaguya!, same streaming film
