@@ -18,13 +18,15 @@ type RecentEntry = { workId: string; releasedOn: string; scope: string; edition?
 export function readRecentWorks(directory: string, grades: readonly PublicGrade[], works: Map<string, PublicWorkRecord>,
   recordedSiteIds: Iterable<string | null>) {
   const file = join(directory, '..', 'identity-20261121', 'recent-works.json')
-  const data: { schemaVersion: string; assessedOn: string; entries: RecentEntry[]; entities: PublicCreator[] } =
+  const data: { schemaVersion: string; assessedOn: string; entries: RecentEntry[]; entities: (PublicCreator & { canonicalCreatorId?: string })[] } =
     JSON.parse(readFileSync(file, 'utf8'))
   if (data.schemaVersion !== 'baihepailei-recent-works-v1') throw new Error('Unrecognized recent works release')
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data.assessedOn)) throw new Error('Invalid recent assessment date')
   const existingSiteIds = new Set(recordedSiteIds)
   const displayedIds = new Set<string>()
   const additions: PublicWorkRecord[] = []
+  const redirects = new Map(data.entities.filter(entity => entity.canonicalCreatorId)
+    .map(entity => [entity.creatorId, entity.canonicalCreatorId!]))
   const credits = new Map<string, CreditEdge[]>()
   const featured: Omit<RecentEntry, 'edition'>[] = []
   const order = [...data.entries].sort((a, b) => b.releasedOn.localeCompare(a.releasedOn) || a.workId.localeCompare(b.workId))
@@ -60,7 +62,7 @@ export function readRecentWorks(directory: string, grades: readonly PublicGrade[
     const edges = metadata.credits.map(credit => {
       if (!credit.name.trim() || !credit.role.trim() || !metadata.sources.some(source => source.url === credit.sourceUrl))
         throw new Error(`Unbound release credit for ${workId}`)
-      return { workId, creatorId: credit.creatorId, creditKind: credit.kind, name: credit.name,
+      return { workId, creatorId: redirects.get(credit.creatorId) || credit.creatorId, creditKind: credit.kind, name: credit.name,
         displayName: credit.name, role: credit.role, sourceUrls: [credit.sourceUrl], bindingBasis: 'reviewed_release_credit' }
     })
     credits.set(workId, edges)
@@ -78,5 +80,5 @@ export function readRecentWorks(directory: string, grades: readonly PublicGrade[
       catalogIdentifiers: [{ provider, siteId, url }],
     })
   }
-  return { additions, credits, entities: data.entities, featured }
+  return { additions, credits, entities: data.entities, redirects, featured }
 }

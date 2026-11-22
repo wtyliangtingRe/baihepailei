@@ -59,7 +59,9 @@ for (const studio of animationNames.organizations) {
     assert.ok(canonical.names.includes(spelling))
   }
 }
-const entityRedirects = { ...animationNames.redirects, ...studioRedirects, ...Object.fromEntries(readHistoricalOrganizations(baseDirectory, currentReview).redirects),
+const recentRedirects = Object.fromEntries(intake.entities.filter(entity => entity.canonicalCreatorId)
+  .map(entity => [entity.creatorId, entity.canonicalCreatorId]))
+const entityRedirects = { ...animationNames.redirects, ...studioRedirects, ...recentRedirects, ...Object.fromEntries(readHistoricalOrganizations(baseDirectory, currentReview).redirects),
   ...(currentReview ? Object.fromEntries(catalogStaffRedirects(baseDirectory)) : {}) }
 if (currentReview) {
   const bookEntities = gunzipSync(readFileSync(join(bibliographyRoot, 'book-entities.jsonl.gz'))).toString('utf8').trim().split('\n').filter(Boolean).map(JSON.parse)

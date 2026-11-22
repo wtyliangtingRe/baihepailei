@@ -69,8 +69,10 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
   const historicalOrganizations = readHistoricalOrganizations(directory, Boolean(review))
   const nodes = [...readRows<PublicCreator>('entities.jsonl.gz'), ...(review?.entities || [])]
   const entities = new Map<string, PublicCreator>()
+  const creatorAliases = review?.creatorAliases || new Map<string, string>()
   for (const node of nodes) {
-    if (review?.removedCreatorIds.has(node.creatorId) || creditNames.redirects.has(node.creatorId)) continue
+    if (review?.removedCreatorIds.has(node.creatorId) || creditNames.redirects.has(node.creatorId) ||
+        creatorAliases.has(node.creatorId)) continue
     if (!/^\d{7,12}$/.test(node.creatorId) || entities.has(node.creatorId) ||
         !['person', 'organization'].includes(node.kind) || !node.name.trim()) {
       throw new Error('Invalid or repeated CreatorId')
@@ -78,6 +80,11 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
     // Internal identity keys and provider IDs are not exposed by the public reader.
     entities.set(node.creatorId, { creatorId: node.creatorId, kind: node.kind,
       name: node.name, names: node.names, identityBasis: node.identityBasis })
+  }
+  for (const alias of nodes.filter(node => creatorAliases.has(node.creatorId))) {
+    const canonical = entities.get(creatorAliases.get(alias.creatorId)!)
+    if (!canonical || canonical.kind !== alias.kind || !canonical.names.includes(alias.name))
+      throw new Error('Unbound creator alias ' + alias.creatorId)
   }
   creditNames.applyStudioNames(entities, nodes)
   const byWorkId = new Map(records.map(work => [work.workId, work]))
@@ -140,7 +147,7 @@ export function readPublicCreatorGraph(directory: string, records: PublicWorkRec
     return (b.work.firstPublished || '').localeCompare(a.work.firstPublished || '') ||
       a.work.title.localeCompare(b.work.title, 'zh-CN') || Number(a.work.workId) - Number(b.work.workId)
   })]))
-  const redirects = new Map([...creditNames.redirects, ...historicalOrganizations.redirects, ...(review ? catalogStaffRedirects(directory) : [])])
+  const redirects = new Map([...creditNames.redirects, ...historicalOrganizations.redirects, ...creatorAliases, ...(review ? catalogStaffRedirects(directory) : [])])
   return { entities, byCredit, works, redirects }
 }
 

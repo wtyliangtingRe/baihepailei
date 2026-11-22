@@ -160,6 +160,15 @@ try {
     }
   }
 
+  const [ibaraNovel, ibaraComics] = await Promise.all(['39261', '40085'].map(id => json('/api/work-lineage/works/' + id)))
+  assert.notEqual(ibaraNovel.workId, ibaraComics.workId)
+  assert.equal(ibaraNovel.media.group, 'novel')
+  assert.equal(ibaraComics.media.group, 'manga')
+  assert.ok(ibaraNovel.creators.some(credit => credit.name === '深水紅茶' && credit.role === '作者'))
+  assert.ok(ibaraNovel.creators.some(credit => credit.name === '椎名くろ' && credit.role === '插画'))
+  assert.ok(ibaraComics.creators.some(credit => credit.name === '椎名くろ' && credit.role === '人物原案'))
+  assert.ok(!ibaraNovel.sources.some(source => source.url.endsWith('/4407')))
+
   const [doujin, reissuedDoujin, collection, indexedCollection] = await Promise.all(
     ['6751', '39003', '6752', '38241'].map(id => json('/api/work-lineage/works/' + id)),
   )

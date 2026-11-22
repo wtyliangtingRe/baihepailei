@@ -1001,6 +1001,7 @@ function loadRelease(): PublicReleaseCache {
     const intake = readRecentWorks(directory, PUBLIC_GRADES, byWorkId, siteIds)
     recent = intake.featured
     identityReview.entities.push(...intake.entities)
+    identityReview.creatorAliases = intake.redirects
     for (const [workId, credits] of intake.credits) identityReview.creditsByWork.set(workId, credits)
     for (const work of intake.additions) {
       records.push(work)

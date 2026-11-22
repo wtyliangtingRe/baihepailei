@@ -243,7 +243,8 @@
       "names": [
         "KADOKAWA"
       ],
-      "identityBasis": "name_only"
+      "identityBasis": "name_only",
+      "canonicalCreatorId": "1001996"
     },
     {
       "creatorId": "895608636788",
@@ -1269,7 +1270,8 @@
       "names": [
         "深水紅茶"
       ],
-      "identityBasis": "name_only"
+      "identityBasis": "name_only",
+      "canonicalCreatorId": "815000086851"
     },
     {
       "creatorId": "890066061895",
@@ -1287,7 +1289,8 @@
       "names": [
         "椎名くろ"
       ],
-      "identityBasis": "name_only"
+      "identityBasis": "name_only",
+      "canonicalCreatorId": "1008098"
     },
     {
       "creatorId": "895706893071",

@@ -151,7 +151,7 @@ export function readIdentityReview(directory: string, identities: Map<string, st
     creditsByWork.set(fix.workId, edges)
   }
   const removedCreatorIds = new Set([...corrections.values()].flatMap(row => row.removedCreatorId ? [row.removedCreatorId] : []))
-  return { groups, entities, creditsByWork, corrections, removedCreatorIds, recovered, bangumiCorrections, legacyBindings }
+  return { groups, entities, creditsByWork, corrections, removedCreatorIds, recovered, bangumiCorrections, legacyBindings, creatorAliases: new Map<string, string>() }
 }
 
 export type IdentityReview = ReturnType<typeof readIdentityReview>
@@ -213,7 +213,10 @@ export function applyBangumiMetadata(work: PublicWorkRecord, row: BangumiCorrect
 export function correctCredit<T extends PublicCredit>(workId: string, credit: T, review: IdentityReview): T {
   const fix = review?.corrections.get(workId)
   if (!fix?.newRole || credit.name !== fix.creditName || credit.role !== fix.oldRole) return credit
-  return { ...credit, role: fix.newRole, sourceUrls: [...new Set([...(credit.sourceUrls || []), fix.url])] }
+  const correctUrl = (url: string) => url === fix.wrongUrl ? fix.url : url
+  return { ...credit, role: fix.newRole,
+    ...(credit.sourceUrl && { sourceUrl: correctUrl(credit.sourceUrl) }),
+    sourceUrls: [...new Set([...(credit.sourceUrls || []).map(correctUrl), fix.url])] }
 }
 
 function editionLinkKey(value: string): string {
