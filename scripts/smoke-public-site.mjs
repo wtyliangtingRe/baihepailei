@@ -131,8 +131,8 @@ try {
     {
       ok: true,
       catalogWorks: 35_411 + additions.length,
-      visibleWorks: 34_545 + additions.length,
-      mergedAway: 866,
+      visibleWorks: 34_544 + additions.length,
+      mergedAway: 867,
       mergedGroups: 839,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords + additions.length,
@@ -468,6 +468,7 @@ try {
     ['19062', '38373'], // One Mikanuji short-story collection
     ['3792', '11369'], // KUJIRA's single-volume Futabasha edition
     ['3846', '12356'], // The single-volume 2007 Ichijinsha edition
+    ['37053', '10465'], // 2019 Fragtime theatrical OVA
     ['36714', '31964'], // The Gaze of The Eternal Sun, full Steam app
     ['36722', '36481'], // No Fap Island, full game rather than its separate demo
     ['8384', '32723'], // Cosmic Princess Kaguya!, same streaming film

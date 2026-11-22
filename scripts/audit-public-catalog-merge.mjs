@@ -417,7 +417,14 @@ const recovered = new Map(process.env.BAIHEPAILEI_RELEASE_DIR?.trim() ? []
     .trimEnd().split('\n').map(line => { const row = JSON.parse(line); return [row.workId, row] }))
 const releasedTitleMatches = recovered.size ? 28 : 0
 const reviewedMergedRows = reviewedGroups.reduce((count, group) => count + group.workIds.length - 1, 0)
-const largestReviewedGroup = Math.max(2, ...reviewedGroups.map(group => group.workIds.length))
+const existingGroupByWorkId = new Map(equivalenceGroups.flatMap(group => group.workIds.map(id => [id, group])))
+const priorGroupsByReview = reviewedGroups.map(group =>
+  new Set(group.workIds.map(id => existingGroupByWorkId.get(id)).filter(Boolean)),
+)
+const netReviewedGroups = priorGroupsByReview.reduce((count, groups) => count + 1 - groups.size, 0)
+const largestReviewedGroup = Math.max(2, ...reviewedGroups.map((group, index) =>
+  new Set([...group.workIds, ...[...priorGroupsByReview[index]].flatMap(prior => prior.workIds)]).size,
+))
 if (recovered.size) assert.equal(recovered.size, 531)
 const reviewedMedia = new Map()
 if (recovered.size) {
@@ -474,9 +481,9 @@ assert.equal(hardenedTitleBaseline.mergedAway, 65, 'unexpected hardened baseline
 assert.equal(hardenedTitleBaseline.multiWorkGroups, 65, 'unexpected hardened baseline merge-group count')
 assert.equal(currentIdentitySafe.visibleWorks, 34_940 + releasedTitleMatches - reviewedMergedRows, 'unexpected identity-safe visible-work count')
 assert.equal(currentIdentitySafe.mergedAway, 471 - releasedTitleMatches + reviewedMergedRows, 'unexpected identity-safe merged-row count')
-assert.equal(currentIdentitySafe.multiWorkGroups, 471 - releasedTitleMatches + reviewedGroups.length, 'unexpected identity-safe merged-group count')
+assert.equal(currentIdentitySafe.multiWorkGroups, 471 - releasedTitleMatches + netReviewedGroups, 'unexpected identity-safe merged-group count')
 assert.equal(currentIdentitySafe.largestGroup, largestReviewedGroup, 'unexpected identity-safe largest merge group')
-assert.equal(currentIdentitySafe.mergedGroups.length, 471 - releasedTitleMatches + reviewedGroups.length, 'merge-group review list must be complete')
+assert.equal(currentIdentitySafe.mergedGroups.length, 471 - releasedTitleMatches + netReviewedGroups, 'merge-group review list must be complete')
 assert.equal(currentIdentitySafe.ambiguousTitleKeysSkipped, 199, 'unexpected ambiguous title-key count')
 assert.equal(equivalenceGroups.length, 427, 'explicit equivalence-group count drift')
 assert.equal(titleEvidence.length, 5_619, 'title-evidence row count drift')
