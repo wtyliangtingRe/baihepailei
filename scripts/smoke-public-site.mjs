@@ -131,9 +131,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411 + additions.length,
-      visibleWorks: 34_549 + additions.length,
-      mergedAway: 862,
-      mergedGroups: 836,
+      visibleWorks: 34_548 + additions.length,
+      mergedAway: 863,
+      mergedGroups: 837,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords + additions.length,
     },
@@ -190,6 +190,19 @@ try {
   assert.ok(collectedOkan.printEditions.some(edition => edition.isbn === '9784046801470'))
   assert.equal(natori.firstPublished, '2026-05-26')
   assert.ok(intake.entries.some(entry => entry.workId === natori.workId && entry.releasedOn === '2026-10-09'))
+  assert.ok(natori.printEditions.some(edition => edition.isbn === '9784098548392' && edition.onSale === '2026-10-09'))
+
+  const [butterflyNovel, butterflyNovelIndex, butterflySerial, butterflyVolume] = await Promise.all(
+    ['4124', '37195', '8406', '38635'].map(id => json('/api/work-lineage/works/' + id)),
+  )
+  assert.equal(butterflyNovel.workId, butterflyNovelIndex.workId)
+  assert.equal(butterflyNovel.rating.grade, 'E')
+  assert.equal(butterflySerial.media.group, 'manga')
+  assert.notEqual(butterflySerial.workId, butterflyVolume.workId)
+  assert.equal(butterflySerial.rating.grade, 'B')
+  assert.equal(butterflyVolume.rating.grade, 'B')
+  assert.ok(butterflyVolume.printEditions.some(edition => edition.isbn === '9784046824936'))
+  assert.ok(butterflyVolume.creators.some(credit => credit.name === '箕田海道' && credit.role === '作画'))
 
   const [doujin, reissuedDoujin, collection, indexedCollection] = await Promise.all(
     ['6751', '39003', '6752', '38241'].map(id => json('/api/work-lineage/works/' + id)),

@@ -47,6 +47,7 @@ type Correction = {
   summary?: string
   aliases?: string[]
   localizedTitles?: PublicWorkRecord['localizedTitles']
+  printEdition?: NonNullable<PublicWorkRecord['printEditions']>[number]
   edition?: {
     isbn: string
     catalogTitle: string
@@ -121,6 +122,11 @@ export function readIdentityReview(directory: string, identities: Map<string, st
   const corrections = new Map(read<Correction>('corrections.jsonl').map(row => {
     if (identities.get(row.workId) !== row.siteId || (row.siteId === null && !row.edition)) {
       throw new Error(`Correction identity drift: ${row.workId}`)
+    }
+    const print = row.printEdition
+    if (print && (!/^97[89]\d{10}$/.test(print.isbn) || !print.title ||
+        !row.editionSources?.some(source => source.url === print.url && source.tier === 'official'))) {
+      throw new Error(`Unbound print edition: ${row.workId}`)
     }
     return [row.workId, row]
   }))
@@ -229,6 +235,7 @@ function editionLinkKey(value: string): string {
 export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityReview, members = [work.workId]): PublicWorkRecord {
   if (!review) return work
   const fix = review.corrections.get(work.workId)
+  const printEdition = fix?.printEdition
   const edges = members.flatMap(id => review.creditsByWork.get(id) || [])
   const correctedUrls = new Map<string, string>()
   const unrelated = new Set<string>()
@@ -270,6 +277,9 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
       firstPublished: fix.firstPublished, firstPublishedLabel: fix.firstPublished,
       firstPublishedPrecision: 'day' as const,
     }),
+    ...(printEdition && { printEditions: [
+      ...(work.printEditions || []).filter(edition => edition.isbn !== printEdition.isbn), printEdition,
+    ] }),
     ...(fix?.placeholder && {
       aliases: [...new Set([...work.aliases.filter(alias => alias !== fix.placeholder), ...(fix.aliases || [])])],
     }),
