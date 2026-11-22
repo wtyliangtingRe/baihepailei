@@ -100,7 +100,7 @@ if (currentReview) for (const row of readLines(join(identityRoot,'corrections.js
   assert.equal(work.firstPublished,row.firstPublished)
   assert.equal(work.firstPublishedLabel,row.firstPublished)
   assert.equal(work.firstPublishedPrecision,'day')
-  assert.ok(work.sources.some(source=>source.url===row.url))
+  assert.ok(work.sources.some(source=>source.url===(row.firstPublishedSource || row.url)), `Missing date source ${row.workId}`)
 }
 const publicWorks=new Map()
 for(const record of base){

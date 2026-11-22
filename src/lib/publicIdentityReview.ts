@@ -34,6 +34,7 @@ type Correction = {
   url: string
   label?: string
   firstPublished?: string
+  firstPublishedSource?: string
   format?: string
   wrongUrl?: string
   unrelatedUrls?: string[]
@@ -255,7 +256,12 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
   correctedSources.push(...editionSources)
   if (fix?.label) correctedSources.push({ title: '版本与收录范围', url: fix.url })
   if (fix?.edition) correctedSources.push({ title: `出版社书目 · ISBN ${fix.edition.isbn}`, url: fix.url })
-  else if (fix?.firstPublished) correctedSources.push({ title: fix.releaseCredits ? '发行方资料与首发日期' : '出版社书目与发售日期', url: fix.url })
+  else if (fix?.firstPublished) {
+    const dateSource = fix.firstPublishedSource || fix.url
+    if (!editionSources.some(source => source.url === dateSource)) {
+      correctedSources.push({ title: '首发日期依据', url: dateSource })
+    }
+  }
   return {
     ...work,
     sources: mergeSources(correctedSources),
