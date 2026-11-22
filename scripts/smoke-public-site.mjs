@@ -426,11 +426,20 @@ try {
   assert.ok(rainbows.rating.sourceFindings.some(finding => finding.kind === 'official' && finding.classes.includes('S-RELATIONSHIP')))
   assert.ok(rainbows.rating.sourceFindings.some(finding => finding.kind === 'community' && finding.classes.includes('B-MALE-NOISE')))
 
-  for (const [id, grade] of [['23622','S'],['18154','B'],['3934','C'],['19473','D'],['8506','D'],['12159','E'],['7925','F'],['18574','F']]) {
+  for (const [id, grade] of [['23622','S'],['18154','B'],['3934','C'],['19473','D'],['8506','E'],['12159','E'],['7925','F'],['18574','F']]) {
     const work = await json(`/api/work-lineage/works/${id}`)
     assert.equal(work.rating.grade,grade,`New assessment ${id}`)
     assert.ok(work.rating.reasoningSummary && work.rating.evidenceUrl)
   }
+  const reissuedBl = await json('/api/work-lineage/works/8506')
+  assert.equal(reissuedBl.rating.class, 'E-BL-HEAVY')
+  assert.equal(reissuedBl.rating.decidingSource, 'official')
+  const completedRouteReview = await json('/api/work-lineage/works/33717')
+  assert.equal(completedRouteReview.rating.class, 'F-MALE-ROMANTIC-AXIS')
+  assert.equal(completedRouteReview.rating.decidingSource, 'official')
+  const renamedGame = await json('/api/work-lineage/works/32002')
+  assert.equal(renamedGame.title, '鸢之歌：归途')
+  assert.ok(renamedGame.aliases.includes('鸢之歌2:星纪元'))
   for (const [id, source] of [['4206', 'source-official'], ['6093', 'source-community']]) {
     const work = await json(`/api/work-lineage/works/${id}`)
     assert.equal(work.rating.grade, 'E')
