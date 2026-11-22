@@ -281,7 +281,10 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
     ...(work.rating.evidenceUrl && correctedUrls.has(work.rating.evidenceUrl) && {
       rating: { ...work.rating, evidenceUrl: correctedUrls.get(work.rating.evidenceUrl) },
     }),
-    creators: mergeCredits([...work.creators.map(credit => correctCredit(work.workId, credit, review)), ...credits('person')]),
+    creators: mergeCredits([
+      ...work.creators.filter(credit => credit.name !== fix?.placeholder)
+        .map(credit => correctCredit(work.workId, credit, review)), ...credits('person'),
+    ]),
     organizations: mergeCredits([...work.organizations.filter(credit => credit.name !== fix?.placeholder), ...credits('organization')]),
   }
 }

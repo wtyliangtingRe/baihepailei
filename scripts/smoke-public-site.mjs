@@ -174,6 +174,14 @@ try {
   assert.ok(greenYuri.creators.some(credit => credit.creatorId === '1007134' && credit.role === '作者'))
   assert.ok(greenYuri.localizedTitles.some(title => title.title === '我在意的對象並不是男人' && title.kind === 'official'))
 
+  const [grotesque, euphonium] = await Promise.all(['11721', '23392'].map(id => json('/api/work-lineage/works/' + id)))
+  assert.equal(grotesque.firstPublished, '2026-07-24')
+  assert.equal(grotesque.rating.grade, 'C')
+  assert.ok(grotesque.creators.every(credit => !credit.name.includes(' / ')))
+  assert.ok(grotesque.creators.some(credit => credit.name === '岩崎将大' && credit.role === '人物设定'))
+  assert.equal(euphonium.rating.grade, 'C')
+  assert.ok(euphonium.creators.some(credit => credit.name === '小川太一' && credit.role === '导演'))
+
   const [doujin, reissuedDoujin, collection, indexedCollection] = await Promise.all(
     ['6751', '39003', '6752', '38241'].map(id => json('/api/work-lineage/works/' + id)),
   )
