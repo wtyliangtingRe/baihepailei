@@ -21,8 +21,8 @@
     },
     {
       "file": "corrections.jsonl",
-      "rows": 139,
-      "sha256": "63127183f80649dfde08d2f25ad8c22740d062bbf5b1b3c433cc87459ede2b16"
+      "rows": 140,
+      "sha256": "b73bee49a98cad77284a12bfeb372d15ab44b7ff1b7cbb0da0a9cffaaa32a543"
     },
     {
       "file": "recovered-bangumi.jsonl",
@@ -32,7 +32,7 @@
     {
       "file": "bangumi-corrections.jsonl",
       "rows": 439,
-      "sha256": "3187c77b845eb254dcb603c4f344d6f5a2a16f7b5eacb0f2e9fa3f9996ad6d92"
+      "sha256": "5fd961d8dbce958c38fd591cc6bf5be4138db46f6b81d57fa94f21c2514d2f46"
     },
     {
       "file": "legacy-bindings.jsonl",
@@ -51,7 +51,7 @@
     "recoveredBangumiWorks": 531,
     "releasedTitleMatches": 28,
     "correctedBangumiMedia": 424,
-    "correctedBangumiTitles": 19,
+    "correctedBangumiTitles": 20,
     "legacyBangumiBindings": 1065,
     "mergedSourceRows": 428,
     "historicalPrintEditions": 340,
