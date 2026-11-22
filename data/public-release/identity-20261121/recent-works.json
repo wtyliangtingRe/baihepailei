@@ -523,7 +523,8 @@
       "names": [
         "集英社"
       ],
-      "identityBasis": "name_only"
+      "identityBasis": "name_only",
+      "canonicalCreatorId": "1002046"
     },
     {
       "creatorId": "892016589286",
@@ -1363,6 +1364,34 @@
         "Ayster"
       ],
       "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "895784116750",
+      "kind": "person",
+      "name": "潤海そら",
+      "names": [
+        "潤海そら"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "890935410313",
+      "kind": "person",
+      "name": "アルト",
+      "names": [
+        "アルト"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "891916446697",
+      "kind": "person",
+      "name": "絵本奈央",
+      "names": [
+        "絵本奈央"
+      ],
+      "identityBasis": "external_id",
+      "authorityUrl": "https://id.ndl.go.jp/auth/ndlna/001168875"
     }
   ],
   "entries": [
@@ -1709,6 +1738,236 @@
           "url": "https://www.kadokawa.co.jp/product/322601001098/",
           "publisher": "KADOKAWA",
           "onSale": "2026-11-19"
+        }
+      }
+    },
+    {
+      "workId": "40095",
+      "releasedOn": "2026-11-18",
+      "scope": "日本单行本第 1 卷 · 1 月已开始连载",
+      "edition": {
+        "title": "英雄少女と呪われの銀姫",
+        "provider": "bangumi-subject",
+        "url": "https://ultra.shueisha.co.jp/comics/comics-9381/",
+        "media": {
+          "group": "manga",
+          "type": "manga",
+          "format": "漫画"
+        },
+        "aliases": [
+          "英雄少女与被诅咒的银姬",
+          "Eiyuu Shoujo to Noroware no Ginhime"
+        ],
+        "localizedTitles": [
+          {
+            "title": "英雄少女と呪われの銀姫",
+            "kind": "original"
+          }
+        ],
+        "summary": {
+          "kind": "source_summary",
+          "text": "出身英雄世家的西亚想亲眼看看外面的世界。她在离家途中遇见被追杀的王女拉娜，邀请对方一同上路。",
+          "sourceUrl": "https://ultra.shueisha.co.jp/comics/comics-9381/"
+        },
+        "sources": [
+          {
+            "title": "发行与版本资料",
+            "url": "https://ultra.shueisha.co.jp/comics/comics-9381/",
+            "tier": "official"
+          },
+          {
+            "title": "连载首发",
+            "url": "https://ultra.shueisha.co.jp/news/news-8623/",
+            "tier": "official"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://bgm.tv/subject/622131",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://yurinavi.com/yuri-calendar/",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://ktats.blog.fc2.com/blog-entry-1413.html",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://ktats.blog.fc2.com/blog-entry-1364.html",
+            "tier": "community"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://ultra.shueisha.co.jp/nowonsale/nowonsale-9401/",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://tonarinoyj.jp/episode/2551460910044575820",
+            "tier": "official"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "890935410313",
+            "kind": "person",
+            "name": "アルト",
+            "role": "原作",
+            "sourceUrl": "https://ultra.shueisha.co.jp/comics/comics-9381/"
+          },
+          {
+            "creatorId": "891916446697",
+            "kind": "person",
+            "name": "絵本奈央",
+            "role": "漫画",
+            "sourceUrl": "https://ultra.shueisha.co.jp/comics/comics-9381/"
+          },
+          {
+            "creatorId": "892818423638",
+            "kind": "organization",
+            "name": "集英社",
+            "role": "出版社",
+            "sourceUrl": "https://ultra.shueisha.co.jp/comics/comics-9381/"
+          }
+        ],
+        "review": {
+          "siteId": "catalog-bangumi-622131",
+          "rationale": "集英社《Ultra Jump》2026年2月号于1月19日首刊，第一卷于11月18日发售；第10话刊于11月19日发行的12月号。双女主在遭受暗杀威胁后并肩冒险，官方称两名公主的奇幻故事；独立首话和第9话读评具体覆盖结伴逃亡、入魔导都市寻人修复手镯，尚未确认女女恋爱。作为有百合专题收录依据的奇幻作品列D。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "D",
+              "classes": [
+                "D-GENERAL"
+              ],
+              "urls": [
+                "https://tonarinoyj.jp/episode/2551460910044575820",
+                "https://ultra.shueisha.co.jp/nowonsale/nowonsale-9401/"
+              ]
+            },
+            {
+              "kind": "community",
+              "grade": "D",
+              "classes": [
+                "D-GENERAL"
+              ],
+              "urls": [
+                "https://ktats.blog.fc2.com/blog-entry-1364.html",
+                "https://ktats.blog.fc2.com/blog-entry-1413.html",
+                "https://yurinavi.com/yuri-calendar/",
+                "https://bgm.tv/subject/622131"
+              ]
+            }
+          ],
+          "workId": "40095"
+        },
+        "printEdition": {
+          "isbn": "9784088941745",
+          "title": "英雄少女と呪われの銀姫 1",
+          "url": "https://ultra.shueisha.co.jp/comics/comics-9381/",
+          "publisher": "集英社",
+          "onSale": "2026-11-18",
+          "issued": "2026-11"
+        },
+        "firstPublication": {
+          "date": "2026-01-19",
+          "sourceUrl": "https://ultra.shueisha.co.jp/news/news-8623/"
+        }
+      }
+    },
+    {
+      "workId": "40093",
+      "releasedOn": "2026-11-18",
+      "scope": "日本单行本第 1 卷 · 2 月已开始连载",
+      "edition": {
+        "title": "残骸少女、きらきらな世界の底",
+        "provider": "recent",
+        "url": "https://data.ichijinsha.co.jp/detail/82510121",
+        "media": {
+          "group": "manga",
+          "type": "manga",
+          "format": "漫画"
+        },
+        "aliases": [
+          "Zangai Shoujo, Kirakira na Sekai no Soko"
+        ],
+        "localizedTitles": [
+          {
+            "title": "残骸少女、きらきらな世界の底",
+            "kind": "original"
+          }
+        ],
+        "summary": {
+          "kind": "source_summary",
+          "text": "在废墟都市的下层，少女阿奥靠修理机械身体维生。她救回了一位名叫阿里阿德涅的少女，两人一起过起了日子。",
+          "sourceUrl": "https://data.ichijinsha.co.jp/detail/82510121"
+        },
+        "sources": [
+          {
+            "title": "发行与版本资料",
+            "url": "https://data.ichijinsha.co.jp/detail/82510121",
+            "tier": "official"
+          },
+          {
+            "title": "连载首发",
+            "url": "https://www.ichijinsha.co.jp/yurihime/backnumber/yuri2604/",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://ichicomi.com/episode/12207421983456056454",
+            "tier": "official"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "1007703",
+            "kind": "person",
+            "name": "うさみみき",
+            "role": "漫画",
+            "sourceUrl": "https://data.ichijinsha.co.jp/detail/82510121"
+          },
+          {
+            "creatorId": "1002019",
+            "kind": "organization",
+            "name": "一迅社",
+            "role": "出版社",
+            "sourceUrl": "https://data.ichijinsha.co.jp/detail/82510121"
+          }
+        ],
+        "review": {
+          "siteId": "recent-isbn-9784825101210",
+          "rationale": "一迅社《Comic百合姬》2026年4月号于2026年2月18日刊出原作首话，11月18日发行第一卷，官方线上同日已载至第6话。阿里阿德涅醒来后吻了救下她的修理工阿奥并提出结婚；证据只确认单方举动，未确认阿奥答应。独立章评记录第4话两人关系仍在共同求生阶段、以及阿奥遭遇街头暴力，未提供男性恋爱介入或更低档事实。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "B",
+              "classes": [
+                "B-LIGHT"
+              ],
+              "urls": [
+                "https://data.ichijinsha.co.jp/detail/82510121",
+                "https://ichicomi.com/episode/12207421983456056454"
+              ]
+            }
+          ],
+          "workId": "40093"
+        },
+        "printEdition": {
+          "isbn": "9784825101210",
+          "title": "残骸少女、きらきらな世界の底（1）",
+          "url": "https://data.ichijinsha.co.jp/detail/82510121",
+          "publisher": "一迅社",
+          "onSale": "2026-11-18",
+          "issued": "2026-11"
+        },
+        "firstPublication": {
+          "date": "2026-02-18",
+          "sourceUrl": "https://www.ichijinsha.co.jp/yurihime/backnumber/yuri2604/"
         }
       }
     },
@@ -2776,6 +3035,11 @@
       }
     },
     {
+      "workId": "11301",
+      "releasedOn": "2026-11-10",
+      "scope": "日本电子单行本第 1 卷 · 2025 年已开始连载"
+    },
+    {
       "workId": "40084",
       "releasedOn": "2026-11-08",
       "scope": "泰国电视剧，核至第 2 集",
@@ -3052,6 +3316,11 @@
           "workId": "40015"
         }
       }
+    },
+    {
+      "workId": "4196",
+      "releasedOn": "2026-11-06",
+      "scope": "KADOKAWA 商业版单行本全 2 卷同日发行"
     },
     {
       "workId": "40089",
@@ -4810,6 +5079,11 @@
       }
     },
     {
+      "workId": "22719",
+      "releasedOn": "2026-10-16",
+      "scope": "日本单行本第 4 卷完结 · 9 月刊载最终话"
+    },
+    {
       "workId": "40069",
       "releasedOn": "2026-10-14",
       "scope": "数字版。实体版 10-16 发售。",
@@ -5125,6 +5399,104 @@
       "scope": "2026 电视动画，核至第 7 集"
     },
     {
+      "workId": "40094",
+      "releasedOn": "2026-10-07",
+      "scope": "日本单行本第 1 卷 · 5 月已开始连载",
+      "edition": {
+        "title": "ココロメイクコスメティカ",
+        "provider": "recent",
+        "url": "https://www.kadokawa.co.jp/product/322605000590/",
+        "media": {
+          "group": "manga",
+          "type": "manga",
+          "format": "漫画"
+        },
+        "aliases": [
+          "ココロメイク コスメティカ",
+          "Kokoro Make Cosmetica"
+        ],
+        "localizedTitles": [
+          {
+            "title": "ココロメイクコスメティカ",
+            "kind": "original"
+          }
+        ],
+        "summary": {
+          "kind": "source_summary",
+          "text": "铃喜欢从小一起长大的千爱里。一次试用神秘化妆品让她卷进夺走人心的事件，她于是与前辈奈奈并肩调查。",
+          "sourceUrl": "https://www.kadokawa.co.jp/product/322605000590/"
+        },
+        "sources": [
+          {
+            "title": "发行与版本资料",
+            "url": "https://www.kadokawa.co.jp/product/322605000590/",
+            "tier": "official"
+          },
+          {
+            "title": "连载首发",
+            "url": "https://comic-walker.com/detail/KC_009488_S/episodes/KC_0094880000200011_E",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://www.kadokawa.co.jp/topics/18054/",
+            "tier": "official"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "895784116750",
+            "kind": "person",
+            "name": "潤海そら",
+            "role": "漫画",
+            "sourceUrl": "https://www.kadokawa.co.jp/product/322605000590/"
+          },
+          {
+            "creatorId": "895292605626",
+            "kind": "organization",
+            "name": "KADOKAWA",
+            "role": "出版社",
+            "sourceUrl": "https://www.kadokawa.co.jp/product/322605000590/"
+          }
+        ],
+        "review": {
+          "siteId": "recent-isbn-9784049721836",
+          "rationale": "2026年5月30日KADOCOMI开始连载，10月7日纸本首卷，11月14日官方连载已到第13话。出版方明确铃暗恋女青梅千爱里，首话魔法化妆品使她失去自主，险些夺走千爱里的心后主动救回；未证实双方确定交往，也没有找到可独立复核至当期进度的实质读后评价。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "B",
+              "classes": [
+                "B-LIGHT"
+              ],
+              "urls": [
+                "https://www.kadokawa.co.jp/topics/18054/",
+                "https://comic-walker.com/detail/KC_009488_S/episodes/KC_0094880000200011_E"
+              ]
+            }
+          ],
+          "workId": "40094"
+        },
+        "printEdition": {
+          "isbn": "9784049721836",
+          "title": "ココロメイクコスメティカ １",
+          "url": "https://www.kadokawa.co.jp/product/322605000590/",
+          "publisher": "KADOKAWA",
+          "onSale": "2026-10-07",
+          "issued": "2026-10"
+        },
+        "firstPublication": {
+          "date": "2026-05-30",
+          "sourceUrl": "https://comic-walker.com/detail/KC_009488_S/episodes/KC_0094880000200011_E"
+        }
+      }
+    },
+    {
+      "workId": "24027",
+      "releasedOn": "2026-10-07",
+      "scope": "2026 日本电视动画，10 月 7 日 22:00 在 TOKYO MX 首播。截至 11 月 22 日核至第 7 集。"
+    },
+    {
       "workId": "40009",
       "releasedOn": "2026-10-06",
       "scope": "图像小说",
@@ -5224,6 +5596,11 @@
           "onSale": "2026-10-06"
         }
       }
+    },
+    {
+      "workId": "17325",
+      "releasedOn": "2026-10-06",
+      "scope": "2026 日本电视动画，两季度连续播出。9 月 22 日有公开售票的第 1–3 集先行场，10 月 6 日 21:25 正式首播。截至 11 月 22 日核至第 7 集。"
     },
     {
       "workId": "40068",

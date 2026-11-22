@@ -48,6 +48,7 @@ type Correction = {
   aliases?: string[]
   localizedTitles?: PublicWorkRecord['localizedTitles']
   printEdition?: NonNullable<PublicWorkRecord['printEditions']>[number]
+  printEditions?: NonNullable<PublicWorkRecord['printEditions']>
   edition?: {
     isbn: string
     catalogTitle: string
@@ -123,12 +124,14 @@ export function readIdentityReview(directory: string, identities: Map<string, st
     if (identities.get(row.workId) !== row.siteId || (row.siteId === null && !row.edition)) {
       throw new Error(`Correction identity drift: ${row.workId}`)
     }
-    const print = row.printEdition
-    if (print && (!/^97[89]\d{10}$/.test(print.isbn) || !print.title ||
-        !row.editionSources?.some(source => source.url === print.url && source.tier === 'official'))) {
-      throw new Error(`Unbound print edition: ${row.workId}`)
+    const printEditions = row.printEditions ?? (row.printEdition ? [row.printEdition] : [])
+    for (const print of printEditions) {
+      if (!/^97[89]\d{10}$/.test(print.isbn) || !print.title ||
+          !row.editionSources?.some(source => source.url === print.url && source.tier === 'official')) {
+        throw new Error(`Unbound print edition: ${row.workId}`)
+      }
     }
-    return [row.workId, row]
+    return [row.workId, { ...row, printEditions }]
   }))
   const creditsByWork = new Map<string, CreditEdge[]>()
   for (const row of read<ReviewedCredit>('credits.jsonl')) {
@@ -235,7 +238,7 @@ function editionLinkKey(value: string): string {
 export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityReview, members = [work.workId]): PublicWorkRecord {
   if (!review) return work
   const fix = review.corrections.get(work.workId)
-  const printEdition = fix?.printEdition
+  const printEditions = fix?.printEditions || []
   const edges = members.flatMap(id => review.creditsByWork.get(id) || [])
   const correctedUrls = new Map<string, string>()
   const unrelated = new Set<string>()
@@ -277,8 +280,9 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
       firstPublished: fix.firstPublished, firstPublishedLabel: fix.firstPublished,
       firstPublishedPrecision: 'day' as const,
     }),
-    ...(printEdition && { printEditions: [
-      ...(work.printEditions || []).filter(edition => edition.isbn !== printEdition.isbn), printEdition,
+    ...(printEditions.length > 0 && { printEditions: [
+      ...(work.printEditions || []).filter(edition => !printEditions.some(print => print.isbn === edition.isbn)),
+      ...printEditions,
     ] }),
     ...(fix?.placeholder && {
       aliases: [...new Set([...work.aliases.filter(alias => alias !== fix.placeholder), ...(fix.aliases || [])])],

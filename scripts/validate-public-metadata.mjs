@@ -152,7 +152,8 @@ for (const { work, releasedOn } of recent) {
   assert.ok(work.rating.sourceFindings.length && work.rating.decidingSource)
   if (!publicWorks.has(work.workId)) {
     assert.equal(work.workId, current.getPublicWorkById(work.workId).workId)
-    assert.equal(work.firstPublished, releasedOn)
+    assert.match(work.firstPublished, /^\d{4}-\d{2}-\d{2}$/)
+    assert.ok(work.firstPublished <= releasedOn)
     assert.ok(work.sources.length && work.summary?.text)
     publicWorks.set(work.workId, work)
   }

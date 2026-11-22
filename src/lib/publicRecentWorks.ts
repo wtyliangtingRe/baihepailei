@@ -8,12 +8,19 @@ import type { CreatorKind, CreditEdge, PublicCreator } from './publicCreatorGrap
 type Edition = Pick<PublicWorkRecord, 'title' | 'aliases' | 'localizedTitles' | 'media' | 'summary' | 'sources'> & {
   provider: string
   url: string
+  firstPublication?: { date: string; sourceUrl: string }
   printEdition?: NonNullable<PublicWorkRecord['printEditions']>[number]
   credits: { creatorId: string; kind: CreatorKind; name: string; role: string; sourceUrl: string }[]
   review: SourceReview
 }
 
 type RecentEntry = { workId: string; releasedOn: string; scope: string; edition?: Edition }
+
+function isPublicationDate(value: string) {
+  const parsed = new Date(value)
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(parsed.valueOf()) &&
+    parsed.toISOString().slice(0, 10) === value
+}
 
 export function readRecentWorks(directory: string, grades: readonly PublicGrade[], works: Map<string, PublicWorkRecord>,
   recordedSiteIds: Iterable<string | null>) {
@@ -31,9 +38,7 @@ export function readRecentWorks(directory: string, grades: readonly PublicGrade[
   const featured: Omit<RecentEntry, 'edition'>[] = []
   const order = [...data.entries].sort((a, b) => b.releasedOn.localeCompare(a.releasedOn) || a.workId.localeCompare(b.workId))
   for (const { workId, releasedOn, scope, edition } of order) {
-    const parsed = new Date(releasedOn)
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(releasedOn) || !Number.isFinite(parsed.valueOf()) ||
-        parsed.toISOString().slice(0, 10) !== releasedOn || releasedOn > data.assessedOn) {
+    if (!isPublicationDate(releasedOn) || releasedOn > data.assessedOn) {
       throw new Error(`Invalid recent release date for ${workId}`)
     }
     const existing = works.get(workId)
@@ -45,7 +50,7 @@ export function readRecentWorks(directory: string, grades: readonly PublicGrade[
       if (!existing?.rating.gradeReviewed) throw new Error(`Recent catalog work ${workId} has no confirmed review`)
       continue
     }
-    const { review, title, provider, url, printEdition, ...metadata } = edition
+    const { review, title, provider, url, printEdition, firstPublication, ...metadata } = edition
     const { siteId } = review
     if (existing || !/^\d{5,9}$/.test(workId) || review.workId !== workId || !siteId?.trim() ||
         existingSiteIds.has(siteId) || !title.trim() || !provider.trim() || review.edition || review.attributionOnly ||
@@ -53,6 +58,10 @@ export function readRecentWorks(directory: string, grades: readonly PublicGrade[
         (printEdition && (!/^97[89]\d{10}$/.test(printEdition.isbn) ||
           [...printEdition.isbn].reduce((sum, digit, index) => sum + Number(digit) * (index % 2 ? 3 : 1), 0) % 10 !== 0 ||
           !metadata.sources.some(source => source.url === printEdition.url)))) throw new Error(`Invalid new work identity ${workId}`)
+    if (firstPublication && (!isPublicationDate(firstPublication.date) || firstPublication.date > releasedOn ||
+        !metadata.sources.some(source => source.url === firstPublication.sourceUrl && source.tier === 'official'))) {
+      throw new Error(`Invalid first publication for ${workId}`)
+    }
     existingSiteIds.add(siteId)
     const rating = resolveReview(review, { state: 'not_assessed', classes: [] }, grades)
     for (const source of [...metadata.sources, { url: metadata.summary?.sourceUrl || url }]) {
@@ -70,10 +79,11 @@ export function readRecentWorks(directory: string, grades: readonly PublicGrade[
       return edges.filter(edge => edge.creditKind === kind).map(edge =>
         ({ name: edge.name, role: edge.role, sourceUrl: edge.sourceUrls[0] }))
     }
+    const firstPublished = firstPublication?.date ?? releasedOn
     additions.push({
       schemaVersion: 'baihepailei-public-work-view-v2',
       workId, title, aliases: metadata.aliases, localizedTitles: metadata.localizedTitles, media: metadata.media,
-      summary: metadata.summary, sources: metadata.sources, firstPublished: releasedOn, firstPublishedLabel: releasedOn,
+      summary: metadata.summary, sources: metadata.sources, firstPublished, firstPublishedLabel: firstPublished,
       firstPublishedPrecision: 'day', ...(printEdition && { printEditions: [printEdition] }),
       creators: creditRows('person'), organizations: creditRows('organization'),
       rating: { ...rating, gradeReviewed: true }, publicTags: publicTagsFor([], review.findings.flatMap(finding => finding.classes)),

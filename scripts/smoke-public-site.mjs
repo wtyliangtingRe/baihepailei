@@ -199,6 +199,18 @@ try {
   assert.ok(vtuber.printEditions.some(edition => edition.isbn === '9784049721812' && edition.onSale === '2026-09-07'))
   assert.ok(intake.entries.some(entry => entry.workId === vtuber.workId && entry.releasedOn === '2026-09-07'))
 
+  const commercialAlone = await json('/api/work-lineage/works/4196')
+  assert.equal(commercialAlone.firstPublished, '2025-06-07')
+  assert.equal(commercialAlone.rating.grade, 'E')
+  for (const isbn of ['9784049722253', '9784049722260']) {
+    assert.ok(commercialAlone.printEditions.some(edition => edition.isbn === isbn && edition.onSale === '2026-11-06'))
+  }
+  const dismantled = additions.find(entry => entry.edition.printEdition?.isbn === '9784825101210')
+  assert.equal(dismantled.releasedOn, '2026-11-18')
+  const dismantledWork = await json('/api/work-lineage/works/' + dismantled.workId)
+  assert.equal(dismantledWork.firstPublished, '2026-02-18')
+  assert.equal(dismantledWork.rating.grade, 'B')
+
   const [butterflyNovel, butterflyNovelIndex, butterflySerial, butterflyVolume] = await Promise.all(
     ['4124', '37195', '8406', '38635'].map(id => json('/api/work-lineage/works/' + id)),
   )

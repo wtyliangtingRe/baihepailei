@@ -11,8 +11,8 @@
     },
     {
       "file": "entities.jsonl",
-      "rows": 1297,
-      "sha256": "4523c06c9926e544ac7c3cdb607caf8333b2a6d68ed940ae40d5bce00caacdff"
+      "rows": 1298,
+      "sha256": "7116c10928d37680aee53f61d784f2d3bf763ceaae0172ae29cde84b304634b9"
     },
     {
       "file": "credits.jsonl",
@@ -21,8 +21,8 @@
     },
     {
       "file": "corrections.jsonl",
-      "rows": 76,
-      "sha256": "e6e313eb6cc723180a3dd6d5ef31f7c1ef47af42a94ac75e0b3481d9549d5991"
+      "rows": 83,
+      "sha256": "804e695e9c9f3a8abdb096c6c0bebaad3471854938f0972f12cad0b306cff0c7"
     },
     {
       "file": "recovered-bangumi.jsonl",
@@ -41,9 +41,9 @@
     }
   ],
   "counts": {
-    "extraEntities": 1297,
-    "credits": 3719,
-    "creditWorks": 2365,
+    "extraEntities": 1298,
+    "credits": 3734,
+    "creditWorks": 2374,
     "newlyCreditedWorks": 1266,
     "mergeGroups": 394,
     "duplicateCreditedWorks": 219,
