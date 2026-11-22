@@ -1,9 +1,9 @@
 {
-  "credits": 18408,
+  "credits": 18407,
   "entities": 2325,
-  "newlyCreditedWorks": 7510,
+  "newlyCreditedWorks": 7509,
   "sha256": {
-    "book-credits.jsonl.gz": "5661a268d134aaba33a6627818eeb7ddb42899c00f8f8540318a3024357201ca",
+    "book-credits.jsonl.gz": "d21fa0e7cce4d62b7299e6ae5474c1a049b40012becff42db2a81e9b76f6816c",
     "book-entities.jsonl.gz": "5c2a692f0da686df8d7d4f87876e958695b125f9e33880e45440baf5b4a530bc"
   }
 }
