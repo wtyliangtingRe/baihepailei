@@ -129,8 +129,8 @@ try {
     {
       ok: true,
       catalogWorks: 35_411,
-      visibleWorks: 34_551,
-      mergedAway: 860,
+      visibleWorks: 34_550,
+      mergedAway: 861,
       mergedGroups: 836,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords,
@@ -441,6 +441,15 @@ try {
   assert.ok(enrichedDetail.includes('role="doc-noteref"'))
   assert.ok(enrichedDetail.includes('id="ref-1"'))
   assert.ok(enrichedDetail.includes('资料来源与获取方式'))
+
+  const [marriageCollection, marriageAlias] = await Promise.all(
+    ['11643', '4290'].map(id => json('/api/work-lineage/works/' + id)),
+  )
+  assert.equal(marriageAlias.workId, marriageCollection.workId)
+  assert.equal(marriageCollection.rating.grade, 'S')
+  assert.equal(marriageCollection.rating.decidingSource, 'official')
+  assert.ok(marriageCollection.printEditions.some(edition =>
+    edition.isbn === '9784758075428' && edition.onSale === '2016-05-18'))
 
   const reasonDirectory = await (await response('/works?q=' + encodeURIComponent('合法百合夫婦本'))).text()
   assert.match(reasonDirectory, /<details class="card-assessment-reason"><summary>评级理由<span>含剧透<\/span><\/summary><p>[^<]+<\/p>/)
