@@ -21,8 +21,8 @@
     },
     {
       "file": "corrections.jsonl",
-      "rows": 71,
-      "sha256": "4cc650fefd4cae35a75a15c09a2e6de9e5e6c039339d6c24d1fbe2c8b4d6f0fe"
+      "rows": 72,
+      "sha256": "c3e50edfc67ecfa682d5c60c28af5e3e7bfb0460cbcc49a43061783a6504282d"
     },
     {
       "file": "recovered-bangumi.jsonl",
@@ -42,8 +42,8 @@
   ],
   "counts": {
     "extraEntities": 1297,
-    "credits": 3716,
-    "creditWorks": 2363,
+    "credits": 3717,
+    "creditWorks": 2364,
     "newlyCreditedWorks": 1266,
     "mergeGroups": 393,
     "duplicateCreditedWorks": 217,
