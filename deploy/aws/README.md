@@ -58,3 +58,19 @@ has built successfully.
 For rollback, check out the previous approved website merge commit and repeat
 the build, start, and health-check commands. The bundled snapshot makes the
 application rollback independent from database state.
+
+## Google AdSense
+
+Deploy the site and check that `/ads.txt` on the public domain returns HTTP 200
+and the Google publisher line. In AdSense, choose the Ads.txt verification option
+or the Meta tag option, then verify and request review. Both work with the
+advertising script disabled. [Google's site verification guide](https://support.google.com/adsense/answer/7584263)
+
+When AdSense marks the site ready, configure the ad formats, page exclusions,
+and applicable consent messages in the AdSense dashboard. To load the script,
+set `NEXT_PUBLIC_ADSENSE_ENABLED=true` in `.env` and rebuild with
+`docker compose up --detach --build web`. A process restart alone keeps the previous
+build setting. The script is shared across pages. Exclude pages with adult
+material or links to that material before enabling Auto ads for the catalog.
+[Auto ads settings](https://support.google.com/adsense/answer/9261307) ·
+[Google consent settings](https://support.google.com/adsense/answer/13554116)

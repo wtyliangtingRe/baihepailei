@@ -34,12 +34,15 @@ import './release.css'
 import './creators.css'
 import './lily-refresh.css'
 
+const adsenseAccount = 'ca-pub-3988080014945439'
+
 export const metadata: Metadata = {
   title: {
     default: '百合排雷 · Baihepailei',
     template: '%s · 百合排雷',
   },
   description: '查询百合作品的 S–F 评级、具体警示、作者机构与可核验资料来源。',
+  other: { 'google-adsense-account': adsenseAccount },
 }
 
 const navItems = [
@@ -53,6 +56,15 @@ const navItems = [
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html data-content-scope="ordinary" data-scroll-behavior="smooth" lang="zh-CN">
+      <head>
+        {process.env.NEXT_PUBLIC_ADSENSE_ENABLED === 'true' && (
+          <script
+            async
+            crossOrigin="anonymous"
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseAccount}`}
+          />
+        )}
+      </head>
       <body>
         <div className="site-shell">
           <header className="site-header">
@@ -88,6 +100,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/creators">作者 / 主创</Link>
               <Link href="/organizations">创作机构</Link>
               <Link href="/feedback">补充纠错</Link>
+              <Link href="/privacy">隐私政策</Link>
             </nav>
           </footer>
         </div>

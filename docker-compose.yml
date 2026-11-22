@@ -4,6 +4,8 @@ services:
   web:
     build:
       context: .
+      args:
+        NEXT_PUBLIC_ADSENSE_ENABLED: ${NEXT_PUBLIC_ADSENSE_ENABLED:-false}
     image: baihepailei:initial-release
     init: true
     restart: unless-stopped

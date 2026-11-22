@@ -65,6 +65,7 @@ try {
     '/rules',
     '/radar',
     '/feedback',
+    '/privacy',
     '/creators',
     '/organizations',
   ]
@@ -72,6 +73,18 @@ try {
     const result = await response(path)
     assert.equal(result.status, 200, `${path} should return 200`)
   }
+
+  const publisherFile = await response('/ads.txt')
+  assert.equal(publisherFile.status, 200)
+  assert.match(publisherFile.headers.get('content-type') || '', /^text\/plain\b/)
+  assert.equal(await publisherFile.text(), 'google.com, pub-3988080014945439, DIRECT, f08c47fec0942fa0\n')
+
+  const homepage = await (await response('/')).text()
+  const head = homepage.match(/<head>(.*?)<\/head>/s)?.[1] || ''
+  assert.match(head, /<meta name="google-adsense-account" content="ca-pub-3988080014945439"/)
+  const adScript = /<script [^>]*src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-3988080014945439"/
+  assert.equal(adScript.test(head), process.env.NEXT_PUBLIC_ADSENSE_ENABLED === 'true')
+  assert.match(homepage, /href="\/privacy"/)
 
   const correctionFeedback = await (
     await response('/feedback?workId=18556&title=%E5%AE%89%E9%81%94%E3%81%A8%E3%81%97%E3%81%BE%E3%82%80%E3%82%89')

@@ -10,6 +10,7 @@ FROM base AS builder
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+ARG NEXT_PUBLIC_ADSENSE_ENABLED=false
 RUN pnpm validate:release && pnpm build
 
 FROM node:24-alpine AS runner
