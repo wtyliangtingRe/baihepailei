@@ -131,8 +131,8 @@ try {
     {
       ok: true,
       catalogWorks: 35_411 + additions.length,
-      visibleWorks: 34_548 + additions.length,
-      mergedAway: 863,
+      visibleWorks: 34_547 + additions.length,
+      mergedAway: 864,
       mergedGroups: 837,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords + additions.length,
@@ -225,6 +225,20 @@ try {
   assert.equal(robinCollected.rating.decidingSource, 'community')
   assert.deepEqual(robinCollected.printEditions.map(edition => edition.isbn), ['9784781625980', '9784781625997'])
   assert.equal(robinOriginal.creators[0].creatorId, robinCollected.creators[0].creatorId)
+
+  const remake = additions.find(entry => entry.edition.review.siteId === 'catalog-anilist-220069')
+  const [digicata, digicataIndex, digicataLegacy, remakeWork, panzer] = await Promise.all(
+    ['21559', '32955', '4344', remake.workId, '32697'].map(id => json('/api/work-lineage/works/' + id)),
+  )
+  assert.equal(digicata.workId, digicataIndex.workId)
+  assert.equal(digicata.workId, digicataLegacy.workId)
+  assert.notEqual(digicata.workId, remakeWork.workId)
+  assert.equal(digicata.rating.grade, 'B')
+  assert.equal(remakeWork.rating.grade, 'B')
+  assert.equal(digicata.creators.find(credit => credit.name === 'しらいぬ').creatorId,
+    remakeWork.creators.find(credit => credit.name === 'しらいぬ').creatorId)
+  assert.equal(panzer.firstPublished, '2026-10-08')
+  assert.ok(intake.entries.some(entry => entry.workId === panzer.workId && entry.releasedOn === '2026-10-09'))
 
   const [butterflyNovel, butterflyNovelIndex, butterflySerial, butterflyVolume] = await Promise.all(
     ['4124', '37195', '8406', '38635'].map(id => json('/api/work-lineage/works/' + id)),

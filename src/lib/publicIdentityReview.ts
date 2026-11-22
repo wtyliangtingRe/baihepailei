@@ -16,9 +16,10 @@ export type RecoveredBangumiWork = {
   url: string
   isbn?: string
   editionSource?: string
+  firstPublished?: string
 }
 type BangumiCorrection = Pick<RecoveredBangumiWork, 'workId' | 'siteId' | 'catalogTitle' | 'url'> &
-  Partial<Pick<RecoveredBangumiWork, 'title' | 'originalTitle' | 'media' | 'editionSource'>> & {
+  Partial<Pick<RecoveredBangumiWork, 'title' | 'originalTitle' | 'media' | 'editionSource' | 'firstPublished'>> & {
     previousOriginalTitle?: string
     editionSourceLabel?: string
     printEdition?: NonNullable<PublicWorkRecord['printEditions']>[number] & { publisherId?: string }
@@ -105,6 +106,7 @@ export function readIdentityReview(directory: string, identities: Map<string, st
     const match = /^catalog-bangumi-([1-9]\d*)$/.exec(row.siteId)
     if (!match || row.url !== `https://bgm.tv/subject/${match[1]}` || !identities.has(row.workId) ||
         identities.get(row.workId) || !row.originalTitle || !row.title || !row.media.format ||
+        (row.firstPublished && (!/^\d{4}-\d{2}-\d{2}$/.test(row.firstPublished) || !row.editionSource?.startsWith('https://'))) ||
         recovered.has(row.workId) || siteIds.has(row.siteId)) throw new Error(`Invalid recovered identity: ${row.workId}`)
     recovered.set(row.workId, row)
     siteIds.add(row.siteId)
@@ -205,6 +207,9 @@ export function applyBangumiMetadata(work: PublicWorkRecord, row: BangumiCorrect
   }
   return {
     ...work, title, media, summary,
+    ...(row.firstPublished && work.workId === row.workId && {
+      firstPublished: row.firstPublished, firstPublishedLabel: row.firstPublished, firstPublishedPrecision: 'day' as const,
+    }),
     ...(edition && { printEditions: [
       ...(work.printEditions || []).filter(item => item.isbn !== edition.isbn),
       { isbn: edition.isbn, title: edition.title, url: edition.url,

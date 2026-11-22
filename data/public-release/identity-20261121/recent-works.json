@@ -1545,6 +1545,24 @@
         "Phantom"
       ],
       "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "897577276571",
+      "kind": "person",
+      "name": "しらいぬ",
+      "names": [
+        "しらいぬ"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "890234160012",
+      "kind": "person",
+      "name": "白藍まこと",
+      "names": [
+        "白藍まこと"
+      ],
+      "identityBasis": "name_only"
     }
   ],
   "entries": [
@@ -2692,6 +2710,138 @@
             }
           ],
           "workId": "40090"
+        }
+      }
+    },
+    {
+      "workId": "40101",
+      "releasedOn": "2026-11-13",
+      "scope": "独立连载重制版第 1 卷 · 电子增订合辑",
+      "edition": {
+        "title": "あめのちゆき",
+        "provider": "anilist",
+        "url": "https://no9.co.jp/titles/09236238-c584-489d-a0ad-96dc75a18542",
+        "media": {
+          "group": "manga",
+          "type": "manga",
+          "format": "独立连载重制版第 1 卷 · 电子增订合辑"
+        },
+        "aliases": [
+          "Ame nochi Yuki",
+          "Snow After Rain"
+        ],
+        "localizedTitles": [
+          {
+            "title": "あめのちゆき",
+            "kind": "original"
+          }
+        ],
+        "summary": {
+          "kind": "source_summary",
+          "text": "雪月真白醒来后成了恋爱游戏里的青梅竹马雨月涼奈。她本想避开男主角，过上路人的生活，却在帮日奈星凛莉解围后，成了这名女主角在意的人。",
+          "sourceUrl": "https://no9.co.jp/titles/09236238-c584-489d-a0ad-96dc75a18542"
+        },
+        "sources": [
+          {
+            "title": "发行与版本资料",
+            "url": "https://no9.co.jp/titles/09236238-c584-489d-a0ad-96dc75a18542",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://www.teapawt.net/sirainu_u/status/2121089894181437908",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://bookwalker.jp/de8dff2298-bcb9-4630-a080-8adcb1b3baf2/",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://anilist.co/manga/220069/Ame-nochi-Yuki/",
+            "tier": "official"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://www.reddit.com/r/yuri_manga/comments/1vi5jhd/chapter_6_of_ame_nochi_yuki_is_now_out/",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://www.reddit.com/r/yuri_manga/comments/1se4u88/riri_knows_what_she_wants_ame_nochi_yuki_ch4_is/",
+            "tier": "community"
+          },
+          {
+            "title": "社区核验",
+            "url": "https://www.reddit.com/r/yuri_manga/comments/1rbwsg9/childhood_friend_heroine_accidentally_becomes_the/",
+            "tier": "community"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://www.teapawt.net/sirainu_u/status/2121495970638881159",
+            "tier": "official"
+          },
+          {
+            "title": "官方资料",
+            "url": "https://www.pixiv.net/user/30587467/series/309946",
+            "tier": "official"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "897577276571",
+            "kind": "person",
+            "name": "しらいぬ",
+            "role": "漫画",
+            "sourceUrl": "https://no9.co.jp/titles/09236238-c584-489d-a0ad-96dc75a18542"
+          },
+          {
+            "creatorId": "890234160012",
+            "kind": "person",
+            "name": "白藍まこと",
+            "role": "原作",
+            "sourceUrl": "https://no9.co.jp/titles/09236238-c584-489d-a0ad-96dc75a18542"
+          },
+          {
+            "creatorId": "891822880421",
+            "kind": "organization",
+            "name": "ナンバーナイン",
+            "role": "出版社",
+            "sourceUrl": "https://no9.co.jp/titles/09236238-c584-489d-a0ad-96dc75a18542"
+          }
+        ],
+        "review": {
+          "siteId": "catalog-anilist-220069",
+          "rationale": "Digicata 商业连载在第6话结束后，しらいぬ与白藍まこと以新标题重新从第1话开始自主连载。AniList 书目记录日本版重开于2025年11月6日，作者公开了日文原稿。2026年11月13日，ナンバーナイン电子首卷收录新连载第1至6话、FANBOX 番外漫画和一篇新写小说，读者对第3至6话的本版评论仍可核。凛莉向涼奈主动示好，两人约会，涼奈起初对关系没有信心。被回避的男主路线是游戏剧情前提；当前首卷证据可证凛莉追求和女性恋爱主轴，无须把后续分话或旧商版和原小说的结局带入。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "B",
+              "classes": [
+                "B-LIGHT"
+              ],
+              "urls": [
+                "https://no9.co.jp/titles/09236238-c584-489d-a0ad-96dc75a18542",
+                "https://bookwalker.jp/de8dff2298-bcb9-4630-a080-8adcb1b3baf2/",
+                "https://www.pixiv.net/user/30587467/series/309946",
+                "https://www.teapawt.net/sirainu_u/status/2121495970638881159"
+              ]
+            },
+            {
+              "kind": "community",
+              "grade": "B",
+              "classes": [
+                "B-LIGHT"
+              ],
+              "urls": [
+                "https://www.reddit.com/r/yuri_manga/comments/1rbwsg9/childhood_friend_heroine_accidentally_becomes_the/",
+                "https://www.reddit.com/r/yuri_manga/comments/1se4u88/riri_knows_what_she_wants_ame_nochi_yuki_ch4_is/",
+                "https://www.reddit.com/r/yuri_manga/comments/1vi5jhd/chapter_6_of_ame_nochi_yuki_is_now_out/"
+              ]
+            }
+          ],
+          "workId": "40101"
         }
       }
     },
@@ -4168,7 +4318,7 @@
         "localizedTitles": [],
         "summary": {
           "kind": "source_summary",
-          "text": "娜奥米、艾普丽尔和达科塔商量万圣节的装扮，结伴逛商场并看恐怖录像。",
+          "text": "娜奥米、艾普丽尔和达科塔相约过万圣节，挑装扮、看恐怖录像、打保龄球，再结伴沿街讨糖。",
           "sourceUrl": "https://phantom-gd.itch.io/nostalgic1999hn"
         },
         "sources": [
@@ -4221,7 +4371,7 @@
         ],
         "review": {
           "siteId": "ITCH-phantom-gd/nostalgic1999hn",
-          "rationale": "作者发布的本篇实机画面显示，艾普丽尔和达科塔在选装、乘车及店内挑选游戏时彼此打趣。看恐怖录像时，达科塔喊娜奥米看她被吓出来的鸡皮疙瘩。三名女性的日常同伴互动构成短篇的主体，现有画面支持友情群像的判定。",
+          "rationale": "核读了官方公开发行的 Windows 0.8 本篇完整剧本。娜奥米到艾普丽尔家帮她准备装扮，三人换装打保龄球，沿街讨糖时达科塔拿艾普丽尔家的窗户和信箱开玩笑，随后直接进入片尾。开头的选项回到同一段故事，三人的相处贯穿全篇，属于女性友情群像。",
           "findings": [
             {
               "kind": "official",
@@ -5039,6 +5189,12 @@
           "workId": "40020"
         }
       }
+    },
+    {
+      "workId": "18016",
+      "releasedOn": "2026-10-23",
+      "scope": "2026 年 10 月 23 日日本全国公映的约 120 分钟剧场版，以 2025 年电视动画全 12 话重新编排，新增故事片段、配音、魔女空间场景与歌曲。",
+      "title": "剧场版 前桥魔女 ～见习魔女的回忆～"
     },
     {
       "workId": "40082",
@@ -5923,6 +6079,12 @@
       }
     },
     {
+      "workId": "6926",
+      "releasedOn": "2026-10-16",
+      "scope": "2026 年 10 月 16 日日本正式上映的全新剧情剧场动画，续接 Ave Mujica 电视动画，含乐队演出及新作剧情。对应 2026 年剧场篇。",
+      "title": "BanG Dream! Ave Mujica prima aurora"
+    },
+    {
       "workId": "22719",
       "releasedOn": "2026-10-16",
       "scope": "日本单行本第 4 卷完结 · 9 月刊载最终话",
@@ -6229,6 +6391,12 @@
       }
     },
     {
+      "workId": "32697",
+      "releasedOn": "2026-10-09",
+      "scope": "《少女与战车 最终章》第五部 55 分钟剧场动画，2026 年 10 月 9 日日本正式公映。10 月 8 日 18:00 开始的公开售票前夜祭连映了第一至第五话，本条只覆盖第五话。",
+      "title": "少女与战车 最终章 第5话"
+    },
+    {
       "workId": "26920",
       "releasedOn": "2026-10-09",
       "scope": "2026 电视动画，核至第 7 集",
@@ -6445,6 +6613,12 @@
           "onSale": "2026-10-06"
         }
       }
+    },
+    {
+      "workId": "18131",
+      "releasedOn": "2026-10-06",
+      "scope": "2026 日本 TV 动画续篇。9 月 19 日有第 1 集公开售票先行场。东京电视台正式首播为 10 月 5 日 26:00，即 10 月 6 日 02:00，日本时间。截至 11 月 22 日核至第 7 集。",
+      "title": "魔法少女育成计划 restart"
     },
     {
       "workId": "17325",
