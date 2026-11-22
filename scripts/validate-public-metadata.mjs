@@ -145,9 +145,21 @@ if (bangumiCorrections.has('31834')) {
   assert.ok(book.aliases.includes('星振り坂一丁目三番地'))
   assert.ok(book.sources.some(s => s.title === '出版社书目' && s.url === 'https://data.ichijinsha.co.jp/detail/75807274'))
 }
+const recent = current.getPublicRecentWorks()
+for (const { work, releasedOn } of recent) {
+  assert.equal(work.rating.gradeReviewed, true)
+  assert.match(releasedOn, /^\d{4}-\d{2}-\d{2}$/)
+  assert.ok(work.rating.sourceFindings.length && work.rating.decidingSource)
+  if (!publicWorks.has(work.workId)) {
+    assert.equal(work.workId, current.getPublicWorkById(work.workId).workId)
+    assert.equal(work.firstPublished, releasedOn)
+    assert.ok(work.sources.length && work.summary?.text)
+    publicWorks.set(work.workId, work)
+  }
+}
 const works=[...publicWorks.values()]
 const count=fn=>works.filter(fn).length
-const report={sourceWorks:base.length,visibleWorks:works.length,stableCanonicalIds:true,unreviewedRatingsPreserved:true,
+const report={sourceWorks:current.getPublicCatalogMergeStats().sourceWorks,visibleWorks:works.length,stableCanonicalIds:true,unreviewedRatingsPreserved:true,
   aliases:count(row=>row.aliases.length || row.localizedTitles.some(t=>t.title!==row.title)),
   knownMedia:count(row=>row.media.group!=='unknown'),creatorCredits:count(row=>row.creators.length),
   organizationCredits:count(row=>row.organizations.length),anyCredits:count(row=>row.creators.length || row.organizations.length),

@@ -44,6 +44,7 @@ export const mediaGroupLabels: Record<PublicMediaGroup, string> = {
 }
 
 export function mediaLabel(group: PublicMediaGroup, type?: string): string {
+  if (group === 'other' && type === 'live_action') return '真人影视'
   if (group === 'visual_novel') return '视觉小说'
   if (group !== 'unknown') return mediaGroupLabels[group]
   if (type === 'anime') return '动画'

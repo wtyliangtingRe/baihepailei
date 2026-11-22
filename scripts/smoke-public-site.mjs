@@ -115,6 +115,8 @@ try {
   }
 
   const reviewManifest = JSON.parse(readFileSync('data/public-release/review-20261121/manifest.json', 'utf8'))
+  const intake = JSON.parse(readFileSync('data/public-release/identity-20261121/recent-works.json', 'utf8'))
+  const additions = intake.entries.filter(entry => entry.edition)
   const health = await json('/api/health')
   assert.deepEqual(
     {
@@ -128,12 +130,12 @@ try {
     },
     {
       ok: true,
-      catalogWorks: 35_411,
-      visibleWorks: 34_550,
+      catalogWorks: 35_411 + additions.length,
+      visibleWorks: 34_550 + additions.length,
       mergedAway: 861,
       mergedGroups: 836,
       largestMergedGroup: 3,
-      ratedWorks: reviewManifest.ratedSourceRecords,
+      ratedWorks: reviewManifest.ratedSourceRecords + additions.length,
     },
   )
   assert.equal(health.visibleWorks + health.mergedAway, health.catalogWorks)
@@ -141,6 +143,22 @@ try {
   assert.ok(health.reviewedVisibleWorks > 0 && health.reviewedVisibleWorks <= health.ratedVisibleWorks)
   const ratedCatalog = await json('/api/work-lineage/works?status=rated&limit=1')
   assert.equal(health.ratedVisibleWorks, ratedCatalog.total)
+
+  if (intake.entries.length) {
+    const recent = await (await response('/updates')).text()
+    assert.ok(recent.includes('2026 年秋季新作评级'))
+    const contested = additions.find(entry => entry.edition.review.siteId === 'STEAM-3863090')
+    const result = await json('/api/work-lineage/works/' + contested.workId)
+    assert.equal(result.rating.grade, 'F')
+    assert.equal(result.rating.decidingSource, 'community')
+    assert.ok(result.rating.sourceFindings.some(finding => finding.kind === 'official' && finding.grade === 'B'))
+    for (const { workId, edition } of additions.slice(0, 3)) {
+      const detail = await json('/api/work-lineage/works/' + workId)
+      assert.equal(detail.title, edition.title)
+      assert.equal(detail.rating.gradeReviewed, true)
+      assert.ok(detail.rating.decidingSource)
+    }
+  }
 
   const [doujin, reissuedDoujin, collection, indexedCollection] = await Promise.all(
     ['6751', '39003', '6752', '38241'].map(id => json('/api/work-lineage/works/' + id)),

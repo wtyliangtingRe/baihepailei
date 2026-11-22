@@ -30,6 +30,10 @@ const reviewCounts = currentReview ? JSON.parse(readFileSync(join(identityRoot, 
   : { extraEntities: 0, releasedTitleMatches: 0, mergeGroups: 0, credits: 0, newlyCreditedWorks: 0, duplicateCreditedWorks: 0, removedEntities: 0 }
 const extraEntities = currentReview ? readFileSync(join(identityRoot, 'entities.jsonl'), 'utf8').trim().split('\n').map(JSON.parse) : []
 assert.equal(extraEntities.length, reviewCounts.extraEntities)
+const intake = currentReview ? JSON.parse(readFileSync(join(identityRoot, 'recent-works.json'), 'utf8'))
+  : { entities: [], entries: [] }
+const additions = intake.entries.filter(entry => entry.edition)
+extraEntities.push(...intake.entities)
 const bibliographyRoot = join(root, 'data/public-release/bibliography-20261121')
 const bookCounts = currentReview ? JSON.parse(readFileSync(join(bibliographyRoot, 'credits-manifest.json'), 'utf8'))
   : { entities: 0, credits: 0, newlyCreditedWorks: 0 }
@@ -96,7 +100,7 @@ if (currentReview) {
   }
 }
 const records = release.getPublicCreatorGraphInput()
-assert.equal(records.length, manifest.counts.publicWorks + reviewCounts.releasedTitleMatches - (reviewCounts.mergedSourceRows ?? reviewCounts.mergeGroups))
+assert.equal(records.length, manifest.counts.publicWorks + reviewCounts.releasedTitleMatches - (reviewCounts.mergedSourceRows ?? reviewCounts.mergeGroups) + additions.length)
 const publicIds = new Set(records.map(work => work.workId))
 const correctedSources = new Map()
 for (const edit of animationNames.rows) {
@@ -160,8 +164,9 @@ assert.equal(release.getPublicCreatorById('not-an-id'), null)
 assert.equal(release.getPublicCreatorById(String(manifest.nextId)), null)
 const creditedWorks = records.filter(work => work.creators.length || work.organizations.length).length
 assert.equal(creditedWorks, manifest.counts.creditedWorks + reviewCounts.newlyCreditedWorks - reviewCounts.duplicateCreditedWorks +
-  bookCounts.newlyCreditedWorks + authorCounts.newlyCreditedWorks + staffCounts.newlyCreditedWorks + licensedAnimation.newlyCreditedWorks + (reviewCounts.historicalPrintNewlyCreditedWorks || 0))
+  bookCounts.newlyCreditedWorks + authorCounts.newlyCreditedWorks + staffCounts.newlyCreditedWorks + licensedAnimation.newlyCreditedWorks + (reviewCounts.historicalPrintNewlyCreditedWorks || 0) +
+  additions.filter(row => row.edition.credits.length).length)
 if (currentReview) assert.equal(release.getPublicCreatorById('1010974'), null, 'Retired null Steam organization')
 console.log(JSON.stringify({ creators: entities.length + extraEntities.length - reviewCounts.removedEntities - Object.keys(entityRedirects).length, publicWorks: records.length,
-  creditedWorks, supplementaryCredits: reviewCounts.credits + bookCounts.credits + authorCounts.credits + staffCounts.credits + licensedAnimation.credits.length + (reviewCounts.historicalPrintPublisherCredits || 0) - (reviewCounts.publicationRoleReplacements || 0), linkedCredits, relatedWorks, references,
+  creditedWorks, supplementaryCredits: additions.reduce((total, row) => total + row.edition.credits.length, 0) + reviewCounts.credits + bookCounts.credits + authorCounts.credits + staffCounts.credits + licensedAnimation.credits.length + (reviewCounts.historicalPrintPublisherCredits || 0) - (reviewCounts.publicationRoleReplacements || 0), linkedCredits, relatedWorks, references,
   uniqueIds: true, originalCreditsPreserved: true, existingLinksPreserved: true, publicWorkIdsOnly: true, status: 'PASS' }, null, 2))

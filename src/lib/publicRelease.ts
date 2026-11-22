@@ -1,5 +1,6 @@
 import { matchesReviewEdition, resolveReview, type SourceFinding, type SourceReview } from './sourceReview'
 import 'server-only'
+import { readRecentWorks } from './publicRecentWorks'
 
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -282,6 +283,7 @@ export type PublicCatalogMergeStats = {
 }
 
 type PublicReleaseCache = {
+  recent: ReturnType<typeof readRecentWorks>['featured']
   identityReview?: IdentityReview
   creatorGraph?: PublicCreatorGraph
   manifest: PublicReleaseManifest
@@ -991,14 +993,41 @@ function loadRelease(): PublicReleaseCache {
     }
     return work
   })
+  const enhancedByPrimary = new Map(records.map(record => [record.workId, record]))
+  const byWorkId = new Map([...merged.byWorkId].map(([id, record]) => [id, enhancedByPrimary.get(record.workId)!]))
+  let recent: PublicReleaseCache['recent'] = []
+  if (identityReview) {
+    const siteIds = [...identities.values(), ...records.flatMap(record => record.catalogIdentifiers?.map(id => id.siteId) || [])]
+    const intake = readRecentWorks(directory, PUBLIC_GRADES, byWorkId, siteIds)
+    recent = intake.featured
+    identityReview.entities.push(...intake.entities)
+    for (const [workId, credits] of intake.credits) identityReview.creditsByWork.set(workId, credits)
+    for (const work of intake.additions) {
+      records.push(work)
+      byWorkId.set(work.workId, work)
+      merged.memberIdsByPrimary.set(work.workId, [work.workId])
+      ordinals.set(work.workId, Number(work.workId))
+      manifest.gradeCounts[work.rating.grade!]++
+      if (work.rating.needsMoreResearch) manifest.counts.ratingsNeedingMoreResearch++
+    }
+    const added = intake.additions.length
+    manifest.ratingStatusCounts.rated += added
+    manifest.counts.catalogWorks += added
+    manifest.counts.publicIdentityBindings += added
+    manifest.counts.auditedWorks += added
+    manifest.counts.ratedWorks += added
+    manifest.invariants.finalDecisionScopePartition = `${manifest.counts.ratedWorks} + ${manifest.counts.nonratingTerminalWorks} = ${manifest.counts.auditedWorks}`
+    merged.stats.sourceWorks += added
+    merged.stats.visibleWorks += added
+    merged.stats.ratedVisibleWorks += added
+    merged.stats.reviewedVisibleWorks += added
+  }
   for (const work of records) {
     if (work.rating.decidingSource) {
       const key = work.rating.decidingSource === 'official' ? 'source-official' : 'source-community'
       work.publicTags = publicTagsFor([key, ...work.publicTags.map(tag => tag.key)])
     }
   }
-  const enhancedByPrimary = new Map(records.map(record => [record.workId, record]))
-  const byWorkId = new Map([...merged.byWorkId].map(([id, record]) => [id, enhancedByPrimary.get(record.workId)!]))
   globalThis.__baihepaileiPublicRelease = {
     manifest,
     enrichmentManifest,
@@ -1007,6 +1036,7 @@ function loadRelease(): PublicReleaseCache {
     byWorkId,
     identityReview,
     memberIdsByPrimary: merged.memberIdsByPrimary,
+    recent,
     mergeStats: merged.stats,
   }
   return globalThis.__baihepaileiPublicRelease
@@ -1076,6 +1106,14 @@ export function getPublicCreatorList(input: { kind: CreatorKind; query?: string;
     .sort((a, b) => b.workCount - a.workCount || a.name.localeCompare(b.name, 'zh-CN') || Number(a.creatorId) - Number(b.creatorId))
   const offset = normalizeOffset(input.offset), limit = normalizeLimit(input.limit)
   return { items: matched.slice(offset, offset + limit), total: matched.length, offset, limit }
+}
+
+export function getPublicRecentWorks() {
+  const release = loadRelease()
+  const graph = getCreatorGraph()
+  return release.recent.map(({ workId, ...edition }) => ({
+    ...edition, work: withCreatorIds(release.byWorkId.get(workId)!, graph),
+  }))
 }
 
 export function getPublicWorkList(input: {

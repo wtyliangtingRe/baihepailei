@@ -83,7 +83,18 @@ test('every reviewed source identity resolves to a visible grade at least as con
     assert.deepEqual(work.publicTags.filter(t => t.group === '评级来源').map(t => t.key), ['source-'+kind], workId)
   }
   assert.equal(reviews.filter(row => !catalog.get(row.workId).rating.grade).length, manifest.newlyRatedSourceRecords)
-  assert.equal(getPublicReleaseManifest().counts.ratedWorks, manifest.ratedSourceRecords)
+  const intake = JSON.parse(readFileSync('data/public-release/identity-20261121/recent-works.json', 'utf8'))
+  const newlyListed = intake.entries.filter(entry => entry.edition)
+  for (const { workId, edition } of newlyListed) {
+    const work = getPublicWorkById(workId)
+    const expected = resolve(edition.review.findings)
+    assert.equal(work.rating.grade, expected.grade, edition.title)
+    assert.equal(work.rating.decidingSource, expected.decidingSource, edition.title)
+    assert.deepEqual(work.publicTags.filter(t => t.group === '评级来源').map(t => t.key),
+      ['source-' + expected.decidingSource])
+    grades[expected.grade]++
+  }
+  assert.equal(getPublicReleaseManifest().counts.ratedWorks, manifest.ratedSourceRecords + newlyListed.length)
   assert.deepEqual(JSON.parse(JSON.stringify(getPublicReleaseManifest().gradeCounts)), grades)
 })
 

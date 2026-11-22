@@ -4,6 +4,7 @@ import {
   getPublicCatalogMergeStats,
   getPublicEnrichmentManifest,
   getPublicReleaseManifest,
+  getPublicRecentWorks,
   getPublicWorkList,
 } from '@/lib/publicRelease'
 import {
@@ -24,6 +25,7 @@ function number(value: number): string {
 
 export default function HomePage() {
   const manifest = getPublicReleaseManifest()
+  const recent = getPublicRecentWorks().slice(0, 4)
   const enrichment = getPublicEnrichmentManifest()
   const merge = getPublicCatalogMergeStats()
   const ratedVisible = merge.ratedVisibleWorks
@@ -81,6 +83,21 @@ export default function HomePage() {
             <small>有可核验简介资料</small>
           </article>
         </section>
+
+        {recent.length > 0 && <section className="release-section" aria-labelledby="home-recent-title">
+          <div className="release-section-heading">
+            <div><h2 id="home-recent-title">新作评级</h2></div>
+            <Link className="back-link" href="/updates#recent-works">查看本期新作</Link>
+          </div>
+          <div className="release-featured-grid">
+            {recent.map(({ work, releasedOn }) => (
+              <Link className="release-featured-card" href={canonicalContentUrl('works', work.workId)} key={work.workId}>
+                <span className={`rating-chip grade-${work.rating.grade}`}>{work.rating.grade}</span>
+                <div><h3>{work.title}</h3><p><time dateTime={releasedOn}>{releasedOn}</time> · {mediaLabel(work.media.group, work.media.type)}</p></div>
+              </Link>
+            ))}
+          </div>
+        </section>}
 
         <section className="release-section">
           <div className="release-section-heading">
