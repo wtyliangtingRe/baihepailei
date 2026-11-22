@@ -151,9 +151,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411 + additions.length,
-      visibleWorks: 34_540 + additions.length,
-      mergedAway: 871,
-      mergedGroups: 843,
+      visibleWorks: 34_539 + additions.length,
+      mergedAway: 872,
+      mergedGroups: 844,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords + additions.length,
     },
@@ -502,6 +502,7 @@ try {
     ['38644', '10470'], // Free Soul, the same Shodensha single-volume manga
     ['4130', '19875'], // The same Korean Another Revolution Story
     ['4341', '25029'], // The same Team Gaji webtoon
+    ['32976', '36094'], // A Summer's End, Bangumi and VNDB catalogues
     ['36714', '31964'], // The Gaze of The Eternal Sun, full Steam app
     ['36722', '36481'], // No Fap Island, full game rather than its separate demo
     ['8384', '32723'], // Cosmic Princess Kaguya!, same streaming film

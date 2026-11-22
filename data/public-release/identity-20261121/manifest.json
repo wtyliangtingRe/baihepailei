@@ -6,8 +6,8 @@
   "files": [
     {
       "file": "groups.jsonl",
-      "rows": 401,
-      "sha256": "c16f25c797a1ef7ebcdcf66709f516dd17da78fb8010b48e80d90dbaf915830d"
+      "rows": 402,
+      "sha256": "b5af820593932bd7ad3222fa36d92a3539517dc6402f95a432e667144abba7cf"
     },
     {
       "file": "entities.jsonl",
@@ -45,7 +45,7 @@
     "credits": 3785,
     "creditWorks": 2409,
     "newlyCreditedWorks": 1279,
-    "mergeGroups": 401,
+    "mergeGroups": 402,
     "duplicateCreditedWorks": 224,
     "removedEntities": 2,
     "recoveredBangumiWorks": 531,
@@ -53,7 +53,7 @@
     "correctedBangumiMedia": 424,
     "correctedBangumiTitles": 20,
     "legacyBangumiBindings": 1065,
-    "mergedSourceRows": 428,
+    "mergedSourceRows": 429,
     "historicalPrintEditions": 340,
     "historicalPrintPublisherCredits": 244,
     "historicalPrintNewlyCreditedWorks": 143,
