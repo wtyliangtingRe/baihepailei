@@ -169,6 +169,11 @@ try {
   assert.ok(ibaraComics.creators.some(credit => credit.name === '椎名くろ' && credit.role === '人物原案'))
   assert.ok(!ibaraNovel.sources.some(source => source.url.endsWith('/4407')))
 
+  const greenYuri = await json('/api/work-lineage/works/15652')
+  assert.equal(greenYuri.rating.grade, 'S')
+  assert.ok(greenYuri.creators.some(credit => credit.creatorId === '1007134' && credit.role === '作者'))
+  assert.ok(greenYuri.localizedTitles.some(title => title.title === '我在意的對象並不是男人' && title.kind === 'official'))
+
   const [doujin, reissuedDoujin, collection, indexedCollection] = await Promise.all(
     ['6751', '39003', '6752', '38241'].map(id => json('/api/work-lineage/works/' + id)),
   )

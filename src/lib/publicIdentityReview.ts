@@ -45,6 +45,7 @@ type Correction = {
   removedCreatorId?: string
   summary?: string
   aliases?: string[]
+  localizedTitles?: PublicWorkRecord['localizedTitles']
   edition?: {
     isbn: string
     catalogTitle: string
@@ -265,7 +266,11 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
     }),
     ...(fix?.placeholder && {
       aliases: [...new Set([...work.aliases.filter(alias => alias !== fix.placeholder), ...(fix.aliases || [])])],
-      localizedTitles: work.localizedTitles.filter(item => item.title !== fix.placeholder),
+    }),
+    ...((fix?.placeholder || fix?.localizedTitles) && {
+      localizedTitles: mergeLocalizedTitles([
+        ...work.localizedTitles.filter(item => item.title !== fix?.placeholder), ...(fix?.localizedTitles || []),
+      ]),
     }),
     ...(fix?.summary && { summary: { kind: 'source_summary' as const, text: fix.summary, sourceUrl: fix.url } }),
     ...(fix?.label && {

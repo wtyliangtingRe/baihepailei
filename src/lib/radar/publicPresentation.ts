@@ -74,7 +74,12 @@ export function chineseEditionTitle(catalogTitle: string, titles: PublicLocalize
   const normalized = (value: string) => value.normalize('NFKC').toLowerCase().replace(/\s+/gu, ' ').trim()
   const chinese = titles.filter(row => row.language && ['zh-Hans', 'zh', 'zh-Hant'].includes(row.language))
   if (chinese.some(row => normalized(row.title) === normalized(catalogTitle))) return undefined
-  for (const language of ['zh-Hans', 'zh', 'zh-Hant']) {
+  const languagePreference = ['zh-Hans', 'zh', 'zh-Hant']
+  for (const language of languagePreference) {
+    const row = chinese.find(title => title.language === language && title.kind === 'official')
+    if (row) return row.title
+  }
+  for (const language of languagePreference) {
     const row = chinese.find(title => title.language === language && title.kind !== 'romanized')
     if (row) return row.title
   }
