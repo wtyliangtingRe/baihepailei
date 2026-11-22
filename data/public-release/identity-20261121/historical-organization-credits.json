@@ -959,6 +959,21 @@
       "urls": [
         "https://www.pa-works.jp/works/hanairo/"
       ]
+    },
+    {
+      "workId": "36905",
+      "source": "catalog",
+      "catalogSource": "https://www.yurizukan.com/articles/articleDetail/576",
+      "oldId": "1001996",
+      "oldName": "KADOKAWA",
+      "oldRole": "出版社",
+      "creatorId": "1002040",
+      "name": "ナンバーナイン",
+      "role": "出版社",
+      "urls": [
+        "https://booklive.jp/product/index/title_id/718728/vol_no/001",
+        "https://thetv.jp/news/detail/1240412/"
+      ]
     }
   ]
 }

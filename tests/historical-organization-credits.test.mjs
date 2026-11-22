@@ -16,9 +16,12 @@ test('historical company names and project memberships retain references and rev
   for (const row of data.credits) {
     const work = release.getPublicWorkById(row.workId)
     assert.ok(!work.creators.some(c => c.creatorId === row.oldId || c.creatorId === row.creatorId))
+    if (row.oldId !== row.creatorId) {
+      assert.ok(!work.organizations.some(c => c.creatorId === row.oldId && c.role === row.oldRole))
+    }
     const target = work.organizations.filter(c => c.creatorId === row.creatorId && c.role === row.role)
     assert.equal(target.length, 1, work.title + ' / ' + row.name + ' / ' + row.role)
-    const edition = 'https://bgm.tv/subject/' + row.subject + (row.source === 'staff' ? '/persons' : '')
+    const edition = row.catalogSource ?? ('https://bgm.tv/subject/' + row.subject + (row.source === 'staff' ? '/persons' : ''))
     for (const url of [edition, ...row.urls]) assert.ok(target[0].sourceUrls.includes(url), work.title + ' / ' + url)
     if (row.person) assert.ok(target[0].sourceUrls.includes('https://bgm.tv/person/' + row.person))
   }

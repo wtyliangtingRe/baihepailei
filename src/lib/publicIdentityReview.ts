@@ -36,6 +36,7 @@ type Correction = {
   label?: string
   firstPublished?: string
   firstPublishedSource?: string
+  withdrawnReleaseDate?: string
   format?: string
   wrongUrl?: string
   unrelatedUrls?: string[]
@@ -125,6 +126,10 @@ export function readIdentityReview(directory: string, identities: Map<string, st
   const corrections = new Map(read<Correction>('corrections.jsonl').map(row => {
     if (identities.get(row.workId) !== row.siteId || (row.siteId === null && !row.edition)) {
       throw new Error(`Correction identity drift: ${row.workId}`)
+    }
+    if (row.withdrawnReleaseDate && (row.firstPublished ||
+        !row.editionSources?.some(source => source.url === row.url && source.tier === 'official'))) {
+      throw new Error(`Unbound release delay: ${row.workId}`)
     }
     const printEditions = row.printEditions ?? (row.printEdition ? [row.printEdition] : [])
     for (const print of printEditions) {
@@ -257,6 +262,9 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
   if (!fix && !edges.length && !correctedUrls.size && !editionSources.length && !unrelated.size) return work
   const editionTitle = fix?.edition?.catalogTitle || fix?.catalogTitle
   if (editionTitle && work.title !== editionTitle) throw new Error(`Edition title drift: ${work.workId}`)
+  if (fix?.withdrawnReleaseDate && work.firstPublished !== fix.withdrawnReleaseDate) {
+    throw new Error(`Withdrawn release date drift: ${work.workId}`)
+  }
   const credits = (kind: CreatorKind) => edges.filter(edge => edge.creditKind === kind)
     .map(edge => ({ name: edge.name, role: edge.role, sourceUrl: edge.sourceUrls[0], sourceUrls: edge.sourceUrls }))
   if (unrelated.size) {
@@ -284,6 +292,10 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
     ...(fix?.firstPublished && {
       firstPublished: fix.firstPublished, firstPublishedLabel: fix.firstPublished,
       firstPublishedPrecision: 'day' as const,
+    }),
+    ...(fix?.withdrawnReleaseDate && {
+      firstPublished: undefined, firstPublishedLabel: '播出延期，新日期待定',
+      firstPublishedPrecision: undefined,
     }),
     ...(printEditions.length > 0 && { printEditions: [
       ...(work.printEditions || []).filter(edition => !printEditions.some(print => print.isbn === edition.isbn)),
