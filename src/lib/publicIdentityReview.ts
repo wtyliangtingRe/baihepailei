@@ -17,6 +17,7 @@ export type RecoveredBangumiWork = {
   isbn?: string
   editionSource?: string
   firstPublished?: string
+  printEdition?: NonNullable<PublicWorkRecord['printEditions']>[number]
 }
 type BangumiCorrection = Pick<RecoveredBangumiWork, 'workId' | 'siteId' | 'catalogTitle' | 'url'> &
   Partial<Pick<RecoveredBangumiWork, 'title' | 'originalTitle' | 'media' | 'editionSource' | 'firstPublished'>> & {
@@ -110,6 +111,11 @@ export function readIdentityReview(directory: string, identities: Map<string, st
         identities.get(row.workId) || !row.originalTitle || !row.title || !row.media.format ||
         (row.firstPublished && (!/^\d{4}-\d{2}-\d{2}$/.test(row.firstPublished) || !row.editionSource?.startsWith('https://'))) ||
         recovered.has(row.workId) || siteIds.has(row.siteId)) throw new Error(`Invalid recovered identity: ${row.workId}`)
+    const edition = row.printEdition
+    if (edition && (!/^97[89]\d{10}$/.test(edition.isbn) || edition.isbn !== row.isbn || !edition.title ||
+        !edition.url.startsWith('https://') || edition.url !== row.editionSource)) {
+      throw new Error(`Unbound recovered print edition: ${row.workId}`)
+    }
     recovered.set(row.workId, row)
     siteIds.add(row.siteId)
   }
