@@ -151,9 +151,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411 + additions.length,
-      visibleWorks: 34_538 + additions.length,
-      mergedAway: 873,
-      mergedGroups: 845,
+      visibleWorks: 34_536 + additions.length,
+      mergedAway: 875,
+      mergedGroups: 847,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords + additions.length,
     },
@@ -452,7 +452,11 @@ try {
   assert.ok(renamedVisualNovel.aliases.includes('Velyograd HS-12'))
   assert.equal(renamedVisualNovel.rating.grade, 'B')
   assert.equal(renamedVisualNovel.rating.decidingSource, 'official')
-  for (const [id, isbn] of [['23083', '9784758070980'], ['28836', '9784883563944']]) {
+  for (const [id, isbn] of [
+    ['23083', '9784758070980'],
+    ['28836', '9784883563944'],
+    ['21948', '9787521779714'],
+  ]) {
     const work = await json(`/api/work-lineage/works/${id}`)
     const book = work.printEditions.find(edition => edition.isbn === isbn)
     assert.ok(book, `Original collected edition ${id}`)
@@ -462,6 +466,15 @@ try {
   assert.equal(seabed.workId, '36850')
   assert.equal(seabed.rating.grade, 'S')
   assert.ok(seabed.catalogIdentifiers.some(id => id.siteId === 'catalog-bangumi-226956'))
+  for (const [alias, canonical, catalogId, grade] of [
+    ['4820', '36848', 'catalog-bangumi-337709', 'B'],
+    ['4856', '34287', 'catalog-bangumi-552964', 'C'],
+  ]) {
+    const game = await json(`/api/work-lineage/works/${alias}`)
+    assert.equal(game.workId, canonical)
+    assert.equal(game.rating.grade, grade)
+    assert.ok(game.catalogIdentifiers.some(id => id.siteId === catalogId))
+  }
   const kindaichiFilm = await json('/api/work-lineage/works/16029')
   assert.equal(kindaichiFilm.rating.grade, 'E')
   assert.equal(kindaichiFilm.rating.decidingSource, 'community')
