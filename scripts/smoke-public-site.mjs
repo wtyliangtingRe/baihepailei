@@ -223,9 +223,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411 + additions.length,
-      visibleWorks: 34_536 + additions.length,
-      mergedAway: 875,
-      mergedGroups: 847,
+      visibleWorks: 34_532 + additions.length,
+      mergedAway: 879,
+      mergedGroups: 851,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords + additions.length,
     },
@@ -546,6 +546,19 @@ try {
     assert.equal(game.workId, canonical)
     assert.equal(game.rating.grade, grade)
     assert.ok(game.catalogIdentifiers.some(id => id.siteId === catalogId))
+  }
+  for (const [alias, canonical, grade] of [
+    ['4974', '32199', 'B'],
+    ['4976', '32381', 'E'],
+    ['4977', '31449', 'D'],
+    ['4751', '33634', 'C'],
+  ]) {
+    const game = await json(`/api/work-lineage/works/${alias}`)
+    assert.equal(game.workId, canonical)
+    assert.equal(game.rating.grade, grade)
+    const result = await response(`/works/w-${alias}`, { redirect: 'manual' })
+    assert.equal(result.status, 308)
+    assert.equal(new URL(result.headers.get('location'), base).pathname, `/works/w-${canonical}`)
   }
   const kindaichiFilm = await json('/api/work-lineage/works/16029')
   assert.equal(kindaichiFilm.rating.grade, 'E')
