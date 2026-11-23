@@ -178,6 +178,23 @@ body,
 .release-home-guide article,
 .release-method-note-public { border-color: var(--library-line); border-radius: .65rem; }
 .release-home-guide h2 { margin-top: 0; }
+.release-home-ad {
+  min-inline-size: 0;
+  padding-block: 0.75rem;
+  border-block: 1px solid var(--library-line);
+}
+
+.release-home-ad-label {
+  display: block;
+  margin-block-end: 0.5rem;
+  color: var(--library-muted);
+  font-size: 0.75rem;
+}
+
+.release-home-ad:has(.adsbygoogle[data-ad-status="unfilled"]) {
+  display: none;
+}
+
 .library-disclaimer { padding-block: 1rem; border-block-start: 1px solid var(--library-line); }
 .library-disclaimer summary { width: fit-content; color: var(--library-muted); cursor: pointer; }
 .library-disclaimer p { max-width: 46em; line-height: 1.85; }

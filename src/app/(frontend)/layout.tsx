@@ -3,6 +3,7 @@ import Link from 'next/link'
 import React from 'react'
 
 import ThemeToggle from './_components/ThemeToggle'
+import { adsenseAccount } from './_lib/adsense'
 import './styles.css'
 import './account.css'
 import './covers.css'
@@ -34,8 +35,6 @@ import './release.css'
 import './creators.css'
 import './lily-refresh.css'
 
-const adsenseAccount = 'ca-pub-3988080014945439'
-
 export const metadata: Metadata = {
   title: {
     default: '百合排雷 · Baihepailei',
@@ -56,15 +55,6 @@ const navItems = [
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html data-content-scope="ordinary" data-scroll-behavior="smooth" lang="zh-CN">
-      <head>
-        {process.env.NEXT_PUBLIC_ADSENSE_ENABLED === 'true' && (
-          <script
-            async
-            crossOrigin="anonymous"
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseAccount}`}
-          />
-        )}
-      </head>
       <body>
         <div className="site-shell">
           <header className="site-header">

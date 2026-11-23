@@ -89,8 +89,24 @@ try {
   const homepage = await (await response('/')).text()
   const head = homepage.match(/<head>(.*?)<\/head>/s)?.[1] || ''
   assert.match(head, /<meta name="google-adsense-account" content="ca-pub-3988080014945439"/)
-  const adScript = /<script [^>]*src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-3988080014945439"/
-  assert.equal(adScript.test(head), process.env.NEXT_PUBLIC_ADSENSE_ENABLED === 'true')
+  const adSlot = /<ins [^>]*data-ad-slot="3201932616"[^>]*>/
+  const loader = /<script [^>]*src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/
+  assert.doesNotMatch(head, loader)
+  const slots = [...homepage.matchAll(new RegExp(adSlot.source, 'g'))]
+  assert.equal(slots.length, process.env.NEXT_PUBLIC_ADSENSE_ENABLED === 'true' ? 1 : 0)
+  if (slots.length) {
+    assert.match(slots[0][0], /data-ad-client="ca-pub-3988080014945439"/)
+    assert.match(slots[0][0], /data-ad-format="auto"/)
+    assert.match(slots[0][0], /data-full-width-responsive="true"/)
+    const featuredHeading = homepage.indexOf('安心向作品')
+    assert.ok(featuredHeading >= 0 && featuredHeading < slots[0].index)
+    assert.ok(slots[0].index < homepage.indexOf('看核心等级'))
+  }
+  for (const path of ['/works', '/works/w-36946', '/search?q=yuri']) {
+    const html = await (await response(path)).text()
+    assert.doesNotMatch(html, adSlot, path)
+    assert.doesNotMatch(html, loader, path)
+  }
   assert.match(homepage, /href="\/privacy"/)
 
   const correctionFeedback = await (

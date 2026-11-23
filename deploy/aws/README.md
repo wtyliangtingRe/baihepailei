@@ -66,11 +66,11 @@ and the Google publisher line. In AdSense, choose the Ads.txt verification optio
 or the Meta tag option, then verify and request review. Both work with the
 advertising script disabled. [Google's site verification guide](https://support.google.com/adsense/answer/7584263)
 
-When AdSense marks the site ready, configure the ad formats, page exclusions,
-and applicable consent messages in the AdSense dashboard. To load the script,
-set `NEXT_PUBLIC_ADSENSE_ENABLED=true` in `.env` and rebuild with
-`docker compose up --detach --build web`. A process restart alone keeps the previous
-build setting. The script is shared across pages. Exclude pages with adult
-material or links to that material before enabling Auto ads for the catalog.
+Keep Auto ads off for this site in AdSense and configure any applicable consent
+messages in the dashboard. The homepage loads one responsive display ad,
+unit `3201932616`, after the recommendations. Set
+`NEXT_PUBLIC_ADSENSE_ENABLED=true` in `.env` and rebuild with
+`docker compose up --detach --build web` to enable the unit. Use the same
+build command with the setting set to `false` to disable it.
 [Auto ads settings](https://support.google.com/adsense/answer/9261307) ·
 [Google consent settings](https://support.google.com/adsense/answer/13554116)
