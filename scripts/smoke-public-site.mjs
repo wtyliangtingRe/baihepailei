@@ -466,6 +466,18 @@ try {
   assert.equal(kindaichiFilm.rating.grade, 'E')
   assert.equal(kindaichiFilm.rating.decidingSource, 'community')
   assert.equal((await json('/api/work-lineage/works/16031')).rating.grade, 'F')
+  for (const [id, url, grade] of [
+    ['23245', 'https://ridibooks.com/books/3846020806', 'D'],
+    ['21811', 'https://www.cmoa.jp/title/370336/', 'E'],
+  ]) {
+    const webtoon = await json(`/api/work-lineage/works/${id}`)
+    assert.equal(webtoon.rating.grade, grade)
+    assert.equal(webtoon.rating.decidingSource, 'official')
+    assert.ok(webtoon.sources.some(source => source.url === url && source.tier === 'official'))
+  }
+  const revisedManga = await json('/api/work-lineage/works/29194')
+  assert.equal(revisedManga.rating.grade, 'E')
+  assert.equal(revisedManga.rating.decidingSource, 'community')
   for (const [id, source] of [['4206', 'source-official'], ['6093', 'source-community']]) {
     const work = await json(`/api/work-lineage/works/${id}`)
     assert.equal(work.rating.grade, 'E')
