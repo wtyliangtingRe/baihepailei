@@ -1,8 +1,8 @@
 {
   "baseRelease": "baihepailei-source-assessment-release-20261107-v01",
-  "publishedReviewRows": 16730,
-  "newlyRatedSourceRecords": 13508,
-  "ratedSourceRecords": 18175,
-  "sha256": "0d9b7ade5503d10d66a1288b746dbeea0d480de993c74435f9b6912a189c2e84",
+  "publishedReviewRows": 16793,
+  "newlyRatedSourceRecords": 13569,
+  "ratedSourceRecords": 18236,
+  "sha256": "2b0b8bbf4dddc75f27fb682f0ffb6b5f321a780d0ee91fe60a933caaef23155d",
   "reviewDate": "2026-11-24"
 }
