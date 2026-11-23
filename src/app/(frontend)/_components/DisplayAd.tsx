@@ -11,7 +11,7 @@ type AdSenseWindow = Window & {
 
 let loaderFailed = false
 
-export default function HomeDisplayAd() {
+export default function DisplayAd() {
   const slotRef = useRef<HTMLModElement>(null)
   const requestedSlot = useRef<HTMLModElement | null>(null)
   const [unavailable, setUnavailable] = useState(loaderFailed)
@@ -37,8 +37,8 @@ export default function HomeDisplayAd() {
   if (unavailable) return null
 
   return (
-    <aside aria-label="广告" className="release-home-ad">
-      <span className="release-home-ad-label">广告</span>
+    <aside aria-label="广告" className="release-display-ad">
+      <span className="release-display-ad-label">广告</span>
       <ins
         ref={slotRef}
         className="adsbygoogle"
@@ -49,7 +49,7 @@ export default function HomeDisplayAd() {
         data-full-width-responsive="true"
       />
       <Script
-        id="home-adsense"
+        id="site-display-adsense"
         src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseAccount}`}
         crossOrigin="anonymous"
         strategy="afterInteractive"

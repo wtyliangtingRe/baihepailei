@@ -178,20 +178,27 @@ body,
 .release-home-guide article,
 .release-method-note-public { border-color: var(--library-line); border-radius: .65rem; }
 .release-home-guide h2 { margin-top: 0; }
-.release-home-ad {
+.release-display-ad {
   min-inline-size: 0;
+}
+
+.release-display-ad:has(.adsbygoogle:is([data-ad-status="filled"], [data-ad-status="unfill-optimized"])) {
   padding-block: 0.75rem;
   border-block: 1px solid var(--library-line);
 }
 
-.release-home-ad-label {
-  display: block;
+.release-display-ad-label {
+  display: none;
   margin-block-end: 0.5rem;
   color: var(--library-muted);
   font-size: 0.75rem;
 }
 
-.release-home-ad:has(.adsbygoogle[data-ad-status="unfilled"]) {
+.release-display-ad:has(.adsbygoogle:is([data-ad-status="filled"], [data-ad-status="unfill-optimized"])) .release-display-ad-label {
+  display: block;
+}
+
+.release-display-ad:has(.adsbygoogle[data-ad-status="unfilled"]) {
   display: none;
 }
 

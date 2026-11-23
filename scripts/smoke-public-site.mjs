@@ -57,6 +57,7 @@ try {
 
   const pages = [
     '/',
+    '/recommendations',
     '/works',
     '/works/w-36946',
     '/works/w-4971',
@@ -89,25 +90,80 @@ try {
   const homepage = await (await response('/')).text()
   const head = homepage.match(/<head>(.*?)<\/head>/s)?.[1] || ''
   assert.match(head, /<meta name="google-adsense-account" content="ca-pub-3988080014945439"/)
-  const adSlot = /<ins [^>]*data-ad-slot="3201932616"[^>]*>/
+  const adSlot = /<ins [^>]*class="adsbygoogle"[^>]*>/
   const loader = /<script [^>]*src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/
+  const adsEnabled = process.env.NEXT_PUBLIC_ADSENSE_ENABLED === 'true'
   assert.doesNotMatch(head, loader)
-  const slots = [...homepage.matchAll(new RegExp(adSlot.source, 'g'))]
-  assert.equal(slots.length, process.env.NEXT_PUBLIC_ADSENSE_ENABLED === 'true' ? 1 : 0)
-  if (slots.length) {
-    assert.match(slots[0][0], /data-ad-client="ca-pub-3988080014945439"/)
-    assert.match(slots[0][0], /data-ad-format="auto"/)
-    assert.match(slots[0][0], /data-full-width-responsive="true"/)
+
+  const recommendations = await (await response('/recommendations')).text()
+  const works = await (await response('/works?perPage=100')).text()
+  const emptyWorks = await (await response('/works?q=nonexistent-baihe-smoke-20')).text()
+  const adPosition = (html, path) => {
+    const slots = [...html.matchAll(new RegExp(adSlot.source, 'g'))]
+    assert.equal(slots.length, adsEnabled ? 1 : 0, path)
+    if (!slots.length) return -1
+    const [slot] = slots
+    assert.match(slot[0], /data-ad-client="ca-pub-3988080014945439"/, path)
+    assert.match(slot[0], /data-ad-slot="3201932616"/, path)
+    assert.match(slot[0], /data-ad-format="auto"/, path)
+    assert.match(slot[0], /data-full-width-responsive="true"/, path)
+    return slot.index
+  }
+  const homeAd = adPosition(homepage, '/')
+  const recommendationsAd = adPosition(recommendations, '/recommendations')
+  const worksAd = adPosition(works, '/works')
+  if (adsEnabled) {
     const featuredHeading = homepage.indexOf('安心向作品')
-    assert.ok(featuredHeading >= 0 && featuredHeading < slots[0].index)
-    assert.ok(slots[0].index < homepage.indexOf('看核心等级'))
+    assert.ok(featuredHeading >= 0 && featuredHeading < homeAd)
+    assert.ok(homeAd < homepage.indexOf('看核心等级'))
+    assert.ok(recommendationsAd > recommendations.lastIndexOf('<a class="release-featured-card"'))
+    assert.ok(worksAd > works.indexOf('</nav>', works.indexOf('aria-label="作品分页"')))
   }
-  for (const path of ['/works', '/works/w-36946', '/search?q=yuri']) {
-    const html = await (await response(path)).text()
-    assert.doesNotMatch(html, adSlot, path)
-    assert.doesNotMatch(html, loader, path)
-  }
+  assert.ok(!adSlot.test(emptyWorks), 'no ad on empty catalog results')
+  const workDetail = await (await response('/works/w-36946')).text()
+  assert.ok(!adSlot.test(workDetail) && !loader.test(workDetail), 'no ad on a work detail')
+  const search = await response('/search?q=yuri', { redirect: 'manual' })
+  assert.ok([307, 308].includes(search.status))
+  assert.equal(new URL(search.headers.get('location'), base).href, `${base}/works?q=yuri`)
+  adPosition(await (await response('/works?q=yuri')).text(), '/works?q=yuri')
   assert.match(homepage, /href="\/privacy"/)
+
+  const initialRecommendations = [...recommendations.matchAll(/<a class="release-featured-card" href="\/works\/w-(\d+)"/g)]
+    .map((card) => card[1])
+  assert.equal(initialRecommendations.length, 18)
+  assert.ok(/>换一批<\/button>/.test(recommendations), 'recommendations expose the refresh button')
+  const nextRecommendations = await json('/api/recommendations?sOffset=12&aOffset=6')
+  assert.equal(nextRecommendations.cards.length, 18)
+  assert.equal(nextRecommendations.cards.filter((card) => card.grade === 'S').length, 12)
+  assert.equal(nextRecommendations.cards.filter((card) => card.grade === 'A').length, 6)
+  assert.ok(nextRecommendations.cards.every((card) => !initialRecommendations.includes(card.workId)))
+  assert.equal(new Set(nextRecommendations.cards.map((card) => card.workId)).size, 18)
+
+  const workIds = (html) => [...html.matchAll(/<h2><a href="\/works\/w-(\d+)"/g)].map((card) => card[1])
+  assert.equal(workIds(works).length, 20)
+  assert.ok(!works.includes('name="perPage"'), 'catalog omits the per-page selector')
+  const firstRatedPage = await (await response('/works?grade=B')).text()
+  const pageFifty = (await (await response('/works?grade=B&page=50&perPage=60')).text()).replaceAll('<!-- -->', '')
+  assert.ok(/第 50 \/ \d+ 页/.test(pageFifty), 'catalog opens on page 50')
+  const fiftiethPageWorks = workIds(pageFifty)
+  assert.equal(fiftiethPageWorks.length, 20)
+  const firstRatedWorkIds = new Set(workIds(firstRatedPage))
+  assert.equal(firstRatedWorkIds.size, 20)
+  assert.ok(fiftiethPageWorks.every((id) => !firstRatedWorkIds.has(id)))
+  assert.ok(/href="\/works\?grade=B&amp;page=49"[^>]*>上一页<\/a>/.test(pageFifty), 'Previous retains the grade filter')
+  assert.ok(/href="\/works\?grade=B&amp;page=51"[^>]*>下一页<\/a>/.test(pageFifty), 'Next retains the grade filter')
+  const filteredWorks = await (await response('/works?q=a&grade=B&media=manga&status=rated&source=official')).text()
+  const jump = filteredWorks.match(/<form(?=[^>]*class="works-page-jump")([^>]*)>(.*?)<\/form>/s)
+  assert.ok(jump, 'filtered results expose the jump form')
+  assert.match(jump[1], /action="\/works"/)
+  assert.match(jump[1], /method="get"/i)
+  assert.match(jump[2], /<input(?=[^>]*type="number")(?=[^>]*name="page")(?=[^>]*min="1")(?=[^>]*max="\d+")[^>]*>/)
+  for (const [name, value] of Object.entries({ q: 'a', grade: 'B', media: 'manga', status: 'rated', source: 'official' })) {
+    const input = new RegExp(`<input(?=[^>]*type="hidden")(?=[^>]*name="${name}")(?=[^>]*value="${value}")[^>]*>`)
+    assert.match(jump[2], input)
+  }
+  assert.ok(emptyWorks.includes('没有匹配记录'), 'catalog shows the empty-results message')
+  assert.ok(!emptyWorks.includes('aria-label="作品分页"'), 'catalog hides pagination on empty results')
 
   const correctionFeedback = await (
     await response('/feedback?workId=18556&title=%E5%AE%89%E9%81%94%E3%81%A8%E3%81%97%E3%81%BE%E3%82%80%E3%82%89')

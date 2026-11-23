@@ -22,9 +22,12 @@ import {
   ratingLead,
 } from '@/lib/radar/publicPresentation'
 
+import DisplayAd from '../_components/DisplayAd'
 import { canonicalContentUrl } from '../_lib/content-identity'
 
 export const dynamic = 'force-dynamic'
+
+const worksPerPage = 20
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>
 
@@ -32,28 +35,9 @@ function first(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] || '' : value || ''
 }
 
-function positiveInteger(value: string, fallback: number): number {
-  const parsed = Number(value)
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback
-}
-
-function pageHref(input: {
-  q: string
-  grade: string
-  status: string
-  media: string
-  page: number
-  perPage: number
-  source: string
-}): string {
-  const params = new URLSearchParams()
-  if (input.q) params.set('q', input.q)
-  if (input.grade) params.set('grade', input.grade)
-  if (input.status) params.set('status', input.status)
-  if (input.source) params.set('source', input.source)
-  if (input.media) params.set('media', input.media)
-  if (input.page > 1) params.set('page', String(input.page))
-  if (input.perPage !== 30) params.set('perPage', String(input.perPage))
+function pageHref(filters: URLSearchParams, page: number): string {
+  const params = new URLSearchParams(filters)
+  if (page > 1) params.set('page', String(page))
   const query = params.toString()
   return query ? `/works?${query}` : '/works'
 }
@@ -75,25 +59,24 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
   const media = PUBLIC_MEDIA_GROUPS.includes(mediaRaw as PublicMediaGroup) ? mediaRaw : ''
   const rawSource = first(params.source)
   const source = rawSource === 'official' || rawSource === 'community' ? rawSource : ''
-  const requestedPerPage = positiveInteger(first(params.perPage), 30)
-  const perPage = [30, 60, 100].includes(requestedPerPage) ? requestedPerPage : 30
-  const page = Math.min(positiveInteger(first(params.page), 1), 10_000)
+  const rawPage = first(params.page)
+  const page = /^\d+$/.test(rawPage) ? Math.max(1, Math.min(Number(rawPage), 10_000)) : 1
+  const filters = Object.entries({ q, grade, status, source, media }).filter(([, value]) => value)
+  const paginationParams = new URLSearchParams(filters)
   const result = getPublicWorkList({
     query: q,
     source,
     grade,
     status,
     media,
-    limit: perPage,
-    offset: (page - 1) * perPage,
+    limit: worksPerPage,
+    offset: (page - 1) * worksPerPage,
   })
-  const totalPages = Math.max(1, Math.ceil(result.total / perPage))
+  const totalPages = Math.max(1, Math.ceil(result.total / worksPerPage))
 
-  if (result.total > 0 && page > totalPages) {
-    redirect(pageHref({ q, grade, status, media, source, page: totalPages, perPage }))
+  if (page > totalPages) {
+    redirect(pageHref(paginationParams, totalPages))
   }
-
-  const paginationInput = { q, grade, status, media, source, perPage }
 
   return (
     <main className="page collection-page release-works-page">
@@ -144,14 +127,6 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
                 <option value="community">社区来源</option>
               </select>
             </label>
-            <label>
-              <span>每页</span>
-              <select defaultValue={String(perPage)} name="perPage">
-                <option value="30">30</option>
-                <option value="60">60</option>
-                <option value="100">100</option>
-              </select>
-            </label>
           </div>
           <div className="works-filter-actions">
             <button className="result-link" type="submit">应用筛选</button>
@@ -160,7 +135,7 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
         </form>
         <div className="collection-actions">
           <span>{result.total.toLocaleString('zh-CN')} 条结果</span>
-          <span>第 {page} / {totalPages} 页</span>
+          {result.total > 0 && <span>第 {page} / {totalPages} 页</span>}
         </div>
       </section>
 
@@ -232,15 +207,38 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
         </section>
       )}
 
-      <nav className="collection-actions release-pagination" aria-label="作品分页">
-        {page > 1 ? (
-          <Link className="back-link" href={pageHref({ ...paginationInput, page: page - 1 })}>上一页</Link>
-        ) : <span>上一页</span>}
-        <span>第 {page} / {totalPages} 页</span>
-        {page < totalPages ? (
-          <Link className="back-link" href={pageHref({ ...paginationInput, page: page + 1 })}>下一页</Link>
-        ) : <span>下一页</span>}
-      </nav>
+      {totalPages > 1 && (
+        <nav className="collection-actions release-pagination" aria-label="作品分页">
+          {page > 1 ? (
+            <Link className="back-link" href={pageHref(paginationParams, page - 1)} rel="prev">上一页</Link>
+          ) : <span aria-disabled="true">上一页</span>}
+          <span aria-current="page">第 {page} / {totalPages} 页</span>
+          {page < totalPages ? (
+            <Link className="back-link" href={pageHref(paginationParams, page + 1)} rel="next">下一页</Link>
+          ) : <span aria-disabled="true">下一页</span>}
+          <form action="/works" className="works-page-jump" method="get">
+            {filters.map(([name, value]) => (
+              <input key={name} name={name} type="hidden" value={value} />
+            ))}
+            <label>
+              页码
+              <input
+                key={page}
+                defaultValue={page}
+                inputMode="numeric"
+                max={totalPages}
+                min={1}
+                name="page"
+                required
+                step={1}
+                type="number"
+              />
+            </label>
+            <button className="back-link" type="submit">跳转</button>
+          </form>
+        </nav>
+      )}
+      {result.items.length > 0 && process.env.NEXT_PUBLIC_ADSENSE_ENABLED === 'true' && <DisplayAd />}
     </main>
   )
 }

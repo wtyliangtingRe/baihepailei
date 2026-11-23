@@ -1,21 +1,13 @@
 import Link from 'next/link'
 
-import { getPublicWorkList } from '@/lib/publicRelease'
-import {
-  gradeLabel,
-  mediaLabel,
-  ratingClassEntries,
-} from '@/lib/radar/publicPresentation'
-
-import { canonicalContentUrl } from '../_lib/content-identity'
+import DisplayAd from '../_components/DisplayAd'
+import { getRecommendationBatch } from './get-batch'
+import RecommendationList from './RecommendationList'
 
 export const dynamic = 'force-dynamic'
 
 export default function RecommendationsPage() {
-  const works = [
-    ...getPublicWorkList({ grade: 'S', status: 'rated', limit: 12 }).items,
-    ...getPublicWorkList({ grade: 'A', status: 'rated', limit: 6 }).items,
-  ]
+  const batch = getRecommendationBatch()
 
   return (
     <main className="page collection-page">
@@ -27,23 +19,8 @@ export default function RecommendationsPage() {
           <Link className="back-link" href="/works?grade=A">全部 A 级</Link>
         </div>
       </section>
-      <section className="release-featured-grid">
-        {works.map((work) => {
-          const firstClass = ratingClassEntries(work.rating)[0]
-          return (
-            <Link className="release-featured-card" href={canonicalContentUrl('works', work.workId)} key={work.workId}>
-              <span className={`rating-chip grade-${work.rating.grade}`}>{work.rating.grade}</span>
-              <div>
-                <h3>{work.title}</h3>
-                <p>
-                  {mediaLabel(work.media.group, work.media.type)} · {firstClass?.definition.label || gradeLabel(work.rating.grade!)}
-                </p>
-              </div>
-              <span aria-hidden="true">↗</span>
-            </Link>
-          )
-        })}
-      </section>
+      <RecommendationList initialBatch={batch} />
+      {process.env.NEXT_PUBLIC_ADSENSE_ENABLED === 'true' && batch.cards.length > 0 ? <DisplayAd /> : null}
     </main>
   )
 }

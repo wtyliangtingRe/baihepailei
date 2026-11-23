@@ -67,8 +67,9 @@ or the Meta tag option, then verify and request review. Both work with the
 advertising script disabled. [Google's site verification guide](https://support.google.com/adsense/answer/7584263)
 
 Keep Auto ads off for this site in AdSense and configure any applicable consent
-messages in the dashboard. The homepage loads one responsive display ad,
-unit `3201932616`, after the recommendations. Set
+messages in the dashboard. The homepage, the recommendations page, and work
+lists with results each have one responsive placement using unit `3201932616`.
+Set
 `NEXT_PUBLIC_ADSENSE_ENABLED=true` in `.env` and rebuild with
 `docker compose up --detach --build web` to enable the unit. Use the same
 build command with the setting set to `false` to disable it.

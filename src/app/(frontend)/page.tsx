@@ -15,7 +15,7 @@ import {
   ratingClassEntries,
 } from '@/lib/radar/publicPresentation'
 
-import HomeDisplayAd from './_components/HomeDisplayAd'
+import DisplayAd from './_components/DisplayAd'
 import { canonicalContentUrl } from './_lib/content-identity'
 
 export const dynamic = 'force-dynamic'
@@ -131,7 +131,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {process.env.NEXT_PUBLIC_ADSENSE_ENABLED === 'true' && <HomeDisplayAd />}
+        {process.env.NEXT_PUBLIC_ADSENSE_ENABLED === 'true' && <DisplayAd />}
 
         <section className="release-reading-model release-home-guide">
           <article>
