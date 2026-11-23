@@ -151,9 +151,9 @@ try {
     {
       ok: true,
       catalogWorks: 35_411 + additions.length,
-      visibleWorks: 34_539 + additions.length,
-      mergedAway: 872,
-      mergedGroups: 844,
+      visibleWorks: 34_538 + additions.length,
+      mergedAway: 873,
+      mergedGroups: 845,
       largestMergedGroup: 3,
       ratedWorks: reviewManifest.ratedSourceRecords + additions.length,
     },
@@ -458,6 +458,14 @@ try {
     assert.ok(book, `Original collected edition ${id}`)
     assert.ok(work.sources.some(source => source.url === book.url && source.tier === 'official'))
   }
+  const seabed = await json('/api/work-lineage/works/4812')
+  assert.equal(seabed.workId, '36850')
+  assert.equal(seabed.rating.grade, 'S')
+  assert.ok(seabed.catalogIdentifiers.some(id => id.siteId === 'catalog-bangumi-226956'))
+  const kindaichiFilm = await json('/api/work-lineage/works/16029')
+  assert.equal(kindaichiFilm.rating.grade, 'E')
+  assert.equal(kindaichiFilm.rating.decidingSource, 'community')
+  assert.equal((await json('/api/work-lineage/works/16031')).rating.grade, 'F')
   for (const [id, source] of [['4206', 'source-official'], ['6093', 'source-community']]) {
     const work = await json(`/api/work-lineage/works/${id}`)
     assert.equal(work.rating.grade, 'E')
