@@ -1,6 +1,6 @@
 {
   "schemaVersion": "baihepailei-recent-works-v1",
-  "assessedOn": "2026-11-22",
+  "assessedOn": "2026-11-24",
   "entities": [
     {
       "creatorId": "894652013098",
@@ -1570,6 +1570,15 @@
       "name": "梢",
       "names": [
         "梢"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "899277613744",
+      "kind": "person",
+      "name": "Laments",
+      "names": [
+        "Laments"
       ],
       "identityBasis": "name_only"
     }
@@ -8893,6 +8902,61 @@
       "releasedOn": "2026-09-01",
       "scope": "1.0 正式版（旧抢先体验不含结局）",
       "title": "DEVIL'S LIMINAL"
+    },
+    {
+      "workId": "40104",
+      "releasedOn": "2026-11-23",
+      "scope": "itch.io 首发 Windows 版",
+      "edition": {
+        "title": "Black Cat And The Snowdrop",
+        "provider": "itch",
+        "url": "https://laments.itch.io/black-cat-and-the-snowdrop",
+        "media": {
+          "group": "visual_novel",
+          "type": "visual_novel",
+          "format": "Windows 视觉小说"
+        },
+        "aliases": [],
+        "localizedTitles": [],
+        "summary": {
+          "kind": "source_summary",
+          "text": "卡蒂娅赴约后发现伊利亚是吸血鬼。伊利亚为掩饰身份，开始要挟卡蒂娅与她约会。",
+          "sourceUrl": "https://laments.itch.io/black-cat-and-the-snowdrop"
+        },
+        "sources": [
+          {
+            "title": "Laments · 首发版本和故事内容",
+            "url": "https://laments.itch.io/black-cat-and-the-snowdrop",
+            "tier": "official"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "899277613744",
+            "kind": "person",
+            "name": "Laments",
+            "role": "作者",
+            "sourceUrl": "https://laments.itch.io/black-cat-and-the-snowdrop"
+          }
+        ],
+        "review": {
+          "workId": "40104",
+          "siteId": "ITCH-laments/black-cat-and-the-snowdrop",
+          "rationale": "开发者明确写明作品以卡蒂娅与伊利亚的女女恋爱为中心。伊利亚为让对方保守吸血鬼身份，利用要挟迫使卡蒂娅与自己交往，形成主关系中的定向恶劣对待。首发页还另列出暴力与歧视相关内容提示。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "B",
+              "classes": [
+                "B-POWER-IMBALANCE"
+              ],
+              "urls": [
+                "https://laments.itch.io/black-cat-and-the-snowdrop"
+              ]
+            }
+          ]
+        }
+      }
     }
   ]
 }
