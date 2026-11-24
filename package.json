@@ -9,6 +9,7 @@
     "dev:webpack": "next dev --webpack",
     "preview": "pnpm validate:release && pnpm audit:merge && next dev --hostname 0.0.0.0",
     "build": "next build",
+    "export:offline": "node scripts/export/build-offline-catalog.mjs",
     "start": "node scripts/start-production.mjs",
     "typecheck": "next typegen && tsc --noEmit",
     "audit:merge": "node scripts/audit-public-catalog-merge.mjs",

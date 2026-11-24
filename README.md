@@ -2,6 +2,12 @@
 
 当前仓库已经切到版本化公开快照运行，不需要本地 PostgreSQL，也不会在请求时读取研究仓库。
 
+## 离线资料库
+
+打开 [GitHub 最新 Release](https://github.com/wtyliangtingRe/baihepailei/releases/latest)，下载文件名以 `-offline.zip` 结尾的附件。解压后双击 `index.html`，即可搜索作品、筛选评级并查看详情和规则。来源链接需要联网打开。
+
+可在仓库根目录运行 `pnpm export:offline`，用当前公开快照重新生成 `exports/offline/index.html`。
+
 ## 当前评级规则
 
 2026 年 11 月 24 日起按 v0.7 复评既有作品。完全没有主要男性角色且没有其他雷点时，有具体女性暧昧情节可评 B，仅有友情也可评 C。同一时间线的同一人物在前传或续作涉及已确认的 E/F 级事实，而本作没有其他雷点时，按 C-CONTINUITY-EF 评级。现行等级为 S 至 F，同级细则可并列。完整定义见[规则页](https://baihepailei.com/rules)及[规则表](src/lib/radar/ratingPolicy.ts)。

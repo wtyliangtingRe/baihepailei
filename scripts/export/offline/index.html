@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; form-action 'none'; img-src data:; style-src '{{STYLES_HASH}}'; script-src '{{SCRIPT_HASH}}'">
+  <title>百合排雷 · 离线资料库</title>
+  <style>{{STYLES}}</style>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#catalog">百合排雷</a>
+    <nav aria-label="主要入口">
+      <a href="#catalog" id="catalog-tab">作品</a>
+      <a href="#rules" id="rules-tab">排雷规则</a>
+    </nav>
+    <a class="online" href="https://baihepailei.com/" target="_blank" rel="noreferrer">在线版 ↗</a>
+  </header>
+
+  <main>
+    <noscript><p class="panel">请启用浏览器的 JavaScript，以便离线搜索和查看作品。</p></noscript>
+
+    <section id="catalog" aria-labelledby="catalog-title">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="snapshot" id="snapshot"></p>
+          <h1 id="catalog-title">离线作品资料库</h1>
+          <p>查询作品、关系走向与评级依据。</p>
+          <div class="stats" id="stats"></div>
+        </div>
+        <div class="hero-art" aria-hidden="true"></div>
+      </header>
+
+      <form class="filters panel" id="filters" role="search">
+        <label class="query" for="query">作品、别名、作者、机构或警示
+          <input id="query" type="search" maxlength="200" placeholder="例如 终将成为你、Bloom Into You、NTR">
+        </label>
+        <div class="selects">
+          <label for="grade">评级<select id="grade"><option value="">全部等级</option></select></label>
+          <label for="media">作品类型<select id="media"><option value="">全部类型</option></select></label>
+          <label for="source">评级来源<select id="source"><option value="">全部来源</option></select></label>
+          <label for="progress">评级进度
+            <select id="progress">
+              <option value="">全部进度</option>
+              <option value="rated">已有评级</option>
+              <option value="reviewed">有逐作复评</option>
+              <option value="unrated">尚未评级</option>
+            </select>
+          </label>
+        </div>
+        <div class="actions">
+          <button class="primary" type="submit">搜索</button>
+          <button type="button" id="clear-filters">清除</button>
+        </div>
+      </form>
+
+      <section class="results-section" aria-labelledby="result-count">
+        <h2 id="result-count" aria-live="polite" tabindex="-1"></h2>
+        <ul class="results" id="results"></ul>
+        <div class="pager" id="pager" aria-label="作品资料库分页">
+          <button id="previous" type="button">上一页</button>
+          <span id="page-count"></span>
+          <button id="next" type="button">下一页</button>
+          <form id="page-jump">
+            <label for="page-number">页码</label>
+            <input id="page-number" type="number" min="1" required inputmode="numeric">
+            <button type="submit">跳转</button>
+          </form>
+        </div>
+      </section>
+    </section>
+
+    <section id="rules" aria-labelledby="rules-title" hidden>
+      <header class="rules-heading">
+        <p class="snapshot" id="rules-version"></p>
+        <h1 id="rules-title">排雷规则</h1>
+        <p>以对应版本的剧情和设定评级。官方与社区结论一致时标「官方来源」。有分歧时取证据支持的较低等级，标出支持该等级的来源。只有社区证据时标「社区来源」。同等级细则可以并列。</p>
+      </header>
+      <div class="rule-list" id="rule-list"></div>
+    </section>
+  </main>
+
+  <footer>离线快照随下载版本固定。来源链接及在线版需联网打开。</footer>
+
+  <dialog id="work-dialog" aria-labelledby="work-title">
+    <div class="dialog-header">
+      <span class="snapshot">作品详情</span>
+      <button type="button" id="close-work">关闭</button>
+    </div>
+    <article id="work-detail"></article>
+  </dialog>
+
+  <script type="application/json" id="catalog-data">{{DATA}}</script>
+  <script>{{SCRIPT}}</script>
+</body>
+</html>
