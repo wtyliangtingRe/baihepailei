@@ -1,7 +1,7 @@
 'use client'
 
 import Script from 'next/script'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { adsenseAccount } from '../_lib/adsense'
 
@@ -9,12 +9,44 @@ type AdSenseWindow = Window & {
   adsbygoogle?: { push: (options: Record<string, never>) => unknown }
 }
 
+const unfilledGraceMs = 5_000
 let loaderFailed = false
 
 export default function DisplayAd() {
   const slotRef = useRef<HTMLModElement>(null)
   const requestedSlot = useRef<HTMLModElement | null>(null)
   const [unavailable, setUnavailable] = useState(loaderFailed)
+  const [emptyConfirmed, setEmptyConfirmed] = useState(false)
+
+  useEffect(() => {
+    const slot = slotRef.current
+    if (!slot) return
+
+    let emptyTimer: number | undefined
+    const checkStatus = () => {
+      if (slot.dataset.adStatus !== 'unfilled') {
+        window.clearTimeout(emptyTimer)
+        emptyTimer = undefined
+        setEmptyConfirmed(false)
+        return
+      }
+
+      if (emptyTimer === undefined) {
+        emptyTimer = window.setTimeout(() => {
+          setEmptyConfirmed(slot.dataset.adStatus === 'unfilled')
+        }, unfilledGraceMs)
+      }
+    }
+
+    const observer = new MutationObserver(checkStatus)
+    observer.observe(slot, { attributes: true, attributeFilter: ['data-ad-status'] })
+    checkStatus()
+
+    return () => {
+      observer.disconnect()
+      window.clearTimeout(emptyTimer)
+    }
+  }, [unavailable])
 
   function requestAd() {
     const slot = slotRef.current
@@ -37,7 +69,7 @@ export default function DisplayAd() {
   if (unavailable) return null
 
   return (
-    <aside aria-label="广告" className="release-display-ad">
+    <aside aria-label="广告" className="release-display-ad" data-empty={emptyConfirmed ? 'true' : undefined}>
       <span className="release-display-ad-label">广告</span>
       <ins
         ref={slotRef}
