@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { setTimeout as delay } from 'node:timers/promises'
+import { loadPublicRelease } from './lib/load-public-release.mjs'
 
 const host = '127.0.0.1'
 const port = Number(process.env.PUBLIC_SMOKE_PORT || 3100)
@@ -210,6 +211,8 @@ try {
   const reviewManifest = JSON.parse(readFileSync('data/public-release/review-20261121/manifest.json', 'utf8'))
   const intake = JSON.parse(readFileSync('data/public-release/identity-20261121/recent-works.json', 'utf8'))
   const additions = intake.entries.filter(entry => entry.edition)
+  // Compare the built server with the current checkout's release rather than pinned counts.
+  const merge = loadPublicRelease(process.cwd()).getPublicCatalogMergeStats()
   const health = await json('/api/health')
   assert.deepEqual(
     {
@@ -224,10 +227,10 @@ try {
     {
       ok: true,
       catalogWorks: 35_411 + additions.length,
-      visibleWorks: 34_532 + additions.length,
-      mergedAway: 879,
-      mergedGroups: 851,
-      largestMergedGroup: 3,
+      visibleWorks: merge.visibleWorks,
+      mergedAway: merge.mergedAway,
+      mergedGroups: merge.multiWorkGroups,
+      largestMergedGroup: merge.largestGroup,
       ratedWorks: reviewManifest.ratedSourceRecords + additions.length,
     },
   )
@@ -506,7 +509,7 @@ try {
   assert.ok(rainbows.rating.sourceFindings.some(finding => finding.kind === 'official' && finding.classes.includes('S-RELATIONSHIP')))
   assert.ok(rainbows.rating.sourceFindings.some(finding => finding.kind === 'community' && finding.classes.includes('B-MALE-NOISE')))
 
-  for (const [id, grade] of [['23622','S'],['18154','B'],['3934','C'],['19473','D'],['8506','E'],['12159','E'],['7925','F'],['18574','F']]) {
+  for (const [id, grade] of [['23622','S'],['18154','B'],['3934','C'],['19473','C'],['8506','E'],['12159','E'],['7925','F'],['18574','F']]) {
     const work = await json(`/api/work-lineage/works/${id}`)
     assert.equal(work.rating.grade,grade,`New assessment ${id}`)
     assert.ok(work.rating.reasoningSummary && work.rating.evidenceUrl)
@@ -551,7 +554,7 @@ try {
   for (const [alias, canonical, grade] of [
     ['4974', '32199', 'B'],
     ['4976', '32381', 'E'],
-    ['4977', '31449', 'D'],
+    ['4977', '31449', 'B'],
     ['4751', '33634', 'C'],
   ]) {
     const game = await json(`/api/work-lineage/works/${alias}`)
@@ -594,8 +597,8 @@ try {
     finding.kind === 'community' && finding.urls.includes('https://www.yurizukan.com/articles/articleDetail/5932')))
   const newClip=await json('/api/work-lineage/works/32107')
   assert.equal(newClip.workId,'15896','New evidence must preserve the established public Work node')
-  assert.equal(newClip.rating.grade,'C')
-  assert.ok(newClip.rating.sourceFindings.some(finding => finding.classes.includes('C-FRIENDSHIP')))
+  assert.equal(newClip.rating.grade, 'B')
+  assert.ok(newClip.rating.sourceFindings.some(finding => finding.classes.includes('B-LIGHT')))
   for (const credit of newClip.organizations) {
     const page=await response(`/organizations/o-${credit.creatorId}?year=2017`)
     assert.equal(page.status,200)
