@@ -1,4 +1,4 @@
-export const RADAR_GRADE_ORDER = Object.freeze(['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X'])
+export const RADAR_GRADE_ORDER = Object.freeze(['S', 'A', 'B', 'C', 'D', 'E', 'F'])
 
 export const RADAR_AI_PENDING_DATABASE_STATUS = 'ai_synthesized_pending_review'
 export const RADAR_AI_PENDING_WARNING_TEMPLATE_ID = 'ai-synthesized-pending-review'
@@ -136,10 +136,8 @@ export function normalizeRadarConclusion(input = {}) {
   const completeRange = Boolean(bestGrade && likelyGrade && worstGrade)
   const legalRange = completeRange && isLegalRadarRange(bestGrade, likelyGrade, worstGrade)
   const allEqual = legalRange && bestGrade === likelyGrade && likelyGrade === worstGrade
-  const explicitMachineX = suggestedGrade === 'X'
-    || bestGrade === 'X'
-    || likelyGrade === 'X'
-    || worstGrade === 'X'
+  const retiredGrade = [input.suggestedGrade ?? input.coreGrade ?? input.fixedGrade, ...rawRange]
+    .some(value => clean(value).toUpperCase() === 'X')
   const classificationLabels = values([
     input.classificationRule,
     ...(input.matchedClasses || []),
@@ -157,11 +155,11 @@ export function normalizeRadarConclusion(input = {}) {
     conclusionMode = 'blocked'
   } else if (explicitMode === 'labels_only') {
     conclusionMode = 'labels_only'
+  } else if (retiredGrade) {
+    conclusionMode = 'labels_only'
+    validationIssues.push('machine_x_not_allowed')
   } else if (explicitMode === 'bounded_range') {
-    if (explicitMachineX) {
-      conclusionMode = 'labels_only'
-      validationIssues.push('machine_x_not_allowed')
-    } else if (legalRange && !allEqual) {
+    if (legalRange && !allEqual) {
       conclusionMode = 'bounded_range'
       if (suggestedGrade && suggestedGrade !== likelyGrade) validationIssues.push('core_likely_mismatch')
     } else {
@@ -169,10 +167,7 @@ export function normalizeRadarConclusion(input = {}) {
       validationIssues.push(completeRange ? 'bounded_range_not_distinct' : 'invalid_bounded_range')
     }
   } else if (explicitMode === 'fixed_grade') {
-    if (explicitMachineX) {
-      conclusionMode = 'labels_only'
-      validationIssues.push('machine_x_not_allowed')
-    } else if (!suggestedGrade || rangeFieldCount !== 3 || !completeRange) {
+    if (!suggestedGrade || rangeFieldCount !== 3 || !completeRange) {
       conclusionMode = 'labels_only'
       validationIssues.push(!suggestedGrade ? 'invalid_fixed_grade' : 'incomplete_fixed_grade_range')
     } else if (!legalRange || !allEqual || suggestedGrade !== likelyGrade) {

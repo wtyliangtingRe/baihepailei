@@ -21,13 +21,13 @@ const batchSize = 18
 
 function recommendationCards(works: PublicWorkRecord[], grade: 'S' | 'A') {
   return works.map((work) => {
-    const firstClass = ratingClassEntries(work.rating)[0]
+    const classLabels = ratingClassEntries(work.rating).map(({ definition }) => definition.label).join('、')
     return {
       workId: work.workId,
       grade,
       title: work.title,
       href: canonicalContentUrl('works', work.workId),
-      description: `${mediaLabel(work.media.group, work.media.type)} · ${firstClass?.definition.label || gradeLabel(grade)}`,
+      description: `${mediaLabel(work.media.group, work.media.type)} · ${classLabels || gradeLabel(grade)}`,
     }
   })
 }

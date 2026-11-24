@@ -262,8 +262,6 @@
 #rank-e .rank-group-heading h2::before { display: block; background-image: url('/ui/ranks/rank-e.webp'); }
 #grade-F .rank-group-heading h2::before,
 #rank-f .rank-group-heading h2::before { display: block; background-image: url('/ui/ranks/rank-f.webp'); }
-#grade-X .rank-group-heading h2::before,
-#rank-x .rank-group-heading h2::before { display: block; background-image: url('/ui/ranks/rank-x.webp'); }
 
 @media (max-width: 760px) {
   .home .hero {

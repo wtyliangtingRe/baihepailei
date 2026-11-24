@@ -20,7 +20,7 @@
     "check": "pnpm validate:release && pnpm validate:pack-reuse && pnpm validate:official-assessments && pnpm validate:source-assessments && pnpm validate:reviews && pnpm audit:merge && pnpm validate:metadata && pnpm validate:creators && pnpm validate:ui && pnpm typecheck && pnpm build",
     "validate:pack-reuse": "node scripts/validate-pack-reuse.mjs",
     "validate:official-assessments": "node scripts/validate-official-assessments.mjs",
-    "validate:reviews": "node --test tests/source-reviews.test.mjs tests/public-merged-rating-evidence.test.mjs",
+    "validate:reviews": "node --test tests/source-reviews.test.mjs tests/public-merged-rating-evidence.test.mjs tests/current-rating-policy.test.mjs",
     "validate:source-assessments": "node scripts/validate-source-assessments.mjs"
   },
   "dependencies": {

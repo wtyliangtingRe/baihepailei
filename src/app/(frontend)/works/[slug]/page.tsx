@@ -203,6 +203,14 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
               <p lang={likelyEnglish(rating.reasoningSummary) ? 'en' : 'zh-CN'}>
                 {rating.reasoningSummary}{referenceMarks([rating.evidenceUrl])}
               </p>
+              {rating.continuity?.map(({ workId, character }) => {
+                const related = getPublicWorkById(workId)
+                return related && (
+                  <p key={workId + '|' + character}>
+                    {character}的相关剧情见 <Link href={canonicalContentUrl('works', related.workId)}>{related.title}（{related.rating.grade} 级）</Link>
+                  </p>
+                )
+              })}
             </details>
           )}
           <div className="collection-actions">

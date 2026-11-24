@@ -109,7 +109,7 @@ export default function HomePage() {
           </div>
           <div className="release-featured-grid">
             {featured.map((work) => {
-              const firstClass = ratingClassEntries(work.rating)[0]
+              const classLabels = ratingClassEntries(work.rating).map(({ definition }) => definition.label).join('、')
               const credits = work.creators.length
                 ? compactCredits(work.creators, 1)
                 : work.organizations.length
@@ -121,7 +121,7 @@ export default function HomePage() {
                   <div>
                     <h3>{chineseEditionTitle(work.title, work.localizedTitles) || work.title}</h3>
                     <p>
-                      {mediaLabel(work.media.group, work.media.type)} · {firstClass?.definition.label || gradeLabel(work.rating.grade!)}
+                      {mediaLabel(work.media.group, work.media.type)} · {classLabels || gradeLabel(work.rating.grade!)}
                       {credits ? ` · ${credits}` : ''}
                     </p>
                   </div>

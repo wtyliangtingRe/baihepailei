@@ -1020,8 +1020,7 @@ body {
   color: #ffc0a5;
 }
 
-.warning-grade-F,
-.warning-grade-X {
+.warning-grade-F {
   border-color: rgb(255 104 137 / 0.42);
   background: rgb(255 74 115 / 0.11);
   color: #ffacbd;
@@ -1168,8 +1167,7 @@ body {
 .grade-outline-C { border-color: rgb(169 150 255 / 0.42) !important; color: #c7b9ff !important; }
 .grade-outline-D { border-color: rgb(196 187 204 / 0.4) !important; color: #d9d0de !important; }
 .grade-outline-E { border-color: rgb(255 151 108 / 0.44) !important; color: #ffc0a5 !important; }
-.grade-outline-F,
-.grade-outline-X { border-color: rgb(255 104 137 / 0.48) !important; color: #ffacbd !important; }
+.grade-outline-F { border-color: rgb(255 104 137 / 0.48) !important; color: #ffacbd !important; }
 
 .release-grade-explanation {
   max-width: 900px;
@@ -1607,8 +1605,7 @@ body {
 .rule-grade-C { border-color: rgb(169 150 255 / 0.2); }
 .rule-grade-D { border-color: rgb(255 205 129 / 0.22); }
 .rule-grade-E { border-color: rgb(255 151 108 / 0.27); }
-.rule-grade-F,
-.rule-grade-X { border-color: rgb(255 104 137 / 0.32); }
+.rule-grade-F { border-color: rgb(255 104 137 / 0.32); }
 
 [data-theme='light'] .release-public-meta span,
 [data-theme='light'] .release-warning-chip,

@@ -1,8 +1,9 @@
-export const RADAR_RATING_POLICY_ID = 'radar-rating-policy-v0.6' as const
-export const RADAR_CLASS_REGISTRY_ID = 'global-rating-class-registry-v01.1+owner-extension-01' as const
-export const RADAR_POLICY_BUNDLE_ID = 'radar-policy-bundle-v0.6-current-release' as const
+export const RADAR_POLICY_VERSION = 'v0.7' as const
+export const RADAR_RATING_POLICY_ID = `radar-rating-policy-${RADAR_POLICY_VERSION}` as const
+export const RADAR_CLASS_REGISTRY_ID = 'global-rating-class-registry-v01.1+owner-extension-02' as const
+export const RADAR_POLICY_BUNDLE_ID = `radar-policy-bundle-${RADAR_POLICY_VERSION}-current-release` as const
 
-export type RadarGrade = 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X'
+export type RadarGrade = 'S' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
 
 export type RadarNotice =
   | 'none'
@@ -21,18 +22,16 @@ export const radarGradeLabels: Record<RadarGrade, string> = {
   D: '非核心百合 / 明显边界',
   E: '重度排雷',
   F: '高危排雷',
-  X: '严重欺诈 / 黑名单',
 }
 
 export const radarGradeSummaries: Record<RadarGrade, string> = {
   S: '中心女性之间的恋爱关系或长期承诺已经由直接证据明确建立；具体警示仍单独列出。',
   A: '女性恋爱方向高度明确，但可能仍处于连载、开放结局或接近确立阶段。',
-  B: '已有肯定的百合定位或关系基础，同时存在轻度条件、关系体验或交付风险。',
-  C: '百合相关性存在，但更偏向友情以上、配角关系、群像或可规避的路线边界。',
+  B: '已有百合定位或关系依据，也包括没有主要男性角色、仅有轻微女性暧昧且无其他雷点的作品。',
+  C: '涵盖女性友情、配角关系、群像、可规避路线，也提示同一人物在前后作中涉及的 E/F 级雷点。',
   D: '作品不是稳定的核心百合体验，或存在一般向、旁支、未来异性走向与特定设定边界。',
   E: '已确认会显著影响百合观看体验的男性关系、路线污染、定位否认或高风险设定。',
   F: '已确认结局级、核心级或欺诈级风险；阅读或购买前应先查看具体警示。',
-  X: '只由人工裁决的最高风险层；当前公开快照不自动生成 X。',
 }
 
 export type RadarClassDefinition = {
@@ -179,21 +178,19 @@ export const radarClassDefinitions = {
   },
   "B-LIGHT": {
     "grade": "B",
-    "label": "已确认百合定位基线",
-    "summary": "目标作品已被肯定证据确认为百合、GL、女性—女性恋爱或等价定位，但当前关系状态、终局、排他性等信息不足以支持 S/A，也没有已确认的更低等级拦截事实。",
+    "label": "已确认百合定位，或无主要男性角色且有女性暧昧",
+    "summary": "已有百合定位依据的作品可按 B 评级。另一种情形是，本作完全没有主要男性角色，女性之间只要有一处可核实的暧昧情节，即使很轻微，也可评 B。",
     "inclusionCriteria": [
-      "存在 exact-work 的肯定百合/女性恋爱依据",
-      "至少有可追溯来源与事实支持",
-      "当前收集证据中没有已确认的 D/E/F/X 拦截事实"
+      "已有可追溯的百合定位依据，或已核实主要角色阵容且完全没有主要男性角色，并能指出女性之间具体的暧昧情节。",
+      "本作尚未达到 S 或 A。按无主要男性角色这一条件判定时，还须核对本作范围内没有其他雷点。"
     ],
     "exclusionCriteria": [
-      "仅凭标题熟悉度或模型记忆",
-      "一般目录标签且无具体百合依据",
-      "因为没查到问题就假定安全",
-      "存在已确认更低等级触发"
+      "仅凭标题、类型标签、同人配对或角色宣传图推测。",
+      "已确认适用更低等级的细则。"
     ],
     "interpretationNotes": [
-      "缺失风险证据只是弱佐证；不代表安全结局、排他性或不存在男性介入。"
+      "普通男性配角或路人可以出现。核对作品正文、覆盖主要人物的角色资料或具体社区记录，并写明依据。",
+      "在无主要男性角色的作品中，这一档与 C-FRIENDSHIP 的分界是有没有具体暧昧情节。一般向定位或暧昧戏份少本身不触发 D。"
     ],
     "tags": [],
     "requiresHumanReview": false,
@@ -237,7 +234,7 @@ export const radarClassDefinitions = {
     "exclusionCriteria": [
       "只声称“作者本意是批判”但缺乏上下文",
       "作品未达到 S/A 关系基础",
-      "实际发生 E/F/X 级结果却试图以批判意图免责",
+      "实际发生 E/F 级结果却试图以批判意图免责",
       "仅因作品严肃或文学性强"
     ],
     "interpretationNotes": [
@@ -316,20 +313,18 @@ export const radarClassDefinitions = {
   },
   "C-FRIENDSHIP": {
     "grade": "C",
-    "label": "超出普通友情但未确认恋爱的女性关系",
-    "summary": "女性角色之间的关系明显超出普通友情语境，但现有肯定证据仍不足以确认双方建立真实恋爱关系。",
+    "label": "友情以上的女性关系，或无主要男性角色的作品",
+    "summary": "女性关系超出普通友情、尚未确认恋爱时可评 C。完全没有主要男性角色且本作没有其他雷点时，即使只有普通友情，或没有可指出的暧昧情节，也可评 C。",
     "inclusionCriteria": [
-      "存在超出普通友情的肯定关系信号",
-      "关系仍缺乏足够的双向恋爱或正式确立证据"
+      "有具体情节支持女性关系超出普通友情，或有依据核实本作完全没有主要男性角色且没有其他雷点。"
     ],
     "exclusionCriteria": [
-      "只是关系亲密",
-      "仅凭观众嗑 CP",
-      "证据不足本身",
-      "已经确认恋爱关系"
+      "仅凭一张海报、个别角色资料或未检索到男性姓名推断主要阵容。",
+      "只因观众配对或资料不足而判定友情以上。"
     ],
     "interpretationNotes": [
-      "本类别不能作为“什么都没查清”的回退。"
+      "无主要男性角色是独立的评级依据，无需证明女性之间有超出友情的关系。出现女性暧昧情节且符合 B-LIGHT 时按 B，已有 S/A 依据时按相应规则。",
+      "按无主要男性角色这一条件评 C 时，写明核对的角色和剧情范围。"
     ],
     "tags": [],
     "requiresHumanReview": false,
@@ -375,6 +370,27 @@ export const radarClassDefinitions = {
     ],
     "interpretationNotes": [
       "与 related_project_yuri_trust_contamination 相对；传播必须 reasoned, not contagious。"
+    ],
+    "tags": [],
+    "requiresHumanReview": false,
+    "doNotAutoPublish": false
+  },
+  "C-CONTINUITY-EF": {
+    "grade": "C",
+    "label": "同一人物在前传或续作中有 E/F 级雷点",
+    "summary": "本作本身没有雷点，但在同一故事时间线内，前传或续作中同一人物涉及已经评为 E 或 F 的事实，本作按 C 提示。",
+    "inclusionCriteria": [
+      "两部作品有可核实的故事先后关系。写明本作、前传或续作及其时间顺序。",
+      "确认该人物是同一时间线上的同一人，并指出关联作品的 E/F 等级、具体雷点及其与该人物的关系。",
+      "本作本身没有其他雷点。"
+    ],
+    "exclusionCriteria": [
+      "仅有片名、人物姓名、品牌、作者或上映先后相同或相关。",
+      "平行世界、重启、独立改编、复述同一时期的版本，或仅有无关人物涉及 E/F 事实。"
+    ],
+    "interpretationNotes": [
+      "前传与续作两个方向均适用。列出关联作品和评级依据，将该事件记在实际发生的作品下。",
+      "如果本作本身已命中更低等级事实，按本作事实判级。本作的剧情或宣传另有已证实的更低等级事实时，以该事实判级。"
     ],
     "tags": [],
     "requiresHumanReview": false,
@@ -456,7 +472,8 @@ export const radarClassDefinitions = {
     "exclusionCriteria": [
       "因为完全没查清所以机械给 D",
       "没有任何来源解释为何作品与百合用户有关",
-      "将“不是百合”视为作品质量或作者道德问题"
+      "将“不是百合”视为作品质量或作者道德问题",
+      "完全没有主要男性角色、也没有其他雷点，仅因一般向定位或暧昧篇幅少而评 D。此时按 B-LIGHT 或 C-FRIENDSHIP 的边界判定。"
     ],
     "interpretationNotes": [
       "本类别不构成负面道德评价；数据库是百合用户决策情报库，不是只有纯百合作品才能存在的白名单。"
@@ -476,7 +493,8 @@ export const radarClassDefinitions = {
     "exclusionCriteria": [
       "核心或重要次要 CP 已达到 C-SIDE-CP 的高关系强度且权重足够",
       "只靠读者想象",
-      "完全不存在百合内容"
+      "完全不存在百合内容",
+      "完全没有主要男性角色、也没有其他雷点，仅因一般向定位或暧昧篇幅少而评 D。此时按 B-LIGHT 或 C-FRIENDSHIP 的边界判定。"
     ],
     "interpretationNotes": [
       "与 secondary_established_female_female_pairing 的主要差异是整体叙事权重与关系强度要求。"
@@ -539,7 +557,7 @@ export const radarClassDefinitions = {
       "风险本身不达到严重关系破坏或终局级别"
     ],
     "exclusionCriteria": [
-      "E/F/X 级严重事实",
+      "E/F 级严重事实",
       "主角/核心关系中的实质雷点",
       "仅因篇幅少就淡化严重事件"
     ],
@@ -933,7 +951,8 @@ export const radarClassDefinitions = {
       "仅共同作者/公司",
       "只有品牌名相同而剧情时间线高度独立",
       "相关 Work 风险未独立证明",
-      "当前 Work 达到 isolated_entry 应使用 C 类而非 F"
+      "当前 Work 达到 isolated_entry 应使用 C 类而非 F",
+      "本作本身无雷点，只有前后作同一人物涉及 E/F 级事实。此时适用 C-CONTINUITY-EF，不能仅按企划连续性评 F。"
     ],
     "interpretationNotes": [
       "与 series_isolated_yuri_entry 相对；不得无脑同系列连坐。"
@@ -964,76 +983,6 @@ export const radarClassDefinitions = {
     "tags": [],
     "requiresHumanReview": false,
     "doNotAutoPublish": false
-  },
-  "X-PREPAID-FRAUD": {
-    "grade": "X",
-    "label": "预付费百合重大欺诈",
-    "summary": "用户在预购、众筹、付费承诺或类似经济决定前收到具有项目权威的明确百合承诺，而最终交付与其存在严重实质矛盾，并达到欺诈/预付费损害门槛。",
-    "inclusionCriteria": [
-      "存在经济承诺前的明确百合宣传/承诺",
-      "承诺主体具有项目权威",
-      "最终交付与承诺严重矛盾",
-      "付费决策相关性明确",
-      "达到 X 的人工裁定门槛"
-    ],
-    "exclusionCriteria": [
-      "用户不满意但没有明确承诺",
-      "免费内容普通创作方向变化",
-      "无支付/预付关系",
-      "缺少宣传—交付证据链"
-    ],
-    "interpretationNotes": [
-      "X 继续保持 Human adjudication；不由模型仅凭不满自动分配。"
-    ],
-    "tags": [],
-    "requiresHumanReview": true,
-    "doNotAutoPublish": true
-  },
-  "X-REPEATED-BAIT": {
-    "grade": "X",
-    "label": "关联系列/企划重复百合欺诈模式",
-    "summary": "多个具有已验证 same_series/same_project 或等价强项目连续关系的 Work，各自独立证明发生 material yuri bait/fraud，由此形成同系列/同项目重复模式。",
-    "inclusionCriteria": [
-      "至少两个不同相关 Work 各自独立确认 bait/fraud",
-      "WorkRelation 与 ProjectContinuityProfile 均支持足够强连续性",
-      "不能仅靠共同作者推断",
-      "达到 X 的人工裁定门槛"
-    ],
-    "exclusionCriteria": [
-      "只有一个相关欺诈 Work",
-      "仅共同作者/公司",
-      "相关作品高度独立到 continuityClass=isolated_entry",
-      "bait 事实本身未独立证明"
-    ],
-    "interpretationNotes": [
-      "X 的重点是相关 Work 的重复模式，不是 Creator reputation。"
-    ],
-    "tags": [],
-    "requiresHumanReview": true,
-    "doNotAutoPublish": true
-  },
-  "X-ONGOING-CREATOR-EXTREME-RISK": {
-    "grade": "X",
-    "label": "连载中创作者极端历史风险",
-    "summary": "仅适用于仍在连载中的作品且保持 X 人工裁定：负责未来主要内容的 Entity 存在经验证、极端且与当前项目未来走向直接相关的高风险历史模式，足以形成最高级 contextual risk。",
-    "inclusionCriteria": [
-      "releaseStatus 为 ongoing",
-      "存在极端且经验证的 EntityRiskPattern",
-      "Entity 对当前 Work 的相关风险维度具有实际影响能力",
-      "达到 X 的人工裁定门槛"
-    ],
-    "exclusionCriteria": [
-      "作品已 completed",
-      "一般风评/泛政治/泛 LGBT+ 言论",
-      "仅一条弱历史记录",
-      "据此声称本作已经欺诈"
-    ],
-    "interpretationNotes": [
-      "这是 contextual risk，不是对主观恶意的事实宣判；意图可另行记录但不是风险模式成立的必要条件。"
-    ],
-    "tags": [],
-    "requiresHumanReview": true,
-    "doNotAutoPublish": true
   },
   "D-TS-SETTING": {
     "grade": "D",
@@ -1191,6 +1140,9 @@ export const radarRetiredClassIds = [
   'E-SPECIAL',
   'F-SPECIAL',
   'X-SPECIAL',
+  'X-PREPAID-FRAUD',
+  'X-REPEATED-BAIT',
+  'X-ONGOING-CREATOR-EXTREME-RISK',
 ] as const
 
 export const radarPolicySafety = {
@@ -1199,8 +1151,6 @@ export const radarPolicySafety = {
   unknownOrNotObservedNeverMeansAbsent: true,
   doNotOverwriteHumanVerified: true,
   severeRatingsRemainPublic: true,
-  doNotAutoAssignX: true,
-  machineXForbidden: true,
   preserveConflictingEvidence: true,
   storePolicyVersion: true,
   dUnclearIsReleaseStatusOnly: true,

@@ -1,14 +1,14 @@
 import Link from 'next/link'
+import { PUBLIC_GRADES } from '@/lib/publicRelease'
 
 import {
   radarClassEntries,
   radarGradeLabels,
   radarGradeSummaries,
+  RADAR_POLICY_VERSION,
   type RadarGrade,
   type RadarRatingClass,
 } from '@/lib/radar/ratingPolicy'
-
-const gradeOrder: RadarGrade[] = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X']
 
 function classesForGrade(grade: RadarGrade) {
   return radarClassEntries.filter(([, definition]) => definition.grade === grade)
@@ -27,7 +27,7 @@ export default function RulesIndexPage() {
   return (
     <main className="page collection-page release-rules-page">
       <section className="page-heading collection-heading">
-        <p className="eyebrow">v0.6 · 含现行增补</p>
+        <p className="eyebrow">{RADAR_POLICY_VERSION} · 2026 年 11 月 24 日起追溯适用</p>
         <h1>排雷规则</h1>
         <p>查看 {radarClassEntries.length} 条细则的证据要求和适用范围。</p>
         <div className="collection-actions">
@@ -45,7 +45,7 @@ export default function RulesIndexPage() {
         <article>
           <span>低级拦截</span>
           <h2>严重事实不会被高分遮住</h2>
-          <p>先按原作或官方授权资料预评，再以同一版本的社区记录核验。两边结论一致，标「官方来源」。出现分歧，取证据支持的较低等级，并标出支持该等级的来源。只有社区证据时，标「社区来源」。</p>
+          <p>先按原作或官方授权资料预评，再以同一版本的社区记录核验。两边结论一致，标「官方来源」。出现分歧，取证据支持的较低等级，并标出支持该等级的来源。只有社区证据时，标「社区来源」。最终等级内，有证据支持的细则可以并列。</p>
         </article>
         <article>
           <span>范围公开</span>
@@ -55,7 +55,7 @@ export default function RulesIndexPage() {
       </section>
 
       <nav className="release-rule-jump" aria-label="跳到各等级规则">
-        {gradeOrder.map((grade) => (
+        {PUBLIC_GRADES.map((grade) => (
           <a className={`grade-outline-${grade}`} href={`#grade-${grade}`} key={grade}>
             {grade} · {classesForGrade(grade).length}
           </a>
@@ -63,13 +63,13 @@ export default function RulesIndexPage() {
       </nav>
 
       <section className="ranked-collection-list release-rule-groups">
-        {gradeOrder.map((grade) => {
+        {PUBLIC_GRADES.map((grade) => {
           const gradeClasses = classesForGrade(grade)
           return (
             <section className="rank-group release-rule-group" id={`grade-${grade}`} key={grade}>
               <div className="rank-group-heading release-rule-group-heading">
                 <div>
-                  <p className="eyebrow">{grade === 'X' ? '最高风险 · 仅人工裁决' : `${grade} 级细则`}</p>
+                  <p className="eyebrow">{grade} 级细则</p>
                   <h2>{grade}：{radarGradeLabels[grade]}</h2>
                   <p>{radarGradeSummaries[grade]}</p>
                 </div>
@@ -114,15 +114,6 @@ export default function RulesIndexPage() {
         })}
       </section>
 
-      <section className="release-snapshot-note release-snapshot-note-public">
-        <div>
-          <p className="eyebrow">X 级边界</p>
-          <h2>当前公开快照只发布 S–F。</h2>
-        </div>
-        <p>
-          X 类要求完整证据链和人工裁决，不由机器自动分配。创作者历史风险也不能直接伪装成作品已经发生的剧情事实。
-        </p>
-      </section>
     </main>
   )
 }

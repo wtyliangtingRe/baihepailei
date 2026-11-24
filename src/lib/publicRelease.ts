@@ -70,6 +70,8 @@ export type PublicWorkRating = {
   gradeReviewed?: boolean
   decidingSource?: SourceFinding['kind']
   sourceFindings?: SourceFinding[]
+  continuity?: SourceReview['continuity']
+  supportingSources?: SourceReview['supportingSources']
   state: PublicRatingState
   grade?: PublicGrade
   bestGrade?: PublicGrade
@@ -531,6 +533,14 @@ export function selectMergedRating(records: PublicWorkRecord[]): PublicWorkRatin
     reviewMethod: evidenceRecord?.rating.reviewMethod,
     ...(selectedGrade && candidates.some(record => record.rating.reviewMethod === 'assessment') && { gradeReviewed: true }),
     decidingSource: evidenceRecord?.rating.decidingSource,
+    continuity: classes.includes('C-CONTINUITY-EF')
+      ? [...new Map(sameGrade.flatMap(record => record.rating.continuity || [])
+          .map(link => [link.workId + '|' + link.character, link])).values()]
+      : undefined,
+    supportingSources: sameGrade.some(record => record.rating.supportingSources?.length)
+      ? [...new Map(sameGrade.flatMap(record => record.rating.supportingSources || [])
+          .map(source => [source.kind + '|' + source.url, source])).values()]
+      : undefined,
     sourceFindings: reviewedFindings.length ? reviewedFindings : undefined,
     evidenceUrl: evidenceRecord?.rating.evidenceUrl,
     evidenceSources: evidenceRecord?.rating.evidenceSources,
@@ -1024,6 +1034,12 @@ function loadRelease(): PublicReleaseCache {
     merged.stats.reviewedVisibleWorks += added
   }
   for (const work of records) {
+    for (const link of work.rating.continuity || []) {
+      const anchor = byWorkId.get(link.workId)
+      if (!anchor || anchor.workId === work.workId || !['E', 'F'].includes(anchor.rating.grade || '')) {
+        throw new Error(`Recheck continuity for ${work.workId}: ${link.workId} no longer has an E/F rating`)
+      }
+    }
     if (work.rating.decidingSource) {
       const key = work.rating.decidingSource === 'official' ? 'source-official' : 'source-community'
       work.publicTags = publicTagsFor([key, ...work.publicTags.map(tag => tag.key)])

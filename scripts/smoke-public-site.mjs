@@ -80,7 +80,8 @@ try {
   assert.ok(ruleCount > 0)
   assert.match(rules, /<h1>排雷规则<\/h1>/)
   assert.ok(rules.includes(`查看 ${ruleCount} 条细则的证据要求和适用范围。`))
-  assert.doesNotMatch(rules, /当前快照的特殊数据状态|D-UNCLEAR/)
+  assert.doesNotMatch(rules, /当前快照的特殊数据状态|D-UNCLEAR|grade-X|X-PREPAID-FRAUD|X-REPEATED-BAIT|X-ONGOING-CREATOR-EXTREME-RISK/)
+  assert.match(rules, /C-CONTINUITY-EF/)
 
   const publisherFile = await response('/ads.txt')
   assert.equal(publisherFile.status, 200)

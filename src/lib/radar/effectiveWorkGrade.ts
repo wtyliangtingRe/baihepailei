@@ -20,7 +20,7 @@ export type EffectiveWorkGrade = {
   humanReviewed: boolean
 }
 
-const supportedGrades = new Set(['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'X'])
+const supportedGrades = new Set(['AA', 'A', 'B', 'C', 'D', 'E', 'F'])
 
 export function normalizeWorkGrade(value: unknown) {
   const normalized = String(value || '').trim().toUpperCase()

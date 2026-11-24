@@ -64,7 +64,7 @@ export default function TermsIndexPage() {
         <div>
           <h2>排雷规则入口</h2>
           <p>
-            S / A / B / C / D / E / F / X 的完整分级细则仍然保留在独立规则页。这里作为统一入口，避免顶部导航同时塞入太多相近按钮。
+            查看 S 至 F 各等级的判定条件与证据要求。
           </p>
         </div>
         <div className="collection-actions">

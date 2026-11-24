@@ -250,14 +250,14 @@ test('a valid human override has authority over Published while lineages remain 
   assert.ok(selected.snapshot.candidate)
 })
 
-test('human override may use X while machine conclusions may not', () => {
+test('a retired X human override leaves the valid candidate available', () => {
   const selected = standardization.selectRadarAuthority({
     identity,
     humanOverride: { grade: 'X', status: 'reviewed' },
     candidate: candidate('A'),
   })
-  assert.equal(selected.authority, 'human')
-  assert.equal(selected.gradeState.grade, 'X')
+  assert.equal(selected.authority, 'candidate')
+  assert.equal(selected.gradeState.grade, 'A')
 })
 
 test('a pending human form is not an override', () => {

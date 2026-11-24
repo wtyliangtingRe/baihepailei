@@ -2,6 +2,7 @@ import type { RadarRatingClass } from './ratingPolicy'
 
 const ratingClassSearchAliases: Partial<Record<RadarRatingClass, readonly string[]>> = {
   'B-FEMALE-NTR': ['女性 NTR', '女 NTR'],
+  'C-CONTINUITY-EF': ['前传', '续作', '后传', '同一时间线'],
   'C-MALE-MAIN-CAST': ['男主角', '男性主角'],
   'C-STRAIGHT-GIRL-HINT': ['直女', '异性恋取向'],
   'D-FUTURE-HET-HINT': ['异性走向', 'BG 倾向'],

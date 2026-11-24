@@ -37,10 +37,6 @@
   --assessment-accent-soft: rgb(255 120 110 / 0.15);
 }
 
-.work-assessment-trust-card[data-grade='X'] {
-  --assessment-accent: #c39aff;
-  --assessment-accent-soft: rgb(195 154 255 / 0.16);
-}
 
 .work-assessment-rating {
   display: grid;
@@ -313,7 +309,6 @@
 .work-assessment-rule[data-grade='D'] { --rule-accent: #ffb16d; }
 .work-assessment-rule[data-grade='E'],
 .work-assessment-rule[data-grade='F'] { --rule-accent: #ff786e; }
-.work-assessment-rule[data-grade='X'] { --rule-accent: #c39aff; }
 
 .work-assessment-rule[data-decisive='true'] {
   border-width: 2px;

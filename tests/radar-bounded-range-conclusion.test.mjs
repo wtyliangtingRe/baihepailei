@@ -70,6 +70,9 @@ test('explicit machine X is never rendered as a grade or range', () => {
   assert.ok(fixed.validationIssues.includes('machine_x_not_allowed'))
   assert.equal(bounded.conclusionMode, 'labels_only')
   assert.ok(bounded.validationIssues.includes('machine_x_not_allowed'))
+  const legacy = normalize({ coreGrade: 'X' })
+  assert.equal(legacy.fixedGrade, '')
+  assert.equal(legacy.conclusionMode, 'labels_only')
 })
 
 test('explicit malformed bounded range degrades to labels_only', () => {

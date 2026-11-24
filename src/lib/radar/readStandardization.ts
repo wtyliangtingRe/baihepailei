@@ -97,7 +97,7 @@ export type RadarAuthoritySelection = {
   snapshot: RadarReadSnapshot
 }
 
-const GRADE_ORDER = ['S', 'A', 'B', 'C', 'D', 'E', 'F', 'X'] as const
+const GRADE_ORDER = ['S', 'A', 'B', 'C', 'D', 'E', 'F'] as const
 const GRADE_RANK = new Map(GRADE_ORDER.map((grade, index) => [grade, index]))
 
 function clean(value: unknown) {
@@ -202,19 +202,16 @@ export function normalizeRadarConclusion(
     return { mode, grade: null, range: null, valid: true, rawMode, rawGrade }
   }
 
+  if ((mode === 'bounded_range' || mode === 'fixed_grade')
+    && [rawGrade, input.bestGrade, input.likelyGrade, input.worstGrade].some(value => clean(value).toUpperCase() === 'X')) {
+    return invalidExplicitState(mode, rawMode, rawGrade, 'machine_x_not_allowed')
+  }
+
   if (mode === 'bounded_range') {
     const compatibilityGrade = normalizeRadarGrade(rawGrade)
     const range = normalizeRadarGradeRange(input)
     if (!range) {
       return invalidExplicitState(mode, rawMode, rawGrade, 'invalid_bounded_range')
-    }
-    if (
-      compatibilityGrade === 'X'
-      || range.bestGrade === 'X'
-      || range.likelyGrade === 'X'
-      || range.worstGrade === 'X'
-    ) {
-      return invalidExplicitState(mode, rawMode, rawGrade, 'machine_x_not_allowed', range)
     }
     if (!compatibilityGrade || compatibilityGrade !== range.likelyGrade) {
       return invalidExplicitState(mode, rawMode, rawGrade, 'bounded_core_likely_mismatch', range)
@@ -233,9 +230,6 @@ export function normalizeRadarConclusion(
   if (mode === 'fixed_grade') {
     const grade = normalizeRadarGrade(rawGrade)
     const range = normalizeRadarGradeRange(input)
-    if (grade === 'X' || range?.bestGrade === 'X' || range?.likelyGrade === 'X' || range?.worstGrade === 'X') {
-      return invalidExplicitState(mode, rawMode, rawGrade, 'machine_x_not_allowed', range)
-    }
     if (!grade || !range) {
       return invalidExplicitState(mode, rawMode, rawGrade, 'invalid_fixed_grade_contract', range)
     }

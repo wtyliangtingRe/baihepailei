@@ -174,7 +174,7 @@ export default async function WorksPage({ searchParams }: { searchParams: Search
                     {work.publicTags.slice(0, 2).map((tag) => (
                       <span className="release-warning-chip warning-preference" key={tag.key}>{tag.label}</span>
                     ))}
-                    {classes.slice(0, 3).map(({ code, definition }) => (
+                    {classes.map(({ code, definition }) => (
                       <span className={`release-warning-chip warning-grade-${definition.grade}`} key={code}>
                         {definition.label}
                       </span>

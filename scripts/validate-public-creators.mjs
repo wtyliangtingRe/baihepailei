@@ -126,6 +126,7 @@ for (const record of records) {
     ...record.sources.map(source => source.url), record.summary?.sourceUrl, record.rating.evidenceUrl,
     ...(record.rating.sourceFindings || []).flatMap(finding => finding.urls),
     ...(record.rating.evidenceSources || []).map(source => source.url),
+    ...(record.rating.supportingSources || []).map(source => source.url),
     ...[...record.creators, ...record.organizations].flatMap(credit => [credit.sourceUrl, ...(credit.sourceUrls || [])]),
   ].filter(Boolean))
   const expectedUrls = new Set([...oldUrls, ...(correctedSources.get(record.workId) || [])])
