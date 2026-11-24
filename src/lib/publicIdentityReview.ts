@@ -50,6 +50,7 @@ type Correction = {
   removedCreatorId?: string
   summary?: string
   aliases?: string[]
+  removedAliases?: string[]
   localizedTitles?: PublicWorkRecord['localizedTitles']
   printEdition?: NonNullable<PublicWorkRecord['printEditions']>[number]
   printEditions?: NonNullable<PublicWorkRecord['printEditions']>
@@ -263,9 +264,11 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
   const edges = members.flatMap(id => review.creditsByWork.get(id) || [])
   const correctedUrls = new Map<string, string>()
   const unrelated = new Set<string>()
+  const removedAliases = new Set<string>()
   const editionSources: PublicWorkRecord['sources'] = []
   for (const id of members) {
     const correction = review.corrections.get(id)
+    for (const name of correction?.removedAliases || []) removedAliases.add(name)
     for (const url of correction?.unrelatedUrls || []) unrelated.add(editionLinkKey(url))
     editionSources.push(...correction?.editionSources || [])
     if (correction?.wrongUrl) correctedUrls.set(correction.wrongUrl, correction.url)
@@ -296,6 +299,7 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
       correctedSources.push({ title: '首发日期依据', url: dateSource })
     }
   }
+  const keepAlias = (name: string) => !removedAliases.has(name) && name !== fix?.placeholder
   return {
     ...work,
     ...(fix?.title && { title: fix.title }),
@@ -313,21 +317,21 @@ export function applyReviewedMetadata(work: PublicWorkRecord, review: IdentityRe
       ...(work.printEditions || []).filter(edition => !printEditions.some(print => print.isbn === edition.isbn)),
       ...printEditions,
     ] }),
-    ...((fix?.title || fix?.placeholder || fix?.aliases) && {
+    ...((fix?.title || fix?.placeholder || fix?.aliases || removedAliases.size) && {
       aliases: [...new Set([
-        ...work.aliases.filter(alias => alias !== fix.placeholder && alias !== fix.title),
-        ...(fix.title ? [work.title] : []), ...(fix.aliases || []),
+        ...work.aliases.filter(alias => keepAlias(alias) && alias !== fix?.title),
+        ...(fix?.title ? [work.title] : []), ...(fix?.aliases || []),
       ])],
     }),
-    ...((fix?.placeholder || fix?.localizedTitles) && {
+    ...((fix?.placeholder || fix?.localizedTitles || removedAliases.size) && {
       localizedTitles: mergeLocalizedTitles([
-        ...work.localizedTitles.filter(item => item.title !== fix?.placeholder), ...(fix?.localizedTitles || []),
+        ...work.localizedTitles.filter(item => keepAlias(item.title)), ...(fix?.localizedTitles || []),
       ]),
     }),
     ...(fix?.summary && { summary: { kind: 'source_summary' as const, text: fix.summary, sourceUrl: fix.url } }),
     ...(fix?.label && {
       title: `${fix.title || work.title}（${fix.label}）`,
-      aliases: [...new Set([work.title, ...work.aliases, ...(fix.aliases || [])])],
+      aliases: [...new Set([work.title, ...work.aliases.filter(keepAlias), ...(fix.aliases || [])])],
       media: { ...work.media, format: fix.format },
     }),
     ...(work.rating.evidenceUrl && correctedUrls.has(work.rating.evidenceUrl) && {
