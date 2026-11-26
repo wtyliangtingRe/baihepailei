@@ -15,6 +15,12 @@ export default function UpdatesPage() {
   const catalog = getPublicCatalogMergeStats()
   const enrichment = getPublicEnrichmentManifest()
   const recent = getPublicRecentWorks()
+  const releaseRange = recent.length > 0
+    ? new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', timeZone: 'UTC' }).formatRange(
+        new Date(recent[recent.length - 1].releasedOn),
+        new Date(recent[0].releasedOn),
+      )
+    : ''
 
   return (
     <main className="page collection-page">
@@ -25,7 +31,7 @@ export default function UpdatesPage() {
       </section>
       {recent.length > 0 && <section className="release-section" id="recent-works" aria-labelledby="recent-works-title">
         <div className="release-section-heading">
-          <div><h2 id="recent-works-title">2026 年秋季新作评级</h2><p>9 月 1 日至 11 月 22 日 · {recent.length} 部 · 按发行日期排列</p></div>
+          <div><h2 id="recent-works-title">2026 年秋季新作评级</h2><p>{releaseRange} · {recent.length} 部 · 按发行日期排列</p></div>
         </div>
         <ul className="creator-works">
           {recent.map(({ work, releasedOn, scope, title }) => (

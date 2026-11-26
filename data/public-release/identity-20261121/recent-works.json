@@ -1,6 +1,6 @@
 {
   "schemaVersion": "baihepailei-recent-works-v1",
-  "assessedOn": "2026-11-24",
+  "assessedOn": "2026-11-26",
   "entities": [
     {
       "creatorId": "894652013098",
@@ -1579,6 +1579,60 @@
       "name": "Laments",
       "names": [
         "Laments"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "893602303855",
+      "kind": "person",
+      "name": "八星こはく",
+      "names": [
+        "八星こはく"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "897775660641",
+      "kind": "person",
+      "name": "九條葉月",
+      "names": [
+        "九條葉月"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "899549169132",
+      "kind": "person",
+      "name": "ふぁすな",
+      "names": [
+        "ふぁすな"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "897895330378",
+      "kind": "person",
+      "name": "村雲菜月",
+      "names": [
+        "村雲菜月"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "894353639045",
+      "kind": "person",
+      "name": "エイタツ",
+      "names": [
+        "エイタツ"
+      ],
+      "identityBasis": "name_only"
+    },
+    {
+      "creatorId": "894183929629",
+      "kind": "person",
+      "name": "石岡茜",
+      "names": [
+        "石岡茜"
       ],
       "identityBasis": "name_only"
     }
@@ -8955,6 +9009,628 @@
               ]
             }
           ]
+        }
+      }
+    },
+    {
+      "workId": "10627",
+      "releasedOn": "2026-11-26",
+      "scope": "小学馆第 6 卷，原连载条目首次评级",
+      "title": "ふしぎな猫のまち メルティア"
+    },
+    {
+      "workId": "40109",
+      "releasedOn": "2026-11-25",
+      "scope": "MFブックス第 1 卷，新版承接 2025 年网文",
+      "edition": {
+        "title": "天才幼女とぐーたらエルフは幸せに暮らしたい！ ～治癒魔法で二人の夢を叶えます～",
+        "provider": "recent",
+        "url": "https://www.kadokawa.co.jp/product/322605001313/",
+        "media": {
+          "group": "novel",
+          "type": "light_novel",
+          "format": "轻小说"
+        },
+        "aliases": [
+          "天才幼女、ぽんこつエルフに拾われる",
+          "天才幼女とぐーたらエルフは幸せに暮らしたい！",
+          "てんえる"
+        ],
+        "localizedTitles": [
+          {
+            "title": "天才幼女とぐーたらエルフは幸せに暮らしたい！ ～治癒魔法で二人の夢を叶えます～",
+            "language": "ja",
+            "kind": "original"
+          }
+        ],
+        "summary": {
+          "kind": "source_summary",
+          "text": "转生为六岁女孩的妮娜被精灵艾莉泽带回家。她照顾不擅长家务的艾莉泽，也重新拾起成为医生的梦想。",
+          "sourceUrl": "https://www.kadokawa.co.jp/product/322605001313/"
+        },
+        "sources": [
+          {
+            "title": "第 1 卷出版社页",
+            "url": "https://www.kadokawa.co.jp/product/322605001313/",
+            "tier": "official"
+          },
+          {
+            "title": "作者网文第 1 话",
+            "url": "https://kakuyomu.jp/works/16818622173362606763/episodes/16818622174793624464",
+            "tier": "official"
+          },
+          {
+            "title": "作者网文第 14 话",
+            "url": "https://kakuyomu.jp/works/16818622173362606763/episodes/16818622176059368917",
+            "tier": "official"
+          },
+          {
+            "title": "作者网文第 29 话",
+            "url": "https://kakuyomu.jp/works/16818622173362606763/episodes/16818622176686701334",
+            "tier": "official"
+          },
+          {
+            "title": "作者出版说明",
+            "url": "https://kakuyomu.jp/users/kohaku__08/news/11054822662593733529",
+            "tier": "official"
+          },
+          {
+            "title": "同期新刊介绍",
+            "url": "https://www.yurimiru.com/news/shinkan-week-2026-11-23",
+            "tier": "community"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "893602303855",
+            "kind": "person",
+            "name": "八星こはく",
+            "role": "作者",
+            "sourceUrl": "https://www.kadokawa.co.jp/product/322605001313/"
+          },
+          {
+            "creatorId": "1007789",
+            "kind": "person",
+            "name": "ハナモト",
+            "role": "插画",
+            "sourceUrl": "https://www.kadokawa.co.jp/product/322605001313/"
+          },
+          {
+            "creatorId": "1001996",
+            "kind": "organization",
+            "name": "KADOKAWA",
+            "role": "出版社",
+            "sourceUrl": "https://www.kadokawa.co.jp/product/322605001313/"
+          }
+        ],
+        "review": {
+          "workId": "40109",
+          "siteId": "recent-isbn-9784046605344",
+          "rationale": "第 1 卷以妮娜与精灵艾莉泽从同住走到互认家人为主。作者公开的网文第 14 话回顾艾莉泽过去的家庭，第 29 话写她承诺以家人身份参加妮娜的活动；妮娜也希望陪她走到最后。出版书介同样把彼此的关系界定为家人。本次评估覆盖纸书第 1 卷可核对的家庭羁绊。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "C",
+              "classes": [
+                "C-FRIENDSHIP"
+              ],
+              "urls": [
+                "https://www.kadokawa.co.jp/product/322605001313/",
+                "https://kakuyomu.jp/works/16818622173362606763/episodes/16818622176686701334"
+              ]
+            }
+          ],
+          "supportingSources": [
+            {
+              "kind": "official",
+              "url": "https://kakuyomu.jp/works/16818622173362606763/episodes/16818622174793624464"
+            },
+            {
+              "kind": "official",
+              "url": "https://kakuyomu.jp/works/16818622173362606763/episodes/16818622176059368917"
+            },
+            {
+              "kind": "official",
+              "url": "https://kakuyomu.jp/users/kohaku__08/news/11054822662593733529"
+            },
+            {
+              "kind": "community",
+              "url": "https://www.yurimiru.com/news/shinkan-week-2026-11-23"
+            }
+          ]
+        },
+        "printEdition": {
+          "isbn": "9784046605344",
+          "title": "天才幼女とぐーたらエルフは幸せに暮らしたい！ ～治癒魔法で二人の夢を叶えます～ 1",
+          "url": "https://www.kadokawa.co.jp/product/322605001313/",
+          "publisher": "KADOKAWA",
+          "onSale": "2026-11-25",
+          "issued": "2026-11"
+        },
+        "firstPublication": {
+          "date": "2025-05-10",
+          "sourceUrl": "https://kakuyomu.jp/works/16818622173362606763/episodes/16818622174793624464"
+        }
+      }
+    },
+    {
+      "workId": "40108",
+      "releasedOn": "2026-11-25",
+      "scope": "角川单行本第 1 卷，4 月已开载",
+      "edition": {
+        "title": "つつじの工業高校聖剣工房DX",
+        "provider": "recent",
+        "url": "https://www.kadokawa.co.jp/product/322607000750/",
+        "media": {
+          "group": "manga",
+          "type": "manga",
+          "format": "漫画"
+        },
+        "aliases": [
+          "つつじの工業高校聖剣工房ＤＸ"
+        ],
+        "localizedTitles": [
+          {
+            "title": "つつじの工業高校聖剣工房DX",
+            "language": "ja",
+            "kind": "original"
+          }
+        ],
+        "summary": {
+          "kind": "source_summary",
+          "text": "立花圣、天谷莲香和日向光进入工科高中。一把插在石头里的剑让她们走进制作武器和防具的社团。",
+          "sourceUrl": "https://www.kadokawa.co.jp/product/322607000750/"
+        },
+        "sources": [
+          {
+            "title": "角川单行本第 1 卷",
+            "url": "https://www.kadokawa.co.jp/product/322607000750/",
+            "tier": "official"
+          },
+          {
+            "title": "角川连载第 1 话",
+            "url": "https://comic-walker.com/detail/KC_008601_S/episodes/KC_0086010000200011_E?episodeType=first",
+            "tier": "official"
+          },
+          {
+            "title": "角川连载与卷目",
+            "url": "https://comic-walker.com/detail/KC_008601_S",
+            "tier": "official"
+          },
+          {
+            "title": "同期新刊介绍",
+            "url": "https://www.yurimiru.com/news/shinkan-week-2026-11-23",
+            "tier": "community"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "1008383",
+            "kind": "person",
+            "name": "渡辺伊織",
+            "role": "作者",
+            "sourceUrl": "https://www.kadokawa.co.jp/product/322607000750/"
+          },
+          {
+            "creatorId": "1001996",
+            "kind": "organization",
+            "name": "KADOKAWA",
+            "role": "出版社",
+            "sourceUrl": "https://www.kadokawa.co.jp/product/322607000750/"
+          }
+        ],
+        "review": {
+          "workId": "40108",
+          "siteId": "recent-isbn-9784041179505",
+          "rationale": "角川的连载与第 1 卷资料都以立花圣、天谷莲香和日向光三名女生为主线。三人从一起选社团到协作制作剑与盔甲，现有首卷资料显示的是工科社团生活与同伴关系。按首卷可核对的主要阵容评定。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "C",
+              "classes": [
+                "C-FRIENDSHIP"
+              ],
+              "urls": [
+                "https://comic-walker.com/detail/KC_008601_S/episodes/KC_0086010000200011_E?episodeType=first",
+                "https://www.kadokawa.co.jp/product/322607000750/"
+              ]
+            }
+          ],
+          "supportingSources": [
+            {
+              "kind": "official",
+              "url": "https://comic-walker.com/detail/KC_008601_S"
+            },
+            {
+              "kind": "community",
+              "url": "https://www.yurimiru.com/news/shinkan-week-2026-11-23"
+            }
+          ]
+        },
+        "printEdition": {
+          "isbn": "9784041179505",
+          "title": "つつじの工業高校聖剣工房DX 1",
+          "url": "https://www.kadokawa.co.jp/product/322607000750/",
+          "publisher": "KADOKAWA",
+          "onSale": "2026-11-25",
+          "issued": "2026-11"
+        },
+        "firstPublication": {
+          "date": "2026-04-03",
+          "sourceUrl": "https://comic-walker.com/detail/KC_008601_S/episodes/KC_0086010000200011_E?episodeType=first"
+        }
+      }
+    },
+    {
+      "workId": "36747",
+      "releasedOn": "2026-11-25",
+      "scope": "Steam 正式版，按北京时间记实际开放日",
+      "title": "卡米拉:绯红之月"
+    },
+    {
+      "workId": "17010",
+      "releasedOn": "2026-11-25",
+      "scope": "日本纸书第 1 卷，覆盖连载第 1–9 话",
+      "title": "壊していいよ、すいかちゃん"
+    },
+    {
+      "workId": "40107",
+      "releasedOn": "2026-11-19",
+      "scope": "HJノベルス第 1 卷，原作网文 2025 年已开载",
+      "edition": {
+        "title": "魔石喰らいの最強聖女、悲劇の運命は『力（パワー）』でなぎ倒します！",
+        "provider": "recent",
+        "url": "https://ebookstore.sony.jp/title/02476427/",
+        "media": {
+          "group": "novel",
+          "type": "light_novel",
+          "format": "轻小说"
+        },
+        "aliases": [
+          "魔石喰らいの最強聖女 ～悲劇の運命は『力（パワー）』でなぎ倒します！～"
+        ],
+        "localizedTitles": [
+          {
+            "title": "魔石喰らいの最強聖女、悲劇の運命は『力（パワー）』でなぎ倒します！",
+            "language": "ja",
+            "kind": "original"
+          }
+        ],
+        "summary": {
+          "kind": "source_summary",
+          "text": "被关在别邸的莉娜发现自己能靠吞食魔石习得魔法。她遇到一只幼龙，与前女仆菲娜重聚，异母妹妹爱丽丝也开始来探望她。",
+          "sourceUrl": "https://ebookstore.sony.jp/title/02476427/"
+        },
+        "sources": [
+          {
+            "title": "HJノベルス授权电子书",
+            "url": "https://ebookstore.sony.jp/title/02476427/",
+            "tier": "official"
+          },
+          {
+            "title": "作者原作与首发目录",
+            "url": "https://ncode.syosetu.com/n2788kp/",
+            "tier": "official"
+          },
+          {
+            "title": "纸书 ISBN 与书目",
+            "url": "https://www.maruzenjunkudo.co.jp/products/9784798643380",
+            "tier": "official"
+          },
+          {
+            "title": "《百合文芸部》第 1 卷读后评",
+            "url": "https://yuribungeibu.com/maseki-gurai-no-syoujyo-higeki-no-unmei-wa-power-de-nagitaoshimasu001/",
+            "tier": "community"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "897775660641",
+            "kind": "person",
+            "name": "九條葉月",
+            "role": "作者",
+            "sourceUrl": "https://ebookstore.sony.jp/title/02476427/"
+          },
+          {
+            "creatorId": "899549169132",
+            "kind": "person",
+            "name": "ふぁすな",
+            "role": "插画",
+            "sourceUrl": "https://ebookstore.sony.jp/title/02476427/"
+          },
+          {
+            "creatorId": "1002031",
+            "kind": "organization",
+            "name": "ホビージャパン",
+            "role": "出版社",
+            "sourceUrl": "https://www.maruzenjunkudo.co.jp/products/9784798643380"
+          }
+        ],
+        "review": {
+          "workId": "40107",
+          "siteId": "recent-isbn-9784798643380",
+          "rationale": "出版社授权的第 1 卷书介与《百合文芸部》读后评均点出了莉娜、菲娜与爱丽丝。爱丽丝受家里影响起初冷待莉娜，后来想与姐姐亲近，莉娜也逐渐接纳她。按首卷的姐妹羁绊评定。该卷涉及家庭虐待；读评另提示后续网文有男性角色参与，现有判断覆盖第 1 卷。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "C",
+              "classes": [
+                "C-FRIENDSHIP"
+              ],
+              "urls": [
+                "https://ebookstore.sony.jp/title/02476427/"
+              ]
+            },
+            {
+              "kind": "community",
+              "grade": "C",
+              "classes": [
+                "C-FRIENDSHIP"
+              ],
+              "urls": [
+                "https://yuribungeibu.com/maseki-gurai-no-syoujyo-higeki-no-unmei-wa-power-de-nagitaoshimasu001/"
+              ]
+            }
+          ],
+          "supportingSources": [
+            {
+              "kind": "official",
+              "url": "https://ncode.syosetu.com/n2788kp/"
+            },
+            {
+              "kind": "official",
+              "url": "https://www.maruzenjunkudo.co.jp/products/9784798643380"
+            }
+          ]
+        },
+        "printEdition": {
+          "isbn": "9784798643380",
+          "title": "魔石喰らいの最強聖女、悲劇の運命は『力（パワー）』でなぎ倒します！ 1",
+          "url": "https://www.maruzenjunkudo.co.jp/products/9784798643380",
+          "publisher": "ホビージャパン",
+          "onSale": "2026-11-19",
+          "issued": "2026-11"
+        },
+        "firstPublication": {
+          "date": "2025-06-24",
+          "sourceUrl": "https://ncode.syosetu.com/n2788kp/"
+        }
+      }
+    },
+    {
+      "workId": "40106",
+      "releasedOn": "2026-11-18",
+      "scope": "讲谈社单行本，8 月先刊《群像》",
+      "edition": {
+        "title": "現在代行形",
+        "provider": "recent",
+        "url": "https://prtimes.jp/main/html/rd/p/000009188.000001719.html",
+        "media": {
+          "group": "novel",
+          "type": "novel",
+          "format": "小说"
+        },
+        "aliases": [],
+        "localizedTitles": [
+          {
+            "title": "現在代行形",
+            "language": "ja",
+            "kind": "original"
+          }
+        ],
+        "summary": {
+          "kind": "source_summary",
+          "text": "绫实帮大学好友、插画师椎名照看漫展摊位。她用椎名的笔名回了一封读者来信，从此开始替好友扮演另一个身份。",
+          "sourceUrl": "https://prtimes.jp/main/html/rd/p/000009188.000001719.html"
+        },
+        "sources": [
+          {
+            "title": "讲谈社新书与书介",
+            "url": "https://prtimes.jp/main/html/rd/p/000009188.000001719.html",
+            "tier": "official"
+          },
+          {
+            "title": "《群像》首刊目录",
+            "url": "https://gunzou.kodansha.co.jp/indexes/2595",
+            "tier": "official"
+          },
+          {
+            "title": "读者 Roko 的单行本书评",
+            "url": "https://note.com/roko2020/n/n2ea569b60ed7",
+            "tier": "community"
+          },
+          {
+            "title": "同期新刊介绍",
+            "url": "https://www.yurimiru.com/works/c125a4df-7067-441e-a3e7-ca0fd4d9f4ff/vol/1",
+            "tier": "community"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "897895330378",
+            "kind": "person",
+            "name": "村雲菜月",
+            "role": "作者",
+            "sourceUrl": "https://prtimes.jp/main/html/rd/p/000009188.000001719.html"
+          },
+          {
+            "creatorId": "1002020",
+            "kind": "organization",
+            "name": "講談社",
+            "role": "出版社",
+            "sourceUrl": "https://prtimes.jp/main/html/rd/p/000009188.000001719.html"
+          }
+        ],
+        "review": {
+          "workId": "40106",
+          "siteId": "recent-isbn-9784065454831",
+          "rationale": "绫实使用好友椎名的笔名回信，从擅自代笔发展到获准替她维持公众身份、与外界交涉。讲谈社书介和读者 Roko 均描述了这段合作对绫实的身份认同及两人关系的影响。按女性双主角之间超出日常友情的关系评定，范围为讲谈社单行本。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "C",
+              "classes": [
+                "C-FRIENDSHIP"
+              ],
+              "urls": [
+                "https://prtimes.jp/main/html/rd/p/000009188.000001719.html"
+              ]
+            },
+            {
+              "kind": "community",
+              "grade": "C",
+              "classes": [
+                "C-FRIENDSHIP"
+              ],
+              "urls": [
+                "https://note.com/roko2020/n/n2ea569b60ed7"
+              ]
+            }
+          ],
+          "supportingSources": [
+            {
+              "kind": "official",
+              "url": "https://gunzou.kodansha.co.jp/indexes/2595"
+            },
+            {
+              "kind": "community",
+              "url": "https://www.yurimiru.com/works/c125a4df-7067-441e-a3e7-ca0fd4d9f4ff/vol/1"
+            }
+          ]
+        },
+        "printEdition": {
+          "isbn": "9784065454831",
+          "title": "現在代行形",
+          "url": "https://prtimes.jp/main/html/rd/p/000009188.000001719.html",
+          "publisher": "講談社",
+          "onSale": "2026-11-18",
+          "issued": "2026-11"
+        },
+        "firstPublication": {
+          "date": "2026-08-06",
+          "sourceUrl": "https://gunzou.kodansha.co.jp/indexes/2595"
+        }
+      }
+    },
+    {
+      "workId": "40105",
+      "releasedOn": "2026-11-16",
+      "scope": "秋田书店单行本，源于 2025 年连载",
+      "edition": {
+        "title": "家活！～女ふたり、家を買う？～",
+        "provider": "recent",
+        "url": "https://souffle.life/author/iekatsu-onna-futari-ie-wo-kau/",
+        "media": {
+          "group": "manga",
+          "type": "manga",
+          "format": "漫画"
+        },
+        "aliases": [
+          "家活！〜女ふたり、家を買う？〜"
+        ],
+        "localizedTitles": [
+          {
+            "title": "家活！～女ふたり、家を買う？～",
+            "language": "ja",
+            "kind": "original"
+          }
+        ],
+        "summary": {
+          "kind": "source_summary",
+          "text": "两位同住的女性漫画家和五只猫已有稳定的租房生活。她们开始一起研究预算、选房和买房，想知道能否把家长期安顿下来。",
+          "sourceUrl": "https://souffle.life/author/iekatsu-onna-futari-ie-wo-kau/"
+        },
+        "sources": [
+          {
+            "title": "Souffle 作品与署名",
+            "url": "https://souffle.life/author/iekatsu-onna-futari-ie-wo-kau/",
+            "tier": "official"
+          },
+          {
+            "title": "Souffle 第 1 话",
+            "url": "https://souffle.life/manga/iekatsu-onna-futari-ie-wo-kau/20251112-001/",
+            "tier": "official"
+          },
+          {
+            "title": "纸书 ISBN 与书目",
+            "url": "https://www.kinokuniya.co.jp/f/dsg-01-9784253020794",
+            "tier": "official"
+          },
+          {
+            "title": "同期新刊介绍",
+            "url": "https://www.yurimiru.com/news/shinkan-week-2026-11-16",
+            "tier": "community"
+          }
+        ],
+        "credits": [
+          {
+            "creatorId": "815000016208",
+            "kind": "person",
+            "name": "四ツ原フリコ",
+            "role": "原作",
+            "sourceUrl": "https://souffle.life/author/iekatsu-onna-futari-ie-wo-kau/"
+          },
+          {
+            "creatorId": "894353639045",
+            "kind": "person",
+            "name": "エイタツ",
+            "role": "作画",
+            "sourceUrl": "https://souffle.life/author/iekatsu-onna-futari-ie-wo-kau/"
+          },
+          {
+            "creatorId": "894183929629",
+            "kind": "person",
+            "name": "石岡茜",
+            "role": "监修・专栏执笔",
+            "sourceUrl": "https://souffle.life/author/iekatsu-onna-futari-ie-wo-kau/"
+          },
+          {
+            "creatorId": "1002016",
+            "kind": "organization",
+            "name": "秋田書店",
+            "role": "出版社",
+            "sourceUrl": "https://www.kinokuniya.co.jp/f/dsg-01-9784253020794"
+          }
+        ],
+        "review": {
+          "workId": "40105",
+          "siteId": "recent-isbn-9784253020794",
+          "rationale": "Souffle 的作品页和第一话以共同租房、照顾五只猫的四ツ原フリコ与エイタツ为叙事中心。她们商量如何合购住房及如何在现实生活里一起安顿下来。按双女性主视角和同住朋友的共同生活评定。",
+          "findings": [
+            {
+              "kind": "official",
+              "grade": "C",
+              "classes": [
+                "C-FRIENDSHIP"
+              ],
+              "urls": [
+                "https://souffle.life/author/iekatsu-onna-futari-ie-wo-kau/",
+                "https://souffle.life/manga/iekatsu-onna-futari-ie-wo-kau/20251112-001/"
+              ]
+            }
+          ],
+          "supportingSources": [
+            {
+              "kind": "official",
+              "url": "https://www.kinokuniya.co.jp/f/dsg-01-9784253020794"
+            },
+            {
+              "kind": "community",
+              "url": "https://www.yurimiru.com/news/shinkan-week-2026-11-16"
+            }
+          ]
+        },
+        "printEdition": {
+          "isbn": "9784253020794",
+          "title": "家活！～女ふたり、家を買う？～",
+          "url": "https://www.kinokuniya.co.jp/f/dsg-01-9784253020794",
+          "publisher": "秋田書店",
+          "onSale": "2026-11-16",
+          "issued": "2026-11"
+        },
+        "firstPublication": {
+          "date": "2025-11-12",
+          "sourceUrl": "https://souffle.life/manga/iekatsu-onna-futari-ie-wo-kau/20251112-001/"
         }
       }
     }
