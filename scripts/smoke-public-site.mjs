@@ -208,11 +208,11 @@ try {
     assert.equal(new URL(result.headers.get('location'), base).pathname, destination)
   }
 
-  const reviewManifest = JSON.parse(readFileSync('data/public-release/review-20261121/manifest.json', 'utf8'))
   const intake = JSON.parse(readFileSync('data/public-release/identity-20261121/recent-works.json', 'utf8'))
   const additions = intake.entries.filter(entry => entry.edition)
   // Compare the built server with the current checkout's release rather than pinned counts.
-  const merge = loadPublicRelease(process.cwd()).getPublicCatalogMergeStats()
+  const release = loadPublicRelease(process.cwd())
+  const merge = release.getPublicCatalogMergeStats()
   const health = await json('/api/health')
   assert.deepEqual(
     {
@@ -231,7 +231,7 @@ try {
       mergedAway: merge.mergedAway,
       mergedGroups: merge.multiWorkGroups,
       largestMergedGroup: merge.largestGroup,
-      ratedWorks: reviewManifest.ratedSourceRecords + additions.length,
+      ratedWorks: release.getPublicReleaseManifest().counts.ratedWorks,
     },
   )
   assert.equal(health.visibleWorks + health.mergedAway, health.catalogWorks)
