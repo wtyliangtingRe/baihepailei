@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util'
 import { isRadarRatingClass, radarClassDefinitions } from './radar/ratingPolicy'
 import type { PublicGrade, PublicWorkRating } from './publicRelease'
 
@@ -83,4 +84,28 @@ export function resolveReview(review: SourceReview, previous: PublicWorkRating, 
     ...(review.supportingSources?.length && { supportingSources: review.supportingSources }),
     decidingSource: winner.kind, sourceFindings: ordered, evidenceSources, evidenceUrl: winner.urls[0],
   }
+}
+
+export type SourceReviewDelta = { prior: SourceReview | null; review: SourceReview }
+
+// A delta can add a missing review or replace one exact previous review.
+// Already-integrated rows are no-ops; unexpected changes must be reconciled.
+export function mergeSourceReviewDeltas(base: SourceReview[], deltas: SourceReviewDelta[]): SourceReview[] {
+  const reviews = new Map(base.map(review => [review.workId, review]))
+  if (reviews.size !== base.length) throw new Error('Duplicate base source review')
+  const seen = new Set<string>()
+  for (const { prior, review } of deltas) {
+    if (!review || !/^\d+$/.test(review.workId) || typeof review.workId !== 'string' ||
+        (prior !== null && (!prior || prior.workId !== review.workId || prior.siteId !== review.siteId)) || seen.has(review.workId)) {
+      throw new Error('Invalid source review delta')
+    }
+    seen.add(review.workId)
+    const current = reviews.get(review.workId)
+    if (current && isDeepStrictEqual(current, review)) continue
+    if (prior === null ? current !== undefined : !isDeepStrictEqual(current, prior)) {
+      throw new Error(`Stale source review delta: ${review.workId}`)
+    }
+    reviews.set(review.workId, review)
+  }
+  return [...reviews.values()]
 }

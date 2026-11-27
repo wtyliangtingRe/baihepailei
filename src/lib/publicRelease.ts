@@ -1,8 +1,8 @@
-import { matchesReviewEdition, resolveReview, type SourceFinding, type SourceReview } from './sourceReview'
+import { matchesReviewEdition, mergeSourceReviewDeltas, resolveReview, type SourceFinding, type SourceReview, type SourceReviewDelta } from './sourceReview'
 import 'server-only'
 import { readRecentWorks } from './publicRecentWorks'
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 import { addPublicMetadata, readPublicMetadata } from '@/lib/publicMetadata'
@@ -906,7 +906,10 @@ function loadRelease(): PublicReleaseCache {
   )
   if (!String(process.env.BAIHEPAILEI_RELEASE_DIR || '').trim()) {
     const reviewDir = join(directory, '..', 'review-20261121')
-    const reviews = parseJsonLines<SourceReview>(readFileSync(join(reviewDir, 'reviews.jsonl'), 'utf8'), 'reviews.jsonl')
+    const baseReviews = parseJsonLines<SourceReview>(readFileSync(join(reviewDir, 'reviews.jsonl'), 'utf8'), 'reviews.jsonl')
+    const deltaPath = join(reviewDir, 'review-deltas.jsonl')
+    const reviews = mergeSourceReviewDeltas(baseReviews, existsSync(deltaPath)
+      ? parseJsonLines<SourceReviewDelta>(readFileSync(deltaPath, 'utf8'), 'review-deltas.jsonl') : [])
     const indexes = new Map(baseRecords.map((record, index) => [record.workId, index]))
     const seen = new Set<string>()
     for (const review of reviews) {

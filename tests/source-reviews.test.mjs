@@ -1,10 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { loadPublicModule, loadPublicRelease } from '../scripts/lib/load-public-release.mjs'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 
-const { resolveReview, matchesReviewEdition } = loadPublicModule(process.cwd(), 'src/lib/sourceReview.ts')
+const { resolveReview, matchesReviewEdition, mergeSourceReviewDeltas } = loadPublicModule(process.cwd(), 'src/lib/sourceReview.ts')
 const { PUBLIC_GRADES, getPublicWorkById, getPublicWorkList, getPublicReleaseManifest } = loadPublicRelease(process.cwd())
 const finding = (kind, grade, code) => ({ kind, grade, classes: [code], urls: [`https://example.org/${kind}`] })
 const resolve = findings => resolveReview({workId:'1', rationale:'test', findings}, {state:'not_assessed',classes:[]}, PUBLIC_GRADES)
@@ -45,11 +45,13 @@ test('a recovered book must match its original title, valid ISBN and edition pag
 })
 test('every reviewed source identity resolves to a visible grade at least as conservative as its findings', () => {
   const readRows = path => readFileSync(path, 'utf8').trim().split('\n').map(JSON.parse)
-  const reviews = readRows('data/public-release/review-20261121/reviews.jsonl')
+  const baseReviews = readRows('data/public-release/review-20261121/reviews.jsonl')
+  const deltaPath = 'data/public-release/review-20261121/review-deltas.jsonl'
+  const reviews = mergeSourceReviewDeltas(baseReviews, existsSync(deltaPath) ? readRows(deltaPath) : [])
   const manifest = JSON.parse(readFileSync('data/public-release/review-20261121/manifest.json', 'utf8'))
   const payload = readFileSync('data/public-release/review-20261121/reviews.jsonl')
   assert.equal(createHash('sha256').update(payload).digest('hex'), manifest.sha256)
-  assert.equal(reviews.length, manifest.publishedReviewRows)
+  assert.equal(baseReviews.length, manifest.publishedReviewRows)
   const baseDir = 'data/public-release/v4/'
   const base = JSON.parse(readFileSync(baseDir+'manifest.json', 'utf8'))
   const catalog = new Map(base.shards.flatMap(s => readRows(baseDir+s.file)).map(w => [w.workId, w]))
@@ -82,7 +84,8 @@ test('every reviewed source identity resolves to a visible grade at least as con
     assert.equal(work.rating.decidingSource, kind, workId)
     assert.deepEqual(work.publicTags.filter(t => t.group === '评级来源').map(t => t.key), ['source-'+kind], workId)
   }
-  assert.equal(reviews.filter(row => !catalog.get(row.workId).rating.grade).length, manifest.newlyRatedSourceRecords)
+  assert.equal(baseReviews.filter(row => !catalog.get(row.workId).rating.grade).length, manifest.newlyRatedSourceRecords)
+  const effectiveNewlyRated = reviews.filter(row => !catalog.get(row.workId).rating.grade).length
   const intake = JSON.parse(readFileSync('data/public-release/identity-20261121/recent-works.json', 'utf8'))
   const newlyListed = intake.entries.filter(entry => entry.edition)
   for (const { workId, edition } of newlyListed) {
@@ -94,7 +97,7 @@ test('every reviewed source identity resolves to a visible grade at least as con
       ['source-' + expected.decidingSource])
     grades[expected.grade]++
   }
-  assert.equal(getPublicReleaseManifest().counts.ratedWorks, manifest.ratedSourceRecords + newlyListed.length)
+  assert.equal(getPublicReleaseManifest().counts.ratedWorks, manifest.ratedSourceRecords - manifest.newlyRatedSourceRecords + effectiveNewlyRated + newlyListed.length)
   assert.deepEqual(JSON.parse(JSON.stringify(getPublicReleaseManifest().gradeCounts)), grades)
 })
 
@@ -118,6 +121,8 @@ test('edition research can resolve an obsolete grade and retain a supported lowe
     ['37189', 'E', 'official', 'E-PAST-MALE-ROMANCE'],
     ['38240', 'B', 'community', 'B-POWER-IMBALANCE'],
     ['38574', 'B', 'official', 'B-LIGHT'],
+    ['6400', 'E', 'community', 'E-PAST-MALE-ROMANCE'],
+    ['37354', 'E', 'community', 'E-PAST-MALE-ROMANCE'],
   ]
   for (const [workId, grade, source, code] of cases) {
     const work = getPublicWorkById(workId)
@@ -126,4 +131,23 @@ test('edition research can resolve an obsolete grade and retain a supported lowe
     assert.ok(work.rating.classes.includes(code), workId)
     assert.deepEqual(work.publicTags.filter(tag => tag.group === '评级来源').map(tag => tag.key), ['source-' + source], workId)
   }
+})
+
+test('review deltas replace only the expected prior row and are idempotent', () => {
+  const keep = { workId: '9', siteId: 'site-9', rationale: 'untouched', findings: [official] }
+  const before = { workId: '37354', siteId: 'site-37354', rationale: 'old', findings: [official] }
+  const after = { ...before, rationale: 'revised', findings: [community] }
+  const added = { ...after, workId: '6400', siteId: 'site-6400' }
+  const base = [keep, before]
+  const deltas = [{ prior: before, review: after }, { prior: null, review: added }]
+  const merged = mergeSourceReviewDeltas(base, deltas)
+  assert.deepEqual(merged, [keep, after, added])
+  assert.equal(merged[0], keep)
+  assert.deepEqual(base, [keep, before])
+  assert.deepEqual(mergeSourceReviewDeltas(merged, deltas), merged)
+  assert.throws(() => mergeSourceReviewDeltas([keep, { ...before, rationale: 'changed' }], deltas), /Stale/)
+  assert.throws(() => mergeSourceReviewDeltas(base, [...deltas, deltas[0]]), /Invalid/)
+  assert.throws(() => mergeSourceReviewDeltas([keep, before, before], deltas), /Duplicate/)
+  assert.throws(() => mergeSourceReviewDeltas(base, [{ prior: keep, review: after }]), /Invalid/)
+  assert.throws(() => mergeSourceReviewDeltas(base, [{ prior: null, review: after }]), /Stale/)
 })
